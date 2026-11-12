@@ -1,4 +1,4 @@
-// "Gazette, serif headline". Gazette with a Newsreader serif title and dek: serif headline over clean grotesque graphics.
+// "Headline, sans title". A newspaper-graphics style: one grotesque
 // family where weight does the work, flat pale-grey blocks with square corners and no outlines,
 // grey for context and a muted crimson for the subject, slate for platforms. No shadows.
 fontdir "./fonts"
@@ -49,7 +49,7 @@ style return extends arrow stroke=soft dash=3,3 use="a response"
 style relation extends relation stroke=#80868f label.font=sans label.size=11 label.color=muted
 style lifeline line head=none stroke=rule sw=1 dash=1,3 route=straight use="lifeline"
 style rule line head=none stroke=rule sw=1 route=straight use="thin separator"
-style h1 text font=serif size=34 weight=500 color=ink use="diagram title"
+style h1 text font=sans size=26 weight=700 color=ink use="diagram title"
 style dek text font=sans size=15 color=muted use="one-line takeaway under the title"
 style eyebrow text font=sans size=10 weight=700 color=muted caps=1 spacing=0.08 use="small kicker above the title"
 style caption text font=sans size=11 color=muted use="small explanatory text"

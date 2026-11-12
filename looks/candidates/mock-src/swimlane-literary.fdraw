@@ -1,4 +1,4 @@
-look "../gazette.look"
+look "../literary.look"
 canvas 1240x520
 
 text "Hiring a new engineer" at 40,56 style=h1

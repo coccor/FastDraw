@@ -1,4 +1,4 @@
-// "Quarterly". A literary magazine (after Monocle and serif editorial charts): Newsreader serif
+// "Literary". A literary-magazine style with serif editorial charts: Newsreader serif
 // for titles and names, Schibsted Grotesk for details and tracked caps labels, crisp square
 // outlined boxes, dotted zone boundaries, a deep teal subject and a warm ochre second voice.
 fontdir "./fonts"

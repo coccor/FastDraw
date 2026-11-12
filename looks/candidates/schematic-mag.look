@@ -1,4 +1,4 @@
-// "Schematic". A technical explainer (after Plaid's diagram system and printed block diagrams):
+// "Schematic". A technical explainer in the manner of product docs and printed block diagrams:
 // IBM Plex Sans Condensed names, tracked mono caps riding on the lines, uniform 1.5px line work,
 // open arrowheads, square cards with a doubled offset outline for depth (mocked), pale cyan
 // subject and a clear blue main path.

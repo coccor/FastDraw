@@ -21,8 +21,8 @@ serif charts, editorial infographic posters). Screenshots were kept privately, n
 
 | Look | Voice | Type | Subject | Shapes |
 |---|---|---|---|---|
-| `gazette.look` | newsroom graphics desk | Libre Franklin | muted crimson; slate platforms | flat pale-grey blocks, no outline |
-| `quarterly.look` | literary magazine | Newsreader + Schibsted Grotesk | deep teal; ochre second voice | 1px square outlines, dotted zones |
+| `headline-sans.look` | newsroom graphics desk | Libre Franklin | muted crimson; slate platforms | flat pale-grey blocks, no outline |
+| `literary.look` | literary magazine | Newsreader + Schibsted Grotesk | deep teal; ochre second voice | 1px square outlines, dotted zones |
 | `schematic-mag.look` | technical explainer | IBM Plex Sans Condensed + Plex Mono | solid blue; pale cyan platforms | 1.5px outlines, open heads, doubled outline (mocked) |
 
 ## Follow-ups if one is chosen

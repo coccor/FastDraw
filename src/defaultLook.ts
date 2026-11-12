@@ -1,6 +1,6 @@
 // The look FastDraw uses when a diagram names none, and the starting point `fastdraw init-look`
 // writes out for a team to change. Its style names match the guides.
-export const DEFAULT_LOOK = `// FastDraw default look ("Gazette"). Copy it with "fastdraw init-look" and change anything.
+export const DEFAULT_LOOK = `// FastDraw default look ("Headline"). Copy it with "fastdraw init-look" and change anything.
 // Drawn like a newspaper graphics desk: a serif headline over flat, square, pale-grey blocks set in
 // one grotesque, grey for context and one muted crimson for the subject. No shadows, no black fills.
 

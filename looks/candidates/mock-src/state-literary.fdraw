@@ -1,4 +1,4 @@
-look "../gazette-serif.look"
+look "../literary.look"
 canvas 1252x520
 
 text "Life of a support ticket" at 60,56 style=h1

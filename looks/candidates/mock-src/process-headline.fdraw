@@ -1,4 +1,4 @@
-look "../gazette.look"
+look "../headline.look"
 canvas 1112x620
 
 text "Handling an insurance claim" at 40,52 style=h1
