@@ -51,6 +51,7 @@ Text properties a shape understands (if the look's style supports them):
 | `sub="..."` | a second, smaller line under the main text |
 | `tag="API"` | a 3–4 letter marker in the top-left corner |
 | `ghost="01"` | a large faint number in the bottom-right corner |
+| `title.align=left` | text against the left edge instead of centred (`right` too). On a zone, the caption moves to that corner |
 
 ### Polygons and arcs
 
@@ -194,6 +195,7 @@ Routing: arrows turn at right angles with rounded corners, and go around a box t
 - name the sides: `a.bottom -> b.left`
 - add waypoints: `via=300,200` or `via=300,200;300,360`
 - draw it as a smooth curve: `route=curve`. It leaves and arrives square to the sides it is attached to. `bend=40` instead bows it 40px to the left of its direction of travel (negative: to the right), which is how to draw the arcs of a cycle. `via=x,y;x,y` makes the curve pass through those points. Curves do not avoid boxes; you place them. `route=straight` gives one straight line
+- several lines may share one trunk, as in a tree: give them the same start point (`root.bottom@0.5 -> a.top`, `root.bottom@0.5 -> b.top`) or the same end point. Lines that overlap anywhere else are reported
 - for a loop back to the same side (`x.right@190 -> x.right@220`), `loop=36` sets how far it sticks out
 
 Labels are drawn in small caps on a paper-coloured patch, above a horizontal line or to the right of a vertical one, at the middle of the longest segment. Keep them to about 14 characters. To move one: `lside=below` (or `left` for vertical lines), or `lpos=x,y` (centre x, text baseline y; the default baseline is 10px above a horizontal line, or 18px below it with `lside=below`). `label.caps=0` keeps the label's own letter case, for paths and header names.

@@ -99,6 +99,9 @@ export function check(sc: Scene): Issue[] {
 
   for (let i = 0; i < sc.conns.length; i++) for (let j = i + 1; j < sc.conns.length; j++) {
     const a = sc.conns[i], b = sc.conns[j];
+    // lines that leave from, or arrive at, the very same point share a trunk on purpose (a tree, a fan-in)
+    const same = (p: Pt, q: Pt) => p.x === q.x && p.y === q.y;
+    if (same(a.pts[0], b.pts[0]) || same(a.pts[a.pts.length - 1], b.pts[b.pts.length - 1])) continue;
     let done = false;
     for (let m = 0; m < a.pts.length - 1 && !done; m++) for (let n = 0; n < b.pts.length - 1 && !done; n++) {
       const [A, B, C, D] = [a.pts[m], a.pts[m + 1], b.pts[n], b.pts[n + 1]];

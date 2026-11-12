@@ -182,16 +182,19 @@ function drawShape(look: Look, s: Shape): string {
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
     const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
-    out.push(`<rect x="${cxm - tw / 2}" y="${s.y + 4}" width="${tw}" height="12" rx="2" fill="${paper}"/>`);
-    out.push(`<text x="${cxm}" y="${s.y + 13}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
+    // a caption on the top edge: centred, or at the left or right corner with title.align
+    const al = p['title.align'], mid = al === 'left' ? s.x + 12 + tw / 2 : al === 'right' ? s.x + s.w - 12 - tw / 2 : cxm;
+    out.push(`<rect x="${mid - tw / 2}" y="${s.y + 4}" width="${tw}" height="12" rx="2" fill="${paper}"/>`);
+    out.push(`<text x="${mid}" y="${s.y + 13}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
   } else if (s.text || p.sub) {
     const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
     const lh = Math.round(title.size * 1.17);
     const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
     const block = lines.length * lh + (p.sub ? sub.size + 7 : 0);
     const top = cym - block / 2 + (p.tag ? 8 : 0);
-    lines.forEach((l, i) => out.push(`<text x="${cxm}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="middle" ${title.a}>${esc(l)}</text>`));
-    if (p.sub) out.push(`<text x="${cxm}" y="${r2(top + lines.length * lh + sub.size + 3)}" text-anchor="middle" ${sub.a}>${esc(p.sub)}</text>`);
+    const al = p['title.align'], tx = al === 'left' ? s.x + 12 : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
+    lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
+    if (p.sub) out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3)}" text-anchor="${anchor}" ${sub.a}>${esc(p.sub)}</text>`);
   }
   return out.join('\n');
 }

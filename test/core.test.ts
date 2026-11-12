@@ -368,3 +368,10 @@ test('a chart with a hostile step or range still renders, quickly, and says what
   assert.match(msgs('c: chart at 80,80 400x200 step=0\n  | bars "A" 1 2\n'), /step=0 must be a number above 0/);
   assert.match(msgs('c: chart at 80,80 400x200 y=100..0\n  | bars "A" 1 2\n'), /y=100..0 must run upwards/);
 });
+
+test('lines that share a start point may share a trunk; text can sit left or right', () => {
+  const tree = 'root: node "Root" at 300,40\na: node "A" at 100,200\nb: node "B" at 500,200\nroot.bottom@0.5 -> a.top\nroot.bottom@0.5 -> b.top\n';
+  assert.deepEqual(check(scene(tree)).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(scene('z: zone "Group" at 40,40 400x200 title.align=left\nn: node "Name" at 80,100 200x64 sub="detail" title.align=right\n'));
+  assert.ok(svg.includes('text-anchor="end"') && svg.includes(`x="${80 + 200 - 12}"`));
+});
