@@ -148,7 +148,8 @@ function drawTable(look: Look, s: Shape): string {
       }
       if (cell === '') return;
       const base = row.kind === 'head' ? strong : j === 0 ? first : rest;
-      const a = cc ? { ...base, a: base.a.replace(/fill="[^"]*"/, `fill="${col(look, cc)}"`) } : base;
+      // a replacer function, never a replacement string: "$'" and "$`" in a colour from the file must stay plain text
+      const a = cc ? { ...base, a: base.a.replace(/fill="[^"]*"/, () => `fill="${col(look, cc)}"`) } : base;
       const mid = center && j > 0;
       out.push(`<text x="${r2(s.x + c.x + (mid ? c.w / 2 : 0))}" y="${r2(row.y + row.h / 2 + a.size * 0.36)}"${mid ? ' text-anchor="middle"' : ''} ${a.a}>${esc(cell)}</text>`);
     });

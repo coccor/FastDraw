@@ -422,3 +422,12 @@ test('tables: cell tints, spanning rows, two-line headers, and -- between rows i
   assert.ok(svg.includes('>«interface»<') && svg.includes('>Payment<') && /<rect[^>]*fill="rgba\([\d,]+,0\.2\)"/.test(svg));
   assert.match(check(scene('r: rect "A" at 40,40 100x40 color=#ffffff\n')).map((i) => i.msg).join(), /color= does nothing on a shape; its text is set with title.color=/);
 });
+
+test('a cell colour is plain text even when it looks like a replacement pattern', () => {
+  for (const evil of ["$'", '$`', '$&$&', '" onload="alert(1)', "$' onload=alert(1) x=$`"]) {
+    const svg = renderSvg(scene(`t: table "T" at 40,40\n  | "a" "b" color.2="${evil.replace(/"/g, '\\"')}" fill.2="${evil.replace(/"/g, '\\"')}"\n`));
+    assert.equal((svg.match(/<text /g) ?? []).length, 3, evil);
+    assert.ok(!/<text[^>]*font-family="[^"]*"[^>]*font-family=/.test(svg), evil); // nothing spliced in twice
+    assert.ok(!/ onload="/.test(svg), evil);
+  }
+});
