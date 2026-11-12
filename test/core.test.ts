@@ -7,7 +7,10 @@ import { buildScene } from '../src/scene.ts';
 import { check } from '../src/check.ts';
 import { renderSvg } from '../src/render.ts';
 import { patchSource, setAt, setSize, setText, setProp, setKind, setEnd, fmtStmt, appendStatements, moveStatement, freshId } from '../src/edit.ts';
-import { loadScene } from '../src/node.ts';
+import { loadScene, readSources } from '../src/node.ts';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { embedSvg, extractSvg, embedPng, extractPng } from '../src/embed.ts';
 import { defaultLook } from '../src/look.ts';
 
@@ -152,4 +155,19 @@ test('exports carry their source and give it back', () => {
   assert.equal(extractPng(png), null);
   assert.deepEqual([...out.subarray(out.length - 12)], [...png.subarray(png.length - 12)]); // IEND still last
   assert.equal(embedPng(new Uint8Array([1, 2, 3]), payload).length, 3);
+});
+
+test('a diagram cannot make the tool read or embed a file that is not a look', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fd-'));
+  writeFileSync(join(dir, 'secret.env'), 'TOKEN=hunter2\n');
+  writeFileSync(join(dir, 'broken.look'), 'TOKEN=hunter2 not a look\n');
+  writeFileSync(join(dir, 'ok.look'), 'color ink #111111\n');
+  const mk = (look: string) => { const f = join(dir, look.replace(/\W/g, '') + '.fdraw'); writeFileSync(f, `look "${look}"\na: rect at 0,0 40x40\n`); return f; };
+  const env = mk('./secret.env');
+  assert.equal(readSources(env).look, null);
+  const issues = loadScene(env).issues.map((i) => i.msg).join('|');
+  assert.match(issues, /must end in \.look/);
+  assert.equal(/hunter2/.test(issues), false);
+  assert.equal(readSources(mk('./broken.look')).look, null); // does not parse cleanly: not embedded
+  assert.equal(readSources(mk('./ok.look')).look, 'color ink #111111\n');
 });

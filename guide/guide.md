@@ -5,11 +5,12 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 ## How to work
 
 1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
-2. If the diagram is an architecture diagram, a flowchart or a sequence diagram, run `fastdraw guide architecture|flowchart|sequence` and follow it.
-3. Plan the composition on paper first: canvas size, rows and columns, where the main thing sits.
-4. Write the file.
-5. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
-6. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 5 until it is clean and looks good.
+2. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
+3. If the diagram is an architecture diagram, a flowchart or a sequence diagram, run `fastdraw guide architecture|flowchart|sequence` and follow it.
+4. Plan the composition on paper first: canvas size, rows and columns, where the main thing sits.
+5. Write the file.
+6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
+7. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 6 until it is clean and looks good.
 
 When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
 

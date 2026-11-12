@@ -136,7 +136,7 @@ export function App() {
     if (!h) return;
     const { text, modified } = await files.readHandle(h);
     const lp = lookPath(text);
-    const lh = lp ? await files.resolveIn(folder.root, files.dirOf(path) + lp) : null;
+    const lh = lp && lp.toLowerCase().endsWith('.look') ? await files.resolveIn(folder.root, files.dirOf(path) + lp) : null;
     const lr = lh ? await files.readHandle(lh) : null;
     io.current = { file: h, look: lh ?? undefined, fileMod: modified, lookMod: lr?.modified ?? 0, written: text, folder, path };
     load(text, lr?.text ?? null, path);

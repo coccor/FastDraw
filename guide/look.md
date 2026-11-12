@@ -1,0 +1,109 @@
+# Writing a look
+
+A look is one text file (`.look`) that decides how every style is drawn: colours, fonts, shapes, lines and text. Diagrams point to it with `look "./team.look"`. Change the look and every diagram that uses it changes.
+
+## How to work
+
+1. Start from the built-in look: `fastdraw init-look team.look`. It has every style the guides rely on, so you change values instead of inventing structure.
+2. Edit the file.
+3. Run `fastdraw preview-look team.look` and **look at the PNG**. It draws every style on one sheet. `fastdraw sizes team.look` lists the styles and reports mistakes.
+4. Render a real diagram with it (`fastdraw render some.fdraw`) before calling it done. A look that is fine on the sheet can still be too heavy or too faint in a real composition.
+
+Keep the style names from the built-in look (`node`, `focal`, `store`, `cloud`, `external`, `optional`, `step`, `terminal`, `terminal-focal`, `decision`, `zone`, `bar`, `arrow`, `primary`, `link`, `return`, `lifeline`, `rule`, `h1`, `eyebrow`, `caption`, `note`, `small`). The diagram guides and existing diagrams use those names. You may add more styles of your own.
+
+## The file
+
+One statement per line; an indented line continues the one above; `//` starts a comment.
+
+```
+canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional
+
+color paper  #ffffff                             // a named colour
+color ink    #1c1f2a
+color accent #0e7c66
+
+font sans  "Geist"                               // the three font roles
+font mono  "Geist Mono"
+font serif "Instrument Serif"
+
+style node shape=rect radius=4 size=144x64 fill=#ffffff stroke=ink sw=1.2
+    use="default box: a service, component or step"
+style focal extends node fill=accent stroke=accent title.color=#ffffff
+
+style arrow line stroke=ink sw=1.3 route=ortho radius=6
+style h1 text font=sans size=22 weight=600 color=ink
+
+guidance "Use focal on at most two things in one diagram."
+```
+
+### Colours
+
+A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names.
+
+### Fonts
+
+`font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`. Only three families are bundled today: **Geist**, **Geist Mono** and **Instrument Serif**. Another family name is accepted but will be drawn with a fallback font, so stay with these three.
+
+### Styles
+
+`style name [extends other] [line|text] key=value ...`
+
+- A style is a shape style unless you write `line` or `text` after the name.
+- `extends other` starts from another style's values. Define the base first.
+- `use="..."` is a short description shown to agents and in the editor's gallery. Write one for every style.
+
+**Shape styles**
+
+| Key | Meaning |
+|---|---|
+| `shape=` | `rect`, `ellipse`, `diamond`, or `path` |
+| `path="..."` | with `shape=path`: an outline written in a box that runs from 0,0 to 1,1 and is stretched to the element. Commands `M`, `L`, `C`, `Q`, `Z` only, absolute. Example cylinder: `"M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"`. Every part of a path is filled, so a detail line such as the rim is traced there and back to enclose no area |
+| `radius=` | corner radius of a `rect`; half the height or more makes a pill |
+| `size=WxH` | default size when a diagram gives none |
+| `fill=`, `stroke=`, `sw=`, `dash=5,4` | fill colour, stroke colour, stroke width, dash pattern |
+| `layer=back` | draw behind everything (for regions like `zone`) |
+| `title.*` | the main text: `title.font`, `title.size`, `title.weight`, `title.color`, `title.italic=1`, `title.spacing` (in em), `title.caps=1`; `title.pos=top` puts it as a small caption at the top edge |
+| `sub.*` | the second line (`sub=` on an element): `sub.font`, `sub.size`, `sub.color` |
+| `tag.*` | the corner marker (`tag=`): `tag.color`, `tag.border`, `tag.font`, `tag.size` |
+| `ghost.*` | the big faint number (`ghost=`): `ghost.color`, `ghost.size` |
+
+On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `tag.border` to something that contrasts, or the text disappears. Set these explicitly on every style; do not rely on defaults.
+
+The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a paper-coloured patch behind it.
+
+**Line styles** (`style name line ...`)
+
+| Key | Meaning |
+|---|---|
+| `stroke=`, `sw=`, `dash=` | colour, width, dash pattern |
+| `route=` | `ortho` (right-angle turns) or `straight` |
+| `radius=` | corner radius of the turns |
+| `head=none` | a style meant for plain lines, never arrows |
+| `label.*` | the text on the line: `label.font`, `label.size`, `label.color`, `label.spacing`, `label.caps=0` to keep the label's own case (default is capitals) |
+
+**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`.
+
+### Built-in styles you can restyle
+
+`rect`, `ellipse`, `diamond`, `text`, `arrow`, `line` and `legend` exist in every look. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
+
+### Guidance
+
+`guidance "..."` lines are shown to agents by `fastdraw sizes`. Use them for rules a drawing tool cannot enforce: how many accent elements are allowed, when to use `tag=`, what `sub=` is for.
+
+## What makes a look good
+
+- **On dark paper, use solid fills for the accent.** A translucent tint (`accent/0.15`) over a dark background turns muddy; a solid accent with dark text on it stays clean.
+- **Decide the accent first.** One colour carries the focus (`focal`, `terminal-focal`, `primary`). Everything else is ink, greys and paper. A look with three bright colours has no focus.
+- **Separate by more than colour.** `external`, `optional`, `cloud` and `store` should differ in shape, fill or dash, so they read in greyscale and for colour-blind readers.
+- **Two or three stroke weights at most**, and the accent arrow slightly heavier than the default arrow.
+- **Check contrast** of text on every fill, and of faint things (`zone`, `lifeline`, `rule`) against the paper: visible, but quieter than the boxes.
+- **Keep default sizes on a 4px grid** and the same height for the box styles that share a row.
+- **Mono type is for technical detail** (paths, ports, commands), not for names.
+
+## Limits today
+
+- Shapes cannot contain icons or extra drawn details beyond the outline, the tag and the ghost number. The tag's position is fixed.
+- The background can have dots but not grid lines. Arrowheads have one shape.
+- `path` outlines have no arcs (`A`); use curves (`C`, `Q`). Arrows attach to the outline's bounding box.
+- Only the three bundled font families render correctly.

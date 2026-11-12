@@ -1,0 +1,90 @@
+// Blueprint. Deep navy paper with a faint dot grid, thin pale-blue line work,
+// white text. Amber is the only warm colour: the subject and the main path.
+
+canvas paper=paper dots=line/0.22 dotgap=24
+
+color paper  #0e2440                             // deep navy sheet
+color sheet  #132d4e                             // a box: one step lighter than the paper
+color ink    #f3f7fc                             // text: near white
+color line   #a9c9ea                             // the drawing line: pale blue
+color muted  #9db6d1                             // secondary text
+color soft   #7f9cbc                             // dashed and quiet strokes
+color accent #f0a63a                             // amber
+color link   #a9c9ea                             // same hue as the line; link differs by dash, not colour
+
+font sans  "Geist"
+font mono  "Geist Mono"
+font serif "Instrument Serif"
+
+// ---- boxes ----------------------------------------------------------------
+style node shape=rect radius=2 size=144x64 fill=sheet stroke=line sw=1
+    title.font=sans title.weight=500 title.color=ink
+    sub.font=mono sub.size=9 sub.color=muted
+    tag.font=mono tag.size=8 tag.color=muted tag.border=line/0.4
+    ghost.color=line/0.12
+    use="default box: a service, component or step"
+style focal extends node fill=accent stroke=accent sw=1
+    title.weight=600 title.color=paper sub.color=paper/0.8
+    tag.color=paper tag.border=paper/0.45 ghost.color=paper/0.14
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.08 C0,-0.027 1,-0.027 1,0.08 L1,0.9 C1,1.033 0,1.033 0,0.9 Z M0,0.08 C0,0.187 1,0.187 1,0.08 C1,0.187 0,0.187 0,0.08"
+    shape=path fill=line/0.08
+    use="something that holds data or state; drawn as a cylinder"
+style cloud extends node radius=14 fill=line/0.1
+    use="a hosted or third-party platform; rounded corners"
+style external extends node fill=none stroke=soft dash=5,4
+    title.color=ink/0.92
+    use="a person or system outside what you own; dashed, unfilled"
+style optional extends node fill=none stroke=soft dash=1.5,4
+    title.color=ink/0.92
+    use="optional or asynchronous participant; dotted"
+
+// ---- flowchart shapes -----------------------------------------------------
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=line/0.16 stroke=line sw=1
+    title.font=sans title.weight=500 title.color=ink
+    sub.font=mono sub.size=9 sub.color=muted
+    use="flowchart start or end"
+style terminal-focal extends terminal fill=accent stroke=accent
+    title.weight=600 title.color=paper sub.color=paper/0.8
+    use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=sheet stroke=line sw=1
+    title.font=sans title.weight=500 title.color=ink sub.font=mono sub.size=9 sub.color=muted
+    use="flowchart yes/no question; put the text on two short lines"
+
+// ---- other shapes ---------------------------------------------------------
+style zone shape=rect radius=2 fill=line/0.035 stroke=line/0.38 sw=1 dash=8,5 layer=back
+    title.pos=top title.font=mono title.size=9 title.weight=500 title.color=muted
+    title.caps=1 title.spacing=0.12
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=sheet stroke=line sw=1
+    use="sequence diagram activation bar, centred on a lifeline; always give WxH"
+
+// ---- lines ----------------------------------------------------------------
+style arrow line stroke=line sw=1 route=ortho radius=3
+    label.font=mono label.size=9 label.caps=0 label.spacing=0 label.color=muted
+    use="default arrow"
+style primary extends arrow stroke=accent sw=1.8 label.color=accent
+    use="the main path; at most two per diagram"
+style link extends arrow stroke=link dash=9,3 label.color=line
+    use="a request crossing a boundary; long dashes"
+style return extends arrow stroke=soft dash=3,4 label.color=muted
+    use="a response, or something optional or asynchronous; short dashes"
+style lifeline line stroke=line/0.5 sw=1 dash=2,5 route=straight use="sequence diagram lifeline"
+style rule line stroke=line/0.3 sw=1 route=straight use="thin separator"
+
+style legend extends legend rule=line/0.3 title.font=mono item.size=10
+
+// ---- text -----------------------------------------------------------------
+style h1 text font=sans size=22 weight=500 color=ink use="diagram title"
+style eyebrow text font=mono size=9 weight=500 color=muted caps=1 spacing=0.14 use="small heading"
+style caption text font=sans size=10 color=muted use="small explanatory text"
+style note text font=serif italic=1 size=15 color=line use="a short aside; at most two"
+style small text font=mono size=9 color=muted use="technical detail: a port, path or command"
+
+guidance "Amber is the only warm colour. focal, terminal-focal and primary carry it; use it on at most two things in one diagram."
+guidance "Everything else is pale-blue line on navy. Tell kinds apart by outline: store is a cylinder, cloud is rounded, external is dashed, optional is dotted."
+guidance "Never set a light fill on an element: text is white and would vanish."
+guidance "tag= is a 3 or 4 letter type marker in the corner of a box. sub= is a short second line of technical detail (set in mono)."
+guidance "Finish with a legend: one statement, 'legend at x,y' followed by style=\"what it means\" for each style you used."

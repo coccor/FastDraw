@@ -23,7 +23,7 @@ style focal extends node fill=accent stroke=accent title.color=#ffffff sub.color
     tag.color=#ffffff tag.border=#ffffff/0.5 ghost.color=#ffffff/0.18
     use="the one or two elements the diagram is about"
 style store extends node size=144x72
-    path="M0,0.13 C0,-0.045 1,-0.045 1,0.13 L1,0.87 C1,1.045 0,1.045 0,0.87 Z M0,0.13 C0,0.305 1,0.305 1,0.13"
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
     shape=path fill=ink/0.04
     use="something that holds data or state"
 style cloud extends node fill=link/0.06 stroke=link/0.55

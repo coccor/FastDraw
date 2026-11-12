@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadScene, loadLook, readSources } from './node.ts';
+import { buildScene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
@@ -20,6 +21,7 @@ function usage(): never {
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
+  preview-look [file.look] [-o out.png]   draw every style of a look on one sheet
   guide  [architecture|flowchart|sequence|look]
                                           print the language guide`);
   process.exit(2);
@@ -85,6 +87,61 @@ if (cmd === 'check') {
   if (existsSync(out)) { console.log(`${out} already exists; choose another path or remove it first`); process.exit(1); }
   writeFileSync(out, DEFAULT_LOOK);
   console.log(`wrote ${out}. Point a diagram at it with:  look "./${basename(out)}"`);
+} else if (cmd === 'preview-look') {
+  const file = args.find((a, i) => !a.startsWith('-') && args[i - 1] !== '-o');
+  const oi = args.indexOf('-o');
+  const out = oi >= 0 ? args[oi + 1] : (file ? file.replace(/\.look$/, '') : 'default') + '-preview.png';
+  const look = file ? loadLook(file) : defaultLook();
+  const errs = look.issues.filter((i) => i.level === 'error');
+  if (errs.length) { for (const i of errs) console.log(`${file}:${i.line}  error  ${i.msg}`); process.exit(1); }
+  const skip = new Set(['rect', 'ellipse', 'diamond', 'text', 'line', 'legend']);
+  const all = [...look.styles.values()].filter((s) => !skip.has(s.name));
+  const L: string[] = [];
+  const W = 880;
+  let y = 40;
+  const heading = (t: string) => { L.push(`text ${JSON.stringify(t)} at 40,${y + 10} size=11 weight=600 color=muted font=sans`); y += 28; };
+  heading('Shapes');
+  let x = 40, rowH = 0;
+  all.filter((s) => s.kind === 'shape').forEach((s, i) => {
+    const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(s.props.size ?? '');
+    const w = m ? +m[1] : 144, h = m ? +m[2] : 64;
+    const cell = Math.max(w, 144) + 40;
+    if (x + cell > W + 40) { x = 40; y += rowH + 44; rowH = 0; }
+    const narrow = w <= 12, back = s.props.layer === 'back';
+    L.push(`p${i}: ${s.name} ${narrow ? '' : JSON.stringify(s.name)} at ${x},${y} ${w}x${h}${narrow || back || s.props.shape === 'diamond' ? '' : ' sub="second line" tag="TAG"' + (i < 2 ? ` ghost="0${i + 1}"` : '')}`);
+    if (narrow) L.push(`text ${JSON.stringify(s.name)} at ${x + 20},${y + 14} size=10 color=muted font=sans`);
+    x += cell; rowH = Math.max(rowH, h);
+  });
+  y += rowH + 48;
+  heading('Lines and arrows');
+  all.filter((s) => s.kind === 'line').forEach((s, i) => {
+    const cx = 40 + (i % 4) * 216;
+    if (i && i % 4 === 0) y += 44;
+    L.push(`${cx},${y + 16} ${s.props.head === 'none' || s.props.route === 'straight' ? '--' : '->'} ${cx + 176},${y + 16} ${JSON.stringify(s.name)} style=${s.name}`);
+  });
+  y += 60;
+  heading('Text');
+  for (const s of all.filter((t) => t.kind === 'text')) {
+    const size = +(s.props.size ?? 12);
+    y += Math.max(size, 10) + 4;
+    L.push(`text ${JSON.stringify(`${s.name}: The quick brown fox`)} at 40,${y} style=${s.name}`);
+    y += 12;
+  }
+  y += 32;
+  const entries = all.filter((s) => s.kind !== 'text').slice(0, 8).map((s) => `${s.name}=${JSON.stringify(s.name)}`).join(' ');
+  L.push(`legend at 40,${y} ${W}x10 ${entries}`);
+  const sc = buildScene(`canvas ${W + 80}x${y + 110}\n` + L.join('\n'), look);
+  const bad = sc.issues.filter((i) => i.level === 'error');
+  if (bad.length) { for (const i of bad) console.log(`preview: ${i.msg}`); process.exit(1); }
+  const svg = renderSvg(sc);
+  if (out.endsWith('.svg')) writeFileSync(out, svg);
+  else {
+    const { Resvg } = await import('@resvg/resvg-js');
+    const fontDir = join(root, 'fonts');
+    const fontFiles = existsSync(fontDir) ? readdirSync(fontDir).filter((f) => /\.(ttf|otf)$/.test(f)).map((f) => join(fontDir, f)) : [];
+    writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
+  }
+  console.log(`wrote ${out}: ${all.length} styles`);
 } else if (cmd === 'guide') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');

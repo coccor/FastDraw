@@ -15,6 +15,15 @@ export function loadLook(path: string): Look {
   }
 }
 
+// A diagram file is untrusted input, and its look path is read from disk and embedded in exports.
+// Only files named *.look are ever read, so a diagram cannot pull in some other file.
+function readLook(file: string, p: string | undefined): { text: string | null; refused: boolean } {
+  if (!p) return { text: null, refused: false };
+  if (!p.toLowerCase().endsWith('.look')) return { text: null, refused: true };
+  try { return { text: readFileSync(resolve(dirname(file), p), 'utf8'), refused: false }; }
+  catch { return { text: null, refused: false }; }
+}
+
 export function loadScene(file: string): Scene {
   let src = '';
   try { src = readFileSync(file, 'utf8'); }
@@ -24,16 +33,18 @@ export function loadScene(file: string): Scene {
     return sc;
   }
   const p = lookPath(src);
-  let look: Look | null = null;
-  if (p) { try { look = parseLook(readFileSync(resolve(dirname(file), p), 'utf8'), p); } catch { look = null; } }
-  return buildScene(src, look, file);
+  const r = readLook(file, p);
+  const sc = buildScene(src, r.text === null ? null : parseLook(r.text, p), file);
+  if (r.refused) for (const i of sc.issues) if (i.msg.startsWith('look file not found')) i.msg = `the look path must end in .look; "${p}" was not read`;
+  return sc;
 }
 
-// The diagram and look texts as they are on disk, for embedding in exports.
+// The diagram and look texts as they are on disk, for embedding in exports. A look that does
+// not parse cleanly is left out.
 export function readSources(file: string): { diagram: string; look: string | null } {
   const diagram = readFileSync(file, 'utf8');
   const p = lookPath(diagram);
-  let look: string | null = null;
-  if (p) { try { look = readFileSync(resolve(dirname(file), p), 'utf8'); } catch { look = null; } }
-  return { diagram, look };
+  const { text } = readLook(file, p);
+  const clean = text !== null && parseLook(text, p).issues.every((i) => i.level !== 'error');
+  return { diagram, look: clean ? text : null };
 }
