@@ -24,6 +24,7 @@ const BUILTIN: Style[] = [
   { name: 'text', kind: 'text', props: { font: 'sans', size: '12', color: 'ink' } },
   { name: 'arrow', kind: 'line', props: { stroke: 'muted', sw: '1.2', head: 'arrow', route: 'ortho', radius: '8' } },
   { name: 'line', kind: 'line', props: { stroke: 'muted', sw: '1', head: 'none', route: 'straight' } },
+  { name: 'relation', kind: 'line', props: { stroke: 'ink', sw: '1.2', head: 'none', route: 'ortho', radius: '6', use: 'a relationship between two tables or classes; write it with -- and choose the ends with head= and tail=' } },
   {
     name: 'table', kind: 'shape',
     props: {

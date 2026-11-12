@@ -124,7 +124,8 @@ function drawTable(look: Look, s: Shape): string {
     out.push(`<path d="M ${s.x},${hy} L ${s.x},${s.y + r} Q ${s.x},${s.y} ${s.x + r},${s.y} L ${x2 - r},${s.y} Q ${x2},${s.y} ${x2},${s.y + r} L ${x2},${hy} Z" fill="${col(look, p['head.fill'] ?? 'ink/0.06')}"/>`);
     const t = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
     const txt = p['title.caps'] === '1' ? s.text!.toUpperCase() : s.text!;
-    out.push(`<text x="${s.x + s.w / 2}" y="${r2(hy - headH / 2 + t.size * 0.36)}" text-anchor="middle" ${t.a}>${esc(txt)}</text>`);
+    const tl = txt.split('\n'), tlh = Math.round(t.size * 1.25), left = p['title.align'] === 'left';
+    tl.forEach((l, i) => out.push(`<text x="${left ? s.x + num(p['cell.pad'], 12) : s.x + s.w / 2}" y="${r2(hy - headH / 2 + t.size * 0.36 + (i - (tl.length - 1) / 2) * tlh)}" text-anchor="${left ? 'start' : 'middle'}" ${t.a}>${esc(l)}</text>`));
     if (rows.length) out.push(`<line x1="${s.x}" y1="${hy}" x2="${x2}" y2="${hy}" stroke="${stroke}" stroke-width="${sw}"/>`);
   }
   const first = textAttrs(look, p, 'cell.', { font: 'mono', size: 10, weight: 400, color: 'ink' });
@@ -138,8 +139,16 @@ function drawTable(look: Look, s: Shape): string {
     const prev = rows[i - 1];
     if (prev && prev.kind !== 'rule' && p.rules !== '0') out.push(`<line x1="${s.x}" y1="${row.y}" x2="${x2}" y2="${row.y}" stroke="${rule}" stroke-width="0.8"/>`);
     row.cells.forEach((cell, j) => {
-      const c = cols[j]; if (!c || cell === '') return;
-      const a = row.kind === 'head' ? strong : j === 0 ? first : rest;
+      const c = cols[j]; if (!c) return;
+      // one cell can have its own tint and text colour: fill.2=accent/0.2 color.2=accent (columns count from 1)
+      const cf = row.p[`fill.${j + 1}`], cc = row.p[`color.${j + 1}`], g = num(p['cell.gap'], 16);
+      if (cf && cf !== 'none') {
+        const x0 = j === 0 ? s.x + sw / 2 : s.x + c.x - g / 2, x1 = j === cols.length - 1 ? x2 - sw / 2 : s.x + cols[j + 1].x - g / 2;
+        out.push(`<rect x="${r2(x0)}" y="${row.y}" width="${r2(x1 - x0)}" height="${row.h}" fill="${col(look, cf)}"/>`);
+      }
+      if (cell === '') return;
+      const base = row.kind === 'head' ? strong : j === 0 ? first : rest;
+      const a = cc ? { ...base, a: base.a.replace(/fill="[^"]*"/, `fill="${col(look, cc)}"`) } : base;
       const mid = center && j > 0;
       out.push(`<text x="${r2(s.x + c.x + (mid ? c.w / 2 : 0))}" y="${r2(row.y + row.h / 2 + a.size * 0.36)}"${mid ? ' text-anchor="middle"' : ''} ${a.a}>${esc(cell)}</text>`);
     });
@@ -294,9 +303,13 @@ export function renderBody(sc: Scene): string {
     out.push(`<rect width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
   }
   for (const s of sc.shapes) if (s.back) out.push(drawShape(look, s));
-  for (const c of sc.conns) out.push(drawConn(look, c));
-  for (const c of sc.conns) if (c.label) out.push(drawLabel(look, c));
+  // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
+  const under = sc.conns.filter((c) => c.p.layer !== 'front'), over = sc.conns.filter((c) => c.p.layer === 'front');
+  for (const c of under) out.push(drawConn(look, c));
+  for (const c of under) if (c.label) out.push(drawLabel(look, c));
   for (const s of sc.shapes) if (!s.back) out.push(drawShape(look, s));
+  for (const c of over) out.push(drawConn(look, c));
+  for (const c of over) if (c.label) out.push(drawLabel(look, c));
   for (const t of sc.texts) out.push(drawText(look, t));
   return out.join('\n');
 }

@@ -220,16 +220,21 @@ function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => v
   const p = sh.p;
   const fs = num(p['cell.size'], 10), font = p['cell.font'] ?? 'mono';
   const rowH = num(p['row.h'], 24), pad = num(p['cell.pad'], 12), gap = num(p['cell.gap'], 16);
-  const headH = sh.text ? num(p['head.h'], 32) : 0;
+  const tsize = num(p['title.size'], 12), tlines = sh.text ? sh.text.split('\n') : [];
+  const headH = sh.text ? num(p['head.h'], 32) + (tlines.length - 1) * Math.round(tsize * 1.25) : 0;
   const n = Math.max(0, ...rows.map((r) => r.cells.length));
   const widths: number[] = [];
-  for (let j = 0; j < n; j++) widths.push(Math.max(...rows.map((r) => (r.cells[j] === undefined ? 0 : textWidth(r.cells[j], fs, font, r.kind === 'head' ? 600 : 400, 0)))));
+  // a row with a single cell in a table of several columns runs across the whole width instead of widening column 1
+  const spans = (r: Row) => n > 1 && r.cells.length === 1 && r.kind !== 'head';
+  for (let j = 0; j < n; j++) widths.push(Math.max(0, ...rows.filter((r) => !spans(r)).map((r) => (r.cells[j] === undefined ? 0 : textWidth(r.cells[j], fs, font, r.kind === 'head' ? 600 : 400, 0)))));
   if (p.align === 'center' && n > 1) { const m = Math.max(...widths.slice(1)); for (let j = 1; j < n; j++) widths[j] = m; }
-  const natural = n ? pad * 2 + widths.reduce((a, b) => a + b, 0) + gap * (n - 1) : 0;
-  const titleW = sh.text ? textWidth(sh.text, num(p['title.size'], 12), p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0)) + pad * 2 : 0;
+  const spanW = Math.max(0, ...rows.filter(spans).map((r) => textWidth(r.cells[0], fs, font, 400, 0) + pad * 2));
+  const colsW = n ? pad * 2 + widths.reduce((a, b) => a + b, 0) + gap * (n - 1) : 0;
+  const natural = Math.max(spanW, colsW);
+  const titleW = sh.text ? Math.max(...tlines.map((l) => textWidth(l, tsize, p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0)))) + pad * 2 : 0;
   const W = Math.ceil(Math.max(minW, natural, titleW, 48) / 4) * 4;
   if (minW && Math.max(natural, titleW) > minW + 4) warn(`${sh.id} was given a width of ${minW} but its content needs ${W}, so it is drawn ${W} wide; shorten the cells or give it room`);
-  if (n) widths[0] += W - natural; // spare width goes to the first column, so the others sit against the right edge
+  if (n) widths[0] += W - colsW; // spare width goes to the first column, so the others sit against the right edge
   const cols: Col[] = [];
   let x = pad;
   for (const w of widths) { cols.push({ x, w }); x += w + gap; }
@@ -324,7 +329,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         else if (t.t === 'prop') over[t.k!] = t.v;
         else err(st.line, `unexpected word "${t.v}" after the connector; properties look like key=value`);
       }
-      const styleName = over.style ?? (op === '--' ? 'line' : 'arrow');
+      // a plain -- that ends on a table row is a relationship: right-angled, not a slanted line
+      const styleName = over.style ?? (op === '--' ? (a.row || b.row ? 'relation' : 'line') : 'arrow');
       const style = look.styles.get(styleName);
       if (!style || style.kind !== 'line') {
         err(st.line, `"${styleName}" is not a line style in the look; line styles: ${styleNames().filter((s) => s.kind === 'line').map((s) => s.name).join(', ')}`);
@@ -412,6 +418,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
+    for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {
       // points are written relative to the element's position; a given WxH stretches them to fit
       const rel = (p.points ?? '').split(';').filter(Boolean).map((q) => { const [x, y] = q.split(',').map(Number); return { x, y }; });

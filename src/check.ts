@@ -55,7 +55,7 @@ export function check(sc: Scene): Issue[] {
   const seen = new Set<string>();
   for (let i = 0; i < front.length; i++) for (let j = i + 1; j < front.length; j++) {
     const a = front[i], b = front[j];
-    if (tiny(a) || tiny(b) || contains(a, b) || contains(b, a)) continue;
+    if (tiny(a) || tiny(b) || contains(a, b) || contains(b, a) || a.p.overlap === 'ok' || b.p.overlap === 'ok') continue; // free-form drawings line up by design, not by edges
     const pairs: [string, number, number][] = [
       ['top edges', a.y, b.y], ['vertical centres', a.y + a.h / 2, b.y + b.h / 2],
       ['left edges', a.x, b.x], ['horizontal centres', a.x + a.w / 2, b.x + b.w / 2],
@@ -75,7 +75,7 @@ export function check(sc: Scene): Issue[] {
       const A = c.pts[i], B = c.pts[i + 1];
       if (c.ortho && A.x !== B.x && A.y !== B.y) warn(c.line, `${name(c)} has a diagonal segment (${A.x},${A.y} to ${B.x},${B.y}); fix the via points so each step is horizontal or vertical`);
       for (const s of front) {
-        if (c.p.layer === 'back') break; // a grid line or guide meant to run behind the boxes
+        if (c.p.layer === 'back' || c.p.layer === 'front') break; // a grid line or guide meant to run behind the boxes
         if (s.id === c.a.id || s.id === c.b.id || tiny(s) || hit.has(s.id)) continue;
         if (hasPt(s, c.pts[0]) || hasPt(s, c.pts[c.pts.length - 1])) continue;
         if (segHits(A, B, inset(s, 1))) { hit.add(s.id); warn(c.line, `${name(c)} passes through ${s.id}; route around it with from=/to= sides or via=x,y`); }
@@ -107,6 +107,7 @@ export function check(sc: Scene): Issue[] {
 
   for (let i = 0; i < sc.conns.length; i++) for (let j = i + 1; j < sc.conns.length; j++) {
     const a = sc.conns[i], b = sc.conns[j];
+    if (a.p.layer === 'front' || b.p.layer === 'front') continue;
     // lines that leave from, or arrive at, the very same point share a trunk on purpose (a tree, a fan-in)
     const same = (p: Pt, q: Pt) => p.x === q.x && p.y === q.y;
     if (same(a.pts[0], b.pts[0]) || same(a.pts[a.pts.length - 1], b.pts[b.pts.length - 1])) continue;

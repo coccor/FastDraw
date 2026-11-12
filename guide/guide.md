@@ -145,7 +145,9 @@ users: table "users" at 40,100
 - `| ---` draws a full dividing line (between the attributes and the operations of a class, say).
 - `|= "Role" "Read" "Write"` is a heading row, drawn bold on a tint. Use it for the column headings of a grid.
 - The size works itself out: columns are as wide as their longest cell and the height follows the rows (32px header, 24px per row with the built-in look). To make a table wider, give a width: `at 40,100 240x0`. Spare width goes to the first column.
-- A row can have its own tint: `| late "Shipping" "3 days" fill=accent/0.1`.
+- A row can have its own tint: `| late "Shipping" "3 days" fill=accent/0.1`. One cell can too, by column number from 1: `| "Analyst" "read" "none" fill.2=accent/0.15 color.3=muted`. That is how a matrix or heatmap shows levels.
+- A row with a single cell, in a table with more columns, runs across the full width (an index name, a note).
+- The header text may have two lines (`"«interface»\nPaymentMethod"`); `title.align=left` puts it at the left.
 - `align=center grid=1` on the table centres every column after the first and draws column lines, for a matrix.
 - Rows come last in the statement. Properties of the table itself go on the first line.
 
@@ -179,7 +181,7 @@ Any appearance property can be overridden on one element: `fill=`, `stroke=`, `s
 | `zero-one`, `zero-many` | circle and bar, circle and crow's foot | optional one, optional many |
 | `none` | nothing | removes a head the operator would draw |
 
-Example: `orders.user_id -- users.id tail=many head=only-one style=relation` reads "many orders, exactly one user".
+Example: `orders.user_id -- users.id tail=many head=only-one` reads "many orders, exactly one user". A `--` that ends on a table row uses the built-in `relation` style (right-angled, no head) rather than a slanted line.
 
 An end can be:
 
@@ -199,7 +201,7 @@ Routing: arrows turn at right angles with rounded corners, and go around a box t
 - name the sides: `a.bottom -> b.left`
 - add waypoints: `via=300,200` or `via=300,200;300,360`
 - draw it as a smooth curve: `route=curve`. It leaves and arrives square to the sides it is attached to. `bend=40` instead bows it 40px to the left of its direction of travel (negative: to the right), which is how to draw the arcs of a cycle. `via=x,y;x,y` makes the curve pass through those points. Curves do not avoid boxes; you place them. `route=straight` gives one straight line
-- a line that is meant to run behind boxes (a grid line, a guide) takes `layer=back`, and `check` stops reporting the boxes it crosses
+- a line that is meant to run behind boxes (a grid line, a guide) takes `layer=back`, and `check` stops reporting the boxes it crosses. `layer=front` draws a line on top of the shapes instead (an edge on a face)
 - several lines may share one trunk, as in a tree: give them the same start point (`root.bottom@0.5 -> a.top`, `root.bottom@0.5 -> b.top`) or the same end point. Lines that overlap anywhere else are reported
 - for a loop back to the same side (`x.right@190 -> x.right@220`), `loop=36` sets how far it sticks out
 
@@ -207,7 +209,7 @@ Labels are drawn in small caps on a paper-coloured patch, above a horizontal lin
 
 ### Text
 
-`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. `rotate=-90` turns the text to read upwards about its `at` point (`rotate=90`: downwards), for a label along a vertical axis. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1`.
+`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. `rotate=-90` turns the text to read upwards about its `at` point (`rotate=90`: downwards), for a label along a vertical axis. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1` (only where the font has an italic face; the bundled sans and mono do not, the serif does).
 
 ### Legend
 
@@ -220,7 +222,7 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 - Each `style="what it means"` pair is an entry, in the order written. Use only the styles the diagram uses.
 - It spans the canvas width minus the left margin on both sides; give `WxH` to set another width (the height is always worked out).
 - `title="Key"` changes the heading; `title=none` removes it.
-- For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look: `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
+- For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look, optionally with a tint (`swatch.muted/0.2="Flow"`): `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
 - Put it 24px under the lowest element and leave about 70px of canvas for it.
 
 ### Groups

@@ -401,3 +401,24 @@ test('sub text can run over several lines, and a tag on a short box is reported'
   assert.match(msgs('r: focal "Row-level permissions" sub="RPT-114" tag="RISK" at 40,40 176x48\n'), /the tag "RISK" sits on the text of r; make it at least 52px tall/);
   assert.doesNotMatch(msgs('r: focal "Orders API" sub="REST" tag="API" at 40,40\n'), /sits on the text/);
 });
+
+test('tinted legend swatches, lines in front of shapes, and no alignment hints between free-form shapes', () => {
+  const sc = scene('f: polygon at 100,100 points=0,0;120,0;120,81;0,80 fill=#ffffff overlap=ok\ng: polygon at 101,200 points=0,0;120,0;120,80;0,80 overlap=ok\n160,100 -- 160,180 layer=front stroke=ink\nlegend at 40,340 swatch.muted/0.2="Flow"\n');
+  assert.deepEqual(check(sc), []);
+  const svg = renderSvg(sc);
+  assert.ok(svg.indexOf('M 160,100') > svg.indexOf('<polygon points="100,100'));
+  assert.ok(svg.includes('>Flow<') && /fill="rgba\([\d,]+,0\.2\)"/.test(svg));
+});
+
+test('tables: cell tints, spanning rows, two-line headers, and -- between rows is right-angled', () => {
+  const sc = scene('a: table "«interface»\\nPayment" at 40,40\n  | id "id" "uuid" "PK" fill.3=accent/0.2 color.3=accent\n  | "idx_orders_customer_id_created_at"\nb: table "B" at 400,120\n  | fk "a_id" "uuid"\nb.fk -- a.id tail=many head=only-one\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const a = sc.shapes[0], c = sc.conns[0];
+  assert.equal(a.headH, 32 + 15);
+  assert.ok(a.cols![0].w > 100); // spare width, not the long single cell, sets column 1... the span row sets the table width
+  assert.equal(c.style, 'relation');
+  assert.ok(c.ortho && c.pts.every((p, i) => i === 0 || p.x === c.pts[i - 1].x || p.y === c.pts[i - 1].y));
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('>«interface»<') && svg.includes('>Payment<') && /<rect[^>]*fill="rgba\([\d,]+,0\.2\)"/.test(svg));
+  assert.match(check(scene('r: rect "A" at 40,40 100x40 color=#ffffff\n')).map((i) => i.msg).join(), /color= does nothing on a shape; its text is set with title.color=/);
+});

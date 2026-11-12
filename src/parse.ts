@@ -34,7 +34,7 @@ function tokenize(s: string): Tok[] {
       i++;
     }
     if (startsQuoted) { out.push({ t: 'str', v: buf }); continue; }
-    const m = /^([A-Za-z][\w.-]*)=([\s\S]*)$/.exec(buf);
+    const m = /^([A-Za-z][\w./-]*)=([\s\S]*)$/.exec(buf); // "/" so a legend key can carry a tint: swatch.muted/0.2=
     if (m) out.push({ t: 'prop', k: m[1], v: m[2] });
     else out.push({ t: 'word', v: buf });
   }
