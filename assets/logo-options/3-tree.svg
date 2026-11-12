@@ -1,4 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <title>FastDraw</title>
-  <g fill="#0e7c66"><path fill-rule="evenodd" d="M36 0H220A36 36 0 0 1 256 36V104A36 36 0 0 1 220 140H36A36 36 0 0 1 0 104V36A36 36 0 0 1 36 0Z M112.5 19.2L157.1 19.2L138.5 60.1L162.1 60.1L101.3 120.8L116.8 75L93.9 75Z"/><path d="M116 136H140V156H204A14 14 0 0 1 218 170V200H194V180H62V200H38V170A14 14 0 0 1 52 156H116Z"/><rect x="0" y="196" width="100" height="60" rx="22"/><rect x="156" y="196" width="100" height="60" rx="22"/></g>
-</svg>
