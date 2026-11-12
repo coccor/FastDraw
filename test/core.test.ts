@@ -414,7 +414,7 @@ test('tables: cell tints, spanning rows, two-line headers, and -- between rows i
   const sc = scene('a: table "«interface»\\nPayment" at 40,40\n  | id "id" "uuid" "PK" fill.3=accent/0.2 color.3=accent\n  | "idx_orders_customer_id_created_at"\nb: table "B" at 400,120\n  | fk "a_id" "uuid"\nb.fk -- a.id tail=many head=only-one\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   const a = sc.shapes[0], c = sc.conns[0];
-  assert.equal(a.headH, 32 + 15);
+  assert.equal(a.headH, 32 + 16);
   assert.ok(a.cols![0].w > 100); // spare width, not the long single cell, sets column 1... the span row sets the table width
   assert.equal(c.style, 'relation');
   assert.ok(c.ortho && c.pts.every((p, i) => i === 0 || p.x === c.pts[i - 1].x || p.y === c.pts[i - 1].y));
@@ -499,4 +499,23 @@ test('a look cannot reach outside its own folder for icons or fonts, nor through
   assert.deepEqual(names('./sneaky'), []); // a symlinked folder that leads outside
   assert.deepEqual(names('./icons/../../outside'), []);
   assert.match(loadLook(root + '/proj/t.look').issues.map((i) => i.msg).join(), /icondir must be a folder inside the folder that holds the look file/);
+});
+
+test('text that cannot be read against its background is reported; plain-line styles never grow heads', () => {
+  const dflt = (b: string) => check(buildScene(`canvas 800x400\n${b}`, null)).map((i) => i.msg).join('\n');
+  assert.match(dflt('b: focal "Blocked" sub="waiting" at 40,40 dash=4,4 fill=accent/0.05\n'), /the text of b is almost the same colour as its background/);
+  assert.match(dflt('f: focal "Assess" at 40,40 160x80\ntext "case and report" at 60,100 size=9\ntext "ok" at 60,84 size=9 color=accent\n'), /text the unnamed element on line 4 is almost the same colour as f behind it/);
+  assert.doesNotMatch(dflt('f: focal "Assess" sub="fine" at 40,40\nn: node "Plain" sub="also fine" at 240,40\ntext "on paper" at 40,200\ntext "2025" at 40,300 size=60 color=ink/0.06\n'), /cannot be read/);
+  assert.match(dflt('r: rect at 41,40 100x40\n'), /the unnamed element|r is off the 4px grid/);
+  const sc = buildScene('canvas 800x400\n40,100 -> 400,100 style=rule\n40,200 -> 400,200 style=rule head=open\n40,300 -> 400,300\n', null);
+  assert.deepEqual(sc.conns.map((c) => c.headM), ['none', 'open', 'arrow']);
+});
+
+test('legend swatches take hex colours; an unfilled badge on a filled box is judged against that box', () => {
+  const dflt = (b: string) => buildScene(`canvas 800x400\n${b}`, null);
+  const sc = dflt('f: focal "Shared types" at 40,40 160x64\nb: rect "4 in" at 152,44 40x16 fill=none stroke=#ffffff title.color=#ffffff title.size=8 overlap=ok\nlegend at 40,300 swatch.#4a7c59="Stream" dot.#b07a2a/0.5="Table"\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  assert.ok(renderSvg(sc).includes('fill="#4a7c59"'));
+  // the same white badge with no dark box under it is on paper, and is reported
+  assert.match(check(dflt('b: rect "4 in" at 152,44 48x16 fill=none stroke=ink title.color=#ffffff title.size=8\n')).map((i) => i.msg).join(), /the text of b is almost the same colour as its background/);
 });

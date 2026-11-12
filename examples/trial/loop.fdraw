@@ -1,0 +1,24 @@
+canvas 1040x680
+
+// ring: centre 520,340 · radius 240 · six stations 60 degrees apart, the first at the top
+publish: node "Publish" sub="weekly issue goes out" at 440,68 160x64
+forward: node "Forward" sub="readers share it" at 648,188 160x64
+refer:   node "Refer" sub="link in every issue" at 648,428 160x64
+landing: node "Landing page" sub="what new people see" at 440,548 160x64
+signup:  focal "Sign up" sub="the gate: one field" at 232,428 160x64
+welcome: node "Welcome" sub="three-mail series" at 232,188 160x64
+hub: rect "Subscriber list" sub="every reader, every loop" at 420,288 200x104 radius=8 fill=ink stroke=ink title.color=paper sub.color=paper/0.7
+
+publish.right@114 -> forward.top@705 route=curve bend=9
+forward.bottom@743 -> refer.top@743 route=curve bend=16
+refer.bottom@705 -> landing.right@566 route=curve bend=9
+landing.left@566 -> signup.bottom@335 route=curve bend=9
+signup.top@297 -> welcome.bottom@297 route=curve bend=16
+welcome.top@335 -> publish.left@114 route=curve bend=9
+
+publish.bottom -> hub.top "opens" style=return stroke=soft
+forward.bottom@672 -> hub.top@616 style=return stroke=soft route=straight
+refer.top@672 -> hub.bottom@616 style=return stroke=soft route=straight
+landing.top -> hub.bottom "joins" style=return stroke=soft
+signup.top@368 -> hub.bottom@424 style=return stroke=soft route=straight
+welcome.bottom@368 -> hub.top@424 style=return stroke=soft route=straight

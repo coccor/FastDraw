@@ -1,69 +1,51 @@
 look "../../looks/reference.look"
-canvas 1000x512
-
-// time: week 1 starts at x=200, 64px per week, 12 weeks (ends at 968)
-// phases: one zone behind each group of rows, named top-left
-p1: zone "Discovery" at 12,76 976x96 title.align=left
-p2: zone "Design" at 12,180 976x136 title.align=left
-p3: zone "Launch" at 12,324 976x96 title.align=left
-
-// grid: thin zones, so they are drawn behind the bars. Month boundaries are stronger than week lines
-zone at 264,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 328,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 392,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 456,36 1x392 fill=ink/0.16 stroke=none radius=0
-zone at 520,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 584,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 648,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 712,36 1x392 fill=ink/0.16 stroke=none radius=0
-zone at 776,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 840,64 1x364 fill=ink/0.06 stroke=none radius=0
-zone at 904,64 1x364 fill=ink/0.06 stroke=none radius=0
-
-// header: month names, week numbers, the header line and the divider after the name column
-text "April" at 328,48 size=9 weight=600 color=ink anchor=middle
-text "May" at 584,48 size=9 weight=600 color=ink anchor=middle
-text "June" at 840,48 size=9 weight=600 color=ink anchor=middle
-text "W1" at 232,59 style=small size=7 color=soft anchor=middle
-text "W2" at 296,59 style=small size=7 color=soft anchor=middle
-text "W3" at 360,59 style=small size=7 color=soft anchor=middle
-text "W4" at 424,59 style=small size=7 color=soft anchor=middle
-text "W5" at 488,59 style=small size=7 color=soft anchor=middle
-text "W6" at 552,59 style=small size=7 color=soft anchor=middle
-text "W7" at 616,59 style=small size=7 color=soft anchor=middle
-text "W8" at 680,59 style=small size=7 color=soft anchor=middle
-text "W9" at 744,59 style=small size=7 color=soft anchor=middle
-text "W10" at 808,59 style=small size=7 color=soft anchor=middle
-text "W11" at 872,59 style=small size=7 color=soft anchor=middle
-text "W12" at 936,59 style=small size=7 color=soft anchor=middle
-200,64 -- 968,64 stroke=ink/0.2 sw=0.8
-200,36 -- 200,428 stroke=ink/0.2 sw=0.8
-
-// rows are 40px apart; a bar is 24 high; the name baseline is 16px below the bar top
-text "Market research" at 24,116 size=10 weight=600 color=ink
-t1: rect at 200,100 128x24 radius=4 fill=muted/0.15 stroke=muted
-text "User interviews" at 24,156 size=10 weight=600 color=ink
-t2: rect at 264,140 128x24 radius=4 fill=muted/0.15 stroke=muted
-
-text "Wireframes" at 24,220 size=10 weight=600 color=ink
-t3: rect at 392,204 128x24 radius=4 fill=muted/0.15 stroke=muted
-text "Prototype" at 24,260 size=10 weight=600 color=ink
-t4: rect at 456,244 192x24 radius=4 fill=muted/0.15 stroke=muted
-text "Design review" at 24,300 size=10 weight=600 color=accent
-t5: rect at 648,284 64x24 radius=4 fill=accent/0.12 stroke=accent
-text "GATE" at 680,300 style=small color=accent anchor=middle
-
-text "Development" at 24,364 size=10 weight=600 color=ink
-t6: rect at 584,348 256x24 radius=4 fill=muted/0.15 stroke=muted
-text "Beta testing" at 24,404 size=10 weight=600 color=ink
-t7: rect at 776,388 128x24 radius=4 fill=muted/0.15 stroke=muted
-
-// legend, by hand
-40,444 -- 960,444 style=rule
-text "Legend" at 40,460 style=eyebrow
-rect at 40,472 20x12 radius=3 fill=accent/0.12 stroke=accent
-text "Design review · critical gate" at 68,482 style=caption
-rect at 280,472 20x12 radius=3 fill=muted/0.15 stroke=muted
-text "Task" at 308,482 style=caption
-rect at 368,472 20x12 radius=3 fill=ink/0.02 stroke=ink/0.10 sw=0.8
-text "Phase" at 396,482 style=caption
+canvas 1080x560
+// time: week 1 starts at x=232, 64px per week, 12 weeks (ends at 1000)
+text "Product launch plan" at 40,52 style=h1
+zone "Discovery" at 40,136 1000x96 title.align=left dash=none stroke=ink/0.1
+zone "Design" at 40,240 1000x136 title.align=left dash=none stroke=ink/0.1
+zone "Launch" at 40,384 1000x96 title.align=left dash=none stroke=ink/0.1
+zone at 296,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 360,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 424,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 488,92 1x388 fill=ink/0.16 stroke=none radius=0
+zone at 552,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 616,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 680,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 744,92 1x388 fill=ink/0.16 stroke=none radius=0
+zone at 808,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 872,124 1x356 fill=ink/0.06 stroke=none radius=0
+zone at 936,124 1x356 fill=ink/0.06 stroke=none radius=0
+text "April" at 360,108 size=9 weight=600 color=ink anchor=middle
+text "May" at 616,108 size=9 weight=600 color=ink anchor=middle
+text "June" at 872,108 size=9 weight=600 color=ink anchor=middle
+text "W1" at 264,120 style=small size=8 color=soft anchor=middle
+text "W2" at 328,120 style=small size=8 color=soft anchor=middle
+text "W3" at 392,120 style=small size=8 color=soft anchor=middle
+text "W4" at 456,120 style=small size=8 color=soft anchor=middle
+text "W5" at 520,120 style=small size=8 color=soft anchor=middle
+text "W6" at 584,120 style=small size=8 color=soft anchor=middle
+text "W7" at 648,120 style=small size=8 color=soft anchor=middle
+text "W8" at 712,120 style=small size=8 color=soft anchor=middle
+text "W9" at 776,120 style=small size=8 color=soft anchor=middle
+text "W10" at 840,120 style=small size=8 color=soft anchor=middle
+text "W11" at 904,120 style=small size=8 color=soft anchor=middle
+text "W12" at 968,120 style=small size=8 color=soft anchor=middle
+232,124 -- 1000,124 stroke=ink/0.2 sw=0.8
+232,92 -- 232,480 stroke=ink/0.2 sw=0.8
+text "Market research" at 56,176 size=10 weight=600 color=ink
+rect at 232,160 128x24 radius=4 fill=muted/0.15 stroke=muted
+text "User interviews" at 56,216 size=10 weight=600 color=ink
+rect at 296,200 128x24 radius=4 fill=muted/0.15 stroke=muted
+text "Wireframes" at 56,280 size=10 weight=600 color=ink
+rect at 424,264 128x24 radius=4 fill=muted/0.15 stroke=muted
+text "Prototype" at 56,320 size=10 weight=600 color=ink
+rect at 488,304 192x24 radius=4 fill=muted/0.15 stroke=muted
+text "Design review" at 56,360 size=10 weight=600 color=accent
+rect at 744,344 64x24 radius=4 fill=accent/0.12 stroke=accent
+text "GATE" at 776,360 style=small color=accent anchor=middle
+text "Development" at 56,424 size=10 weight=600 color=ink
+rect at 616,408 256x24 radius=4 fill=muted/0.15 stroke=muted
+text "Beta testing" at 56,464 size=10 weight=600 color=ink
+rect at 872,448 128x24 radius=4 fill=muted/0.15 stroke=muted
+legend at 40,504 swatch.accent/0.2="Design review: the gate" swatch.muted/0.2="Task" swatch.ink/0.06="Phase"

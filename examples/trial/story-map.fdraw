@@ -1,0 +1,31 @@
+canvas 1040x500
+
+text "Food delivery app: first release and the next" at 40,44 style=h1
+
+// columns x=128,352,576,800 (200 wide, 24 gap); backbone y=80; steps y=160,200; bands y=256 (MVP) and y=336 (Release 2); stories 16px under band top
+zone at 128,336 872x80 radius=0 stroke=none
+a1: store "Find food" sub="ACTIVITY 1" at 128,80 200x64
+node "Pick an area" at 140,160 176x32 title.weight=400
+node "Choose a place" at 140,200 176x32 title.weight=400
+a2: store "Order" sub="ACTIVITY 2" at 352,80 200x64
+node "Choose dishes" at 364,160 176x32 title.weight=400
+node "Review basket" at 364,200 176x32 title.weight=400
+a3: store "Pay" sub="ACTIVITY 3" at 576,80 200x64
+node "Add address" at 588,160 176x32 title.weight=400
+node "Pay" at 588,200 176x32 title.weight=400
+a4: store "Get it" sub="ACTIVITY 4" at 800,80 200x64
+node "Follow progress" at 812,160 176x32 title.weight=400
+node "Receive and rate" at 812,200 176x32 title.weight=400
+text "MVP" at 56,300 style=eyebrow
+text "Release 2" at 56,380 style=eyebrow
+node "Browse places" sub="FD-101 · 3pt" at 140,272 176x48
+node "Build a basket" sub="FD-110 · 5pt" at 364,272 176x48
+focal "Card payment" sub="FD-120 · 8pt" at 588,272 176x48 dash=4,3
+rect "RISK" at 596,266 44x12 radius=2 fill=paper stroke=accent sw=0.8 overlap=ok title.font=mono title.size=8 title.weight=400 title.color=accent
+node "Order status" sub="FD-130 · 3pt" at 812,272 176x48
+node "Search by dish" sub="FD-201 · 5pt" at 140,352 176x48
+node "Reorder a meal" sub="FD-210 · 2pt" at 364,352 176x48
+node "Promo codes" sub="FD-220 · 3pt" at 588,352 176x48
+node "Live courier map" sub="FD-230 · 8pt" at 812,352 176x48
+cut: 128,336 -- 1000,336 "Release cut" style=primary lpos=84,340
+legend at 40,440 store="Activity" node="Step or story" focal="Riskiest story" primary="Release cut"

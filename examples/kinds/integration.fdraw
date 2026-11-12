@@ -1,10 +1,10 @@
 look "../../looks/reference.look"
 canvas 1200x648
 
-text "Generic data platform integration topology" at 40,60 style=h1
+text "Generic data platform integration topology" at 40,52 style=h1
 
 // the platform: one zone in the middle
-plat: zone "Data platform" at 280,136 640x320
+plat: zone "Data platform" at 280,136 640x320 dash=none
 orch:  cloud "Orchestrator" sub="schedules · retries · lineage" tag="DAG" at 296,168 608x56
 store: focal "Object storage" sub="versioned data objects" tag="STORE" at 344,284 160x72
 query: focal "Query engine" sub="federated SQL access" tag="SQL" at 696,284 160x72

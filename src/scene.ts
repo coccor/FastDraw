@@ -221,7 +221,7 @@ function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => v
   const fs = num(p['cell.size'], 10), font = p['cell.font'] ?? 'mono';
   const rowH = num(p['row.h'], 24), pad = num(p['cell.pad'], 12), gap = num(p['cell.gap'], 16);
   const tsize = num(p['title.size'], 12), tlines = sh.text ? sh.text.split('\n') : [];
-  const headH = sh.text ? num(p['head.h'], 32) + (tlines.length - 1) * Math.round(tsize * 1.25) : 0;
+  const headH = sh.text ? num(p['head.h'], 32) + (tlines.length - 1) * Math.ceil((tsize * 1.25) / 4) * 4 : 0; // each extra line adds a multiple of 4, to stay on the grid
   const n = Math.max(0, ...rows.map((r) => r.cells.length));
   const widths: number[] = [];
   // a row with a single cell in a table of several columns runs across the whole width instead of widening column 1
@@ -340,7 +340,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (p.route && !['ortho', 'straight', 'curve'].includes(p.route)) err(st.line, `route=${p.route} is not a route; use ortho, straight or curve`);
       // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
       const styleHead = style.props.head && style.props.head !== 'none' ? style.props.head : 'arrow';
-      const headM = over.head ?? (op === '--' ? 'none' : styleHead);
+      // a style made for plain lines (head=none: a rule, a lifeline) never grows a head, even when written with ->
+      const plain = style.props.head === 'none' && styleName !== 'line';
+      const headM = over.head ?? (op === '--' || plain ? 'none' : styleHead);
       const tailM = over.tail ?? (op === '<->' ? headM : op === '--' ? 'none' : style.props.tail ?? 'none');
       for (const mk of [headM, tailM]) if (!MARKERS.includes(mk)) err(st.line, `"${mk}" is not an end marker; use one of: ${MARKERS.join(', ')}`);
       const ok = (mk: string) => (MARKERS.includes(mk) ? mk : 'arrow');

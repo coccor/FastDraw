@@ -4,7 +4,7 @@ canvas 1000x560
 // stack: x = 136, 824 wide; rows 64 tall at y = 104, 168, 232, 296, 360 (ends 424)
 // in a row: index at x+20, name at x+88, detail right-aligned at x+804; baselines 38px under the row top
 
-text "Where an AI product is built" at 40,56 style=h1
+text "Where an AI product is built" at 40,52 style=h1
 
 // ---- direction, outside the stack -------------------------------------------
 text "Abstraction" at 76,92 style=eyebrow anchor=middle
@@ -22,7 +22,7 @@ text "L5" at 156,140 style=eyebrow
 text "UI surface" at 224,142 size=16 weight=600
 text "chat, editor, canvas" at 940,141 style=small size=10 anchor=end
 
-text "L4" at 156,204 style=eyebrow color=accent weight=600
+text "L4" at 156,204 style=eyebrow color=ink weight=600
 text "Agent harness" at 224,206 size=16 weight=600
 text "tools, memory, loop" at 940,205 style=small size=10 anchor=end color=accent
 

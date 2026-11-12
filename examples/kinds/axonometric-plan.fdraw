@@ -1,145 +1,61 @@
 look "../../looks/reference.look"
-canvas 1000x448
-
-// projection: screen x = 440 + x - y · screen y = 76 + (x + y)/2 - z   (x runs right and down, y left and down, z up)
-// floor plan 360 x 240, slab 6 thick (floor at z=6), walls 22 high, desks 10, counters 14 to 16
-// painted back to front: a box comes after every box that lies behind it
-
-// slab: 0,0 to 360,240, z 0 to 6
-polygon at 200,70 points=240,0;600,180;600,186;360,306;0,126;0,120 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 200,190 points=0,0;360,180;360,186;0,6 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 560,250 points=0,120;240,0;240,6;0,126 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 200,190 points=0,0;360,180;360,186;360,180;600,60 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// the focal room: a flat tint on its floor
-polygon at 560,183 points=94,0;228,67;134,114;0,47 fill=accent/0.12 stroke=none overlap=ok mask=0
-
-// wall: 0,0 to 360,6, z 6 to 28
-polygon at 434,48 points=6,0;366,180;366,202;360,205;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 434,51 points=0,0;360,180;360,202;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 794,228 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 434,51 points=0,0;360,180;360,202;360,180;366,177 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 0,6 to 6,240, z 6 to 28
-polygon at 200,51 points=234,0;240,3;240,25;6,142;0,139;0,117 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 200,168 points=0,0;6,3;6,25;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 206,54 points=0,117;234,0;234,22;0,139 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 200,54 points=0,114;6,117;6,139;6,117;240,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// desk: 24,28 to 68,52, z 6 to 16
-polygon at 412,86 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 412,98 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 456,108 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 412,98 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// desk: 24,84 to 68,108, z 6 to 16
-polygon at 356,114 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 356,126 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 400,136 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 356,126 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// desk: 84,28 to 128,52, z 6 to 16
-polygon at 472,116 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 472,128 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 516,138 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 472,128 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 6,140 to 60,146, z 6 to 28
-polygon at 300,121 points=6,0;60,27;60,49;54,52;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 300,124 points=0,0;54,27;54,49;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 354,148 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 300,124 points=0,0;54,27;54,49;54,27;60,24 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// desk: 84,84 to 128,108, z 6 to 16
-polygon at 416,144 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 416,156 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 460,166 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 416,156 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// desk: 144,28 to 188,52, z 6 to 16
-polygon at 532,146 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 532,158 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 576,168 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 532,158 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// reception: 28,168 to 92,184, z 6 to 20
-polygon at 284,154 points=16,0;80,32;80,46;64,54;0,22;0,8 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 284,162 points=0,0;64,32;64,46;0,14 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 348,186 points=0,8;16,0;16,14;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 284,162 points=0,0;64,32;64,46;64,32;80,24 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 214,6 to 220,50, z 6 to 28
-polygon at 604,158 points=44,0;50,3;50,25;6,47;0,44;0,22 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 604,180 points=0,0;6,3;6,25;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 610,161 points=0,22;44,0;44,22;0,44 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 604,161 points=0,19;6,22;6,44;6,22;50,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// desk: 144,84 to 188,108, z 6 to 16
-polygon at 476,174 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 476,186 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 520,196 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 476,186 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 92,140 to 180,146, z 6 to 28
-polygon at 386,164 points=6,0;94,44;94,66;88,69;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 386,167 points=0,0;88,44;88,66;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 474,208 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 386,167 points=0,0;88,44;88,66;88,44;94,41 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 6,234 to 40,240, z 6 to 28
-polygon at 206,168 points=6,0;40,17;40,39;34,42;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 206,171 points=0,0;34,17;34,39;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 240,185 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 206,171 points=0,0;34,17;34,39;34,17;40,14 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// meeting table: 246,30 to 330,70, z 6 to 16
-polygon at 616,198 points=40,0;124,42;124,52;84,72;0,30;0,20 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 616,218 points=0,0;84,42;84,52;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 700,240 points=0,20;40,0;40,10;0,30 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 616,218 points=0,0;84,42;84,52;84,42;124,22 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 164,146 to 170,234, z 6 to 28
-polygon at 370,203 points=88,0;94,3;94,25;6,69;0,66;0,44 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 370,247 points=0,0;6,3;6,25;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 376,206 points=0,44;88,0;88,22;0,66 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 370,206 points=0,41;6,44;6,66;6,44;94,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 204,140 to 214,146, z 6 to 28
-polygon at 498,220 points=6,0;16,5;16,27;10,30;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 498,223 points=0,0;10,5;10,27;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 508,225 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 498,223 points=0,0;10,5;10,27;10,5;16,2 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 214,78 to 220,160, z 6 to 28
-polygon at 494,194 points=82,0;88,3;88,25;6,66;0,63;0,41 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 494,235 points=0,0;6,3;6,25;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 500,197 points=0,41;82,0;82,22;0,63 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 494,197 points=0,38;6,41;6,63;6,41;88,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 220,100 to 290,106, z 6 to 28
-polygon at 554,208 points=6,0;76,35;76,57;70,60;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 554,211 points=0,0;70,35;70,57;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 624,243 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 554,211 points=0,0;70,35;70,57;70,35;76,32 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// kitchen island: 250,150 to 298,190, z 6 to 20
-polygon at 500,256 points=40,0;88,24;88,38;48,58;0,34;0,20 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 500,276 points=0,0;48,24;48,38;0,14 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 548,280 points=0,20;40,0;40,14;0,34 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 500,276 points=0,0;48,24;48,38;48,24;88,4 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 214,188 to 220,234, z 6 to 28
-polygon at 420,249 points=46,0;52,3;52,25;6,48;0,45;0,23 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 420,272 points=0,0;6,3;6,25;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 426,252 points=0,23;46,0;46,22;0,45 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 420,252 points=0,20;6,23;6,45;6,23;52,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 318,100 to 354,106, z 6 to 28
-polygon at 652,257 points=6,0;42,18;42,40;36,43;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 652,260 points=0,0;36,18;36,40;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 688,275 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 652,260 points=0,0;36,18;36,40;36,18;42,15 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// lockers: 330,112 to 348,228, z 6 to 22
-polygon at 542,275 points=116,0;134,9;134,25;18,83;0,74;0,58 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 542,333 points=0,0;18,9;18,25;0,16 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 560,284 points=0,58;116,0;116,16;0,74 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 542,284 points=0,49;18,58;18,74;18,58;134,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 354,6 to 360,234, z 6 to 28
-polygon at 560,228 points=228,0;234,3;234,25;6,139;0,136;0,114 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 560,342 points=0,0;6,3;6,25;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 566,231 points=0,114;228,0;228,22;0,136 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 560,231 points=0,111;6,114;6,136;6,114;234,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-// wall: 76,234 to 360,240, z 6 to 28
-polygon at 276,203 points=6,0;290,142;290,164;284,167;0,25;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
-polygon at 276,206 points=0,0;284,142;284,164;0,22 fill=ink/0.07 stroke=none overlap=ok mask=0
-polygon at 560,345 points=0,3;6,0;6,22;0,25 fill=ink/0.15 stroke=none overlap=ok mask=0
-polygon at 276,206 points=0,0;284,142;284,164;284,142;290,139 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
-
+canvas 1000x468
+// projection: sx = 450 + x - y ; sy = 142 + (x + y)/2 - z · plan 300x200, slab z 0..6, back walls 40, partitions 32
+title: text "A studio flat, room by room" at 40,52 style=h1
+// slab
+polygon at 250,136 points=200,0;500,150;500,156;300,256;0,106;0,100 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 250,236 points=0,0;300,150;300,156;0,6 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 550,286 points=0,100;200,0;200,6;0,106 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 250,236 points=0,0;300,150;300,156;300,150;500,50 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// floor tints: adjacent rooms share the partition centre line x=143
+polygon at 250,136 points=200,0;343,71.5;143,171.5;0,100 fill=ink/0.04 stroke=none overlap=ok mask=0
+polygon at 393,207.5 points=200,0;357,78.5;157,178.5;0,100 fill=accent/0.12 stroke=none overlap=ok mask=0
+// back wall: 0,0 to 300,6, z 6 to 46
+polygon at 444,96 points=6,0;306,150;306,190;300,193;0,43;0,3 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 444,99 points=0,0;300,150;300,190;0,40 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 744,246 points=0,3;6,0;6,40;0,43 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 444,99 points=0,0;300,150;300,190;300,150;306,147 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// left wall: 0,6 to 6,200, z 6 to 46
+polygon at 250,99 points=194,0;200,3;200,43;6,140;0,137;0,97 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 250,196 points=0,0;6,3;6,43;0,40 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 256,102 points=0,97;194,0;194,40;0,137 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 250,102 points=0,94;6,97;6,137;6,97;200,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// partition: 140,120 to 146,200, z 6 to 38
+polygon at 390,234 points=80,0;86,3;86,35;6,75;0,72;0,40 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 390,274 points=0,0;6,3;6,35;0,32 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 396,237 points=0,40;80,0;80,32;0,72 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 390,237 points=0,37;6,40;6,72;6,40;86,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// bed: 14,14 to 74,94, z 6 to 18
+polygon at 370,138 points=80,0;140,30;140,42;60,82;0,52;0,40 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 370,178 points=0,0;60,30;60,42;0,12 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 430,168 points=0,40;80,0;80,12;0,52 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 370,168 points=0,10;60,40;60,52;60,40;140,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// wardrobe: 92,8 to 132,28, z 6 to 30
+polygon at 514,162 points=20,0;60,20;60,44;40,54;0,34;0,10 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 514,172 points=0,0;40,20;40,44;0,24 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 554,182 points=0,10;20,0;20,24;0,34 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 514,172 points=0,0;40,20;40,44;40,20;60,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// partition: 140,6 to 146,80, z 6 to 38
+polygon at 510,177 points=74,0;80,3;80,35;6,72;0,69;0,37 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 510,214 points=0,0;6,3;6,35;0,32 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 516,180 points=0,37;74,0;74,32;0,69 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 510,180 points=0,34;6,37;6,69;6,37;80,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// counter: 190,6 to 290,26, z 6 to 22
+polygon at 614,218 points=20,0;120,50;120,66;100,76;0,26;0,10 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 614,228 points=0,0;100,50;100,66;0,16 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 714,268 points=0,10;20,0;20,16;0,26 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 614,228 points=0,0;100,50;100,66;100,50;120,40 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// sofa: 150,40 to 170,100, z 6 to 20
+polygon at 500,217 points=60,0;80,10;80,24;20,54;0,44;0,30 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 500,247 points=0,0;20,10;20,24;0,14 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 520,227 points=0,30;60,0;60,14;0,44 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 500,227 points=0,20;20,30;20,44;20,30;80,0 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
+// table: 200,110 to 240,140, z 6 to 18
+polygon at 510,279 points=30,0;70,20;70,32;40,47;0,27;0,15 fill=#ffffff stroke=ink sw=1 overlap=ok
+polygon at 510,294 points=0,0;40,20;40,32;0,12 fill=ink/0.07 stroke=none overlap=ok mask=0
+polygon at 550,299 points=0,15;30,0;30,12;0,27 fill=ink/0.15 stroke=none overlap=ok mask=0
+polygon at 510,294 points=0,0;40,20;40,32;40,20;70,5 open=1 stroke=ink/0.55 sw=0.8 overlap=ok
 // tags, after every box
-rect "Open office" sub="24 desks" at 380,172 96x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=ink/0.12
-rect "Meeting room" sub="12 seats" at 588,240 104x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=accent title.color=accent sub.color=accent
-rect "Kitchen" sub="café, lockers" at 456,300 92x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=ink/0.12
-rect "Lobby" sub="reception" at 288,208 68x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=ink/0.12
-rect "Booth" sub="1 person" at 396,252 64x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=ink/0.12
-
-text "Focal room" at 200,420 style=eyebrow
-text "Walls cut at desk height so every room reads from one view; the meeting room is the one under discussion." at 320,420 style=caption italic=1
+rect "Bedroom" sub="sleeping" at 312,220 96x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=ink/0.12
+rect "Living" sub="kitchen corner" at 580,284 96x32 radius=2 fill=#ffffff sw=0.8 title.size=12 sub.size=8 overlap=ok stroke=accent title.color=accent sub.color=accent
+text "Studio flat: sleeping room, living room with a kitchen corner." at 40,440 style=caption

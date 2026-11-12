@@ -62,8 +62,8 @@ style primary extends arrow stroke=accent sw=2 label.color=accent use="the main 
 style link extends arrow stroke=link label.color=link use="a request crossing a boundary"
 style return extends arrow stroke=muted dash=5,4 use="a response, or something optional or asynchronous"
 style relation extends relation label.font=sans label.size=10 label.caps=0 label.spacing=0 label.color=muted
-style lifeline line stroke=soft sw=1 dash=2,4 route=straight use="sequence diagram lifeline"
-style rule line stroke=ink/0.15 sw=1 route=straight use="thin separator"
+style lifeline line head=none stroke=soft sw=1 dash=2,4 route=straight use="sequence diagram lifeline"
+style rule line head=none stroke=ink/0.15 sw=1 route=straight use="thin separator"
 
 // ---- text -----------------------------------------------------------------
 style h1 text font=sans size=22 weight=600 color=ink use="diagram title"

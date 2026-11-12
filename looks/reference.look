@@ -53,8 +53,8 @@ style arrow line stroke=muted sw=1.2 route=ortho radius=8 label.font=mono label.
 style primary extends arrow stroke=accent sw=1.4 use="the main path; at most two per diagram"
 style link extends arrow stroke=link use="an HTTP or API request crossing a boundary"
 style return extends arrow dash=5,4 use="a response, or something optional or asynchronous"
-style lifeline line stroke=ink/0.22 sw=1 dash=3,3 route=straight use="sequence diagram lifeline"
-style rule line stroke=ink/0.10 sw=0.8 route=straight use="thin separator, e.g. above a legend"
+style lifeline line head=none stroke=ink/0.22 sw=1 dash=3,3 route=straight use="sequence diagram lifeline"
+style rule line head=none stroke=ink/0.10 sw=0.8 route=straight use="thin separator, e.g. above a legend"
 
 // ---- text -----------------------------------------------------------------
 style h1 text font=serif size=28 color=ink use="diagram title"

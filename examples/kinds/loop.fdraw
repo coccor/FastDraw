@@ -1,23 +1,25 @@
 look "../../looks/reference.look"
-canvas 1040x680
+canvas 1040x712
 
-// ring: centre 520,340 · radius 240 · six stations 60 degrees apart, the first at the top
-capture:  node "Capture" sub="signals in / intake" at 440,68 160x64
-research: node "Research" sub="evidence pulled" at 648,188 160x64
-decide:   focal "Decide" sub="human approves" at 648,428 160x64
-act:      node "Act" sub="work ships" at 440,548 160x64
-measure:  node "Measure" sub="outcomes logged" at 232,428 160x64
-learn:    node "Learn" sub="playbook updated" at 232,188 160x64
+title: text "Every release teaches the next one" at 40,52 style=h1
 
-hub: rect "Shared memory" sub="one record, every loop" at 420,288 200x104 radius=8 fill=ink stroke=ink title.color=paper sub.color=paper/0.7
+// ring: centre 520,372 · radius 240 · six stations 60 degrees apart, the first at the top
+capture:  node "Capture" sub="signals in / intake" at 440,100 160x64
+research: node "Research" sub="evidence pulled" at 648,220 160x64
+decide:   focal "Decide" sub="human approves" at 648,460 160x64
+act:      node "Act" sub="work ships" at 440,580 160x64
+measure:  node "Measure" sub="outcomes logged" at 232,460 160x64
+learn:    node "Learn" sub="playbook updated" at 232,220 160x64
+
+hub: rect "Shared memory" sub="one record, every loop" at 420,320 200x104 radius=8 fill=ink stroke=ink title.color=paper sub.color=paper/0.7
 
 // clockwise ring
-capture.right@114 -> research.top@705 route=curve bend=9
+capture.right@146 -> research.top@705 route=curve bend=9
 research.bottom@743 -> decide.top@743 route=curve bend=16
-decide.bottom@705 -> act.right@566 route=curve bend=9
-act.left@566 -> measure.bottom@335 route=curve bend=9
+decide.bottom@705 -> act.right@598 route=curve bend=9
+act.left@598 -> measure.bottom@335 route=curve bend=9
 measure.top@297 -> learn.bottom@297 route=curve bend=16
-learn.top@335 -> capture.left@114 route=curve bend=9
+learn.top@335 -> capture.left@146 route=curve bend=9
 
 // write-backs
 capture.bottom -> hub.top "signals" style=return stroke=soft

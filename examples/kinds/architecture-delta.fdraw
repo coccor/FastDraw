@@ -1,7 +1,7 @@
 look "../../looks/reference.look"
 canvas 1044x728
 
-text "Order fulfilment, before and after" at 40,60 style=h1
+text "Order fulfilment, before and after" at 40,52 style=h1
 
 // three panels: Before from x=40, the ledger from x=320, After from x=732
 text "Before" at 40,104 size=14 weight=600

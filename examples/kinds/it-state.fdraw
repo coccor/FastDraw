@@ -1,12 +1,12 @@
 look "../../looks/reference.look"
 canvas 1040x592
 
-text "Legacy retail reporting landscape" at 40,60 style=h1
+text "Legacy retail reporting landscape" at 40,52 style=h1
 text "File exports, desktop spreadsheets and manual publication, before a shared data platform." at 40,88
 
 // one zone per phase, 104px apart; rows at y=176, 288, 400
-collect: zone "Collection" at 40,136 240x352
-process: zone "Processing" at 384,136 272x352
+collect: zone "Collection" at 40,136 240x352 dash=none
+process: zone "Processing" at 384,136 272x352 dash=none
 dissem:  zone "Dissemination" at 760,136 240x352
 
 pos:      node "Point-of-Sale Exports" sub="nightly · CSV" at 56,176 208x64

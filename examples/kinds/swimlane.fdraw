@@ -1,39 +1,39 @@
 look "../../looks/reference.look"
-canvas 1000x528
+canvas 1000x670
 
-// lanes: 80px tall, y = 96, 176, 256, 336 (ends 416); label column x = 40..160; steps from x = 184
-// steps 48px tall, 16px inside the lane top
+// lanes: 112px tall, y = 96, 208, 320, 432 (ends 544); label column x = 40..160; steps from x = 184
+// steps 48px tall, 32px inside the lane top
 
-text "Publishing an article" at 40,64 style=h1
+text "Publishing an article" at 40,52 style=h1
 
 // ---- lanes -----------------------------------------------------------------
 40,96 -- 960,96 stroke=ink/0.22
-40,176 -- 960,176 style=rule
-40,256 -- 960,256 style=rule
-40,336 -- 960,336 style=rule
-40,416 -- 960,416 stroke=ink/0.22
-160,96 -- 160,416 stroke=ink/0.22
+40,208 -- 960,208 style=rule
+40,320 -- 960,320 style=rule
+40,432 -- 960,432 style=rule
+40,544 -- 960,544 stroke=ink/0.22
+160,96 -- 160,544 stroke=ink/0.22
 
-text "Author" at 60,140 style=eyebrow size=9
-text "Reviewer" at 60,220 style=eyebrow size=9
-text "Editor" at 60,300 style=eyebrow size=9
-text "CI / CD" at 60,380 style=eyebrow size=9
+text "Author" at 60,156 style=eyebrow size=9
+text "Reviewer" at 60,268 style=eyebrow size=9
+text "Editor" at 60,380 style=eyebrow size=9
+text "CI / CD" at 60,492 style=eyebrow size=9
 
 // ---- steps -----------------------------------------------------------------
-draft:   node "Draft MDX" sub="src/content/…" at 184,112 120x48
-pr:      node "Open PR" sub="gh pr create" at 344,112 120x48
-review:  node "Review content" sub="fact-check · voice" at 504,192 136x48
-polish:  node "Polish copy" sub="style · line edits" at 504,272 136x48
-approve: node "Approve merge" sub="squash · main" at 680,272 136x48
-build:   node "Build" sub="astro build" at 708,352 80x48
-deploy:  focal "Deploy" sub="cloudflare pages" at 828,352 120x48
+draft:   node "Draft MDX" sub="src/content/…" at 184,128 120x48
+pr:      node "Open PR" sub="gh pr create" at 344,128 120x48
+review:  node "Review content" sub="fact-check · voice" at 504,240 136x48
+polish:  node "Polish copy" sub="style · line edits" at 504,352 136x48
+approve: node "Approve merge" sub="squash · main" at 680,352 136x48
+build:   node "Build" sub="astro build" at 708,464 80x48
+deploy:  focal "Deploy" sub="cloudflare pages" at 828,464 120x48
 
 // ---- flow ------------------------------------------------------------------
 draft -> pr
 pr.right -> review.top "handoff"
-review -> polish "revise" style=return lpos=604,251
+review -> polish "revise" style=return lpos=600,314
 polish -> approve
-approve -> build "deploy trigger" style=primary lpos=800,331
+approve -> build "deploy trigger" style=primary lpos=820,426
 build -> deploy
 
-legend at 40,448 node="Step" focal="Outcome" arrow="Next step" return="Revision loop" primary="Critical handoff"
+legend at 40,576 node="Step" focal="Outcome" arrow="Next step" return="Revision loop" primary="Critical handoff"

@@ -1,15 +1,17 @@
 look "../../looks/reference.look"
-canvas 1000x500
+canvas 1000x540
 
-// plot 96,56 to 960,372. The series the chart is about is written last, so it is drawn on top
-sig: chart at 96,56 864x316 x="W1,W2,W3,W4,W5,W6,W7,W8" y=0..240 step=40 key=0 ytitle="Signups per week"
+title: text "Organic signups grew 75% in eight weeks" at 40,52 style=h1
+
+// plot 96,96 to 960,412. The series the chart is about is written last, so it is drawn on top
+sig: chart at 96,96 864x316 x="W1,W2,W3,W4,W5,W6,W7,W8" y=0..240 step=40 key=0 ytitle="Signups per week"
   | line "Referral" 45 52 48 60 55 68 62 75 stroke=soft sw=1.5
   | line "Direct" 80 82 88 90 86 92 95 98 stroke=muted sw=1.5
   | area "Organic" 120 135 148 162 155 178 195 210 stroke=accent fill=accent/0.08 dots=1
 
-// each line is named above its right end, so the reader never has to match colours with the legend
-text "Organic · 210" at 912,80 size=11 weight=600 color=accent anchor=end
-text "Direct" at 912,232 size=10 color=muted anchor=end
-text "Referral" at 912,262 size=10 color=soft anchor=end
+// each line is named above its right end (x = 96 + 864 * 7.5 / 8 = 906), so the reader never has to match colours with the legend
+text "Organic · 210" at 906,125 size=11 weight=600 color=accent anchor=end
+text "Direct" at 906,273 size=10 color=muted anchor=end
+text "Referral" at 906,303 size=10 color=soft anchor=end
 
-legend at 40,420 line.accent="Organic · up 75% in eight weeks" line.muted="Direct" line.soft="Referral"
+legend at 40,464 line.accent="Organic · up 75% in eight weeks" line.muted="Direct" line.soft="Referral"

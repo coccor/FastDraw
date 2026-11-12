@@ -238,7 +238,7 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 - Each `style="what it means"` pair is an entry, in the order written. Use only the styles the diagram uses.
 - It spans the canvas width minus the left margin on both sides; give `WxH` to set another width (the height is always worked out).
 - `title="Key"` changes the heading; `title=none` removes it.
-- For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look, optionally with a tint (`swatch.muted/0.2="Flow"`): `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
+- For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look or a hex colour, optionally with a tint (`swatch.muted/0.2="Flow"`, `swatch.#4a7c59="Stream"`): `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
 - Put it 24px under the lowest element and leave about 70px of canvas for it.
 
 ### Groups
@@ -248,6 +248,14 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 ### Drawing order
 
 Shapes whose style is marked "drawn behind everything" (zones) come first, then all connectors, then connector labels, then shapes, then free text. Within each group, file order.
+
+### Title
+
+A diagram that has a title puts it first: `title: text "What this shows" at 40,52 style=h1`, with an optional one-line `caption` at 40,74. Everything else then starts at y=96 or lower. When a kind's guide gives positions that start nearer the top, they are for a diagram with no title: add 56 to every y to make room for one.
+
+### Plain lines
+
+A separator, an axis without a head, a grid line: write these with `--` between two points (`40,380 -- 960,380 style=rule`). `->` is for arrows.
 
 ## Composition rules
 

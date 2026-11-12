@@ -1,0 +1,58 @@
+canvas 1000x560
+
+text "What an online bookshop depends on" at 40,52 style=h1
+
+128,100 -- 128,420 stroke=ink/0.2 sw=1
+128,420 -- 928,420 stroke=ink/0.2 sw=1
+328,100 -- 328,420 style=rule dash=4,4
+528,100 -- 528,420 style=rule dash=4,4
+728,100 -- 728,420 style=rule dash=4,4
+
+text "Genesis" at 228,438 style=eyebrow anchor=middle
+text "Custom-built" at 428,438 style=eyebrow anchor=middle
+text "Product" at 628,438 style=eyebrow anchor=middle
+text "Commodity" at 828,438 style=eyebrow anchor=middle
+
+text "Visible to" at 116,108 style=eyebrow anchor=end color=ink
+text "the user" at 116,120 style=eyebrow anchor=end color=ink
+text "Invisible" at 116,420 style=eyebrow anchor=end color=ink
+
+// links
+628,120 -- 440,156 sw=0.8
+440,156 -- 240,192 sw=0.8
+440,156 -- 620,228 sw=0.8
+440,156 -- 580,264 sw=0.8
+440,156 -- 430,300 sw=0.8
+580,264 -- 830,336 sw=0.8
+430,300 -- 830,336 sw=0.8
+830,336 -- 860,372 sw=0.8
+
+need:   ellipse at 622,114 12x12 fill=paper stroke=ink
+shop:   ellipse at 434,150 12x12 fill=paper stroke=ink
+rec:    ellipse at 234,186 12x12 fill=paper stroke=accent sw=1.5
+search: ellipse at 614,222 12x12 fill=paper stroke=ink
+pay:    ellipse at 574,258 12x12 fill=paper stroke=ink
+fulfil: ellipse at 424,294 12x12 fill=paper stroke=ink
+cloud:  ellipse at 824,330 12x12 fill=paper stroke=ink
+power:  ellipse at 854,366 12x12 fill=paper stroke=ink
+
+text "Buy a book" at 644,124 weight=600
+text "Web storefront" at 428,150 weight=600 anchor=end
+text "Personal recommendations" at 240,174 weight=600 anchor=middle
+text "Catalogue search" at 636,232 weight=600
+text "Card payments" at 568,284 weight=600 anchor=end
+text "Order fulfilment" at 412,304 weight=600 anchor=end
+text "Cloud hosting" at 846,330 weight=600
+text "Electricity" at 876,376 weight=600
+
+246,192 -> 322,192 style=primary dash=5,4
+
+rule1: 128,466 -- 928,466 style=rule
+text "Legend" at 128,486 style=eyebrow
+leg1: ellipse at 128,498 12x12 fill=paper stroke=ink
+text "Component" at 148,508 style=caption
+342,504 -- 370,504 sw=0.8
+text "Needs" at 378,508 style=caption
+leg2: ellipse at 480,498 12x12 fill=paper stroke=accent sw=1.5
+486,504 -> 530,504 style=primary dash=5,4
+text "Moving towards a product" at 538,508 style=caption

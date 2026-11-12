@@ -1,5 +1,6 @@
 // Geometry and reference checks. Messages are written for an agent to act on.
-import type { Issue } from './look.ts';
+import type { Issue, Look } from './look.ts';
+import { color } from './look.ts';
 import { textWidth } from './scene.ts';
 import { segHits } from './router.ts';
 import { iconBox } from './render.ts';
@@ -15,6 +16,23 @@ const inset = (b: Box, n: number): Box => ({ x: b.x + n, y: b.y + n, w: b.w - 2 
 const name = (c: Conn) => (c.id.startsWith('_') ? `${c.a.raw} ${c.head ? '->' : '--'} ${c.b.raw}` : c.id);
 const tiny = (s: Box) => Math.min(s.w, s.h) <= 12;
 
+// ---- can the text be read against what it sits on? --------------------------
+type RGB = [number, number, number];
+function rgba(look: Look, v: string | undefined): [number, number, number, number] | null {
+  const c = color(look, v);
+  let m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (m) { const h = m[1].length === 3 ? m[1].split('').map((x) => x + x).join('') : m[1]; return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 1]; }
+  m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(c);
+  return m ? [+m[1], +m[2], +m[3], Math.min(1, +m[4])] : null;
+}
+const over = (top: [number, number, number, number] | null, under: RGB): RGB => (top ? [0, 1, 2].map((i) => top[i] * top[3] + under[i] * (1 - top[3])) as RGB : under);
+function contrast(a: RGB, b: RGB): number {
+  const lum = (c: RGB) => { const [r, g, bl] = c.map((v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+  const la = lum(a), lb = lum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+const FAINT = 1.8; // below this, text is close to invisible; ordinary body text is 4.5 and up
+
 export function check(sc: Scene): Issue[] {
   const out: Issue[] = [...sc.issues];
   const warn = (line: number, msg: string) => out.push({ line, level: 'warn', msg });
@@ -28,6 +46,28 @@ export function check(sc: Scene): Issue[] {
     warn(b.line, `${b.id} overlaps ${a.id} by ${Math.round(Math.min(ox, oy))}px; move one of them`);
   }
 
+  const paperRgb = over(rgba(sc.look, sc.look.canvas.paper ?? 'paper'), [255, 255, 255]);
+  const fillOf = (s: Shape): RGB | null => (s.p.fill && s.p.fill !== 'none' && rgba(sc.look, s.p.fill) ? over(rgba(sc.look, s.p.fill), paperRgb) : null);
+  for (const s of front) {
+    if (s.rows || s.shape === 'legend' || s.shape === 'chart' || s.p['title.pos'] === 'top') continue;
+    // a box with no fill of its own shows whatever filled shape lies under its middle
+    const cxs = s.x + s.w / 2, cys = s.y + s.h / 2, at = sc.shapes.indexOf(s);
+    const below = fillOf(s) ? undefined : sc.shapes.slice(0, at).reverse().find((o) => !o.back && !o.rows && fillOf(o) && cxs >= o.x && cxs <= o.x + o.w && cys >= o.y && cys <= o.y + o.h);
+    const bg = fillOf(s) ?? (below ? fillOf(below)! : paperRgb);
+    for (const [what, has, key, dflt] of [['text', s.text, 'title.color', 'ink'], ['second line', s.p.sub, 'sub.color', 'muted']] as const) {
+      const fg = rgba(sc.look, s.p[key] ?? dflt);
+      if (has && fg && fg[3] > 0.3 && contrast(over(fg, bg), bg) < FAINT) warn(s.line, `the ${what} of ${s.id} is almost the same colour as its background and cannot be read; set ${key}= to a colour that stands out (on a dark or accent fill, #ffffff)`);
+    }
+  }
+  for (const t of sc.texts) {
+    // the last-drawn filled shape under the middle of the text is what the text sits on
+    const mx = t.x + t.w / 2, my = t.y + t.h / 2;
+    const under = [...sc.shapes].reverse().find((s) => !s.rows && s.shape !== 'legend' && s.shape !== 'chart' && fillOf(s) && mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h);
+    const fg = rgba(sc.look, t.p.color ?? 'ink');
+    if (!fg || fg[3] <= 0.3) continue; // a watermark is meant to be faint
+    const bg = under ? fillOf(under)! : paperRgb;
+    if (contrast(over(fg, bg), bg) < FAINT) warn(t.line, `text ${t.id} is almost the same colour as ${under ? under.id : 'the paper'} behind it and cannot be read; change its color=`);
+  }
   for (const s of front) {
     if (tiny(s)) continue;
     const off = s.shape !== 'polygon' && [s.x, s.y, s.w, s.h].some((v) => v % 4 !== 0);
@@ -137,6 +177,8 @@ export function check(sc: Scene): Issue[] {
   }
   for (const s of sc.shapes) if (s.x < 0 || s.y < 0 || s.x + s.w > sc.w || s.y + s.h > sc.h) warn(s.line, `${s.id} is outside the canvas (${sc.w}x${sc.h})`);
 
+  // an element with no id of its own is named by its line, not by the id made up for it
+  for (const i of out) i.msg = i.msg.replace(/(^|[\s("])_[stc](\d+)\b/g, '$1the unnamed element on line $2');
   const rank = { error: 0, warn: 1, hint: 2 };
   return out.sort((a, b) => rank[a.level] - rank[b.level] || a.line - b.line);
 }

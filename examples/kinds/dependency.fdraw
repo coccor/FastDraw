@@ -17,18 +17,18 @@ db:     node "db" sub="services/db" tag="SVC" at 180,384 160x64
 shared: focal "shared-types" sub="packages/shared-types" tag="PKG" at 420,384 160x64
 zod:    cloud "zod" sub="v3.23 · npm" tag="EXT" at 180,528 160x64
 utils:  node "utils" sub="packages/utils" tag="PKG" at 420,528 160x64
-tokens: store "tokens" sub="packages/tokens" tag="PKG" at 660,528 160x64
+tokens: node "tokens" sub="packages/tokens" tag="PKG" at 660,528 160x64
 
 // how many boxes depend on each one
-rect "0 in" at 304,104 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "0 in" at 784,104 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "2 in" at 304,248 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "2 in" at 784,248 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "1 in" at 304,392 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "4 in" at 544,392 28x12 radius=2 fill=none stroke=accent/0.5 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=accent
-rect "1 in" at 304,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "1 in" at 544,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-rect "1 in" at 784,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "0 in" at 304,104 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "0 in" at 784,104 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "2 in" at 304,248 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "2 in" at 784,248 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "1 in" at 304,392 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "4 in" at 544,392 28x12 radius=2 fill=none stroke=accent/0.5 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=accent overlap=ok
+rect "1 in" at 304,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "1 in" at 544,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "1 in" at 784,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
 
 // rank 0 to rank 1: the two straight ones, then the two that cross (bends at different heights)
 web.bottom@260 -> api.top@260
@@ -48,4 +48,4 @@ shared.bottom@460 -> zod.top@260 via=460,488;260,488
 shared.bottom@500 -> utils.top@500
 utils.top@540 -> shared.bottom@540 "cycle" style=primary
 
-legend at 40,616 node="Our package or service" focal="Most depended on" cloud="Third party" store="Depends on nothing" arrow="Depends on" primary="Closes a cycle"
+legend at 40,616 node="Our package or service" focal="Most depended on" cloud="Third party" arrow="Depends on" primary="Closes a cycle"

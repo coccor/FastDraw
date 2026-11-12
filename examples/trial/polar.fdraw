@@ -1,0 +1,73 @@
+canvas 1000x520
+text "Household energy use" at 40,48 size=12 weight=600
+text "KWH PER TWO-HOUR WINDOW, ONE DAY" at 40,64 style=eyebrow
+ellipse at 468,200 64x64 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 436,168 128x128 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 404,136 192x192 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 372,104 256x256 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 340,72 320x320 fill=none stroke=ink/0.25 sw=1 overlap=ok mask=0
+500,232 -- 500,72 stroke=ink/0.14 sw=1
+500,232 -- 500,206 stroke=muted sw=1.5
+500,232 -- 580,93 stroke=ink/0.14 sw=1
+500,232 -- 510,215 stroke=muted sw=1.5
+500,232 -- 639,152 stroke=ink/0.14 sw=1
+500,232 -- 528,216 stroke=muted sw=1.5
+500,232 -- 660,232 stroke=ink/0.14 sw=1
+500,232 -- 570,232 stroke=muted sw=1.5
+500,232 -- 639,312 stroke=ink/0.14 sw=1
+500,232 -- 555,264 stroke=muted sw=1.5
+500,232 -- 580,371 stroke=ink/0.14 sw=1
+500,232 -- 526,276 stroke=muted sw=1.5
+500,232 -- 500,392 stroke=ink/0.14 sw=1
+500,232 -- 500,290 stroke=muted sw=1.5
+500,232 -- 420,371 stroke=ink/0.14 sw=1
+500,232 -- 462,299 stroke=muted sw=1.5
+500,232 -- 361,312 stroke=ink/0.14 sw=1
+500,232 -- 417,280 stroke=muted sw=1.5
+500,232 -- 340,232 stroke=ink/0.14 sw=1
+500,232 -- 346,232 stroke=accent sw=2
+500,232 -- 361,152 stroke=ink/0.14 sw=1
+500,232 -- 400,174 stroke=muted sw=1.5
+500,232 -- 420,93 stroke=ink/0.14 sw=1
+500,232 -- 471,182 stroke=muted sw=1.5
+ellipse at 496,202 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 506,211 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 524,212 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 566,228 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 551,260 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 522,272 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 496,286 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 458,295 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 413,276 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 341,227 10x10 fill=paper stroke=accent sw=2 overlap=ok
+ellipse at 396,170 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+ellipse at 467,178 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "00–02" at 500,52 anchor=middle size=11 weight=600 color=ink
+text "0.4" at 500,65 anchor=middle style=small color=muted
+text "02–04" at 590,80  size=11 weight=600 color=ink
+text "0.3" at 590,93  style=small color=muted
+text "04–06" at 656,146  size=11 weight=600 color=ink
+text "0.5" at 656,159  style=small color=muted
+text "06–08" at 680,236  size=11 weight=600 color=ink
+text "1.1" at 680,249  style=small color=muted
+text "08–10" at 656,326  size=11 weight=600 color=ink
+text "1.0" at 656,339  style=small color=muted
+text "10–12" at 590,392  size=11 weight=600 color=ink
+text "0.8" at 590,405  style=small color=muted
+text "12–14" at 500,416 anchor=middle size=11 weight=600 color=ink
+text "0.9" at 500,429 anchor=middle style=small color=muted
+text "14–16" at 410,392 anchor=end size=11 weight=600 color=ink
+text "1.2" at 410,405 anchor=end style=small color=muted
+text "16–18" at 344,326 anchor=end size=11 weight=600 color=ink
+text "1.5" at 344,339 anchor=end style=small color=muted
+text "18–20" at 320,236 anchor=end size=11 weight=600 color=accent
+text "2.4" at 320,249 anchor=end style=small color=accent
+text "20–22" at 344,146 anchor=end size=11 weight=600 color=ink
+text "1.8" at 344,159 anchor=end style=small color=muted
+text "22–24" at 410,80 anchor=end size=11 weight=600 color=ink
+text "0.9" at 410,93 anchor=end style=small color=muted
+text "0.5" at 494,203 style=small size=8 anchor=end color=soft
+text "1.0" at 494,171 style=small size=8 anchor=end color=soft
+text "1.5" at 494,139 style=small size=8 anchor=end color=soft
+text "2.0" at 494,107 style=small size=8 anchor=end color=soft
+legend at 40,452 dot.accent="18–20 · the evening peak, 2.4 kWh" dot.muted="Other windows" title="Distance from the centre = energy used"

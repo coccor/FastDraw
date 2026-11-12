@@ -1,7 +1,7 @@
 look "../../looks/reference.look"
 canvas 1100x764
 
-text "Order tables and their foreign keys" at 40,60 style=h1
+text "Order tables and their foreign keys" at 40,52 style=h1
 
 billing: zone "billing" at 40,96 256x148 title.align=left
 

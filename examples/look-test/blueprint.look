@@ -71,8 +71,8 @@ style link extends arrow stroke=link dash=9,3 label.color=line
     use="a request crossing a boundary; long dashes"
 style return extends arrow stroke=soft dash=3,4 label.color=muted
     use="a response, or something optional or asynchronous; short dashes"
-style lifeline line stroke=line/0.5 sw=1 dash=2,5 route=straight use="sequence diagram lifeline"
-style rule line stroke=line/0.3 sw=1 route=straight use="thin separator"
+style lifeline line head=none stroke=line/0.5 sw=1 dash=2,5 route=straight use="sequence diagram lifeline"
+style rule line head=none stroke=line/0.3 sw=1 route=straight use="thin separator"
 
 style legend extends legend rule=line/0.3 title.font=mono item.size=10
 

@@ -1,0 +1,53 @@
+canvas 1000x560
+// scale: 0.004px per dollar (60,000 = 240px) · bars 12 wide at x = 120, 500, 880
+text "Where a 100-person conference budget goes" at 40,40 style=h1
+text "BUDGET" at 126,76 style=eyebrow anchor=middle
+text "CATEGORY" at 506,76 style=eyebrow anchor=middle
+text "LINE ITEM" at 886,76 style=eyebrow anchor=middle
+rect at 132,228 368x92 shape=path path="M0,0 C0.5,0 0.5,0.348 1,0.348 L1,1 C0.5,1 0.5,0.652 0,0.652 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+rect at 132,288 368x136 shape=path path="M0,0 C0.5,0 0.5,0.471 1,0.471 L1,1 C0.5,1 0.5,0.529 0,0.529 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+rect at 512,244 368x52 shape=path path="M0,0.308 C0.5,0.308 0.5,0 1,0 L1,0.692 C0.5,0.692 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+rect at 512,288 368x32 shape=path path="M0,0.25 C0.5,0.25 0.5,0 1,0 L1,0.75 C0.5,0.75 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+rect at 512,320 368x68 shape=path path="M0,0.471 C0.5,0.471 0.5,0 1,0 L1,0.529 C0.5,0.529 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+rect at 512,364 368x60 shape=path path="M0,0.4 C0.5,0.4 0.5,0 1,0 L1,0.6 C0.5,0.6 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+rect at 132,120 368x108 shape=path path="M0,0 C0.5,0 0.5,0 1,0 L1,1 C0.5,1 0.5,1 0,1 Z" fill=accent/0.28 stroke=none overlap=ok mask=0
+rect at 512,120 368x60 shape=path path="M0,0 C0.5,0 0.5,0 1,0 L1,1 C0.5,1 0.5,1 0,1 Z" fill=accent/0.28 stroke=none overlap=ok mask=0
+rect at 512,180 368x56 shape=path path="M0,0 C0.5,0 0.5,0.143 1,0.143 L1,1 C0.5,1 0.5,0.857 0,0.857 Z" fill=accent/0.28 stroke=none overlap=ok mask=0
+tot: rect at 120,120 12x240 fill=ink stroke=none radius=0
+c0: rect at 500,120 12x108 fill=ink stroke=none radius=0
+c1: rect at 500,260 12x60 fill=ink stroke=none radius=0
+c2: rect at 500,352 12x72 fill=ink stroke=none radius=0
+i0: rect at 880,120 12x60 fill=ink stroke=none radius=0
+i1: rect at 880,188 12x48 fill=ink stroke=none radius=0
+i2: rect at 880,244 12x36 fill=ink stroke=none radius=0
+i3: rect at 880,288 12x24 fill=ink stroke=none radius=0
+i4: rect at 880,320 12x36 fill=ink stroke=none radius=0
+i5: rect at 880,364 12x36 fill=ink stroke=none radius=0
+text "Budget" at 104,238 anchor=end weight=600 color=ink
+text "$60,000" at 104,252 style=small anchor=end
+text "Venue & food" at 506,100 anchor=middle weight=600 color=ink
+text "$27,000" at 506,114 style=small anchor=middle
+text "Programme" at 506,240 anchor=middle weight=600 color=ink
+text "$15,000" at 506,254 style=small anchor=middle
+text "Promotion & staff" at 506,332 anchor=middle weight=600 color=ink
+text "$18,000" at 506,346 style=small anchor=middle
+text "Venue" at 908,148 weight=600 color=ink
+text "$15,000" at 908,162 style=small
+text "Catering" at 908,210 weight=600 color=ink
+text "$12,000" at 908,224 style=small
+text "Speakers" at 908,260 weight=600 color=ink
+text "$9,000" at 908,274 style=small
+text "AV & stage" at 908,298 weight=600 color=ink
+text "$6,000" at 908,312 style=small
+text "Marketing" at 908,336 weight=600 color=ink
+text "$9,000" at 908,350 style=small
+text "Staff" at 908,380 weight=600 color=ink
+text "$9,000" at 908,394 style=small
+40,456 -- 960,456 style=rule
+text "Legend" at 40,476 style=eyebrow
+rect at 40,492 16x8 fill=muted/0.18 stroke=muted
+text "Money flowing" at 64,500 style=caption
+rect at 180,492 16x8 fill=accent/0.28 stroke=accent
+text "Venue and food: the largest share" at 204,500 style=caption
+rect at 440,492 16x8 fill=ink
+text "Amount bar" at 464,500 style=caption

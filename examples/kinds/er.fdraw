@@ -1,7 +1,7 @@
 look "../../looks/reference.look"
 canvas 1000x480
 
-text "Blog content model" at 40,60 style=h1
+text "Blog content model" at 40,52 style=h1
 
 author: table "Author" at 40,152 216x0
   | id "# id"     "uuid"

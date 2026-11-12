@@ -1,0 +1,28 @@
+canvas 1000x500
+
+text "Testing pyramid for a web product" at 40,44 style=h1
+
+// pyramid, centre x=500: each layer is 64 high, 64 narrower on each side than the one below
+l4: polygon "Unit" sub="functions and components · milliseconds" at 180,336 points=64,0;576,0;640,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
+l3: polygon "Integration" sub="API, database, queues · seconds" at 244,272 points=64,0;448,0;512,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
+l2: polygon "End-to-end" sub="browser flows · minutes" at 308,208 points=64,0;320,0;384,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
+apex: polygon at 372,80 points=128,0;256,128;0,128 fill=accent/0.08 stroke=accent sw=1
+text "Exploratory" at 500,176 anchor=middle weight=600 color=ink
+text "manual · hours" at 500,192 anchor=middle size=10 color=muted
+
+text "~70% of tests" at 844,372 style=small
+text "~20% of tests" at 780,308 style=small
+text "~8% of tests" at 716,244 style=small
+text "~2% of tests" at 652,148 style=small
+
+100,400 -> 100,84 stroke=ink/0.3 sw=1
+text "Costly" at 84,92 style=eyebrow anchor=end
+text "Cheap" at 84,404 style=eyebrow anchor=end
+
+100,444 -- 900,444 style=rule
+text "Legend" at 100,464 style=eyebrow
+k1: rect at 160,454 16x12 fill=accent/0.08 stroke=accent
+text "Tip: what people still do by hand" at 184,464 style=caption
+k2: rect at 400,454 16x12 fill=ink/0.05 stroke=ink/0.12
+text "Automated level" at 424,464 style=caption
+text "Widths are not to scale" at 560,464 style=caption

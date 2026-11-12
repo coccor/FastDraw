@@ -6,11 +6,13 @@ FastDraw has no journey elements. You build the grid from text and lines at exac
 
 ## Composition
 
-- Columns: one per stage, six at most, centres 216px apart. Leave 128px on the left for row names: the first centre is x=228, the grid lines run from x=128 to 40px before the right edge.
+- Title: `text "..." at 40,52 style=h1`. The stage headers start at y=100.
+- Columns: one per stage, six at most, centres 216px apart. Leave 128px on the left for row names: the first centre is x=228, the grid lines run from x=128 to the right edge of the last column (last centre + 108). Canvas width = 160 + 216 * stages (five stages: 1240).
 - Stage header, centred on each column: `text "Stage 1" at cx,100 style=eyebrow anchor=middle`, and 20px lower the stage name with `weight=600 anchor=middle`.
-- Feeling band, 40px under the headers: three `style=rule` lines 80px apart for high, neutral and low, each named at the left with `text "High" at 112,<line y + 3> style=eyebrow anchor=end`. Feelings are words on five steps (the three lines and the two half-way heights), never numbers, never emoji.
+- Feeling band, 40px under the headers: three `style=rule` lines (written with `--`) at y=160, 240, 320 for high, neutral and low, each named at the left with `text "High" at 112,<line y + 3> style=eyebrow anchor=end`. Feelings are words on five steps (the three lines and the two half-way heights, 200 and 280), never numbers, never emoji.
 - The curve: one dot per stage at the column centre, on the height of its level: `ellipse at cx-5,y-5 10x10 fill=muted stroke=none`. Join neighbours with straight lines given as points, `228,160 -- 444,240 sw=1.5`, so they meet in the middle of the dots. Write the lines before the dots.
-- Rows under the band: a `style=rule` line 24px below the low line, then up to three rows, each closed by another rule. Row name at the left like the level names. Actions are plain `text` (one short line, `anchor=middle`, 28px under the rule); touchpoints (where it happens: a page, an email) use `style=small`. The actions row is 96px high so that two markers fit under the text; other rows 56px.
+- Rows under the band: a `style=rule` line at y=344 (24px below the low line), then up to three rows, each closed by another rule, the last row by none (the legend's own line closes it). Row name at the left like the level names, baseline 3px under the row's text baseline. The actions row is 96px high (rules at 344 and 440) so that two markers fit under the text; other rows 56px.
+- Actions are plain `text`, `anchor=middle`, baseline 28px under the rule (y=372). Touchpoints (where it happens: a page, an email) use `style=small`, baseline 32px under their rule (y=472). Markers: first at y=384, second at y=408.
 
 ## Emphasis
 
@@ -30,4 +32,4 @@ Mark only the low stage. A marker on every stage says nothing.
 
 ## Legend
 
-The `legend` statement only knows styles, and this diagram uses none, so draw it by hand 24px under the last row: a `style=rule` line, `text "Legend" style=eyebrow`, then for each entry a small copy of the mark (a 24px line with an 8px dot on it; a 16x10 marker box) followed by `text "..." style=caption`. Three entries: the curve, the lowest point, the marker.
+`legend at 40,Y line.muted="How the user feels" dot.accent="Lowest point" swatch.accent/0.15="What hurts there"`, Y = the bottom of the last row + 24 (520 for the rows above); canvas height = Y + 80. Draw no rule of your own above it: the legend has one, and a second rule under a row that is already closed looks like an empty row.

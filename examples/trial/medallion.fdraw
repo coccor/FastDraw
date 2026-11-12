@@ -1,0 +1,48 @@
+canvas 984x580
+
+text "Logistics data lake: from raw scans to delivery KPIs" at 40,60 style=h1
+
+raw: table "Raw" at 40,176 208x0
+  | "Bucket" "lake-raw-scans"
+  | "Tool"   "Kafka Connect"
+  | "Format" "JSON · append-only"
+  | "Writer" "Scanner gateway"
+  | ---
+  | "Holds"  "parcel scan events"
+  | ""       "handheld GPS pings"
+
+clean: table "Cleaned" at 272,176 208x0
+  | "Bucket" "lake-clean-scans"
+  | "Tool"   "Spark batch job"
+  | "Format" "Delta · deduped"
+  | "Writer" "Data engineer"
+  | ---
+  | "Holds"  "one row per scan"
+  | ""       "depot ids resolved"
+
+agg: table "Aggregated" at 504,176 208x0 stroke=accent fill=accent/0.08
+  | "Bucket" "lake-kpi-marts"
+  | "Tool"   "Trino INSERT"
+  | "Format" "Iceberg · daily"
+  | "Writer" "Analytics engineer"
+  | ---
+  | "Holds"  "on-time delivery rate"
+  | ""       "first-attempt success"
+
+cold: table "Archive" at 736,176 208x0 dash=4,3 fill=ink/0.05
+  | "Bucket" "lake-archive"
+  | "Tool"   "Lifecycle rule"
+  | "Format" "Parquet · zstd"
+  | "Writer" "Storage policy"
+  | ---
+  | "Holds"  "scans older than 2y"
+  | ""       "audit extracts"
+
+raw.top@0.5 -> clean.top@0.5 "dedupe" route=curve
+clean.top@0.5 -> agg.top@0.5 "aggregate" style=primary route=curve
+agg.top@0.5 -> cold.top@0.5 "age out" style=return route=curve
+
+m1: cloud "Spark batch job" sub="dedupe · resolve depot ids" tag="SPK" at 40,400 440x64
+m2: cloud "Trino INSERT INTO … SELECT" sub="filter · join · aggregate" tag="SQL" at 504,400 440x64
+
+legend at 40,488 focal="Tier consumers query" optional="Archive tier" arrow="Promotion" primary="Promotion into the KPIs" return="Lifecycle rule" cloud="Write method"

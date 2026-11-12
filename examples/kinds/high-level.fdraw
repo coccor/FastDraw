@@ -1,7 +1,7 @@
 look "../../looks/reference.look"
 canvas 1200x640
 
-text "High-level architecture · End-to-end stack" at 40,60 style=h1
+text "High-level architecture · End-to-end stack" at 40,52 style=h1
 
 // phase banner: one chevron per column, 224 apart; column centres 152, 376, 600, 824, 1048
 p1: polygon "DATA SOURCES" at 40,88 points=0,0;216,0;232,16;216,32;0,32 fill=ink stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
@@ -18,7 +18,7 @@ dbc:    external "DB Connection" sub="CDC · SQL · API" tag="EXT" at 72,316 160
 legacy: external "Legacy System" sub="Trade data" tag="EXT" at 72,388 160x56
 
 // the cluster: solid zone; every box is centred under its phase
-k8s: zone "Kubernetes cluster" at 272,136 888x328
+k8s: zone "Kubernetes cluster" at 272,136 888x328 dash=none
 air:   cloud "Orchestration / Workflow Automation" sub="Apache Airflow" at 288,160 856x48
 nifi:  node "Apache NiFi" sub="Collect · route" tag="COLL" at 304,240
 trino: node "Trino" sub="SQL · virtualization" tag="VIRT" at 528,240

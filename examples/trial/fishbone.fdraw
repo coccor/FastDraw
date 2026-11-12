@@ -1,0 +1,50 @@
+canvas 1240x600
+
+text "Why the nightly import failed three nights running" at 40,52 style=h1
+
+effect: focal "Nightly import failed\n3 nights in a row" tag="EFFECT" at 1000,256 200x88
+200,300 -> effect.left stroke=ink
+
+src: rect "SOURCE FILE" at 764,104 120x28 radius=4 fill=paper stroke=ink sw=0.8
+src.bottom -- 920,300 sw=1.2 stroke=ink
+888,244 -- 856,244 sw=1
+text "file lands after 02:00" at 852,247 style=small anchor=end
+856,188 -- 824,188 sw=1
+text "extra column in header" at 820,191 style=small anchor=end
+
+db: focal "DATABASE" at 604,468 120x28 radius=4
+db.top -- 760,300 sw=1.2 stroke=accent
+744,328 -- 712,328 sw=1
+text "disk 71% full" at 708,331 style=small anchor=end
+712,384 -- 680,384 sw=1
+text "backup holds table lock" at 676,387 style=small anchor=end
+680,440 -- 648,440 sw=1
+text "30s lock timeout, no retry" at 644,443 style=small anchor=end
+
+sch: rect "SCHEDULER" at 444,104 120x28 radius=4 fill=paper stroke=ink sw=0.8
+sch.bottom -- 600,300 sw=1.2 stroke=ink
+552,216 -- 520,216 sw=1
+text "starts before file lands" at 516,219 style=small anchor=end
+
+net: rect "NETWORK" at 284,468 120x28 radius=4 fill=paper stroke=ink sw=0.8
+net.top -- 440,300 sw=1.2 stroke=ink
+408,356 -- 376,356 sw=1
+text "VPN drops around 01:30" at 372,359 style=small anchor=end
+376,412 -- 344,412 sw=1
+text "one-off DNS timeout" at 340,415 style=small anchor=end
+
+wrk: rect "WORKER" at 124,104 120x28 radius=4 fill=paper stroke=ink sw=0.8
+wrk.bottom -- 280,300 sw=1.2 stroke=ink
+232,216 -- 200,216 sw=1
+text "out of memory on parse" at 196,219 style=small anchor=end
+
+40,520 -- 1200,520 style=rule
+text "Legend" at 40,544 style=eyebrow
+40,572 -- 64,572 sw=1.2 stroke=ink
+text "Cause category" at 72,575 style=caption
+240,572 -- 264,572 sw=1.2 stroke=accent
+text "Confirmed root cause" at 272,575 style=caption
+470,572 -- 494,572 sw=1
+text "Cause examined" at 502,575 style=caption
+focal at 660,567 14x10 radius=2
+text "What was observed" at 682,575 style=caption

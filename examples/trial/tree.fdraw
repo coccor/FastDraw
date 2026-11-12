@@ -1,0 +1,38 @@
+canvas 1232x520
+
+text "Source folders of a small web shop" at 40,56 style=h1
+
+root: focal "webshop/" sub="repository root" at 536,96 160x48
+pub:  node "public/" sub="static files" at 116,216 160x48
+src:  node "src/" sub="the storefront" at 536,216 160x48
+tst:  node "tests/" sub="automated checks" at 956,216 160x48
+
+img:   cloud "images/" sub="product photos" at 40,336 144x48
+fonts: cloud "fonts/" sub="web fonts" at 208,336 144x48
+comp:  cloud "components/" sub="buttons, cards" at 376,336 144x48
+pages: cloud "pages/" sub="cart, checkout" at 544,336 144x48
+lib:   cloud "lib/" sub="prices, orders" at 712,336 144x48
+unit:  cloud "unit/" sub="fast tests" at 880,336 144x48
+e2e:   cloud "e2e/" sub="browser tests" at 1048,336 144x48
+
+root.bottom -- 616,180
+196,180 -- 1036,180
+196,180 -- pub.top
+616,180 -- src.top
+1036,180 -- tst.top
+
+pub.bottom -- 196,300
+112,300 -- 280,300
+112,300 -- img.top
+280,300 -- fonts.top
+src.bottom -- 616,300
+448,300 -- 784,300
+448,300 -- comp.top
+616,300 -- pages.top
+784,300 -- lib.top
+tst.bottom -- 1036,300
+952,300 -- 1120,300
+952,300 -- unit.top
+1120,300 -- e2e.top
+
+legend at 40,416 focal="Project root" node="Top-level folder" cloud="Subfolder"

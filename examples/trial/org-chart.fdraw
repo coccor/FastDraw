@@ -1,0 +1,47 @@
+canvas 1336x560
+
+text "Product team" at 40,56 style=h1
+
+text "Director" at 40,88 style=eyebrow
+40,172 -- 1296,172 style=rule
+text "Squad leads" at 40,196 style=eyebrow
+40,320 -- 1296,320 style=rule
+text "Engineers and specialists" at 40,344 style=eyebrow
+
+dir: focal "Dana Okafor" sub="Director of Product" at 556,96 224x48
+
+lead1: node "Mia Chen" sub="Checkout squad" at 188,244 160x48
+lead2: node "Raj Patel" sub="Search squad" at 588,244 160x48
+lead3: node "Lena Fischer" sub="Growth squad" at 988,244 160x48
+
+p1: cloud "Tom Berg" sub="Product designer" at 40,392 136x56
+p2: cloud "Ana Silva" sub="Engineer" at 200,392 136x56
+p3: cloud "Sam Wu" sub="Engineer" at 360,392 136x56
+p4: cloud "Ivo Novak" sub="Engineer" at 520,392 136x56
+p5: cloud "Noor Haddad" sub="Data scientist" at 680,392 136x56
+p6: cloud "Zoe Martin" sub="Growth engineer" at 840,392 136x56
+p7: optional "Open role" sub="Analyst, hiring" at 1000,392 136x56
+p8: cloud "Kai Tanaka" sub="Marketing" at 1160,392 136x56
+
+dir.bottom -- 668,208
+268,208 -- 1068,208
+268,208 -- lead1.top
+668,208 -- lead2.top
+1068,208 -- lead3.top
+
+lead1.bottom -- 268,356
+108,356 -- 428,356
+108,356 -- p1.top
+268,356 -- p2.top
+428,356 -- p3.top
+lead2.bottom -- 668,356
+588,356 -- 748,356
+588,356 -- p4.top
+748,356 -- p5.top
+lead3.bottom -- 1068,356
+908,356 -- 1228,356
+908,356 -- p6.top
+1068,356 -- p7.top
+1228,356 -- p8.top
+
+legend at 40,480 focal="Director" node="Squad lead" cloud="Team member" optional="Open role, not yet filled"

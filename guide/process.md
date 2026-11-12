@@ -5,8 +5,8 @@ Shows a business process that passes between several teams: who does each step, 
 ## Composition
 
 - Columns: one per step, 152px apart. The first column centre is x=248; the left 128px (x=40 to 168) holds the lane names. Canvas width = 248 + (steps − 1) × 152 + 104.
-- Step header above each column: a numbered chip, `ellipse "1" at cx-12,84 24x24 fill=ink/0.08 stroke=none title.size=9`, and under it `text "Order" at cx,124 style=eyebrow anchor=middle`. One word per step.
-- Lanes: one per actor, 96px high, across the full width, the first starting at y=136. Tint every second lane with `zone at 40,y WxH radius=0 stroke=none` (no text). Draw a `style=rule` line on every lane border and one vertical line at x=168 (`stroke=ink/0.2 sw=1`) to close off the names. Lane name: `text "Customer" at 104,<lane middle + 3> style=eyebrow anchor=middle`.
+- Title: `text "..." at 40,52 style=h1`. Step header above each column: a numbered chip, `ellipse "1" at cx-12,96 24x24 fill=ink/0.08 stroke=none title.size=9`, and under it `text "Order" at cx,136 style=eyebrow anchor=middle`. One word per step.
+- Lanes: one per actor, 96px high, across the full width, the first starting at y=148 (lane i at 148 + 96 * i). Tint every second lane (the first, third, ...) with `zone at 40,y WxH radius=0 stroke=none` (no text), W = canvas width − 80. Draw a `style=rule` line (written with `--`) on every lane border and one vertical line at x=168 (`168,148 -- 168,<bottom> stroke=ink/0.2 sw=1`) to close off the names. Lane name: `text "Customer" at 104,<lane top + 51> style=eyebrow anchor=middle`.
 - A box goes where an actor does a step: 128x72, centred on the column, 12px below the top of the lane. A cell where nothing happens stays empty: no box, no dash.
 - Order the lanes so that the process moves down the page as it moves right, and neighbours in the process are neighbours on the page where possible.
 - Six lanes and twelve steps at most. More: an overview diagram and a detail diagram.
@@ -16,13 +16,13 @@ Shows a business process that passes between several teams: who does each step, 
 `sub=` holds one line only, and this kind needs three, so leave the box's own text empty and write the lines as text, centred on the column:
 
 ```
-alloc: focal tag="WHS" at 488,340 128x72
-text "Allocate stock" at 552,376 weight=600 anchor=middle              // what is done: box top + 36
-text "order → pick list" at 552,391 style=small anchor=middle          // in → out: box top + 51
-text "inventory system" at 552,403 style=small anchor=middle color=soft // tool: box top + 63
+alloc: focal tag="WHS" at 488,352 128x72
+text "Allocate stock" at 552,388 weight=600 anchor=middle color=#ffffff                // what is done: box top + 36
+text "order → pick list" at 552,403 style=small anchor=middle color=#ffffff           // in → out: box top + 51
+text "inventory system" at 552,415 style=small anchor=middle color=#ffffff/0.8        // tool: box top + 63
 ```
 
-`tag=` is a three-letter code for the actor (CUS, SUP, WHS), so a box still says whose it is when quoted alone. Keep the name under 17 characters and the other lines under 20.
+`tag=` is a three or four letter code for the actor (CUS, SUP, WHS): its first letters, or the usual short name; a lane called "Platform team" is PLAT. It lets a box say whose it is when quoted alone. Text on a `focal` box is white (`color=#ffffff`; the tool line `#ffffff/0.8`), as above: dark text on the accent fill cannot be read. Keep the name under 17 characters and the other lines under 20.
 
 ## Arrows
 
@@ -38,4 +38,4 @@ One step is the one the process turns on. Its box is `focal`, its header chip an
 
 ## Legend
 
-`legend at 40,Y node="A step, in the lane of who does it" focal="..." primary="Critical handoff" arrow="Handoff"`, 24px under the last lane.
+`legend at 40,Y node="A step, in the lane of who does it" focal="..." primary="Critical handoff" arrow="Handoff"`, 24px under the last lane (Y = 148 + 96 * lanes + 24); canvas height = Y + 68.

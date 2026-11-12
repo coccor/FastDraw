@@ -5,7 +5,7 @@ Shows real tables: column names, SQL types, constraints, the indexes that matter
 ## Building blocks
 
 ```
-billing: zone "billing" at 40,96 256x148 title.align=left     // a schema other than the default
+billing: zone "billing" at 40,96 256x148 title.align=left     // a schema other than the default (dashed in the built-in look; dash=none for solid)
 
 orders: table "public.orders" at 392,152 296x0
   | id          "id"          "PK"    "uuid"
@@ -18,8 +18,8 @@ items.order_id.right -> orders.id.right "cascade" style=primary
 inv.order_id -> orders.id "restrict"
 ```
 
-- A table is a `table` named `schema.table`. Each row has three cells: column name, constraints (`PK`, `FK`, `UQ`, `NN`, separated by a space), SQL type. Never leave the type out.
-- Give a row id to every column a foreign key starts or ends on.
+- Title at 40,52 (`style=h1`); the first table or zone at y=96 or lower. A table is a `table` named `schema.table`. Each row has three quoted cells: column name, constraints (`PK`, `FK`, `UQ`, `NN`, separated by a space), SQL type. Never leave the type out. A column with no constraint takes an empty cell `""`: `| "published_at" "" "timestamptz"`. Leaving it out slides the type into the constraints column.
+- The row id is the unquoted first word of the line, before the cells (`| customer_id "customer_id" "FK NN" "uuid"`), and it is optional: a row without one starts straight with its first quoted cell. Give an id to every column a foreign key starts or ends on, and to no other.
 - Indexes go under a `|= "Indexes"` row, one name per row. List only the ones the diagram is about.
 - Eight columns per table at most. If you leave columns out, say so in a last row: `| "+ 3 more columns"`.
 - The look has no table or key style: the built-in `table` is the plain table, `arrow` a foreign key.
@@ -32,7 +32,8 @@ inv.order_id -> orders.id "restrict"
 - Widths: the three columns need about 224px for short names. A one-cell row (an index name, the "more columns" line) widens the first column for the whole table, so a table with a 22-character index name needs 296. `check` tells you when a width is too small; fix the width, then re-place the neighbours.
 - A key between two tables in the same column loops out on one side: name the side on both ends, `items.order_id.right -> orders.id.right`. Send it to the side with fewer lines, and leave 64px between the two tables.
 - Plan the sides so no two keys cross. A key that leaves a row lower in its table should go to a table lower on the canvas.
-- Tables of another schema sit inside a `zone` named after the schema: 16px of padding, 32px at the top.
+- Tables of another schema sit inside a `zone` named after the schema: 16px of padding, 32px at the top. Height = the table's height + 44; the table is at zone x + 16, zone y + 32.
+- Canvas height: the lowest table's bottom + 24 for the legend line + about 80.
 
 ## Arrows
 

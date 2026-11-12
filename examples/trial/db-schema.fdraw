@@ -1,0 +1,31 @@
+canvas 1048x480
+
+text "Blog schema" at 40,56 style=h1
+
+users: table "public.users" at 40,176 224x0
+  | id    "id"    "PK"    "uuid"
+  |       "email" "UQ NN" "text"
+  |       "name"  "NN"    "text"
+
+posts: table "public.posts" at 376,152 296x0
+  | id     "id"           "PK"    "uuid"
+  | author "author_id"    "FK NN" "uuid"
+  |        "title"        "NN"    "text"
+  |        "body"         "NN"    "text"
+  |        "published_at" ""      "timestamptz"
+  |= "Indexes"
+  | "idx_posts_author"
+  | "idx_posts_published"
+
+comments: table "public.comments" at 784,128 224x0 stroke=accent fill=accent/0.08
+  | id   "id"      "PK"    "uuid"
+  | post "post_id" "FK NN" "uuid"
+  |      "author"  "NN"    "text"
+  |      "body"    "NN"    "text"
+
+posts.author -> users.id "restrict"
+comments.post -> posts.id "cascade" style=primary
+
+text "Deleting a post deletes its comments." at 784,296 style=note
+
+legend at 40,424 node="Table" focal="Rows deleted with their parent" arrow="Foreign key · label = ON DELETE" primary="Destructive delete"

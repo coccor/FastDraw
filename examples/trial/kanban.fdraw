@@ -1,0 +1,52 @@
+canvas 1120x500
+
+text "Design team board" at 32,44 style=h1
+
+// columns 240 wide, 32 apart, x = 32, 304, 576, 848; top y=80; header line y=116; cards at y=128, 196, 264, 332
+c1: zone at 32,80 240x324 stroke=none
+text "Backlog" at 48,100 weight=600 color=ink
+w1: rect "12" at 216,88 40x16 radius=2 fill=none stroke=ink/0.3 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=muted
+32,116 -- 272,116 stroke=ink/0.2 sw=1
+b1: node "Onboarding illustrations" sub="DSG-210 · mara" at 48,128 208x56 title.align=left
+b2: node "Icon set refresh" sub="DSG-214 · jo" at 48,196 208x56 title.align=left
+b3: node "Empty-state copy" sub="DSG-219 · lee" at 48,264 208x56 title.align=left
+b4: optional "+9 more" at 48,332 208x56 title.align=left
+
+c2: zone at 304,80 240x324 stroke=none
+text "In design" at 320,100 weight=600 color=ink
+w2: rect "2/3" at 488,88 40x16 radius=2 fill=none stroke=ink/0.3 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=muted
+304,116 -- 544,116 stroke=ink/0.2 sw=1
+d1: node "Checkout redesign" sub="DSG-198 · ana" at 320,128 208x56 title.align=left
+d2: optional "Brand palette audit" sub="DSG-203 · waiting on legal" at 320,196 208x56 title.align=left
+
+c3: zone at 576,80 240x324 stroke=none
+text "In review" at 592,100 weight=600 color=ink
+w3: rect "4/3" at 760,88 40x16 radius=2 fill=none stroke=accent sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=accent
+576,116 -- 816,116 stroke=ink/0.2 sw=1
+r1: focal "Pricing page" sub="DSG-181 · ana" at 592,128 208x56 title.align=left dash=4,4 fill=accent/0.05 title.color=ink sub.color=muted
+rect at 592,128 4x56 fill=accent stroke=none overlap=ok
+r2: node "Settings screens" sub="DSG-186 · kim" at 592,196 208x56 title.align=left
+r3: node "Mobile navigation" sub="DSG-190 · jo" at 592,264 208x56 title.align=left
+r4: node "Dashboard charts" sub="DSG-192 · tom" at 592,332 208x56 title.align=left
+
+c4: zone at 848,80 240x324 stroke=none
+text "Done" at 864,100 weight=600 color=ink
+w4: rect "3" at 1032,88 40x16 radius=2 fill=none stroke=ink/0.3 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=muted
+848,116 -- 1088,116 stroke=ink/0.2 sw=1
+e1: store "Login flow" sub="DSG-170 · mara" at 864,128 208x56 title.align=left
+e2: store "Design tokens v2" sub="DSG-165 · lee" at 864,196 208x56 title.align=left
+e3: store "Error pages" sub="DSG-160 · kim" at 864,264 208x56 title.align=left
+text "Older work moved to the archive board" at 864,344 style=caption
+
+32,428 -- 1088,428 style=rule
+text "Legend" at 32,452 style=eyebrow
+node at 100,444 16x10 radius=2
+text "Open" at 124,453 style=caption
+focal at 200,444 16x10 radius=2 dash=4,4 fill=accent/0.05
+text "Blocked (oldest)" at 224,453 style=caption
+optional at 340,444 16x10 radius=2
+text "Waiting on someone outside" at 364,453 style=caption
+store at 540,444 16x10 radius=2
+text "Done" at 564,453 style=caption
+rect at 620,444 16x10 radius=2 fill=none stroke=accent sw=0.8
+text "Over its limit" at 644,453 style=caption

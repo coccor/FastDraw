@@ -1,42 +1,44 @@
 look "../../looks/reference.look"
-canvas 1000x556
+canvas 1000x612
 
-// each part is a 384x208 box: a square plate 16 thick, seen at 2:1. Parts are 116 apart; bottom part first
+// each part is a 384x208 box: a square plate 16 thick, seen at 2:1. Parts are 116 apart, the top one at y=96; bottom part first
+
+title: text "What the product is made of" at 40,52 style=h1
 
 // trace lines through the left and right corners, behind the parts
-152,368 -- 152,152 stroke=ink/0.3 sw=0.8 dash=4,3 layer=back
-536,368 -- 536,152 stroke=ink/0.3 sw=0.8 dash=4,3 layer=back
+208,424 -- 208,208 stroke=ink/0.3 sw=0.8 dash=4,3 layer=back
+592,424 -- 592,208 stroke=ink/0.3 sw=0.8 dash=4,3 layer=back
 
 // Data
-data: rect at 152,272 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=#ffffff stroke=ink sw=1.2 overlap=ok
-rect at 152,272 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=ink/0.07 stroke=none overlap=ok mask=0
-rect at 152,272 384x208 shape=path path="M1,0.462 Q0.997,0.481 0.987,0.49 L0.531,0.894 Q0.516,0.909 0.5,0.909 L0.5,0.986 Q0.516,0.986 0.531,0.971 L0.987,0.567 Q0.997,0.558 1,0.538 Z" fill=ink/0.15 stroke=none overlap=ok mask=0
-rect at 152,272 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.5,0.923 0.531,0.894 L0.987,0.49 Q0.997,0.481 1,0.462" fill=none stroke=ink/0.55 sw=0.8 overlap=ok mask=0
-ellipse at 534,374 4x4 fill=ink stroke=none overlap=ok
-542,376 -- 588,376 stroke=ink/0.4 sw=0.8
-text "Data" at 600,375 size=16 weight=600 color=ink
-text "postgres, object store" at 600,391 style=small size=10
+data: rect at 208,328 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=#ffffff stroke=ink sw=1.2 overlap=ok
+rect at 208,328 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=ink/0.07 stroke=none overlap=ok mask=0
+rect at 208,328 384x208 shape=path path="M1,0.462 Q0.997,0.481 0.987,0.49 L0.531,0.894 Q0.516,0.909 0.5,0.909 L0.5,0.986 Q0.516,0.986 0.531,0.971 L0.987,0.567 Q0.997,0.558 1,0.538 Z" fill=ink/0.15 stroke=none overlap=ok mask=0
+rect at 208,328 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.5,0.923 0.531,0.894 L0.987,0.49 Q0.997,0.481 1,0.462" fill=none stroke=ink/0.55 sw=0.8 overlap=ok mask=0
+ellipse at 590,430 4x4 fill=ink stroke=none overlap=ok
+598,432 -- 644,432 stroke=ink/0.4 sw=0.8
+text "Data" at 656,431 size=16 weight=600 color=ink
+text "postgres, object store" at 656,447 style=small size=10
 
 // Logic
-logic: rect at 152,156 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=#ffffff stroke=accent sw=1.2 overlap=ok
-rect at 152,156 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=accent/0.1 stroke=none overlap=ok mask=0
-rect at 152,156 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=accent/0.1 stroke=none overlap=ok mask=0
-rect at 152,156 384x208 shape=path path="M1,0.462 Q0.997,0.481 0.987,0.49 L0.531,0.894 Q0.516,0.909 0.5,0.909 L0.5,0.986 Q0.516,0.986 0.531,0.971 L0.987,0.567 Q0.997,0.558 1,0.538 Z" fill=accent/0.22 stroke=none overlap=ok mask=0
-rect at 152,156 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.5,0.923 0.531,0.894 L0.987,0.49 Q0.997,0.481 1,0.462" fill=none stroke=accent/0.7 sw=0.8 overlap=ok mask=0
-ellipse at 534,258 4x4 fill=accent stroke=none overlap=ok
-542,260 -- 588,260 stroke=accent/0.6 sw=0.8
-text "Logic" at 600,259 size=16 weight=600 color=ink
-text "api, workers, queue" at 600,275 style=small size=10 color=accent
+logic: rect at 208,212 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=#ffffff stroke=accent sw=1.2 overlap=ok
+rect at 208,212 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=accent/0.1 stroke=none overlap=ok mask=0
+rect at 208,212 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=accent/0.1 stroke=none overlap=ok mask=0
+rect at 208,212 384x208 shape=path path="M1,0.462 Q0.997,0.481 0.987,0.49 L0.531,0.894 Q0.516,0.909 0.5,0.909 L0.5,0.986 Q0.516,0.986 0.531,0.971 L0.987,0.567 Q0.997,0.558 1,0.538 Z" fill=accent/0.22 stroke=none overlap=ok mask=0
+rect at 208,212 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.5,0.923 0.531,0.894 L0.987,0.49 Q0.997,0.481 1,0.462" fill=none stroke=accent/0.7 sw=0.8 overlap=ok mask=0
+ellipse at 590,314 4x4 fill=accent stroke=none overlap=ok
+598,316 -- 644,316 stroke=accent/0.6 sw=0.8
+text "Logic" at 656,315 size=16 weight=600 color=ink
+text "api, workers, queue" at 656,331 style=small size=10 color=accent
 
 // Interface
-ui: rect at 152,40 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=#ffffff stroke=ink sw=1.2 overlap=ok
-rect at 152,40 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=ink/0.07 stroke=none overlap=ok mask=0
-rect at 152,40 384x208 shape=path path="M1,0.462 Q0.997,0.481 0.987,0.49 L0.531,0.894 Q0.516,0.909 0.5,0.909 L0.5,0.986 Q0.516,0.986 0.531,0.971 L0.987,0.567 Q0.997,0.558 1,0.538 Z" fill=ink/0.15 stroke=none overlap=ok mask=0
-rect at 152,40 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.5,0.923 0.531,0.894 L0.987,0.49 Q0.997,0.481 1,0.462" fill=none stroke=ink/0.55 sw=0.8 overlap=ok mask=0
-ellipse at 534,142 4x4 fill=ink stroke=none overlap=ok
-542,144 -- 588,144 stroke=ink/0.4 sw=0.8
-text "Interface" at 600,143 size=16 weight=600 color=ink
-text "web app, mobile" at 600,159 style=small size=10
+interface: rect at 208,96 384x208 shape=path path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=#ffffff stroke=ink sw=1.2 overlap=ok
+rect at 208,96 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z" fill=ink/0.07 stroke=none overlap=ok mask=0
+rect at 208,96 384x208 shape=path path="M1,0.462 Q0.997,0.481 0.987,0.49 L0.531,0.894 Q0.516,0.909 0.5,0.909 L0.5,0.986 Q0.516,0.986 0.531,0.971 L0.987,0.567 Q0.997,0.558 1,0.538 Z" fill=ink/0.15 stroke=none overlap=ok mask=0
+rect at 208,96 384x208 shape=path path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.5,0.923 0.531,0.894 L0.987,0.49 Q0.997,0.481 1,0.462" fill=none stroke=ink/0.55 sw=0.8 overlap=ok mask=0
+ellipse at 590,198 4x4 fill=ink stroke=none overlap=ok
+598,200 -- 644,200 stroke=ink/0.4 sw=0.8
+text "Interface" at 656,199 size=16 weight=600 color=ink
+text "web app, mobile" at 656,215 style=small size=10
 
-text "Focal layer" at 152,528 style=eyebrow
-text "Logic is where the product decisions live; the other two layers are swappable." at 256,528 style=caption italic=1
+text "Focal layer" at 208,584 style=eyebrow
+text "Logic is where the product decisions live; the other two layers are swappable." at 312,584 style=caption italic=1

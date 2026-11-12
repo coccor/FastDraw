@@ -1,9 +1,7 @@
 look "../../looks/reference.look"
-canvas 1240x580
+canvas 1240x600
+text "Trial to paid: the first week" at 40,52 style=h1
 
-text "Trial to paid: the first week" at 40,60 style=h1
-
-// stage headers, centred on the column centres 228, 444, 660, 876, 1092
 text "Stage 1" at 228,100 style=eyebrow anchor=middle
 text "Sign up" at 228,120 weight=600 anchor=middle
 text "Stage 2" at 444,100 style=eyebrow anchor=middle
@@ -15,7 +13,6 @@ text "Hit the limit" at 876,120 weight=600 anchor=middle
 text "Stage 5" at 1092,100 style=eyebrow anchor=middle
 text "Upgrade" at 1092,120 weight=600 anchor=middle
 
-// feeling levels: three lines 80px apart
 128,160 -- 1200,160 style=rule
 128,240 -- 1200,240 style=rule
 128,320 -- 1200,320 style=rule
@@ -23,7 +20,6 @@ text "High" at 112,163 style=eyebrow anchor=end
 text "Neutral" at 112,243 style=eyebrow anchor=end
 text "Low" at 112,323 style=eyebrow anchor=end
 
-// the curve: one straight piece per step, the fall into the low point in the accent
 228,160 -- 444,240 sw=1.5
 444,240 -- 660,160 sw=1.5
 660,160 -- 876,320 sw=1.5 stroke=accent
@@ -34,11 +30,10 @@ ellipse at 655,155 10x10 fill=muted stroke=none
 ellipse at 871,315 10x10 fill=accent stroke=none
 ellipse at 1087,235 10x10 fill=muted stroke=none
 
-// rows
 128,344 -- 1200,344 style=rule
 128,440 -- 1200,440 style=rule
-text "Actions" at 112,371 style=eyebrow anchor=end
-text "Touchpoints" at 112,471 style=eyebrow anchor=end
+text "Actions" at 112,375 style=eyebrow anchor=end
+text "Touchpoints" at 112,475 style=eyebrow anchor=end
 
 text "Create workspace" at 228,372 anchor=middle
 text "Import first dataset" at 444,372 anchor=middle
@@ -46,10 +41,9 @@ text "Add 3 teammates" at 660,372 anchor=middle
 text "Export blocked mid-report" at 876,372 anchor=middle
 text "Pick annual plan" at 1092,372 anchor=middle
 
-// what hurts, under the low stage only
 rect "NO WARNING AT 80%" at 784,384 184x16 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
     title.font=mono title.size=8 title.weight=400 title.color=accent title.spacing=0.1
-rect "PRICING PAGE IS 3 CLICKS AWAY" at 784,404 184x16 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
+rect "PRICING PAGE IS 3 CLICKS AWAY" at 784,408 184x16 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
     title.font=mono title.size=8 title.weight=400 title.color=accent title.spacing=0.1
 
 text "signup form" at 228,472 style=small anchor=middle
@@ -58,14 +52,4 @@ text "email invite" at 660,472 style=small anchor=middle
 text "in-app modal" at 876,472 style=small anchor=middle
 text "billing page" at 1092,472 style=small anchor=middle
 
-// legend, drawn by hand because none of its entries is a style of the look
-40,512 -- 1200,512 style=rule
-text "Legend" at 40,530 style=eyebrow
-40,546 -- 64,546 sw=1.5
-ellipse at 48,542 8x8 fill=muted stroke=none
-text "How the user feels" at 72,549 style=caption
-220,546 -- 244,546 sw=1.5 stroke=accent
-ellipse at 228,542 8x8 fill=accent stroke=none
-text "Lowest point" at 252,549 style=caption
-rect at 400,541 16x10 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
-text "What hurts there" at 424,549 style=caption
+legend at 40,520 line.muted="How the user feels" dot.accent="Lowest point" swatch.accent/0.15="What hurts there"

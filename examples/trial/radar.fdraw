@@ -1,0 +1,32 @@
+canvas 1000x500
+text "Three laptops, five criteria" at 40,48 style=h1
+text "Scores 0 to 10, higher is better" at 40,68 style=eyebrow
+polygon at 0,0 points=500,204;530,226;519,262;481,262;470,226 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,172;561,216;538,288;462,288;439,216 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,140;591,206;556,314;444,314;409,206 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,108;622,196;575,340;425,340;378,196 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,76;652,187;594,365;406,365;348,187 fill=none stroke=ink/0.25 sw=1 overlap=ok mask=0
+500,236 -- 500,76 stroke=ink/0.2 sw=1
+500,236 -- 652,187 stroke=ink/0.2 sw=1
+500,236 -- 594,365 stroke=ink/0.2 sw=1
+500,236 -- 406,365 stroke=ink/0.2 sw=1
+500,236 -- 348,187 stroke=ink/0.2 sw=1
+budget: polygon at 0,0 points=500,156;576,211;566,327;462,288;348,187 fill=muted/0.06 stroke=muted sw=1.5 overlap=ok mask=0
+pro: polygon at 0,0 points=500,140;652,187;528,275;415,352;454,221 fill=link/0.06 stroke=link sw=1.5 overlap=ok mask=0
+air: polygon at 0,0 points=500,92;607,201;594,365;444,314;409,206 fill=accent/0.14 stroke=accent sw=2 overlap=ok mask=0
+ellipse at 496,88 8x8 fill=accent stroke=none overlap=ok
+ellipse at 603,197 8x8 fill=accent stroke=none overlap=ok
+ellipse at 590,361 8x8 fill=accent stroke=none overlap=ok
+ellipse at 440,310 8x8 fill=accent stroke=none overlap=ok
+ellipse at 405,202 8x8 fill=accent stroke=none overlap=ok
+text "Battery" at 500,58 anchor=middle size=11 weight=600 color=ink
+text "Display" at 667,186 size=11 weight=600 color=ink
+text "Weight" at 603,386 anchor=middle size=11 weight=600 color=ink
+text "Speed" at 397,386 anchor=middle size=11 weight=600 color=ink
+text "Price" at 333,186 anchor=end size=11 weight=600 color=ink
+text "2" at 494,207 style=small size=8 anchor=end color=soft
+text "4" at 494,175 style=small size=8 anchor=end color=soft
+text "6" at 494,143 style=small size=8 anchor=end color=soft
+text "8" at 494,111 style=small size=8 anchor=end color=soft
+text "10" at 494,79 style=small size=8 anchor=end color=soft
+legend at 40,424 swatch.accent="Aero 13 · lightest, longest battery" swatch.link="Studio 16" swatch.muted="Budget 15"

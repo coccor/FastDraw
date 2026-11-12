@@ -1,39 +1,32 @@
 look "../../looks/reference.look"
-canvas 1000x520
+canvas 1000x580
 
-// whole = 916x380 at 40,40 (8.09B people). Asia takes a full-height column of 59% of the width;
+// whole = 916x380 at 40,96 (8.09B people). Asia takes a full-height column of 59% of the width;
 // the rest is split into two rows, each cell's area in proportion to its share; 4px between cells
-asia: rect at 40,40 532x380 radius=2 fill=accent/0.16 stroke=accent sw=1.5
-text "Asia" at 56,68 size=14 weight=600 color=ink
-text "4.78B · 59% of world" at 56,88 style=small color=muted
+title: text "Asia holds 59% of the world's people" at 40,52 style=h1
+asia: rect at 40,96 532x380 radius=2 fill=accent/0.16 stroke=accent sw=1.5
+text "Asia" at 56,124 size=14 weight=600 color=ink
+text "4.78B · 59% of world" at 56,144 style=small color=muted
 
-africa: rect at 576,40 252x252 radius=2 fill=ink/0.16 stroke=ink/0.3
-text "Africa" at 592,68 size=13 weight=600 color=ink
-text "1.48B · 18%" at 592,88 style=small color=muted
+africa: rect at 576,96 252x252 radius=2 fill=ink/0.16 stroke=ink/0.3
+text "Africa" at 592,124 size=13 weight=600 color=ink
+text "1.48B · 18%" at 592,144 style=small color=muted
 
-europe: rect at 832,40 124x252 radius=2 fill=ink/0.13 stroke=ink/0.3
-text "Europe" at 848,68 size=13 weight=600 color=ink
-text "0.75B · 9%" at 848,88 style=small color=muted
+europe: rect at 832,96 124x252 radius=2 fill=ink/0.13 stroke=ink/0.3
+text "Europe" at 848,124 size=13 weight=600 color=ink
+text "0.75B · 9%" at 848,144 style=small color=muted
 
-namerica: rect at 576,296 208x124 radius=2 fill=ink/0.10 stroke=ink/0.3
-text "North America" at 592,324 size=12 weight=600 color=ink
-text "0.61B · 8%" at 592,344 style=small color=muted
+namerica: rect at 576,352 208x124 radius=2 fill=ink/0.10 stroke=ink/0.3
+text "North America" at 592,380 size=12 weight=600 color=ink
+text "0.61B · 8%" at 592,400 style=small color=muted
 
-samerica: rect at 788,296 148x124 radius=2 fill=ink/0.07 stroke=ink/0.3
-text "South America" at 804,324 size=12 weight=600 color=ink
-text "0.43B · 5%" at 804,344 style=small color=muted
+samerica: rect at 788,352 148x124 radius=2 fill=ink/0.07 stroke=ink/0.3
+text "South America" at 804,380 size=12 weight=600 color=ink
+text "0.43B · 5%" at 804,400 style=small color=muted
 
 // too narrow for a name: a dot, explained in the legend
-oceania: rect at 940,296 16x124 radius=2 fill=ink/0.04 stroke=ink/0.3
-ellipse at 944,316 8x8 fill=ink stroke=none
+oceania: rect at 940,352 16x124 radius=2 fill=ink/0.04 stroke=ink/0.3
+ellipse at 944,372 8x8 fill=ink stroke=none
 
-// legend, by hand
-40,444 -- 960,444 style=rule
-text "Legend" at 40,464 style=eyebrow
-text "Area = population · mid-2023 · 8.09B in total" at 960,464 style=eyebrow anchor=end
-rect at 40,478 20x12 radius=2 fill=accent/0.16 stroke=accent
-text "Asia · more people than the rest of the world together" at 68,488 style=caption
-rect at 376,478 20x12 radius=2 fill=ink/0.16 stroke=ink/0.3
-text "Other continents · a stronger tint is a larger share" at 404,488 style=caption
-ellipse at 692,481 8x8 fill=ink stroke=none
-text "Oceania · 0.05B, 0.6% · too small to label" at 708,488 style=caption
+// legend: the tint after the slash is the fill of the cells
+legend at 40,500 swatch.accent/0.16="Asia · more people than the rest of the world together" swatch.ink/0.16="Other continents · a stronger tint is a larger share" dot.ink="Oceania · 0.05B, 0.6% · too small to label" title="Area = population · mid-2023 · 8.09B in total"

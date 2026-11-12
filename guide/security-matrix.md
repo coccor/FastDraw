@@ -4,7 +4,7 @@ Shows who may do what: one row per component, one column per role or group, and 
 
 ## Building blocks
 
-The built-in `table` with `align=center grid=1` draws a plain grid, but it cannot tint single cells, and here the tint is the message. Build the matrix from `rect`s on a fixed grid instead:
+Title at 40,52 (`style=h1`); the header row starts at y=96. A `table`/`matrix` with `fill.N=` per cell is the short way to a plain matrix, but its cells cannot be bold, carry a second line or have a dark header band, and its grid is flat: the picture is weaker. Where the level and the one special cell are the message, build the matrix from `rect`s on a fixed grid:
 
 ```
 // columns: labels at x=40 (200 wide), then one per role: x = 248 + 144*j, 136 wide
@@ -31,7 +31,7 @@ All of them also take `radius=4 title.size=10 stroke=ink/0.12`.
 ## Composition
 
 - Two to six roles, two to fourteen components. More roles: split (people and service accounts). More components: split by area.
-- The grid above fits five roles in a 1000px canvas. For another count keep the 8px gap and share the width: role width = `(720 - 8*(n-1)) / n`, rounded down to a multiple of 4. Six roles need a wider canvas or a 168px label column.
+- The grid above fits five roles in a 1000px canvas. For another count keep the 8px gap and share the width: role width = `(720 - 8*(n-1)) / n`, rounded down to a multiple of 4, role j at `x = 248 + (w+8)*j`. Six roles need a wider canvas or a 168px label column. Canvas height = `252 + 40*rows` (rows from y=160, 40 apart; the legend rule 24px under the last).
 - Order roles from most to least trusted, or the way the organisation lists them; order components the way data moves through them. Rows that read alike should be neighbours.
 - A role header is its name with the group id as `sub=`. A component may carry a short hint (protocol, product) as `small` text right-aligned 12px inside its label cell, baseline 21px below the row top.
 - Fill every cell. A cell with no access says "None"; an empty cell reads as unknown.
@@ -44,4 +44,4 @@ All of them also take `radius=4 title.size=10 stroke=ink/0.12`.
 
 ## Legend
 
-The cells are not styles of the look, so draw the legend by hand, 24px under the last row: a `rule` line across, "Legend" in `eyebrow` 20px below it, then for each level you used a `rect` of 16x12 with the level's fill and a `caption` 8px to its right (baseline 10px below the rect's top), 96px apart. Last, the focal swatch with a caption that states the rule in words.
+The cells are not styles of the look, so draw the legend by hand, 24px under the last row: a `rule` line across written with `--` (`40,Y -- 960,Y style=rule`), "Legend" in `eyebrow` 20px below it, then for each level you used a `rect` of 16x12 at Y+32 with the level's fill and a `caption` 8px to its right (baseline 10px below the rect's top), each next rect at the last caption's x plus `6 * its characters + 24` ("Read and write" needs 108 in all). Last, the focal swatch with a caption that states the rule in words.

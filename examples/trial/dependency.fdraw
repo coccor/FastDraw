@@ -1,0 +1,44 @@
+canvas 1000x700
+
+text "Mobile app monorepo: package dependencies" at 180,60 style=h1
+
+text "Rank 0" at 40,136 style=eyebrow
+text "Rank 1" at 40,280 style=eyebrow
+text "Rank 2" at 40,424 style=eyebrow
+text "Rank 3" at 40,568 style=eyebrow
+
+shop:   node "shop-app" sub="apps/shop" tag="APP" at 180,100 160x64
+widget: node "widgets" sub="apps/widgets" tag="APP" at 420,100 160x64
+admin:  node "admin-app" sub="apps/admin" tag="APP" at 660,100 160x64
+
+checkout: node "checkout" sub="packages/checkout" tag="PKG" at 180,244 160x64
+account:  node "account" sub="packages/account" tag="PKG" at 660,244 160x64
+
+api:   node "api-client" sub="packages/api-client" tag="PKG" at 180,388 160x64
+uikit: focal "ui-kit" sub="packages/ui-kit" tag="PKG" at 420,388 160x64
+
+utils: node "core-utils" sub="packages/core-utils" tag="PKG" at 180,532 160x64
+rn:    cloud "react-native" sub="v0.76 · npm" tag="EXT" at 420,532 160x64
+
+shop.bottom@260 -> checkout.top@260
+admin.bottom@740 -> account.top@740
+widget.bottom@500 -> uikit.top@500
+checkout.bottom@260 -> api.top@260
+checkout.bottom@300 -> uikit.top@460 via=300,332;460,332
+account.bottom@700 -> uikit.top@540 via=700,332;540,332
+api.bottom@260 -> utils.top@260
+utils.top@300 -> api.bottom@300 "cycle" style=primary
+uikit.bottom@500 -> rn.top@500
+utils.right -> rn.left
+
+rect "0 in" at 304,108 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "0 in" at 544,108 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "0 in" at 784,108 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "1 in" at 304,252 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "1 in" at 784,252 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "2 in" at 304,396 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "3 in" at 544,396 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "1 in" at 304,540 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect "2 in" at 544,540 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+
+legend at 40,620 node="Own package or app" focal="Most depended on" cloud="Third party" arrow="Depends on" primary="Closes a cycle"
