@@ -22,8 +22,8 @@ function usage(): never {
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
   preview-look [file.look] [-o out.png]   draw every style of a look on one sheet
-  guide  [architecture|flowchart|sequence|look]
-                                          print the language guide`);
+  guide  [topic]                          print the language guide, or the guide for one kind of diagram
+  guide  list                             list the kinds of diagram that have a guide`);
   process.exit(2);
 }
 
@@ -161,6 +161,8 @@ if (cmd === 'check') {
 } else if (cmd === 'guide') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');
-  if (!existsSync(file)) { console.log(`no guide called "${topic}". Topics: architecture, flowchart, sequence, look`); process.exit(1); }
+  const topics = readdirSync(join(root, 'guide')).filter((f) => f.endsWith('.md') && f !== 'guide.md').map((f) => f.slice(0, -3)).sort();
+  if (topic === 'list') { console.log(topics.join('\n')); process.exit(0); }
+  if (!existsSync(file) || /[\\/]/.test(topic ?? '')) { console.log(`no guide called "${topic}". Topics: ${topics.join(', ')}`); process.exit(1); }
   console.log(readFileSync(file, 'utf8'));
 } else usage();

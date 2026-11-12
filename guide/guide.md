@@ -6,7 +6,7 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 
 1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
 2. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
-3. If the diagram is an architecture diagram, a flowchart or a sequence diagram, run `fastdraw guide architecture|flowchart|sequence` and follow it.
+3. Run `fastdraw guide list` to see which kinds of diagram have their own guide. If yours is there, run `fastdraw guide <kind>` and follow it.
 4. Plan the composition on paper first: canvas size, rows and columns, where the main thing sits.
 5. Write the file.
 6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
