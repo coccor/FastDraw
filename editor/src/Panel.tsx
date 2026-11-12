@@ -56,25 +56,35 @@ const MARKER_NAMES: Record<string, string> = {
 };
 
 // The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
-function RowsEditor({ rows, onChange }: { rows: Row[]; onChange: (rows: RowSpec[]) => void }) {
-  const specs: RowSpec[] = rows.map((r) => ({ id: r.id, kind: r.kind, cells: r.cells, p: r.p }));
-  const show = (r: RowSpec) => (r.kind === 'rule' ? '---' : r.cells.join(' | '));
+function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; onChange: (rows: RowSpec[]) => void }) {
+  const specs: RowSpec[] = rows.map((r) => ({ id: r.id, kind: r.kind, cells: r.cells, vals: r.vals, p: r.p }));
+  // a chart row is a series: its name, then its numbers
+  const show = (r: RowSpec) => (r.kind === 'rule' ? '---' : chart ? [r.cells[0] ?? '', ...(r.vals ?? [])].join(' | ') : r.cells.join(' | '));
   const nextId = () => { for (let i = 1; ; i++) if (!specs.some((r) => r.id === `r${i}`)) return `r${i}`; };
   const commit = (i: number, v: string) => {
     const text = v.trim();
     if (!text) return onChange(specs.filter((_, k) => k !== i));
+    const parts = text.split('|').map((c) => c.trim());
+    if (chart) return onChange(specs.map((r, k) => (k === i ? { ...r, cells: [parts[0]], vals: parts.slice(1).filter((v) => /^([+-]?\d*\.?\d+(,[+-]?\d*\.?\d+)?|_)$/.test(v)) } : r)));
     const next: RowSpec = text === '---' ? { kind: 'rule', cells: [] } : { ...specs[i], kind: specs[i].kind === 'rule' ? 'row' : specs[i].kind, cells: text.split('|').map((c) => c.trim()) };
     onChange(specs.map((r, k) => (k === i ? next : r)));
   };
   return (
     <section>
-      <h4>Rows</h4>
+      <h4>{chart ? 'Series' : 'Rows'}</h4>
       {specs.map((r, i) => <RowInput key={i + show(r)} value={show(r)} label={`Row ${i + 1}`} onCommit={(v) => commit(i, v)} />)}
-      <div className="seg">
+      {chart && (
+        <div className="seg">
+          {(['bars', 'line', 'area', 'dots'] as const).map((k) => (
+            <button key={k} title={`Add a series drawn as ${k}`} onClick={() => onChange([...specs, { id: k, kind: 'row', cells: ['Series'], vals: (specs[0]?.vals ?? ['30', '50', '40']).map(() => '50') }])}>+ {k}</button>
+          ))}
+        </div>
+      )}
+      {!chart && <div className="seg">
         <button title="Add a row at the bottom" onClick={() => onChange([...specs, { id: nextId(), kind: 'row', cells: ['name', 'value'] }])}>Add row</button>
         <button title="Add a dividing line at the bottom" onClick={() => onChange([...specs, { kind: 'rule', cells: [] }])}>Add divider</button>
-      </div>
-      <p className="muted small">Separate columns with |. Clear a row to remove it.</p>
+      </div>}
+      <p className="muted small">{chart ? 'Name, then the numbers, separated by |. Clear a series to remove it.' : 'Separate columns with |. Clear a row to remove it.'}</p>
     </section>
   );
 }
@@ -217,7 +227,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <p className="muted small">Clear an entry to remove it.</p>
         </section>
       )}
-      {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} onChange={act.setRows} />}
+      {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
       {els.length === 1 && first.kind === 'shape' && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Extra text</h4>

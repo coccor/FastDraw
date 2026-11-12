@@ -189,8 +189,12 @@ export function setRows(src: string, sc: Scene, s: Shape, rows: RowSpec[]): stri
   return patchSource(src, patches);
 }
 
-export function addShape(src: string, style: string, b: Box, sized: boolean, table = false): { src: string; id: string } {
+export function addShape(src: string, style: string, b: Box, sized: boolean, table = false, chart = false): { src: string; id: string } {
   const id = freshId(src, style.replace(/-/g, '_'));
+  if (chart) {
+    const w = sized ? Math.round(b.w) : 320, h = sized ? Math.round(b.h) : 180;
+    return { src: appendStatements(src, [`${id}: ${style} "Title" at ${Math.round(b.x)},${Math.round(b.y)} ${w}x${h} x="A,B,C,D"\n  | bars "Series" 30 50 40 70`]), id };
+  }
   if (table) {
     const head = `${id}: ${style} "Name" at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}`;
     return { src: appendStatements(src, [head + '\n  | r1 "first" "value"\n  | r2 "second" "value"']), id };

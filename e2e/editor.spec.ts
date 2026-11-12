@@ -310,3 +310,22 @@ test('polygon: drag a corner, move and resize it', async ({ page }) => {
   expect(lineOf(await source(page), 'tri')).toContain('at 104,60 120x120 points=100,0;120,120;0,120');
   await expect(page.locator('.problems')).toHaveText('No problems');
 });
+
+test('chart: place one from the gallery, change its numbers and add a series', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, 'canvas 900x500\nt: h1 "Numbers" at 40,52\n');
+  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.locator('.thumbcard', { hasText: 'chart' }).first().click();
+  const spot = await at(page, 400, 260);
+  await page.mouse.click(spot.x, spot.y);
+  expect(await source(page)).toMatch(/chart: chart "Title" at 240,172 320x180 x="A,B,C,D"\n  \| bars "Series" 30 50 40 70\n$/);
+  const row = page.getByLabel('Row 1', { exact: true });
+  await expect(row).toHaveValue('Series | 30 | 50 | 40 | 70');
+  await row.fill('Sales | 10 | 20 | 30 | 45');
+  await row.press('Enter');
+  await page.getByRole('button', { name: '+ line' }).click();
+  expect(await source(page)).toContain('  | bars "Sales" 10 20 30 45\n  | line "Series" 50 50 50 50\n');
+  await expect(page.locator('svg.canvas polyline[stroke-linejoin="round"]')).toHaveCount(1);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});

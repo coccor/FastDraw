@@ -95,6 +95,17 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 | `cell.pad=`, `cell.gap=` | space at the left and right edges (default 12) and between columns (default 16) |
 | `align=center`, `grid=1` | centre the columns after the first; draw lines between columns |
 
+**Chart styles** (`style name extends chart ...`): `stroke=` and `sw=` are the axis lines, `fill=` the plot background, and:
+
+| Key | Meaning |
+|---|---|
+| `tick.font=`, `tick.size=`, `tick.color=` | tick labels |
+| `value.font=`, `value.size=`, `value.color=` | the numbers written by `labels=1` |
+| `axis.font=`, `axis.size=`, `axis.color=` | axis titles and the series key |
+| `grid.color=` | grid lines |
+| `bar.radius=`, `bar.width=` | bar corner radius; share of the category width the bars fill |
+| `title.*` | the chart's title |
+
 **Line styles** (`style name line ...`)
 
 | Key | Meaning |
@@ -110,7 +121,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 
 ### Built-in styles you can restyle
 
-`rect`, `ellipse`, `diamond`, `polygon`, `arc`, `table`, `text`, `arrow`, `line` and `legend` exist in every look. A style can also be built on `polygon` or `arc` (`style slice extends arc stroke=paper sw=2`); the corners and angles are still given on each element. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
+`rect`, `ellipse`, `diamond`, `polygon`, `arc`, `table`, `chart`, `text`, `arrow`, `line` and `legend` exist in every look. A style can also be built on `polygon` or `arc` (`style slice extends arc stroke=paper sw=2`); the corners and angles are still given on each element. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
 
 ### Guidance
 

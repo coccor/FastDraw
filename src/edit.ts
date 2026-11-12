@@ -20,7 +20,7 @@ export function fmtTok(t: Tok): string {
 const isRowStart = (t: Tok) => t.t === 'word' && (t.v === '|' || t.v === '|=');
 export const fmtStmt = (toks: Tok[]) => toks.map((t, i) => (i === 0 ? '' : isRowStart(t) ? '\n  ' : ' ') + fmtTok(t)).join('');
 
-export type RowSpec = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; p?: Record<string, string> };
+export type RowSpec = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; vals?: string[]; p?: Record<string, string> };
 // Replace all rows of a table statement.
 export function setRows(toks: Tok[], rows: RowSpec[]): Tok[] {
   const i = toks.findIndex(isRowStart);
@@ -30,6 +30,7 @@ export function setRows(toks: Tok[], rows: RowSpec[]): Tok[] {
     if (r.kind === 'rule') { out.push({ t: 'word', v: '---' }); continue; }
     if (r.id) out.push({ t: 'word', v: r.id });
     for (const c of r.cells) out.push({ t: 'str', v: c });
+    for (const v of r.vals ?? []) out.push({ t: 'word', v });
     for (const [k, v] of Object.entries(r.p ?? {})) out.push({ t: 'prop', k, v });
   }
   return out;

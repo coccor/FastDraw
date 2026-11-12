@@ -83,6 +83,46 @@ ring: arc at 660,40 200x200 from=0 to=250 inner=0.7 fill=link stroke=none
 
 Shapes that are meant to overlap (circles of a Venn diagram, faces of a 3D box) need `overlap=ok`, or `check` reports them.
 
+### Charts
+
+`chart` draws axes, tick labels and grid lines, and plots your numbers, so you never work out bar heights by hand. Its box (`at x,y WxH`) is the plot area. Tick labels are drawn outside it: leave about 56px free on the left, 28px below (44px with `xtitle=`) and 40px above.
+
+```
+rev: chart "Revenue by quarter" at 80,80 360x200 x="Q1,Q2,Q3,Q4" prefix="$" unit="k" labels=1
+  | bars "2025" 42 61 75 93
+  | line "Plan" 50 60 70 80 stroke=link dots=1
+```
+
+Each row is one series: `| kind "name" numbers... props`.
+
+| Kind | Draws |
+|---|---|
+| `bars` | one bar per category. Several `bars` series stand side by side; `stack=1` on the chart stacks them. A pair `lo,hi` is a floating bar (a bridge step, a range) |
+| `line` | a line through the values; `dots=1` marks each point, `dash=4,4` dashes it |
+| `area` | a line with the space under it tinted |
+| `dots` | points only. With a numeric x axis each point is `x,y`; with categories a pair is `value,radius` (a bubble) |
+
+- `_` in place of a number leaves a gap.
+- Colour a series with `fill=` or `stroke=` on its row. Without it the series take the accent first, then the link colour, then greys. Keep the accent for the series the chart is about.
+
+Chart properties:
+
+| Property | Meaning |
+|---|---|
+| `x="Q1,Q2,Q3"` | category names along the bottom |
+| `x=0..100` | a numeric x axis instead (`xstep=20`, `xunit="s"`); series then give `x,y` points |
+| `y=0..100` | the y range; left out, it runs from 0 to a round number above the largest value |
+| `step=25` | distance between y ticks (worked out when left out) |
+| `prefix="$"`, `unit="k"` | written around every y value |
+| `labels=1` | write each value above its bar or point |
+| `xtitle=`, `ytitle=` | axis titles |
+| `grid=0`, `grid=both` | no grid lines; or vertical ones too (numeric x) |
+| `key=0` | hide the series key (drawn top-right when there are two or more named series) |
+| `yaxis=0` | hide the y tick labels (when `labels=1` already says it) |
+| `bar.width=0.64` | share of each category's width that bars fill |
+
+Anything the chart does not draw (a note, a threshold label, an arrow to one bar) you add as ordinary text and connectors at exact coordinates. The plot maps values linearly: value `v` is at `y + H - (v - ymin) / (ymax - ymin) * H`, and category `i` (from 0) is centred at `x + W * (i + 0.5) / n`.
+
 ### Tables
 
 A table is a box with a header and rows, for entities, classes, database tables and grids of values. Write the box as usual, then one indented line per row, each starting with `|`:

@@ -3,16 +3,17 @@ import { color, fontFamily } from './look.ts';
 import type { Look, Props } from './look.ts';
 import { textWidth } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
+import { drawChart } from './chart.ts';
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const r2 = (n: number) => Math.round(n * 100) / 100;
+export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
+export const r2 = (n: number) => Math.round(n * 100) / 100;
 // Everything interpolated into an attribute goes through esc: diagram files are untrusted input
 // and the editor injects this markup into the page.
-const col = (look: Look, v: string | undefined) => esc(color(look, v));
+export const col = (look: Look, v: string | undefined) => esc(color(look, v));
 const fam = (look: Look, v: string | undefined) => esc(fontFamily(look, v));
 
-function textAttrs(look: Look, p: Props, pre: string, d: { font: string; size: number; weight: number; color: string }) {
+export function textAttrs(look: Look, p: Props, pre: string, d: { font: string; size: number; weight: number; color: string }) {
   const g = (k: string) => p[pre + k];
   const size = num(g('size'), d.size);
   const spacing = num(g('spacing'), 0);
@@ -156,6 +157,7 @@ function drawTable(look: Look, s: Shape): string {
 function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'legend') return drawLegend(look, s);
   if (s.shape === 'table') return drawTable(look, s);
+  if (s.shape === 'chart') return drawChart(look, s);
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));

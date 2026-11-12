@@ -73,7 +73,7 @@ if (cmd === 'check') {
     for (const s of rows.filter((r) => r.kind === kind)) {
       const p = s.props;
       const bits: string[] = [];
-      if (kind === 'shape') bits.push(`shape=${p.shape ?? 'rect'}`, p.shape === 'table' ? 'sizes itself from its rows' : p.shape === 'polygon' ? 'sized by its points' : p.size ? `default size ${p.size}` : 'no default size: always give WxH', p.layer === 'back' ? 'drawn behind everything' : '');
+      if (kind === 'shape') bits.push(`shape=${p.shape ?? 'rect'}`, p.shape === 'table' ? 'sizes itself from its rows' : p.shape === 'polygon' ? 'sized by its points' : p.shape === 'chart' ? 'always give WxH: the plot area' : p.size ? `default size ${p.size}` : 'no default size: always give WxH', p.layer === 'back' ? 'drawn behind everything' : '');
       if (kind === 'line') bits.push(`route=${p.route ?? 'ortho'}`, p.dash ? `dash=${p.dash}` : 'solid', `stroke=${p.stroke ?? 'muted'}`);
       if (kind === 'text') bits.push(`font=${p.font ?? 'sans'}`, `size=${p.size ?? 12}`, p.caps === '1' ? 'caps' : '');
       if (p.use) bits.push(`use: ${p.use}`);
@@ -111,6 +111,12 @@ if (cmd === 'check') {
     const cell = Math.max(w, 144) + 40;
     if (x + cell > W + 40) { x = 40; y += rowH + 44; rowH = 0; }
     const narrow = w <= 12, back = s.props.layer === 'back';
+    if (s.props.shape === 'chart') {
+      if (x + 280 > W + 40) { x = 40; y += rowH + 44; rowH = 0; }
+      L.push(`p${i}: ${s.name} ${JSON.stringify(s.name)} at ${x + 32},${y + 28} 200x100 x="A,B,C,D"\n  | bars "one" 30 50 40 70\n  | line "two" 40 45 55 60`);
+      x += 280; rowH = Math.max(rowH, 148);
+      return;
+    }
     if (table) {
       const grid = s.props.align === 'center';
       L.push(`p${i}: ${s.name} ${JSON.stringify(s.name)} at ${x},${y} 160x0\n  ${grid ? '|= "" "A" "B"' : '| "id" "uuid" "PK"'}\n  | "name" ${grid ? '"yes" "no"' : '"text" ""'}\n  | "more" ${grid ? '"no" "yes"' : '"int" ""'}`);

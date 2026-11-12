@@ -11,7 +11,8 @@ export type Box = { x: number; y: number; w: number; h: number };
 export type Side = 'top' | 'bottom' | 'left' | 'right';
 export type LegendItem = { style: string; kind: Kind; label: string; x: number; baseline: number; sample: number };
 // One row of a table box. y and h are filled in by the layout; a 'rule' row is a dividing line with no height.
-export type Row = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; p: Props; y: number; h: number };
+// On a chart a row is one series: id is its kind (bars, line, area, dots), cells[0] its name, vals its numbers.
+export type Row = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; vals: string[]; p: Props; y: number; h: number };
 export type Col = { x: number; w: number };
 export type Shape = Box & {
   id: string; line: number; style: string; p: Props; shape: string; text?: string; back: boolean; legend?: LegendItem[];
@@ -38,6 +39,7 @@ export type Scene = {
 };
 
 // What can sit on the end of a line. The last six are the entity-relationship cardinalities.
+export const SERIES = ['bars', 'line', 'area', 'dots'];
 export const MARKERS = ['none', 'arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many'];
 
 const DIRS: Record<Side, Pt> = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
@@ -354,7 +356,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     const rows: Row[] = [];
     for (; i < toks.length; i++) {
       const t = toks[i];
-      if (t.t === 'word' && (t.v === '|' || t.v === '|=')) { rows.push({ kind: t.v === '|' ? 'row' : 'head', cells: [], p: {}, y: 0, h: 0 }); continue; }
+      if (t.t === 'word' && (t.v === '|' || t.v === '|=')) { rows.push({ kind: t.v === '|' ? 'row' : 'head', cells: [], vals: [], p: {}, y: 0, h: 0 }); continue; }
       const row = rows[rows.length - 1];
       if (row) {
         // everything after a "|" belongs to that row: an optional id, then one "text" per column
@@ -362,6 +364,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         else if (t.t === 'prop') row.p[t.k!] = t.v;
         else if (t.v === '---' && !row.cells.length && !row.id) row.kind = 'rule';
         else if (!row.id && !row.cells.length && /^[A-Za-z_][\w-]*$/.test(t.v) && !(t.v in DIRS)) row.id = t.v;
+        else if (/^([+-]?\d*\.?\d+(,[+-]?\d*\.?\d+)?|_)$/.test(t.v)) row.vals.push(t.v); // a number, a pair (3,40), or _ for no value
         else err(st.line, `unexpected word "${t.v}" in a table row; a row is: | id "cell" "cell" (the id is optional, and cannot be top, bottom, left or right)`);
         continue;
       }
@@ -415,6 +418,16 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     }
     if (sh.shape === 'arc') for (const k of ['from', 'to', 'inner']) if (p[k] !== undefined && isNaN(+p[k])) err(st.line, `${k}=${p[k]} must be a number (from= and to= are degrees clockwise from the top; inner= is 0 to 1)`);
     if (sh.shape === 'table') layoutTable(sh, rows, size0?.w ?? 0, (m) => err(st.line, m));
+    else if (sh.shape === 'chart') {
+      sh.rows = rows;
+      if (!size0) err(st.line, 'a chart needs a size for its plot area: at x,y WxH');
+      const n = p.x && !/^-?[\d.]+\.\.-?[\d.]+$/.test(p.x) ? p.x.split(',').length : 0;
+      for (const r of rows) {
+        if (!r.id || !SERIES.includes(r.id)) err(st.line, `a chart row starts with the kind of series: ${SERIES.join(', ')}; e.g. | bars "Revenue" 42 61 75`);
+        else if (!r.vals.length) err(st.line, `the ${r.id} series ${r.cells[0] ? `"${r.cells[0]}" ` : ''}has no numbers; write them after the name: | ${r.id} "Name" 42 61 75`);
+        else if (n && r.vals.length !== n && !r.vals[0].includes(',')) warn(st.line, `the ${r.id} series ${r.cells[0] ? `"${r.cells[0]}" ` : ''}has ${r.vals.length} values but x= names ${n} categories`);
+      }
+    }
     else if (rows.length) err(st.line, `rows (the parts starting with "|") only work on a table style; "${styleName}" is not one`);
     if (sh.shape === 'legend') {
       // one statement lays out a whole legend: every style="label" pair is an entry

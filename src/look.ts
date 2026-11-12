@@ -32,6 +32,13 @@ const BUILTIN: Style[] = [
     },
   },
   {
+    name: 'chart', kind: 'shape',
+    props: {
+      shape: 'chart', fill: 'none', stroke: 'ink/0.5', sw: '1', mask: '0',
+      use: 'axes with your numbers drawn for you: chart at x,y WxH x="Q1,Q2,Q3" y=0..100, then a line per series: | bars "Revenue" 42 61 75',
+    },
+  },
+  {
     name: 'legend', kind: 'shape',
     props: {
       shape: 'legend', fill: 'none', stroke: 'none', mask: '0', rule: 'ink/0.12', title: 'Legend', size: 'automatic',

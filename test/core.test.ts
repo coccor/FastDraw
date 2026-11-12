@@ -335,3 +335,23 @@ test('polygons take exact corners and arcs take angles', () => {
   assert.match(msgs('a: ellipse at 40,40 160x160\nb: ellipse at 140,40 160x160\n'), /b overlaps a/);
   assert.doesNotMatch(msgs('a: ellipse at 40,40 160x160 overlap=ok\nb: ellipse at 140,40 160x160 overlap=ok\n'), /overlaps/);
 });
+
+test('a chart draws axes and its series from the numbers given', async () => {
+  const { niceStep } = await import('../src/chart.ts');
+  assert.deepEqual([niceStep(93), niceStep(100), niceStep(7), niceStep(0.9), niceStep(1200)], [20, 20, 2, 0.2, 200]);
+  const sc = scene('c: chart "Revenue" at 80,80 400x200 x="Q1,Q2,Q3,Q4" unit="k" labels=1\n  | bars "2025" 40 60 _ 100\n  | line "Plan" 50 50 50 50 stroke=link\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  // the scale runs 0..100 over 200px: a bar of 40 is 80px tall and stands on the axis at y=280
+  assert.ok(svg.includes('y="200" width="62" height="80"'), svg.match(/<rect[^>]*height="80"[^>]*>/)?.[0]);
+  assert.equal((svg.match(/rx="2" fill="#/g) ?? []).length >= 3, true);
+  assert.ok(svg.includes('>100k<') && svg.includes('>Q3<') && svg.includes('>Plan<') && svg.includes('>Revenue<'));
+  assert.ok(svg.includes('points="130,180 230,180 330,180 430,180"')); // the plan line at 50, through the middle of each category
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('c: chart at 80,80\n  | bars "A" 1 2\n'), /a chart needs a size for its plot area/);
+  assert.match(msgs('c: chart at 80,80 200x100\n  | pie "A" 1 2\n'), /a chart row starts with the kind of series: bars, line, area, dots/);
+  assert.match(msgs('c: chart at 80,80 200x100 x="A,B,C"\n  | bars "Sales" 1 2\n'), /"Sales" has 2 values but x= names 3 categories/);
+  // numeric x axis with points given as x,y
+  const xy = renderSvg(scene('c: chart at 80,80 400x200 x=0..100 y=0..400\n  | dots "p50" 50,200 100,400\n'));
+  assert.ok(xy.includes('<circle cx="280" cy="180"') && xy.includes('<circle cx="480" cy="80"'));
+});

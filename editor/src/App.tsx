@@ -487,7 +487,8 @@ export function App() {
         ? { x: snap(Math.min(d.start.x, p.x)), y: snap(Math.min(d.start.y, p.y)), w: snap(Math.abs(p.x - d.start.x)), h: snap(Math.abs(p.y - d.start.y)) }
         : { x: snap(d.start.x - dw / 2), y: snap(d.start.y - dh / 2), w: dw, h: dh };
       const table = style.props.shape === 'table';
-      const r = ops.addShape(src, d.style, table && !big ? { ...box, x: snap(d.start.x - 80), y: snap(d.start.y - 40) } : box, table ? big : big || !m, table);
+      const chart = style.props.shape === 'chart';
+      const r = ops.addShape(src, d.style, (table || chart) && !big ? { ...box, x: snap(d.start.x - (chart ? 160 : 80)), y: snap(d.start.y - (chart ? 90 : 40)) } : box, table || chart ? big : big || !m, table, chart);
       commit(r.src, [r.id]); doneDrawing();
       return;
     }
