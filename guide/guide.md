@@ -78,7 +78,7 @@ An end can be:
 | `+0,260` | a point relative to the other end (only one end may be relative) |
 | `life1@176` | a point on another line: where line `life1` has coordinate 176 (y on a vertical line, x on a horizontal one); a value ≤ 1 is a fraction along it |
 
-Routing: arrows turn at right angles with rounded corners. Two ends that line up give a straight line. Otherwise the arrow leaves the first shape sideways and enters the second from above or below, or uses a mid-way step. When several arrows share a side, they are spread along it automatically. To steer a route:
+Routing: arrows turn at right angles with rounded corners, and go around a box that is in the way without being told. Two ends that line up give a straight line. Otherwise the arrow leaves the first shape sideways and enters the second from above or below, or uses a mid-way step. When several arrows share a side, they are spread along it automatically. Lay boxes out so the important arrows are straight; a detour is a fallback, not a design. To steer a route yourself:
 
 - name the sides: `a.bottom -> b.left`
 - add waypoints: `via=300,200` or `via=300,200;300,360`

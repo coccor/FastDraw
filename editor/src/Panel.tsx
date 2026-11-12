@@ -17,6 +17,7 @@ export type PanelActions = {
   remove: () => void;
   duplicate: () => void;
   setCanvas: (w: number, h: number) => void;
+  resetRoute: () => void;
 };
 
 function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
@@ -125,6 +126,12 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               <button title="Arrowheads at both ends" className={op === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
             </div>
           </section>
+          {(p.via || p.lpos) && (
+            <section>
+              <h4>Route</h4>
+              <div className="seg"><button title="Forget the hand-set route and label position" onClick={act.resetRoute}>Route automatically</button></div>
+            </section>
+          )}
           <section>
             <h4>Label position</h4>
             <div className="seg">

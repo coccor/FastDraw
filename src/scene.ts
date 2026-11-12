@@ -4,6 +4,7 @@ import type { Stmt } from './parse.ts';
 import { emptyLook, defaultLook } from './look.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
+import { crosses, routeAround } from './router.ts';
 
 export type Pt = { x: number; y: number };
 export type Box = { x: number; y: number; w: number; h: number };
@@ -351,6 +352,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   }
   for (const c of conns) if (c.a.kind === 'rel' && c.b.kind === 'rel') { err(c.line, 'only one end of a connector can be relative (+dx,+dy)'); bad.add(c); }
 
+  const taken: [Pt, Pt][] = []; // segments already routed, so detours can keep off them
   const resolvePass = (batch: Conn[]) => {
     const boxOf = (e: End): Box | null => {
       if (e.kind === 'shape') return shapeById.get(e.id!)!;
@@ -439,6 +441,13 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         if (via.some((v) => isNaN(v.x) || isNaN(v.y))) { err(c.line, 'via must look like via=x,y or via=x,y;x,y'); via = []; }
       }
       c.pts = route(c, via);
+      // the simple route cuts through a box: find a way around (hand-set via points are left alone)
+      if (c.ortho && !via.length && !c.ushape) {
+        const strictlyIn = (o: Box, p: Pt) => p.x > o.x + 1 && p.x < o.x + o.w - 1 && p.y > o.y + 1 && p.y < o.y + o.h - 1;
+        const obs = shapes.filter((o) => !o.back && o.shape !== 'legend' && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        if (crosses(c.pts, obs)) { const alt = routeAround(a.pt, a.dir, b.pt, b.dir, obs, taken); if (alt) c.pts = alt; }
+      }
+      if (c.ortho) for (let i = 0; i < c.pts.length - 1; i++) taken.push([c.pts[i], c.pts[i + 1]]);
       c.label = makeLabel(c);
       done.add(c);
     }

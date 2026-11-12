@@ -34,13 +34,14 @@ export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
   const families: string[] = [];
   for (const f of files) {
     const m = fontMeta(f.bytes);
-    if (!m) continue;
+    // the family name comes out of an untrusted file and is written into CSS: plain names only
+    if (!m || !/^[\w .\-]{1,64}$/.test(m.family)) continue;
     const face = new FontFace(m.family, f.bytes.buffer as ArrayBuffer, { weight: String(m.weight), style: m.italic ? 'italic' : 'normal' });
     document.fonts.add(face);
     face.load().catch(() => undefined);
     let bin = '';
     for (let i = 0; i < f.bytes.length; i += 0x8000) bin += String.fromCharCode(...f.bytes.subarray(i, i + 0x8000));
-    lookFaces.push({ face, family: m.family, css: `@font-face{font-family:'${m.family.replace(/'/g, '')}';font-weight:${m.weight};font-style:${m.italic ? 'italic' : 'normal'};src:url(data:font/ttf;base64,${btoa(bin)}) format('truetype');}` });
+    lookFaces.push({ face, family: m.family, css: `@font-face{font-family:'${m.family}';font-weight:${m.weight};font-style:${m.italic ? 'italic' : 'normal'};src:url(data:font/ttf;base64,${btoa(bin)}) format('truetype');}` });
     if (!families.includes(m.family)) families.push(m.family);
   }
   return families;

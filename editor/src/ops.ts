@@ -1,7 +1,7 @@
 // Editor operations: each takes the current source text and scene and returns new source text.
 import { parseStatements } from '../../src/parse.ts';
 import type { Tok } from '../../src/parse.ts';
-import type { Scene, Shape, TextEl, Conn, End, Box } from '../../src/scene.ts';
+import type { Scene, Shape, TextEl, Conn, End, Box, Pt } from '../../src/scene.ts';
 import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement } from '../../src/edit.ts';
 import type { Patch } from '../../src/edit.ts';
 
@@ -86,6 +86,11 @@ export function moveElements(src: string, sc: Scene, ids: string[], dx: number, 
     });
     if (carried && c.p.via) edits.push((t) => setProp(t, 'via', shiftPts(c.p.via, dx, dy)));
     if (carried && c.p.lpos) edits.push((t) => setProp(t, 'lpos', shiftPts(c.p.lpos, dx, dy)));
+    // one end moved and the other did not: a hand-set route or label spot no longer fits, so let
+    // the router work it out again
+    if (!carried && (c.p.via || c.p.lpos) && ends.some((e) => { const o = owner(e); return o !== undefined && moved.has(o); })) {
+      edits.push((t) => setProp(setProp(t, 'via', null), 'lpos', null));
+    }
     if (edits.length) patches.set(c.line, (t) => edits.reduce((acc, f) => f(acc), t));
   }
   return patchSource(src, patches);
@@ -262,4 +267,53 @@ export function addLegend(src: string, sc: Scene): { src: string; id: string } |
   let next = appendStatements(src, [line]);
   if (sc.h < y + 72) next = setCanvas(next, sc, sc.w, y + 72);
   return { src: next, id };
+}
+
+// Drag one segment of a right-angle connector sideways. Inner segments move freely; a segment
+// that touches an end slides that end along the side (or line, or free point) it is attached to.
+export function dragSegment(src: string, sc: Scene, c: Conn, i: number, to: Pt): string {
+  const pts = c.pts.map((q) => ({ ...q }));
+  const A = pts[i], B = pts[i + 1];
+  if (!A || !B || (A.x === B.x && A.y === B.y)) return src;
+  const horiz = A.y === B.y;
+  let v = Math.round((horiz ? to.y : to.x) / 4) * 4;
+  const edits: ((t: Tok[]) => Tok[])[] = [];
+  const ends: ['a' | 'b', boolean][] = [['a', i === 0], ['b', i === pts.length - 2]];
+  for (const [w, touches] of ends) {
+    if (!touches) continue;
+    const e = c[w];
+    if (e.kind === 'shape') {
+      const sideHoriz = e.side === 'left' || e.side === 'right'; // a horizontal segment leaves a left/right side
+      if (sideHoriz !== horiz) return src;
+      const s = sc.shapes.find((x) => x.id === e.id) ?? sc.texts.find((x) => x.id === e.id);
+      if (!s) return src;
+      const lo = (horiz ? s.y : s.x) + 4, hi = (horiz ? s.y + s.h : s.x + s.w) - 4;
+      v = Math.min(Math.max(v, lo), hi);
+      edits.push((t) => setEnd(t, w, `${e.id}.${e.side}@${v}`));
+    } else if (e.kind === 'conn') {
+      const l = sc.conns.find((x) => x.id === e.id);
+      if (!l) return src;
+      const vert = l.pts[0].x === l.pts[l.pts.length - 1].x;
+      if (vert !== horiz) return src;
+      edits.push((t) => setEnd(t, w, `${e.id}@${v}`));
+    } else if (e.kind === 'point') {
+      const p = w === 'a' ? pts[0] : pts[pts.length - 1];
+      edits.push((t) => setEnd(t, w, horiz ? `${Math.round(p.x)},${v}` : `${v},${Math.round(p.y)}`));
+    } else return src;
+  }
+  if (horiz) { A.y = v; B.y = v; } else { A.x = v; B.x = v; }
+  const via = pts.slice(1, -1).map((q) => `${Math.round(q.x)},${Math.round(q.y)}`).join(';');
+  edits.push((t) => setProp(t, 'via', via || null));
+  return patchSource(src, new Map([[c.line, (t) => edits.reduce((acc, f) => f(acc), t)]]));
+}
+
+export function setLabelPos(src: string, c: Conn, p: Pt): string {
+  return patchSource(src, new Map([[c.line, (t) => setProp(t, 'lpos', `${Math.round(p.x / 2) * 2},${Math.round(p.y / 2) * 2}`)]]));
+}
+
+// Forget hand-set waypoints and label position so the connector is routed automatically again.
+export function resetRoute(src: string, sc: Scene, ids: string[]): string {
+  const patches = new Map<number, Patch>();
+  for (const id of ids) { const e = find(sc, id); if (e?.kind === 'conn') patches.set(e.el.line, (t) => setProp(setProp(setProp(t, 'via', null), 'lpos', null), 'lside', null)); }
+  return patchSource(src, patches);
 }

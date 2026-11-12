@@ -96,7 +96,7 @@ test('errors name the problem and the line', () => {
 
 test('checker: overlap, arrow through a box, label on a zone border, clean diagram', () => {
   assert.match(warns('a: node at 40,40\nb: node at 100,60').join('|'), /b overlaps a/);
-  assert.match(warns('a: node at 40,40\nm: node at 240,40\nb: node at 440,40\na -> b').join('|'), /passes through m/);
+  assert.match(warns('a: node at 40,40\nm: node at 240,40\nb: node at 440,40\na -> b via=200,72').join('|'), /passes through m/);
   assert.match(warns('z: zone "Z" at 300,20 200x300\na: node at 40,100\nb: node at 328,200\na -> b "reads data"').join('|'), /border of z/);
   assert.deepEqual(warns('a: node "A" at 40,40\nb: node "B" at 240,40\na -> b "go"'), []);
 });
@@ -196,4 +196,44 @@ test('a look brings its own fonts with fontdir, and a named font with no file is
   const sc = loadScene(new URL('../examples/look-test/fira.fdraw', import.meta.url).pathname);
   assert.equal(sc.fontFiles!.length, 2);
   assert.deepEqual(sc.issues, []);
+});
+
+test('an arrow routes around a box that is in its way', () => {
+  const sc = scene('a: node at 40,40\nm: node at 240,40\nb: node at 440,40\na -> b');
+  const c = sc.conns[0];
+  assert.ok(c.pts.length >= 4, 'took a detour');
+  assert.deepEqual(c.pts[0], { x: 184, y: 72 }); assert.deepEqual(c.pts[c.pts.length - 1], { x: 440, y: 72 });
+  for (let i = 0; i < c.pts.length - 1; i++) assert.ok(c.pts[i].x === c.pts[i + 1].x || c.pts[i].y === c.pts[i + 1].y, 'right angles only');
+  assert.deepEqual(check(sc).filter((i) => i.level === 'warn'), []);
+  // every point of the detour keeps clear of the box in the middle
+  for (const p of c.pts.slice(1, -1)) assert.ok(p.y <= 28 || p.y >= 116 || p.x <= 228 || p.x >= 396);
+});
+
+test('routing: clear paths are untouched, an L that clips a box is fixed, via points are respected', () => {
+  assert.equal(scene('a: node at 40,40\nb: node at 440,40\na -> b').conns[0].pts.length, 2);
+  const clip = scene('a: node at 40,40\nb: node at 400,240\nm: node at 380,40\na -> b');
+  assert.deepEqual(check(clip).filter((i) => /passes through/.test(i.msg)), []);
+  const forced = scene('a: node at 40,40\nm: node at 240,40\nb: node at 440,40\na -> b via=300,72');
+  assert.equal(forced.conns[0].pts.length, 3);
+  // boxed in on every side: no route exists, so the simple one is kept and the checker reports it
+  const stuck = scene('a: node at 200,160\nw1: rect at 150,100 244x40\nw2: rect at 150,244 244x40\nw3: rect at 150,100 40x184\nw4: rect at 354,100 40x184\nb: node at 600,160\na -> b');
+  assert.match(check(stuck).map((i) => i.msg).join('|'), /passes through/);
+});
+
+test('a label that lands on its own line is reported', () => {
+  assert.match(warns('a: node at 40,40\nb: node at 400,240\na -> b "reads" lpos=472,180').join('|'), /sits on its own line/);
+});
+
+test('a damaged or hostile font file is rejected quickly, not parsed at length', () => {
+  const real = new Uint8Array(readFileSync(new URL('../fonts/Geist-Regular.ttf', import.meta.url)));
+  assert.equal(fontMeta(real.subarray(0, 300)), null); // truncated: tables point past the end
+  const liar = new Uint8Array(real); // claims 65535 name records
+  const dv = new DataView(liar.buffer);
+  let nameOff = 0;
+  for (let i = 0; i < dv.getUint16(4); i++) { const o = 12 + i * 16; if (String.fromCharCode(...liar.subarray(o, o + 4)) === 'name') nameOff = dv.getUint32(o + 8); }
+  dv.setUint16(nameOff + 2, 0xffff);
+  const t = performance.now();
+  fontMeta(liar);
+  assert.ok(performance.now() - t < 50);
+  assert.match(renderSvg(scene('a: node at 0,0'), "x{}</style><script>alert(1)</script>"), /&lt;\/style>&lt;script>/);
 });

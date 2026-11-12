@@ -1,6 +1,7 @@
 // Geometry and reference checks. Messages are written for an agent to act on.
 import type { Issue } from './look.ts';
 import { textWidth } from './scene.ts';
+import { segHits } from './router.ts';
 import type { Scene, Box, Pt, Conn, Shape } from './scene.ts';
 
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -8,20 +9,6 @@ const inter = (a: Box, b: Box, pad = 0) =>
   a.x + pad < b.x + b.w && b.x + pad < a.x + a.w && a.y + pad < b.y + b.h && b.y + pad < a.y + a.h;
 const contains = (o: Box, i: Box) => i.x >= o.x && i.y >= o.y && i.x + i.w <= o.x + o.w && i.y + i.h <= o.y + o.h;
 const hasPt = (b: Box, p: Pt) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
-
-// Liang–Barsky: does segment AB cross the inside of the box?
-function segHits(A: Pt, B: Pt, r: Box): boolean {
-  let t0 = 0, t1 = 1;
-  const dx = B.x - A.x, dy = B.y - A.y;
-  const edges: [number, number][] = [[-dx, A.x - r.x], [dx, r.x + r.w - A.x], [-dy, A.y - r.y], [dy, r.y + r.h - A.y]];
-  for (const [p, q] of edges) {
-    if (p === 0) { if (q <= 0) return false; continue; }
-    const t = q / p;
-    if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
-    else { if (t < t0) return false; if (t < t1) t1 = t; }
-  }
-  return t1 - t0 > 1e-6;
-}
 
 const inset = (b: Box, n: number): Box => ({ x: b.x + n, y: b.y + n, w: b.w - 2 * n, h: b.h - 2 * n });
 const name = (c: Conn) => (c.id.startsWith('_') ? `${c.a.raw} ${c.head ? '->' : '--'} ${c.b.raw}` : c.id);
@@ -94,6 +81,9 @@ export function check(sc: Scene): Issue[] {
     for (const z of sc.shapes) {
       if (!z.back || !inter(l, z, 0) || contains(z, l)) continue;
       warn(c.line, `label "${l.text}" of ${name(c)} sits on the border of ${z.id}; place it on a clear stretch of the line with lpos=x,y`);
+    }
+    for (let i = 0; i < c.pts.length - 1; i++) {
+      if (segHits(c.pts[i], c.pts[i + 1], inset(l, 1))) { warn(c.line, `label "${l.text}" of ${name(c)} sits on its own line; move it with lpos=x,y or lside=`); break; }
     }
     for (const o of sc.conns) {
       if (o === c) continue;

@@ -184,5 +184,5 @@ export function renderBody(sc: Scene): string {
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.
 export function renderSvg(sc: Scene, css?: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sc.w} ${sc.h}" width="${sc.w}" height="${sc.h}">\n` +
-    (css ? `<style>${css}</style>\n` : '') + renderBody(sc) + '\n</svg>';
+    (css ? `<style>${css.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</style>\n` : '') + renderBody(sc) + '\n</svg>';
 }

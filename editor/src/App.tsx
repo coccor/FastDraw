@@ -26,7 +26,9 @@ type Drag =
   | { type: 'marquee'; start: Pt; add: boolean }
   | { type: 'draw'; style: string; start: Pt }
   | { type: 'conn'; op: string; from: string; start: Pt; style?: string }
-  | { type: 'end'; id: string; which: 'a' | 'b'; base: string; scene: Scene };
+  | { type: 'end'; id: string; which: 'a' | 'b'; base: string; scene: Scene }
+  | { type: 'seg'; id: string; index: number; base: string; scene: Scene }
+  | { type: 'label'; id: string; base: string; scene: Scene; dx: number; dy: number };
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 type Editing = { id: string; value: string; box: Box } | null;
 type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string };
@@ -327,6 +329,13 @@ export function App() {
     const handle = t.getAttribute('data-handle'), end = t.getAttribute('data-end');
     if (handle && sel.length === 1) { drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene }; return; }
     if (end && sel.length === 1) { drag.current = { type: 'end', id: sel[0], which: end as 'a' | 'b', base: src, scene }; return; }
+    const seg = t.getAttribute('data-seg');
+    if (seg !== null && sel.length === 1) { drag.current = { type: 'seg', id: sel[0], index: +seg, base: src, scene }; return; }
+    const lab = t.getAttribute('data-label');
+    if (lab && sel.length === 1 && sel[0] === lab) {
+      const c = scene.conns.find((x) => x.id === lab);
+      if (c?.label) { drag.current = { type: 'label', id: lab, base: src, scene, dx: c.label.cx - p.x, dy: c.label.baseline - p.y }; return; }
+    }
     const id = t.closest('[data-id]')?.getAttribute('data-id');
     if (id) {
       // second press on the same element: edit its text once the button is released
@@ -410,6 +419,12 @@ export function App() {
       if (e0?.kind === 'conn') setDraft(ops.reattach(d.base, e0.el, d.which, attachAt(d.scene, p, d.id)));
       return;
     }
+    if (d.type === 'seg' || d.type === 'label') {
+      const e0 = ops.find(d.scene, d.id);
+      if (e0?.kind !== 'conn') return;
+      setDraft(d.type === 'seg' ? ops.dragSegment(d.base, d.scene, e0.el, d.index, p) : ops.setLabelPos(d.base, e0.el, { x: p.x + d.dx, y: p.y + d.dy }));
+      return;
+    }
     if (d.type === 'marquee' || d.type === 'draw') {
       const box = { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) };
       setGhost({ kind: 'box', box, dashed: d.type === 'marquee' });
@@ -425,7 +440,7 @@ export function App() {
     if (pendingEdit.current) { const id = pendingEdit.current; pendingEdit.current = null; startEdit(id); return; }
     if (!d || src === null) return;
     const p = world(e);
-    if (d.type === 'move' || d.type === 'resize' || d.type === 'end') { if (draft !== null) commit(draft); else setDraft(null); return; }
+    if (d.type === 'move' || d.type === 'resize' || d.type === 'end' || d.type === 'seg' || d.type === 'label') { if (draft !== null) commit(draft); else setDraft(null); return; }
     if (d.type === 'marquee') {
       const box = { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) };
       if (box.w < 3 && box.h < 3) return;
@@ -494,6 +509,7 @@ export function App() {
     setCanvas: (w: number, h: number) => src !== null && commit(ops.setCanvas(src, scene, w, h)),
     group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
     ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
+    resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
     legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no look styles yet'); },
   };
   const actRef = useRef(act); actRef.current = act;
@@ -597,7 +613,7 @@ export function App() {
           <g fill="transparent" stroke="transparent">
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
             {scene.conns.map((c) => <polyline key={c.id} data-id={c.id} points={c.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" strokeWidth={12} pointerEvents="stroke" />)}
-            {scene.conns.filter((c) => c.label).map((c) => <rect key={c.id + '-l'} data-id={c.id} x={c.label!.x} y={c.label!.y} width={c.label!.w} height={c.label!.h} />)}
+            {scene.conns.filter((c) => c.label).map((c) => <rect key={c.id + '-l'} data-id={c.id} data-label={c.id} style={sel.length === 1 && sel[0] === c.id ? { cursor: 'grab' } : undefined} x={c.label!.x} y={c.label!.y} width={c.label!.w} height={c.label!.h} />)}
             {scene.shapes.filter((s) => !s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} />)}
             {scene.texts.map((t) => <rect key={t.id} data-id={t.id} x={t.x - 2} y={t.y - 2} width={t.w + 4} height={t.h + 4} />)}
           </g>
@@ -625,6 +641,12 @@ export function App() {
           )}
           {single?.kind === 'conn' && tool === 'select' && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
+              {single.el.ortho && single.el.pts.slice(0, -1).map((a, i) => {
+                const b = single.el.pts[i + 1], len = Math.abs(b.x - a.x) + Math.abs(b.y - a.y), h = a.y === b.y;
+                if (len < 28 / view.k) return null;
+                const w = (h ? 14 : 5) / view.k, ht = (h ? 5 : 14) / view.k;
+                return <rect key={'s' + i} data-seg={i} x={(a.x + b.x) / 2 - w / 2} y={(a.y + b.y) / 2 - ht / 2} width={w} height={ht} rx={2.5 / view.k} style={{ cursor: h ? 'ns-resize' : 'ew-resize' }} />;
+              })}
               {(['a', 'b'] as const).filter((w) => single.el[w].kind !== 'rel').map((w) => { const p = w === 'a' ? single.el.pts[0] : single.el.pts[single.el.pts.length - 1]; return <circle key={w} data-end={w} cx={p.x} cy={p.y} r={hs * 0.65} style={{ cursor: 'crosshair' }} />; })}
             </g>
           )}
