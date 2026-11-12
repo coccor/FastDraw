@@ -55,6 +55,10 @@ if (concept === 'source') { ports(); brackets('#f6f7f9', '#16181d', 14); chips({
 if (concept === 'bolt') { chamfer(14); chips({ fill: '#111214', pad: 6, rx: 0, h: 18, recolor: (c) => (c === '#ffd400' ? c : '#ffffff') }); }
 if (concept === 'stack') { shadow(5, 5, '#4f46e5'); chips({ fill: '#ffffff', stroke: '#15163a', pad: 7, rx: 9, h: 18 }); }
 
+if (concept === 'echo') {
+  // a second outline offset behind each rectangular card, like a stacked sheet
+  svg = svg.replace(new RegExp(`(<rect\\b[^>]*fill="${G}"[^>]*/>)(\\n?)(?=<rect)`, 'g'), (m, el, nl) => el.replace(/ stroke(-width|-dasharray)?="[^"]*"/g, '').replace(/fill="[^"]*"/, 'fill="#ffffff" stroke="#16191d" stroke-width="1.5"').replace(/\/>$/, ' transform="translate(5 5)"/>') + '\n' + el + nl);
+}
 if (concept === 'studio') {
   // soft two-layer shadow under every box (applied to its ground-coloured underlay)
   svg = svg.replace(/(<svg[^>]*>)/, `$1\n<defs><filter id="fd-lift" x="-20%" y="-20%" width="140%" height="170%"><feDropShadow dx="0" dy="1" stdDeviation="0.8" flood-color="#0f1729" flood-opacity="0.08"/><feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#0f1729" flood-opacity="0.07"/></filter></defs>`);

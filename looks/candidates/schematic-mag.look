@@ -1,0 +1,57 @@
+// "Schematic". A technical explainer (after Plaid's diagram system and printed block diagrams):
+// IBM Plex Sans Condensed names, tracked mono caps riding on the lines, uniform 1.5px line work,
+// open arrowheads, square cards with a doubled offset outline for depth (mocked), pale cyan
+// subject and a clear blue main path.
+fontdir "./fonts"
+canvas paper=ground
+
+color ground  #ffffff
+color ink     #16191d
+color muted   #555c66
+color soft    #9aa0a8
+color rule    #d5d9de
+color cyan    #d4f2f8
+color accent  #1f6fe0
+color link    #1f6fe0
+color mint    #2bb38a
+
+font sans  "IBM Plex Sans Condensed"
+font mono  "IBM Plex Mono"
+font serif "Newsreader 16pt 16pt"
+
+style node shape=rect radius=0 size=144x64 fill=#ffffff stroke=ink sw=1.5
+    title.weight=600 title.size=14 title.color=ink sub.font=mono sub.size=9 sub.color=muted
+    tag.font=mono tag.size=8 tag.color=muted tag.border=ink/0.4
+    use="default box: a service, component or step"
+style focal extends node fill=accent stroke=ink title.color=#ffffff sub.color=#ffffff/0.85 tag.color=#ffffff/0.85 tag.border=#ffffff/0.4 use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=#ffffff use="something that holds data or state"
+style cloud extends node fill=cyan stroke=ink use="a hosted or third-party platform"
+style external extends node fill=#ffffff stroke=ink dash=4,3 use="a person or system outside what you own"
+style optional extends node stroke=soft dash=2,3 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=#ffffff stroke=ink sw=1.5 title.weight=600 title.color=ink sub.color=muted sub.font=mono sub.size=9 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent title.color=#ffffff sub.color=#ffffff/0.85 use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=#ffffff stroke=ink sw=1.5 title.weight=600 use="flowchart yes/no question"
+style zone shape=rect radius=0 fill=none stroke=ink/0.55 sw=1 dash=4,3 layer=back
+    title.pos=top title.align=right title.font=mono title.size=9 title.caps=1 title.spacing=0.1 title.color=ink
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=#ffffff stroke=ink sw=1.5 use="sequence activation bar"
+style table shape=table radius=0 fill=#ffffff stroke=ink sw=1.5 head.fill=cyan rule=rule cell.font=mono cell.size=10 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 cell.font=sans use="a grid of values"
+style chart shape=chart fill=none stroke=ink sw=1 mask=0 bar.radius=0 grid.color=ink/0.07
+    use="axes with your numbers drawn for you: chart at x,y WxH x=\"Q1,Q2,Q3\" y=0..100, then a line per series: | bars \"Revenue\" 42 61 75"
+style arrow line stroke=ink sw=1.5 route=ortho radius=0 head=open label.font=mono label.size=9 label.weight=500 label.caps=1 label.spacing=0.1 label.color=ink use="default arrow"
+style primary extends arrow stroke=accent sw=2 label.color=accent use="the main path"
+style link extends arrow stroke=accent dash=5,3 label.color=accent use="a request crossing a boundary"
+style return extends arrow stroke=muted dash=4,3 use="a response"
+style relation extends relation stroke=ink sw=1.5 label.font=mono label.size=9 label.caps=1 label.color=ink
+style lifeline line head=none stroke=soft sw=1 dash=2,3 route=straight use="lifeline"
+style rule line head=none stroke=rule sw=1 route=straight use="thin separator"
+style h1 text font=sans size=28 weight=600 color=ink use="diagram title"
+style dek text font=sans size=15 color=muted use="one-line takeaway under the title"
+style eyebrow text font=mono size=9 color=muted caps=1 spacing=0.12 use="small kicker above the title"
+style caption text font=sans size=11 color=muted use="small explanatory text"
+style note text font=sans size=14 color=muted use="a short aside"
+style small text font=mono size=9 color=muted use="figure caption or technical detail"
