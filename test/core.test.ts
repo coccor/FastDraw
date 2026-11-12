@@ -483,3 +483,20 @@ test('icon files from a look folder: named from the file, drawn as images, carri
   const msgs = check(buildScene('look "x.look"\na: rect "A" at 40,40 120x48 icon=virtual-mashine\n', sc.look)).map((i) => i.msg).join();
   assert.match(msgs, /there is no icon called "virtual-mashine"; the look has: virtual-machine, hostile, storage-account, /);
 });
+
+test('a look cannot reach outside its own folder for icons or fonts, nor through symbolic links', async () => {
+  const { mkdirSync, symlinkSync } = await import('node:fs');
+  const root = mkdtempSync(tmpdir() + '/fd-'), svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4"/></svg>';
+  mkdirSync(root + '/proj/icons', { recursive: true }); mkdirSync(root + '/outside');
+  writeFileSync(root + '/outside/secret.svg', svg);
+  writeFileSync(root + '/proj/icons/mine.svg', svg);
+  symlinkSync(root + '/outside/secret.svg', root + '/proj/icons/linked.svg');
+  symlinkSync(root + '/outside', root + '/proj/sneaky');
+  const names = (dir: string) => { writeFileSync(root + '/proj/t.look', `icondir "${dir}"\nfontdir "${dir}"\n`); return [...loadLook(root + '/proj/t.look').images.keys()]; };
+  assert.deepEqual(names('./icons'), ['mine']); // the symlinked file is skipped
+  assert.deepEqual(names('../outside'), []);
+  assert.deepEqual(names(root + '/outside'), []);
+  assert.deepEqual(names('./sneaky'), []); // a symlinked folder that leads outside
+  assert.deepEqual(names('./icons/../../outside'), []);
+  assert.match(loadLook(root + '/proj/t.look').issues.map((i) => i.msg).join(), /icondir must be a folder inside the folder that holds the look file/);
+});

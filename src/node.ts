@@ -7,20 +7,38 @@ import { parseLook, emptyLook } from './look.ts';
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
-import { statSync } from 'node:fs';
+import { lstatSync, realpathSync } from 'node:fs';
+import { isAbsolute, relative, sep } from 'node:path';
 import type { Scene } from './scene.ts';
+
+// A look is untrusted input, and what its folders hold ends up inside exported images. So a folder a look
+// names (fontdir, icondir) must be a real folder inside the look's own folder, and only real files directly
+// in it are read: no absolute paths, no climbing out with "..", no symbolic links.
+function lookFolder(lookFile: string, d: string): string | null {
+  if (isAbsolute(d)) return null;
+  try {
+    const home = realpathSync(dirname(lookFile)), dir = realpathSync(resolve(home, d));
+    const rel = relative(home, dir);
+    return rel.startsWith('..') || isAbsolute(rel) || !lstatSync(dir).isDirectory() ? null : dir;
+  } catch { return null; }
+}
+function plainFiles(dir: string, ext: RegExp, maxBytes: number, maxFiles: number): string[] {
+  const out: string[] = [];
+  for (const f of readdirSync(dir).filter((n) => ext.test(n)).sort()) {
+    if (out.length >= maxFiles) break;
+    const full = dir + sep + f;
+    try { const st = lstatSync(full); if (st.isFile() && !st.isSymbolicLink() && st.size <= maxBytes) out.push(full); } catch { /* unreadable: skipped */ }
+  }
+  return out;
+}
 
 // The SVG files in the look's icon folders. Only *.svg files directly inside a folder are read.
 function iconFiles(lookFile: string, look: Look): { name: string; bytes: Uint8Array }[] {
   const out: { name: string; bytes: Uint8Array }[] = [];
   for (const d of look.iconDirs) {
-    const dir = resolve(dirname(lookFile), d);
-    if (!existsSync(dir)) { look.issues.push({ line: 0, level: 'warn', msg: `icon folder not found: ${d} (icondir is relative to the look file)` }); continue; }
-    for (const f of readdirSync(dir).filter((n) => /\.svg$/i.test(n)).sort()) {
-      if (out.length >= MAX_ICON_FILES) break;
-      const full = resolve(dir, f);
-      try { if (statSync(full).isFile() && statSync(full).size <= MAX_ICON_BYTES) out.push({ name: f, bytes: new Uint8Array(readFileSync(full)) }); } catch { /* unreadable: skipped */ }
-    }
+    const dir = lookFolder(lookFile, d);
+    if (!dir) { look.issues.push({ line: 0, level: 'warn', msg: `icon folder not used: ${d} (icondir must be a folder inside the folder that holds the look file)` }); continue; }
+    for (const full of plainFiles(dir, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES - out.length)) out.push({ name: full.slice(dir.length + 1), bytes: new Uint8Array(readFileSync(full)) });
   }
   return out;
 }
@@ -43,7 +61,7 @@ export const bundledFonts = () => listFonts(bundledFontDir);
 // The font files a look brings with its `fontdir` lines, and a note for every family the look
 // names that neither those folders nor the bundled fonts provide.
 export function lookFonts(lookFile: string | undefined, look: Look): { files: string[]; missing: string[] } {
-  const files = lookFile ? look.fontDirs.flatMap((d) => listFonts(resolve(dirname(lookFile), d))) : [];
+  const files = lookFile ? look.fontDirs.flatMap((d) => { const dir = lookFolder(lookFile, d); return dir ? plainFiles(dir, /\.(ttf|otf)$/i, 20_000_000, 200) : []; }) : [];
   const have = new Set<string>();
   for (const f of [...bundledFonts(), ...files]) { const m = fontMeta(new Uint8Array(readFileSync(f))); if (m) have.add(m.family.toLowerCase()); }
   const generic = new Set(['sans-serif', 'serif', 'monospace', 'helvetica', 'system-ui']);
