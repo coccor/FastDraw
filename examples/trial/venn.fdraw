@@ -8,7 +8,7 @@ small: ellipse at 288,180 280x280 fill=muted/0.05 stroke=muted sw=1 overlap=ok m
 desc:  ellipse at 432,180 280x280 fill=soft/0.05  stroke=soft  sw=1 overlap=ok mask=0
 
 // the region all three share
-core: polygon at 432,200 fill=ink stroke=none overlap=ok
+core: polygon at 432,200 fill=accent stroke=none overlap=ok
     points=68,0;57,7;47,15;38,24;30,33;23,44;16,55;11,66;6,78;3,90;1,103;14,109;27,114;40,117;54,119;68,120;82,119;96,117;109,114;122,109;135,103;133,90;130,78;125,66;120,55;113,44;106,33;98,24;89,15;79,7
 text "Good first" at 500,262 anchor=middle size=14 weight=600 color=#ffffff
 text "issue" at 500,280 anchor=middle size=14 weight=600 color=#ffffff

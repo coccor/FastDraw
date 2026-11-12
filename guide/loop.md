@@ -9,7 +9,7 @@ Shows a cycle that feeds itself: steps around a ring, each handing over to the n
 title: text "Every release teaches the next one" at 40,52 style=h1
 capture:  node "Capture" sub="signals in / intake" at 440,100 160x64
 research: node "Research" sub="evidence pulled" at 648,220 160x64
-hub: rect "Shared memory" sub="one record, every loop" at 420,320 200x104 radius=8 fill=ink stroke=ink title.color=paper sub.color=paper/0.7
+hub: rect "Shared memory" sub="one record, every loop" at 420,320 200x104 radius=8 fill=accent/0.12 stroke=accent sw=1.5 title.color=ink sub.color=muted
 
 capture.right@146 -> research.top@705 route=curve bend=9          // a piece of the ring
 research.bottom@743 -> decide.top@743 route=curve bend=16
@@ -22,7 +22,7 @@ research.bottom@672 -> hub.top@616 style=return stroke=soft route=straight
 - Five to eight stations and exactly one hub. With more than eight, the write-backs crowd the hub: split the subject. Two hubs are two diagrams.
 - Pick the centre `cx,cy` and the radius R. Station n of N (from 0, clockwise from the top) has its centre at `cx + R*sin(a), cy - R*cos(a)` with `a = n*360/N`. Its `at` is that point minus half its size, rounded to 4. Equal angles; uneven spacing stops the ring reading as one cycle.
 - Numbers that work for five or six stations: stations 160x64, hub 200x104, R=240, centre 520,372 (top station's top edge at y=100, under the title), canvas 1040x712. Six stations are then at 440,100 · 648,220 · 648,460 · 440,580 · 232,460 · 232,220. For seven or eight stations the neighbours would touch: take R=280, centre 520,408, canvas 1040x788. In general canvas height = `cy + R + 32 + 68`, and `cy = R + 132`.
-- The hub is the only dark element: a `rect` with `fill=ink stroke=ink title.color=paper sub.color=paper/0.7`, a little larger than a station, centred on `cx,cy`. One name and one short line (its `sub=` is small type, so keep it under about 24 characters); it is a state, not a step.
+- The hub is the strongest element: a `rect` with `fill=accent/0.12 stroke=accent sw=1.5 title.color=ink sub.color=muted`, a little larger than a station, centred on `cx,cy`. One name and one short line (its `sub=` is small type, so keep it under about 24 characters); it is a state, not a step.
 - At most one station is `focal`: the gate or decision the loop turns on. All others are `node`.
 
 ## Arrows

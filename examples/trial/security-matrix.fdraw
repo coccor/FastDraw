@@ -1,11 +1,11 @@
 canvas 1000x450
 text "Who may do what in the document system" at 40,56 style=h1
 corner: rect "Area" sub="vs. AD group" at 40,96 200x52 radius=6 fill=#ffffff stroke=ink/0.12 title.size=11
-r1: rect "Owner" sub="GRP-OWNERS" at 248,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
-r2: rect "Editor" sub="GRP-EDITORS" at 392,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
-r3: rect "Reviewer" sub="GRP-REVIEW" at 536,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
-r4: rect "Viewer" sub="GRP-VIEWERS" at 680,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
-r5: rect "Guest" sub="GRP-GUESTS" at 824,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+r1: rect "Owner" sub="GRP-OWNERS" at 248,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
+r2: rect "Editor" sub="GRP-EDITORS" at 392,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
+r3: rect "Reviewer" sub="GRP-REVIEW" at 536,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
+r4: rect "Viewer" sub="GRP-VIEWERS" at 680,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
+r5: rect "Guest" sub="GRP-GUESTS" at 824,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
 c1: rect "Document library" at 40,160 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
 text "S3" at 228,181 style=small anchor=end
 c11: rect "Manage" at 248,160 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=ink/0.12 title.weight=600

@@ -8,11 +8,11 @@ Shows a whole data stack on one page: phases across the top (sources, ingestion,
 - Phase banner at y=88: one chevron per column, drawn as a polygon 232 wide and 32 high so that each tip reaches into the notch of the next.
 
 ```
-p1: polygon "DATA SOURCES" at 40,88  points=0,0;216,0;232,16;216,32;0,32       fill=ink   stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
-p2: polygon "INGESTION"    at 264,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=muted stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
+p1: polygon "DATA SOURCES" at 40,88  points=0,0;216,0;232,16;216,32;0,32       fill=accent/0.14 stroke=none title.color=accent title.font=mono title.size=8 overlap=ok
+p2: polygon "INGESTION"    at 264,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=ink/0.06 stroke=none title.color=muted title.font=mono title.size=8 overlap=ok
 ```
 
-  The first has a flat left end, the last a flat right end (`points=0,0;224,0;224,32;0,32;16,16`). Alternate `fill=ink` and `fill=muted`. Never leave the banner out: it is what tells the reader what a column means.
+  The first has a flat left end, the last a flat right end (`points=0,0;224,0;224,32;0,32;16,16`). Alternate a tint of the accent (`fill=accent/0.14 title.color=accent`) and a light grey (`fill=ink/0.06 title.color=muted`); never a solid dark fill. Never leave the banner out: it is what tells the reader what a column means.
 - Every component is a 144x64 `node` (write the size when it differs) centred under its phase: `x = 80 + 224*n`. Boxes in one phase stack with 48px between them (pitch 112): rows at y=240 and 352 under an orchestrator, 176 and 288 without one.
 - Sources are outside the cluster: a dashed zone under the first chevron, `zone "Sources" at 48,136 208xH dash=4,3`, holding a column of `external` boxes 160x56 at x=72 (zone x + 24), 16 apart, the first 36px below the zone's top: `y = 172 + 72*i`. Size the zone to the last box plus 36.
 - The cluster is a zone over the other columns, `dash=none` to make it solid (zones are dashed in the built-in look): `zone "Kubernetes cluster" at 272,136 888xH dash=none`, `W = 224*(phases-1) - 8`, the same height as the sources zone (the taller of the two sets).

@@ -61,7 +61,7 @@ if (cmd === 'check') {
   else {
     const { Resvg } = await import('@resvg/resvg-js');
     const fontFiles = [...bundledFonts(), ...(sc.fontFiles ?? [])];
-    const png = new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng();
+    const png = new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Libre Franklin' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng();
     writeFileSync(out, embedPng(new Uint8Array(png), payload));
   }
   console.log(`wrote ${out} (${sc.w}x${sc.h}${out.endsWith('.svg') ? '' : ` at ${scale}x`})`);
@@ -167,7 +167,7 @@ if (cmd === 'check') {
     const lf = lookFonts(file, look);
     for (const fam of lf.missing) console.log(`warning: no font file found for "${fam}"; it will be drawn in a fallback font`);
     const fontFiles = [...bundledFonts(), ...lf.files];
-    writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
+    writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Libre Franklin' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
   }
   console.log(`wrote ${out}: ${all.length} styles`);
 } else if (cmd === 'icons') {

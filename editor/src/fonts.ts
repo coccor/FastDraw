@@ -1,6 +1,14 @@
-// The fonts the reference look uses, bundled with the editor so the canvas and exports match
-// the command-line renderer.
+// The fonts the built-in look and the reference look use, bundled with the editor so the canvas
+// and exports match the command-line renderer.
 import { fontMeta } from '../../src/fontmeta.ts';
+import franklin400 from '../../fonts/LibreFranklin-Regular.ttf?url';
+import franklin500 from '../../fonts/LibreFranklin-Medium.ttf?url';
+import franklin600 from '../../fonts/LibreFranklin-SemiBold.ttf?url';
+import franklin700 from '../../fonts/LibreFranklin-Bold.ttf?url';
+import news400 from '../../fonts/Newsreader-Regular.ttf?url';
+import news500 from '../../fonts/Newsreader-Medium.ttf?url';
+import news600 from '../../fonts/Newsreader-SemiBold.ttf?url';
+import newsItalic from '../../fonts/Newsreader-Italic.ttf?url';
 import geist400 from '../../fonts/Geist-Regular.ttf?url';
 import geist500 from '../../fonts/Geist-Medium.ttf?url';
 import geist600 from '../../fonts/Geist-SemiBold.ttf?url';
@@ -10,6 +18,10 @@ import serif from '../../fonts/InstrumentSerif-Regular.ttf?url';
 import serifItalic from '../../fonts/InstrumentSerif-Italic.ttf?url';
 
 const FACES: [string, number, string, string][] = [
+  ['Libre Franklin', 400, 'normal', franklin400], ['Libre Franklin', 500, 'normal', franklin500],
+  ['Libre Franklin', 600, 'normal', franklin600], ['Libre Franklin', 700, 'normal', franklin700],
+  ['Newsreader', 400, 'normal', news400], ['Newsreader', 500, 'normal', news500], ['Newsreader', 600, 'normal', news600],
+  ['Newsreader', 400, 'italic', newsItalic],
   ['Geist', 400, 'normal', geist400], ['Geist', 500, 'normal', geist500], ['Geist', 600, 'normal', geist600],
   ['Geist Mono', 400, 'normal', mono400], ['Geist Mono', 500, 'normal', mono500],
   ['Instrument Serif', 400, 'normal', serif], ['Instrument Serif', 400, 'italic', serifItalic],
@@ -46,7 +58,7 @@ export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
   }
   return families;
 }
-export const BUNDLED_FAMILIES = ['Geist', 'Geist Mono', 'Instrument Serif'];
+export const BUNDLED_FAMILIES = ['Libre Franklin', 'Newsreader', 'Geist', 'Geist Mono', 'Instrument Serif'];
 
 const bundled = new Map<string, Promise<string>>();
 // @font-face rules, as data URLs, for the families an SVG actually uses, so exports stand alone

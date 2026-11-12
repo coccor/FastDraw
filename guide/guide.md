@@ -251,7 +251,7 @@ Shapes whose style is marked "drawn behind everything" (zones) come first, then 
 
 ### Title
 
-A diagram that has a title puts it first: `title: text "What this shows" at 40,52 style=h1`, with an optional one-line `caption` at 40,74. Everything else then starts at y=96 or lower. When a kind's guide gives positions that start nearer the top, they are for a diagram with no title: add 56 to every y to make room for one.
+A diagram that has a title puts it first: `title: text "What this shows" at 40,52 style=h1`, with an optional one-line dek under it: `text "One plain sentence saying what the diagram shows" at 40,80 style=dek` (`caption` if your look has no `dek`). A title with a dek reads like a magazine graphic. Everything else then starts at y=96 or lower. When a kind's guide gives positions that start nearer the top, they are for a diagram with no title: add 56 to every y to make room for one.
 
 ### Plain lines
 
