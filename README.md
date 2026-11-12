@@ -49,3 +49,12 @@ memory and download the result. Nothing is uploaded; there is no server.
 
 Exported PNG and SVG files carry the diagram and its look inside them. Drop one on the editor
 (or open it) to keep editing, for example an image taken from a wiki page.
+
+## Credits
+
+The kinds of diagram FastDraw has guides for, and many of the composition ideas in those guides
+(how few elements to use, one accent, legends, what makes each kind read well), follow
+[diagram-design](https://github.com/cathrynlavery/diagram-design) by Cathryn Lavery (MIT licence,
+copyright (c) 2025 Cathryn Lavery). The guides are written anew for FastDraw's language. The
+pictures in `compare/kinds/*-ref.png` are renders of diagram-design's own example pages, kept for
+side-by-side comparison; `looks/reference.look` mirrors its default palette for the same purpose.
