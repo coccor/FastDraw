@@ -1,0 +1,33 @@
+look "../../looks/reference.look"
+canvas 1040x592
+
+text "Legacy retail reporting landscape" at 40,60 style=h1
+text "File exports, desktop spreadsheets and manual publication, before a shared data platform." at 40,88
+
+// one zone per phase, 104px apart; rows at y=176, 288, 400
+collect: zone "Collection" at 40,136 240x352
+process: zone "Processing" at 384,136 272x352
+dissem:  zone "Dissemination" at 760,136 240x352
+
+pos:      node "Point-of-Sale Exports" sub="nightly · CSV" at 56,176 208x64
+online:   node "Online Store Export" sub="orders · flat file" at 56,288 208x64
+supplier: optional "Supplier Price Lists" sub="external · XLSX" at 56,400 208x64
+
+drive:  focal "Shared Drive" sub="no version control" at 400,176 240x64
+sheets: node "Spreadsheet Handoffs" sub="local workbooks · macros" at 400,288 240x64
+rdbms:  store "On-prem RDBMS" sub="inventory · finance" at 400,400 240x64
+
+portal:   focal "Reporting Portal" sub="manual refresh" at 776,176 208x64
+email:    node "Email Report Packs" sub="weekly · PDF" at 776,288 208x64
+managers: optional "Regional Managers" sub="12 store regions" at 776,400 208x64
+
+pos.right@192 -> drive.left@192 "CSV" lpos=316,182
+online.right -> drive.left@208 "export" via=356,320;356,208 lpos=316,310
+supplier.right -> drive.left@224 "XLSX" style=return via=372,432;372,224 lpos=316,422
+drive -> sheets "copy" style=primary
+sheets -> rdbms "load"
+sheets.right -> portal.left "XLSX" style=primary
+portal -> email "PDF"
+email -> managers "email" style=return
+
+legend at 40,512 focal="Pain point" optional="Outside the organisation" store="System of record" arrow="Data hand-off" primary="Manual, error-prone hand-off" return="External hand-off"

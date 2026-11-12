@@ -1,0 +1,61 @@
+look "../../looks/reference.look"
+canvas 1000x540
+
+text "What the AI assistant is built on" at 40,60 style=h1
+
+// axes: value chain up the left, evolution along the bottom
+128,100 -- 128,420 stroke=ink/0.2 sw=1
+128,420 -- 928,420 stroke=ink/0.2 sw=1
+328,100 -- 328,420 style=rule dash=4,4
+528,100 -- 528,420 style=rule dash=4,4
+728,100 -- 728,420 style=rule dash=4,4
+text "Genesis" at 228,438 style=eyebrow anchor=middle
+text "Custom-built" at 428,438 style=eyebrow anchor=middle
+text "Product" at 628,438 style=eyebrow anchor=middle
+text "Commodity" at 828,438 style=eyebrow anchor=middle
+text "Visible to" at 116,108 style=eyebrow anchor=end color=ink
+text "the user" at 116,120 style=eyebrow anchor=end color=ink
+text "Invisible" at 116,420 style=eyebrow anchor=end color=ink
+
+// components: a 12px dot at (band x, depth y), name beside it on the side with no links
+need:   ellipse at 422,126 12x12 fill=paper stroke=ink
+chat:   ellipse at 622,170 12x12 fill=paper stroke=ink
+agent:  ellipse at 422,214 12x12 fill=paper stroke=accent sw=1.5
+eval:   ellipse at 262,258 12x12 fill=paper stroke=ink
+vector: ellipse at 634,262 12x12 fill=paper stroke=ink
+llm:    ellipse at 694,342 12x12 fill=paper stroke=ink
+gpu:    ellipse at 822,398 12x12 fill=paper stroke=ink
+blob:   ellipse at 822,366 12x12 fill=paper stroke=ink
+
+text "Answer in the flow of work" at 428,116 weight=600 anchor=middle
+text "Chat UI" at 644,180 weight=600
+text "Agent orchestration" at 424,204 weight=600 anchor=end
+text "Eval harness" at 252,268 weight=600 anchor=end
+text "Vector store" at 652,258 weight=600
+text "LLM API" at 692,370 weight=600 anchor=end
+text "GPU compute" at 844,408 weight=600
+text "Object storage" at 844,376 weight=600
+
+// what needs what: thin straight lines from dot centre to dot centre, no heads
+428,132 -- 628,176 sw=0.8   // need needs chat
+628,176 -- 428,220 sw=0.8   // chat needs agent
+428,220 -- 268,264 sw=0.8   // agent needs eval
+428,220 -- 640,268 sw=0.8   // agent needs vector
+428,220 -- 700,348 sw=0.8   // agent needs llm
+268,264 -- 700,348 sw=0.8   // eval needs llm
+640,268 -- 828,372 sw=0.8   // vector needs blob
+700,348 -- 828,404 sw=0.8   // llm needs gpu
+
+// the one thing that is moving
+434,220 -> 510,220 style=primary dash=5,4
+
+// legend
+40,476 -- 960,476 style=rule
+text "Legend" at 40,494 style=eyebrow
+ellipse at 40,505 10x10 fill=paper stroke=ink
+text "Component" at 58,513 style=caption
+180,510 -- 208,510 sw=0.8
+text "Needs" at 216,513 style=caption
+ellipse at 320,505 10x10 fill=paper stroke=accent sw=1.5
+334,510 -> 366,510 style=primary dash=5,4
+text "Becoming a product" at 374,513 style=caption

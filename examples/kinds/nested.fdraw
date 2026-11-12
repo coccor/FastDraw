@@ -1,0 +1,25 @@
+look "../../looks/reference.look"
+canvas 1000x552
+
+// rings: each one 32px in from the last on the left and right, 36px at top and bottom
+// ring names: 16px in from the ring's left edge, baseline 22px under its top edge
+
+text "Where project guidance comes from" at 40,64 style=h1
+
+l1: zone at 40,96 920x380 stroke=ink/0.30 sw=1 fill=ink/0.015
+l2: zone at 72,132 856x308 stroke=ink/0.35 sw=1 fill=ink/0.02
+l3: zone at 104,168 792x236 stroke=ink/0.45 sw=1 fill=ink/0.025
+l4: zone at 136,204 728x164 stroke=muted sw=1 fill=ink/0.03
+core: focal "Project guidance" sub="inherits every level above" at 168,240 664x92 radius=8
+
+text "~/.claude/ (global)" at 56,118 style=eyebrow caps=0
+text "~/vault/ (notes)" at 88,154 style=eyebrow caps=0
+text "/business" at 120,190 style=eyebrow caps=0
+text "/marketing" at 152,226 style=eyebrow caps=0 color=ink
+text "/project" at 184,262 style=eyebrow caps=0 color=accent weight=600
+
+// one callout, pointing at the innermost level
+text "no imports, no configuration" at 960,72 style=note anchor=end
+820,80 -- core.top@560 style=lifeline stroke=ink/0.4 route=curve head=dot
+
+text "structure is the index" at 40,512 style=note

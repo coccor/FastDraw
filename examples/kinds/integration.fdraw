@@ -1,0 +1,38 @@
+look "../../looks/reference.look"
+canvas 1200x648
+
+text "Generic data platform integration topology" at 40,60 style=h1
+
+// the platform: one zone in the middle
+plat: zone "Data platform" at 280,136 640x320
+orch:  cloud "Orchestrator" sub="schedules · retries · lineage" tag="DAG" at 296,168 608x56
+store: focal "Object storage" sub="versioned data objects" tag="STORE" at 344,284 160x72
+query: focal "Query engine" sub="federated SQL access" tag="SQL" at 696,284 160x72
+
+// sources: left column
+crm:    external "CRM" sub="customer records" at 40,200 160x64
+pos:    external "POS exports" sub="daily CSV batches" at 40,288 160x64
+events: external "Event stream" sub="near-real-time events" at 40,376 160x64
+
+// consumers: right column
+bi:  external "BI tool" sub="dashboards · reports" at 1000,200 160x64
+nb:  external "Notebooks" sub="Python · exploration" at 1000,288 160x64
+api: external "Partner API" sub="scoped data products" at 1000,376 160x64
+
+// services for the whole platform: below it, wired to the zone, not to a box
+idp: cloud "Identity provider" sub="SSO · service identities · policy groups" at 40,504 548x48
+log: cloud "Centralized logging" sub="platform events · audit trail · retention" at 612,504 548x48
+
+crm.right -> store.left@304 "REST" via=312,232;312,304 lpos=240,222
+pos.right -> store.left@320 "CSV" lpos=240,310
+events.right -> store.left@336 "events" via=312,408;312,336 lpos=240,398
+store -> query "read" style=primary
+query.right@304 -> bi.left "JDBC" style=link via=888,304;888,232 lpos=960,222
+query.right@320 -> nb.left "kernel" style=link lpos=960,310
+query.right@336 -> api.left "HTTPS" style=link via=888,336;888,408 lpos=960,398
+orch.bottom@424 -> store.top@424 style=return
+orch.bottom@776 -> query.top@776 style=return
+idp.top@440 -> plat.bottom@440 "auth" style=return
+log.top@760 -> plat.bottom@760 "logs" style=return
+
+legend at 40,576 external="Source or consumer" focal="Platform surface" cloud="Shared service" arrow="Data in" primary="Main path" link="Data served" return="Trigger or platform-wide service"

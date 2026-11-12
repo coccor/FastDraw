@@ -1,0 +1,54 @@
+look "../../looks/reference.look"
+canvas 1000x500
+
+// the one quadrant that matters, tinted; a zone, so it is drawn behind the axes
+zone at 120,80 380x172 fill=accent/0.03 stroke=none radius=0
+
+// axes cross at 500,252; the head is at the high end
+xaxis: 120,252 -> 880,252 stroke=ink/0.45 sw=1
+yaxis: 500,424 -> 500,80 stroke=ink/0.45 sw=1
+
+// one word or two at each end, beside the line
+text "Low effort" at 120,268 style=eyebrow
+text "High effort" at 880,268 style=eyebrow anchor=end
+text "High impact" at 512,84 style=eyebrow
+text "Low impact" at 512,424 style=eyebrow
+
+// quadrant names in the outer corners
+text "Do first" at 140,104 style=eyebrow size=9 color=accent weight=600
+text "Major projects" at 860,104 style=eyebrow size=9 anchor=end
+text "Quick wins" at 140,412 style=eyebrow size=9
+text "Avoid" at 860,412 style=eyebrow size=9 anchor=end
+
+// do first
+p1: ellipse at 214,134 12x12 fill=accent stroke=none
+text "Schematic skill v4" at 232,144 size=11 weight=600 color=ink
+p2: ellipse at 316,196 8x8 fill=ink stroke=none
+text "Update changelog" at 332,204 size=11 color=muted
+
+// major projects
+p3: ellipse at 616,136 8x8 fill=ink stroke=none
+text "Design v4 refresh" at 632,144 size=11 color=muted
+p4: ellipse at 756,176 8x8 fill=ink stroke=none
+text "New publication" at 772,184 size=11 color=muted
+
+// quick wins
+p5: ellipse at 256,316 8x8 fill=ink stroke=none
+text "Fix footer link" at 272,324 size=11 color=muted
+p6: ellipse at 356,376 8x8 fill=ink stroke=none
+text "Update OG tags" at 372,384 size=11 color=muted
+
+// avoid
+p7: ellipse at 636,376 8x8 fill=ink stroke=none
+text "Rewrite build pipeline" at 652,384 size=11 color=muted
+p8: ellipse at 776,316 8x8 fill=ink stroke=none
+text "Port to Nuxt" at 792,324 size=11 color=muted
+
+// legend, by hand
+40,456 -- 960,456 style=rule
+text "Legend" at 40,472 style=eyebrow
+ellipse at 46,482 12x12 fill=accent stroke=none
+text "Start tomorrow" at 68,491 style=caption
+ellipse at 188,484 8x8 fill=ink stroke=none
+text "Candidate project" at 208,491 style=caption
+text "Position is the signal. Colour is kept for the single action item." at 336,491 style=caption italic=1

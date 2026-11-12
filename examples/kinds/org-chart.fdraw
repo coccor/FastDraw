@@ -1,0 +1,58 @@
+look "../../looks/reference.look"
+canvas 1040x640
+
+// tiers: y = 96, 244, 392; tier dividers at y = 172, 320; buses at y = 208, 356
+// specialists: 136 wide, 24 apart, centres x = 120, 280, 440, 600, 760, 920; each pod is centred over its people
+
+text "Who owns what" at 40,56 style=h1
+
+// ---- tier bands ------------------------------------------------------------
+text "Command center" at 40,88 style=eyebrow
+40,172 -- 1000,172 style=rule
+text "Workstreams" at 40,196 style=eyebrow
+40,320 -- 1000,320 style=rule
+text "Specialists" at 40,344 style=eyebrow
+
+// ---- front door ------------------------------------------------------------
+athena: focal "Athena" sub="@athena · route ambiguous work" at 408,96 224x48
+
+// ---- pods ------------------------------------------------------------------
+growth:   node "Growth" sub="ads · analytics" at 120,244 160x48
+content:  node "Content" sub="email · blog · SEO" at 360,244 160x48
+commerce: node "Commerce" sub="shopify · CRO" at 600,244 160x48
+systems:  node "Systems" sub="agents · runtime" at 840,244 160x48
+
+// ---- specialists -----------------------------------------------------------
+buyer:  optional "Media Buyer" sub="Google · Meta" at 52,392 136x56
+maximo: cloud "Maximo" sub="offers · strategy" at 212,392 136x56
+rory: cloud "Rory" sub="copy · newsletter" at 372,392 136x56
+porter: cloud "Porter" sub="Shopify admin" at 532,392 136x56
+atlas: cloud "Atlas" sub="theme · APIs" at 692,392 136x56
+hermes: cloud "Hermes" sub="Paperclip health" at 852,392 136x56
+
+// ---- reporting lines: trunk, bus, one drop per child -------------------------
+athena.bottom -- 520,208
+200,208 -- 920,208
+200,208 -- growth.top
+440,208 -- content.top
+680,208 -- commerce.top
+920,208 -- systems.top
+
+growth.bottom -- 200,356
+120,356 -- 280,356
+120,356 -- buyer.top
+280,356 -- maximo.top
+
+content.bottom -- rory.top
+
+commerce.bottom -- 680,356
+600,356 -- 760,356
+600,356 -- porter.top
+760,356 -- atlas.top
+
+systems.bottom -- hermes.top
+
+// ---- rule that is not a reporting line: a strip, not more boxes ---------------
+gaps: optional "Setup gaps stay visible" sub="specialists without Slack bots · approval gates · backend name mismatches" at 52,480 936x48
+
+legend at 40,560 focal="Front door: takes ambiguous work" node="Pod" cloud="Specialist, live" optional="Needs setup"

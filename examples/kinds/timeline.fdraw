@@ -1,0 +1,55 @@
+look "../../looks/reference.look"
+canvas 1000x420
+
+// faint year marks, in gaps between the labels (text may not overlap text)
+text "2025" at 232,336 font=mono size=56 weight=600 color=ink/0.06
+text "2026" at 692,336 font=mono size=56 weight=600 color=ink/0.06
+
+// axis: Feb 2025 at x=100, 57px per month; end caps and the year boundary
+axis: 80,240 -- 920,240 stroke=muted/0.45 sw=1
+80,232 -- 80,248 stroke=ink/0.2 sw=1
+920,232 -- 920,248 stroke=ink/0.2 sw=1
+680,232 -- 680,248 stroke=ink/0.2 sw=1
+text "JAN '26" at 680,262 style=eyebrow anchor=middle color=soft
+
+// Feb 2025 (below)
+100,240 -- 100,296 stroke=ink/0.3 sw=1
+e1: ellipse at 96,236 8x8 fill=ink stroke=none
+text "FEB 2025" at 100,312 style=eyebrow anchor=middle
+text "First post" at 100,328 anchor=middle weight=600 color=ink
+
+// Apr 2025 (above)
+240,184 -- 240,240 stroke=ink/0.3 sw=1
+e2: ellipse at 236,236 8x8 fill=ink stroke=none
+text "APR 2025" at 240,156 style=eyebrow anchor=middle
+text "Design v1" at 240,172 anchor=middle weight=600 color=ink
+
+// Sep 2025 (below)
+500,240 -- 500,296 stroke=ink/0.3 sw=1
+e3: ellipse at 496,236 8x8 fill=ink stroke=none
+text "SEP 2025" at 500,312 style=eyebrow anchor=middle
+text "Design v2" at 500,328 anchor=middle weight=600 color=ink
+text "typography pass" at 500,344 style=small anchor=middle
+
+// Jan 2026 (above, major)
+740,172 -- 740,240 stroke=accent sw=1
+e4: ellipse at 734,234 12x12 fill=accent stroke=none
+text "JAN 2026" at 740,128 style=eyebrow anchor=middle color=accent
+text "Design v3" at 740,148 anchor=middle weight=600 size=14 color=ink
+text "complexity budget" at 740,164 style=small anchor=middle
+
+// Apr 2026 (below, major, now)
+900,240 -- 900,296 stroke=accent sw=1
+e5: ellipse at 894,234 12x12 fill=accent stroke=none
+text "APR 2026 · NOW" at 900,312 style=eyebrow anchor=middle color=accent
+text "Schematic skill" at 900,328 anchor=middle weight=600 color=ink
+text "eight diagram types" at 900,344 style=small anchor=middle
+
+// legend, built by hand: the marks are not styles of the look
+40,376 -- 960,376 style=rule
+text "Legend" at 40,392 style=eyebrow
+ellipse at 48,404 8x8 fill=ink stroke=none
+text "Event" at 68,411 style=caption
+ellipse at 142,402 12x12 fill=accent stroke=none
+text "Major milestone" at 164,411 style=caption
+text "Spacing is proportional to real elapsed time." at 296,411 style=caption italic=1

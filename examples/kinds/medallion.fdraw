@@ -1,0 +1,56 @@
+look "../../looks/reference.look"
+canvas 1216x560
+
+text "Five-tier e-commerce analytics storage" at 40,60 style=h1
+
+// tiers: one table each, 208 wide, 24 apart, tops on one line
+raw: table "Raw" at 40,176 208x0
+  | "Bucket"  "raw-commerce"
+  | "Tool"    "NiFi ingest"
+  | "Format"  "JSON · Parquet"
+  | "Writer"  "Data Engineer"
+  | ---
+  | "Holds"   "clickstream events"
+  |           "" "order records"
+anon: table "Anonymized" at 272,176 208x0
+  | "Bucket"  "anon-commerce"
+  | "Tool"    "Trino SQL"
+  | "Format"  "Iceberg · partitioned"
+  | "Writer"  "Data Engineer"
+  | ---
+  | "Holds"   "session pseudonyms"
+  |           "" "masked customer IDs"
+stag: table "Staging" at 504,176 208x0
+  | "Bucket"  "staging-commerce"
+  | "Tool"    "Trino · notebooks"
+  | "Format"  "Iceberg · cleaned"
+  | "Writer"  "Data Scientist"
+  | ---
+  | "Holds"   "joined order facts"
+  |           "" "validated event rows"
+agg: table "Aggregated" at 736,176 208x0 stroke=accent fill=accent/0.08
+  | "Bucket"  "analytics-marts"
+  | "Tool"    "Trino INSERT"
+  | "Format"  "Iceberg · metrics"
+  | "Writer"  "Data Scientist"
+  | ---
+  | "Holds"   "daily conversion rate"
+  |           "" "revenue by channel"
+arch: table "Archive" at 968,176 208x0 dash=4,3 fill=ink/0.05
+  | "Bucket"  "archive-commerce"
+  | "Tool"    "Storage lifecycle"
+  | "Format"  "Cold tier · immutable"
+  | "Writer"  "Data Engineer"
+  | ---
+  | "Holds"   "retained clickstream"
+  |           "" "closed snapshots"
+
+raw.top@0.5 -> anon.top@0.5 "mask ids" route=curve
+anon.top@0.5 -> stag.top@0.5 "clean + join" route=curve
+stag.top@0.5 -> agg.top@0.5 "aggregate" route=curve style=primary
+agg.top@0.5 -> arch.top@0.5 "lifecycle" route=curve style=return
+
+sql: cloud "Trino INSERT INTO … SELECT" sub="filter · join · aggregate" tag="SQL" at 40,400 556x64
+nb:  cloud "Python notebooks on object storage" sub="explore · validate · model" tag="NB" at 620,400 556x64
+
+legend at 40,488 focal="The tier consumers query" optional="Cold archive" arrow="Promotion" primary="Promotion into the focal tier" return="Lifecycle rule" cloud="How data is written between tiers"

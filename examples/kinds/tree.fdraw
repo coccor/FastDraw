@@ -1,0 +1,40 @@
+look "../../looks/reference.look"
+canvas 1000x500
+
+// rows: y = 104, 224, 344 (48px boxes, 72px between rows; the bus runs half-way, at y = 188 and 308)
+// leaves: 144 wide, 24 apart, centres x = 164, 332, 500, 668, 836; each parent is centred over its children
+
+text "Skills, by category" at 40,64 style=h1
+
+root: focal "Skills" at 420,104 160x48
+
+design: node "Design" sub="ui · visual · ux" at 168,224 160x48
+research: node "Research" sub="investigate · analyze" at 420,224 160x48
+eng: node "Engineering" sub="ship · review · test" at 672,224 160x48
+
+polish: cloud "polish" sub="align · space · rhythm" at 92,344 144x48
+critique: cloud "critique" sub="hierarchy · density" at 260,344 144x48
+investigate: cloud "investigate" sub="root cause · evidence" at 428,344 144x48
+review: cloud "review" sub="pre-land diff · sql" at 596,344 144x48
+ship: cloud "ship" sub="merge · deploy · verify" at 764,344 144x48
+
+// connectors: trunk down to the bus, the bus across, one drop per child
+root.bottom -- 500,188
+248,188 -- 752,188
+248,188 -- design.top
+500,188 -- research.top
+752,188 -- eng.top
+
+design.bottom -- 248,308
+164,308 -- 332,308
+164,308 -- polish.top
+332,308 -- critique.top
+
+research.bottom -- investigate.top
+
+eng.bottom -- 752,308
+668,308 -- 836,308
+668,308 -- review.top
+836,308 -- ship.top
+
+legend at 40,424 focal="Root" node="Category" cloud="Leaf skill"

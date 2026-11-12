@@ -1,0 +1,72 @@
+look "../../looks/reference.look"
+canvas 1044x728
+
+text "Order fulfilment, before and after" at 40,60 style=h1
+
+// three panels: Before from x=40, the ledger from x=320, After from x=732
+text "Before" at 40,104 size=14 weight=600
+text "Synchronous dispatch · v1" at 40,122 style=caption
+text "Changes" at 320,104 size=14 weight=600
+text "Four components · three relationships" at 320,122 style=caption
+text "After" at 732,104 size=14 weight=600
+text "Queued fulfilment · v2" at 732,122 style=caption
+288,88 -- 288,632 style=rule
+700,88 -- 700,632 style=rule
+
+// Before: main column 56px in from the panel's left edge, rows every 104px from y=152
+b_store:  node "Storefront" sub="web:v1" at 96,152 160x64
+b_api:    focal "Orders API" sub="/orders · v1" tag="~ CHANGED" at 96,256 160x64
+b_legacy: optional "Legacy dispatcher" sub="dispatcher:v1" tag="− REMOVED" at 96,360 160x64
+b_worker: node "Fulfilment worker" sub="fulfilment:v1" tag="→ MOVED" at 40,464 160x64 dash=1,3
+b_db:     node "Orders database" sub="PostgreSQL" at 96,568 160x64
+
+b_store -> b_api "r1 · HTTPS"
+b_api -> b_legacy "r2 · rewired" dash=2,3
+b_legacy.bottom@148 -> b_worker.top@148 "r3 · removed" style=return
+b_worker.bottom@148 -> b_db.top@148 "r5 · SQL"
+
+// After: every box at its Before position plus 692; only the worker has moved (112px right)
+a_store:  node "Storefront" sub="web:v1" at 788,152 160x64
+a_api:    focal "Orders API" sub="/orders · v2" tag="~ CHANGED" at 788,256 160x64
+a_queue:  node "Order queue" sub="durable · at-least-once" tag="+ ADDED" at 788,360 160x64 sw=2
+a_worker: node "Fulfilment worker" sub="fulfilment:v1" tag="→ MOVED" at 844,464 160x64 dash=1,3
+a_db:     node "Orders database" sub="PostgreSQL" at 788,568 160x64
+
+a_store -> a_api "r1 · HTTPS"
+a_api -> a_queue "r2 · rewired" dash=2,3
+a_queue.bottom@896 -> a_worker.top@896 "r4 · added" sw=1.8
+a_worker.bottom@896 -> a_db.top@896 "r5 · SQL"
+
+// the ledger: one row per change, in the order a reader meets them
+ledger: table "7 changes" at 320,152
+  | "01" "CHANGED"  "api"    "Orders API v1 → v2"
+  | "02" "REMOVED"  "legacy" "Retire legacy dispatcher"
+  | "03" "ADDED"    "queue"  "Introduce durable order queue"
+  | "04" "MOVED"    "worker" "Fulfilment worker: left → right"
+  | "05" "REWIRED"  "r2"     "Orders API: dispatcher → queue"
+  | "06" "REMOVED"  "r3"     "Dispatcher → worker"
+  | "07" "ADDED"    "r4"     "Queue → worker"
+  | ---
+  | ""   "KEPT"     ""       "Storefront · database · r1 · r5"
+
+// legend, built by hand: the change marks are overrides, not styles
+40,656 -- 1004,656 style=rule
+text "Legend" at 40,672 style=eyebrow
+node at 40,684 14x10 radius=2
+text "Unchanged" at 60,692 style=caption
+focal at 136,684 14x10 radius=2
+text "Changed" at 156,692 style=caption
+node at 224,684 14x10 radius=2 sw=2
+text "Added" at 244,692 style=caption
+optional at 300,684 14x10 radius=2
+text "Removed" at 320,692 style=caption
+node at 388,684 14x10 radius=2 dash=1,3
+text "Moved" at 408,692 style=caption
+464,689 -> 492,689
+text "Unchanged link" at 498,692 style=caption
+584,689 -> 612,689 sw=1.8
+text "Added link" at 618,692 style=caption
+684,689 -> 712,689 dash=2,3
+text "Rewired link" at 718,692 style=caption
+792,689 -> 820,689 style=return
+text "Removed link" at 826,692 style=caption

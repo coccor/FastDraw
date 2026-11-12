@@ -1,0 +1,25 @@
+look "../../looks/reference.look"
+canvas 1000x540
+
+// grid: states 160x80, row y = 160 (centre 200), columns x = 232, 456, 680 (64px gaps)
+
+text "Article lifecycle" at 40,72 style=h1
+
+// ---- states ----------------------------------------------------------------
+start:     ellipse at 156,192 16x16 fill=ink stroke=none
+draft:     node  "Draft" sub="unpublished" at 232,160 160x80 radius=8
+review:    node  "In Review" sub="awaiting approval" at 456,160 160x80 radius=8
+published: focal "Published" sub="live on site" at 680,160 160x80 radius=8
+archived:  cloud "Archived" sub="noindex · redirect kept" at 680,304 160x80 radius=8
+end:       ellipse at 752,440 16x16 fill=none stroke=ink
+end_dot:   ellipse at 755,443 10x10 fill=ink stroke=none overlap=ok
+
+// ---- transitions -----------------------------------------------------------
+start -> draft "create"
+draft -> review "submit"
+review -> published "approve" style=primary
+published -> archived "expire"
+archived -> end "purge"
+review.top -> draft.top "reject · revise" style=return route=curve
+
+legend at 40,480 node="State" focal="The state that matters" cloud="Resting state" arrow="Transition, labelled with its event" primary="Happy path" return="Way back"

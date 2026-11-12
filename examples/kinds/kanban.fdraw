@@ -1,0 +1,54 @@
+look "../../looks/reference.look"
+canvas 1120x440
+
+// columns: 240 wide, 32 apart, starting at x=32
+c1: zone at 32,40 240x324 stroke=none
+c2: zone at 304,40 240x324 stroke=none
+c3: zone at 576,40 240x324 stroke=none
+c4: zone at 848,40 240x324 stroke=none
+
+// headers: name on the left, count/limit chip on the right, a line under both
+text "Backlog" at 48,60 weight=600 color=ink
+w1: rect "3" at 216,48 40x16 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+32,76 -- 272,76 stroke=ink/0.2 sw=1
+text "In progress" at 320,60 weight=600 color=ink
+w2: rect "4/3" at 488,48 40x16 radius=2 fill=none stroke=accent sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=accent
+304,76 -- 544,76 stroke=ink/0.2 sw=1
+text "Review" at 592,60 weight=600 color=ink
+w3: rect "2/3" at 760,48 40x16 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+576,76 -- 816,76 stroke=ink/0.2 sw=1
+text "Done" at 864,60 weight=600 color=ink
+w4: rect "2" at 1032,48 40x16 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+848,76 -- 1088,76 stroke=ink/0.2 sw=1
+
+// cards: 208x56, 16 in from the column edge, first at y=88, then every 68
+b1: node "API rate limiting" sub="AVA-201 · priya" at 48,88 208x56 title.align=left
+b2: node "Terraform module cleanup" sub="AVA-205 · leo" at 48,156 208x56 title.align=left
+b3: node "Onboarding docs refresh" sub="AVA-209 · maya" at 48,224 208x56 title.align=left
+
+// blocked: accent, dashed, with a solid strip down the left edge
+p1: focal "Postgres 16 upgrade" sub="AVA-118 · sam" at 320,88 208x56 title.align=left dash=4,4 fill=accent/0.05
+rect at 320,88 4x56 fill=accent stroke=none overlap=ok
+p2: node "K8s node pool migration" sub="AVA-142 · priya" at 320,156 208x56 title.align=left
+p3: node "Auth token rotation" sub="AVA-150 · leo" at 320,224 208x56 title.align=left
+p4: node "Observability dashboards" sub="AVA-161 · dara" at 320,292 208x56 title.align=left
+
+r1: node "Feature flag cleanup" sub="AVA-176 · nadia" at 592,88 208x56 title.align=left
+r2: optional "Vendor SSO integration" sub="AVA-183 · sam" at 592,156 208x56 title.align=left
+
+d1: store "Log retention policy" sub="AVA-090 · leo" at 864,88 208x56 title.align=left
+d2: store "CI cache warmup" sub="AVA-097 · maya" at 864,156 208x56 title.align=left
+
+// legend, by hand: the blocked card and the chip are not styles of the look
+32,388 -- 1088,388 style=rule
+text "Legend" at 32,404 style=eyebrow
+node at 32,414 16x10 radius=2
+text "Open" at 56,423 style=caption
+focal at 232,414 16x10 radius=2 dash=4,4 fill=accent/0.05
+text "Blocked" at 256,423 style=caption
+optional at 432,414 16x10 radius=2
+text "Waiting on someone outside" at 456,423 style=caption
+store at 632,414 16x10 radius=2
+text "Done" at 656,423 style=caption
+rect at 832,414 16x10 radius=2 fill=none stroke=accent sw=0.8
+text "Over its limit" at 856,423 style=caption

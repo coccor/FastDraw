@@ -1,0 +1,21 @@
+look "../../looks/reference.look"
+canvas 1000x480
+
+// three equal sets, r=140: centres 500,180 · 428,320 · 572,320
+want:  ellipse at 360,40 280x280 fill=ink/0.04 stroke=ink sw=1 overlap=ok mask=0
+build: ellipse at 288,180 280x280 fill=muted/0.05 stroke=muted sw=1 overlap=ok mask=0
+pay:   ellipse at 432,180 280x280 fill=soft/0.05 stroke=soft sw=1 overlap=ok mask=0
+
+// the region all three share, traced along the three circle edges
+core: polygon at 432,200 fill=ink stroke=none overlap=ok
+    points=68,0;57,7;47,15;38,24;30,33;23,44;16,55;11,66;6,78;3,90;1,103;14,109;27,114;40,117;54,119;68,120;82,119;96,117;109,114;122,109;135,103;133,90;130,78;125,66;120,55;113,44;106,33;98,24;89,15;79,7
+text "Shippable" at 500,268 anchor=middle size=14 weight=600 color=#ffffff
+text "The sweet spot" at 500,284 style=eyebrow anchor=middle size=9 color=paper/0.75
+
+// each set is named in the part of its circle that no other circle covers
+text "Desirable" at 500,96 anchor=middle size=14 weight=600 color=ink
+text "People want it" at 500,112 style=eyebrow anchor=middle size=9
+text "Feasible" at 364,340 anchor=middle size=14 weight=600 color=ink
+text "We can build it" at 364,356 style=eyebrow anchor=middle size=9
+text "Viable" at 636,340 anchor=middle size=14 weight=600 color=ink
+text "Business sustains" at 636,356 style=eyebrow anchor=middle size=9

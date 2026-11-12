@@ -1,0 +1,58 @@
+look "../../looks/reference.look"
+canvas 1240x590
+
+text "Why checkout got slow" at 40,60 style=h1
+
+// the effect at the head, and the spine running into it
+effect: focal "Checkout p99 latency\n4x for 90 minutes" tag="EFFECT" at 1000,256 200x88
+200,300 -> effect.left stroke=ink
+
+// Deploy: joins the spine at x=920, above
+deploy: rect "DEPLOY" at 764,104 120x28 radius=4 fill=paper stroke=ink sw=0.8
+deploy.bottom -- 920,300 sw=1.2 stroke=ink
+888,244 -- 856,244 sw=1
+text "canary skipped" at 852,247 style=small anchor=end
+856,188 -- 824,188 sw=1
+text "config drift" at 820,191 style=small anchor=end
+
+// Data: joins the spine at x=760, below
+data: focal "DATA" at 604,468 120x28 radius=4
+data.top -- 760,300 sw=1.2 stroke=accent
+728,356 -- 696,356 sw=1
+text "index missing on orders.created_at" at 692,359 style=small anchor=end
+696,412 -- 664,412 sw=1
+text "table 3x forecast" at 660,415 style=small anchor=end
+
+// Runtime: joins the spine at x=600, above
+runtime: rect "RUNTIME" at 444,104 120x28 radius=4 fill=paper stroke=ink sw=0.8
+runtime.bottom -- 600,300 sw=1.2 stroke=ink
+568,244 -- 536,244 sw=1
+text "connection pool cap 20" at 532,247 style=small anchor=end
+536,188 -- 504,188 sw=1
+text "GC pauses" at 500,191 style=small anchor=end
+
+// Observability: joins the spine at x=440, below
+observe: rect "OBSERVABILITY" at 284,468 120x28 radius=4 fill=paper stroke=ink sw=0.8
+observe.top -- 440,300 sw=1.2 stroke=ink
+408,356 -- 376,356 sw=1
+text "no p99 alert" at 372,359 style=small anchor=end
+376,412 -- 344,412 sw=1
+text "dashboard sampled at 5m" at 340,415 style=small anchor=end
+
+// People: joins the spine at x=280, above
+people: rect "PEOPLE" at 124,104 120x28 radius=4 fill=paper stroke=ink sw=0.8
+people.bottom -- 280,300 sw=1.2 stroke=ink
+232,216 -- 200,216 sw=1
+text "on-call handover mid-incident" at 196,219 style=small anchor=end
+
+// legend, drawn by hand: lines here are not styles of the look
+40,520 -- 1200,520 style=rule
+text "Legend" at 40,538 style=eyebrow
+40,554 -- 64,554 sw=1.2 stroke=ink
+text "Category of cause" at 72,557 style=caption
+200,554 -- 224,554 sw=1.2 stroke=accent
+text "Confirmed root cause" at 232,557 style=caption
+372,554 -- 396,554 sw=1
+text "Cause looked into" at 404,557 style=caption
+focal at 524,549 14x10 radius=2
+text "What was observed" at 546,557 style=caption

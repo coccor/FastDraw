@@ -1,0 +1,55 @@
+look "../../looks/reference.look"
+canvas 1040x600
+
+text "Reporting, first release" at 40,60 style=h1
+
+// release bands: full width, every second one tinted
+mvp:   zone at 40,264 960x80 radius=0 stroke=none
+later: zone at 40,424 960x80 radius=0 stroke=none
+text "MVP" at 56,308 style=eyebrow
+text "Release 2" at 56,388 style=eyebrow
+text "Later" at 56,468 style=eyebrow
+
+// column separators
+116,156 -- 116,504 style=rule dash=4,4
+340,156 -- 340,504 style=rule dash=4,4
+564,156 -- 564,504 style=rule dash=4,4
+788,156 -- 788,504 style=rule dash=4,4
+
+// backbone: activities in the order the user meets them
+a1: store "Find the data" sub="ACTIVITY 1" at 128,88 200x64
+a2: store "Build the report" sub="ACTIVITY 2" at 352,88 200x64
+a3: store "Share it" sub="ACTIVITY 3" at 576,88 200x64
+a4: store "Trust it" sub="ACTIVITY 4" at 800,88 200x64
+
+// steps under each activity
+s11: node "Search datasets" at 140,168 176x32 title.weight=400
+s12: node "Preview rows" at 140,208 176x32 title.weight=400
+s21: node "Pick columns" at 364,168 176x32 title.weight=400
+s22: node "Add a chart" at 364,208 176x32 title.weight=400
+s31: node "Send a link" at 588,168 176x32 title.weight=400
+s41: node "Check freshness" at 812,168 176x32 title.weight=400
+
+// MVP
+m1: node "Keyword search" sub="RPT-101 · 3pt" at 140,280 176x48
+m2: node "Table + one chart" sub="RPT-102 · 5pt" at 364,280 176x48
+m3: node "Public link" sub="RPT-103 · 2pt" at 588,280 176x48
+m4: node "Last-updated stamp" sub="RPT-104 · 1pt" at 812,280 176x48
+
+// the release cut
+cut: 40,344 -- 1000,344 "Release cut" style=primary lpos=452,366
+
+// Release 2
+r1: node "Saved filters" sub="RPT-110 · 3pt" at 140,360 176x48
+r3: node "Scheduled email" sub="RPT-112 · 5pt" at 588,360 176x48
+r4: focal "Row-level permissions" sub="RPT-114 · 3pt" at 812,360 176x48 dash=4,3
+
+// the risk chip sits on the top edge of the riskiest card
+rect "RISK" at 932,354 44x12 radius=2 fill=paper stroke=accent sw=0.8 overlap=ok
+    title.font=mono title.size=8 title.weight=400 title.color=accent title.spacing=0.14
+
+// Later
+l1: node "Natural-language query" sub="RPT-120 · 8pt" at 140,440 176x48
+l4: node "Alerting on anomalies" sub="RPT-121 · 5pt" at 812,440 176x48
+
+legend at 40,528 store="Activity" node="Step or story" focal="Riskiest story" primary="Release cut"

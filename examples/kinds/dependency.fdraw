@@ -1,0 +1,51 @@
+look "../../looks/reference.look"
+canvas 1000x688
+
+text "What depends on what in the monorepo" at 40,60 style=h1
+
+text "Rank 0" at 40,132 style=eyebrow
+text "Rank 1" at 40,276 style=eyebrow
+text "Rank 2" at 40,420 style=eyebrow
+text "Rank 3" at 40,564 style=eyebrow
+
+// columns x = 180, 420, 660; ranks y = 96, 240, 384, 528 (64 high, 80 apart)
+web:    node "web" sub="apps/web" tag="APP" at 180,96 160x64
+admin:  node "admin" sub="apps/admin" tag="APP" at 660,96 160x64
+api:    node "api" sub="services/api" tag="SVC" at 180,240 160x64
+uikit:  node "ui-kit" sub="packages/ui-kit" tag="PKG" at 660,240 160x64
+db:     node "db" sub="services/db" tag="SVC" at 180,384 160x64
+shared: focal "shared-types" sub="packages/shared-types" tag="PKG" at 420,384 160x64
+zod:    cloud "zod" sub="v3.23 · npm" tag="EXT" at 180,528 160x64
+utils:  node "utils" sub="packages/utils" tag="PKG" at 420,528 160x64
+tokens: store "tokens" sub="packages/tokens" tag="PKG" at 660,528 160x64
+
+// how many boxes depend on each one
+rect "0 in" at 304,104 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "0 in" at 784,104 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "2 in" at 304,248 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "2 in" at 784,248 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "1 in" at 304,392 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "4 in" at 544,392 28x12 radius=2 fill=none stroke=accent/0.5 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=accent
+rect "1 in" at 304,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "1 in" at 544,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+rect "1 in" at 784,536 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
+
+// rank 0 to rank 1: the two straight ones, then the two that cross (bends at different heights)
+web.bottom@260 -> api.top@260
+admin.bottom@740 -> uikit.top@740
+web.bottom@300 -> uikit.top@680 via=300,188;680,188
+admin.bottom@700 -> api.top@300 via=700,212;300,212
+
+// rank 1 to rank 2 and 3
+api.bottom@260 -> db.top@260
+api.bottom@300 -> shared.top@460 via=300,344;460,344
+uikit.bottom@700 -> shared.top@540 via=700,344;540,344
+uikit.bottom@740 -> tokens.top@740
+db.right -> shared.left
+
+// rank 2 to rank 3, and the one arrow that points back up
+shared.bottom@460 -> zod.top@260 via=460,488;260,488
+shared.bottom@500 -> utils.top@500
+utils.top@540 -> shared.bottom@540 "cycle" style=primary
+
+legend at 40,616 node="Our package or service" focal="Most depended on" cloud="Third party" store="Depends on nothing" arrow="Depends on" primary="Closes a cycle"

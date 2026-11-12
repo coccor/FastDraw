@@ -1,0 +1,43 @@
+look "../../looks/reference.look"
+canvas 1000x560
+
+// stack: x = 136, 824 wide; rows 64 tall at y = 104, 168, 232, 296, 360 (ends 424)
+// in a row: index at x+20, name at x+88, detail right-aligned at x+804; baselines 38px under the row top
+
+text "Where an AI product is built" at 40,56 style=h1
+
+// ---- direction, outside the stack -------------------------------------------
+text "Abstraction" at 76,92 style=eyebrow anchor=middle
+76,424 -> 76,104
+text "Silicon" at 76,444 style=eyebrow anchor=middle
+
+// ---- layers, top first; the focal one last so its border is on top -----------
+l5: rect at 136,104 824x64 fill=ink/0.03 stroke=ink/0.15
+l3: rect at 136,232 824x64 fill=ink/0.03 stroke=ink/0.15
+l2: rect at 136,296 824x64 fill=ink/0.03 stroke=ink/0.15
+l1: rect at 136,360 824x64 fill=ink/0.03 stroke=ink/0.15
+l4: focal at 136,168 824x64 radius=0
+
+text "L5" at 156,140 style=eyebrow
+text "UI surface" at 224,142 size=16 weight=600
+text "chat, editor, canvas" at 940,141 style=small size=10 anchor=end
+
+text "L4" at 156,204 style=eyebrow color=accent weight=600
+text "Agent harness" at 224,206 size=16 weight=600
+text "tools, memory, loop" at 940,205 style=small size=10 anchor=end color=accent
+
+text "L3" at 156,268 style=eyebrow
+text "Prompt layer" at 224,270 size=16 weight=600
+text "system, few-shot, caching" at 940,269 style=small size=10 anchor=end
+
+text "L2" at 156,332 style=eyebrow
+text "SDK / client" at 224,334 size=16 weight=600
+text "auth, retries, streaming" at 940,333 style=small size=10 anchor=end
+
+text "L1" at 156,396 style=eyebrow
+text "Model weights" at 224,398 size=16 weight=600
+text "opus, sonnet, haiku" at 940,397 style=small size=10 anchor=end
+
+text "The harness is where most product differentiation lives: tools, memory, and the loop around the model." at 136,472 style=note
+
+legend at 40,496 focal="The layer this is about"
