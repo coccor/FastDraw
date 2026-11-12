@@ -1,0 +1,51 @@
+// Candidate A, "Cobalt". Monochrome cobalt line work on white with a fine cobalt dot grid,
+// square corners, IBM Plex Mono for names, sharp right-angle wiring; vermilion is the one hot colour.
+fontdir "./fonts"
+canvas paper=ground dots=line/0.16 dotgap=16
+
+color ground #ffffff
+color sheet  #ffffff
+color line   #1f2bd6
+color ink    #0c1160
+color muted  #4a52a8
+color soft   #9aa0e0
+color accent #ff4b1f
+color link   #1f2bd6
+
+font sans  "IBM Plex Sans"
+font mono  "IBM Plex Mono"
+font serif "IBM Plex Sans"
+
+style node shape=rect radius=0 size=144x64 fill=sheet stroke=line sw=1.5
+    title.font=mono title.size=12 title.weight=500 sub.font=mono sub.size=9 sub.color=muted
+    tag.font=mono tag.color=muted tag.border=ink/0.3 use="default box: a service, component or step"
+style focal extends node fill=accent stroke=accent title.color=#ffffff sub.color=#ffffff/0.85
+    tag.color=#ffffff tag.border=#ffffff/0.5 ghost.color=#ffffff/0.18 use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=sheet use="something that holds data or state"
+style cloud extends node fill=link/0.07 stroke=link use="a hosted or third-party platform"
+style external extends node fill=ground stroke=line dash=4,3 use="a person or system outside what you own"
+style optional extends node stroke=soft dash=2,3 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=line stroke=line sw=1.5 title.font=mono title.color=#ffffff sub.color=#ffffff/0.8 sub.font=mono sub.size=9 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=sheet stroke=line sw=1.5 title.font=mono use="flowchart yes/no question"
+style zone shape=rect radius=0 fill=none stroke=line/0.45 sw=1 dash=1,3 layer=back
+    title.pos=top title.align=left title.font=mono title.size=9 title.weight=500 title.caps=1 title.spacing=0.1 title.color=ink
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=sheet stroke=line sw=1.5 use="sequence activation bar"
+style table shape=table radius=0 fill=sheet stroke=line sw=1.5 head.fill=ink/0.07 rule=ink/0.12 cell.font=mono cell.size=10 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 use="a grid of values"
+style arrow line stroke=line sw=1.5 route=ortho radius=0 label.font=mono label.size=9 label.caps=1 label.spacing=0.06 label.color=muted use="default arrow"
+style primary extends arrow stroke=accent sw=2.5 label.color=accent use="the main path"
+style link extends arrow stroke=link dash=7,3 label.color=link use="a request crossing a boundary"
+style return extends arrow stroke=muted dash=4,3 use="a response"
+style relation extends relation label.font=mono label.size=9 label.color=muted
+style lifeline line head=none stroke=soft sw=1 dash=2,4 route=straight use="lifeline"
+style rule line head=none stroke=line/0.2 sw=1 route=straight use="thin separator"
+style h1 text font=mono size=20 weight=600 color=ink use="diagram title"
+style eyebrow text font=mono size=9 weight=500 color=muted use="small heading"
+style caption text font=sans size=10 color=muted use="small explanatory text"
+style note text font=sans size=13 color=muted use="a short aside"
+style small text font=mono size=9 color=muted use="technical detail"

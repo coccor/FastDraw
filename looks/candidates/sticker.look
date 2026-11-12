@@ -1,0 +1,52 @@
+// Candidate B, "Sticker". Bold black outlines on a lavender ground, rounded corners, flat
+// acid fills that say what a box is at a glance. Space Grotesk. Loud, friendly, unmistakable.
+fontdir "./fonts"
+canvas paper=ground
+
+color ground #e3ddfb
+color ink    #121212
+color muted  #3d3852
+color soft   #a59cc8
+color accent #c4f23a
+color link   #2b2bd9
+color butter #ffa45e
+color lilac  #9fd8ff
+color peach  #ffb3d4
+
+font sans  "Space Grotesk"
+font mono  "Space Grotesk"
+font serif "Space Grotesk"
+
+style node shape=rect radius=12 size=144x64 fill=#ffffff stroke=ink sw=2.4
+    title.weight=600 sub.size=10 sub.color=muted tag.color=ink tag.border=ink
+    use="default box: a service, component or step"
+style focal extends node fill=accent stroke=ink title.color=ink sub.color=ink/0.8 tag.color=ink tag.border=ink ghost.color=ink/0.12
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=butter use="something that holds data or state"
+style cloud extends node fill=lilac use="a hosted or third-party platform"
+style external extends node fill=peach dash=7,5 use="a person or system outside what you own"
+style optional extends node stroke=muted dash=3,4 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=ink stroke=ink sw=2.4 title.weight=600 title.color=ground sub.color=ground/0.8 sub.size=10 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent title.color=ink use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=butter stroke=ink sw=2.4 title.weight=600 use="flowchart yes/no question"
+style zone shape=rect radius=18 fill=ink/0.035 stroke=ink sw=1.6 dash=none layer=back
+    title.pos=top title.font=sans title.size=11 title.weight=700 title.color=ink
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=#ffffff stroke=ink sw=2 use="sequence activation bar"
+style table shape=table radius=12 fill=#ffffff stroke=ink sw=2.4 head.fill=butter rule=ink/0.2 cell.size=11 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 use="a grid of values"
+style arrow line stroke=ink sw=2.2 route=ortho radius=12 label.font=sans label.size=11 label.weight=600 label.caps=0 label.spacing=0 label.color=ink use="default arrow"
+style primary extends arrow stroke=ink sw=3.5 label.color=ink use="the main path"
+style link extends arrow stroke=link label.color=link use="a request crossing a boundary"
+style return extends arrow stroke=ink dash=6,5 use="a response"
+style relation extends relation label.font=sans label.size=11 label.color=ink
+style lifeline line head=none stroke=ink sw=1.5 dash=3,5 route=straight use="lifeline"
+style rule line head=none stroke=ink/0.25 sw=1.5 route=straight use="thin separator"
+style h1 text font=sans size=28 weight=700 color=ink use="diagram title"
+style eyebrow text font=sans size=11 weight=700 color=ink use="small heading"
+style caption text font=sans size=11 color=muted use="small explanatory text"
+style note text font=sans size=15 weight=500 color=muted use="a short aside"
+style small text font=sans size=10 color=muted use="technical detail"
