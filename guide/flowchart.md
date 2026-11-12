@@ -19,4 +19,4 @@ Shows a decision process: steps, yes/no questions, outcomes.
 
 ## Legend
 
-Bottom strip as the look describes, explaining shape meanings (start/end, step, decision) with small swatches, and the arrow kinds used. A swatch for a diamond is a small `diamond` shape about 24x12.
+One `legend at 40,Y` statement under the chart, explaining the shape meanings (start/end, step, decision) and the arrow kinds used.

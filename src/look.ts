@@ -1,4 +1,5 @@
 import { parseStatements } from './parse.ts';
+import { DEFAULT_LOOK } from './defaultLook.ts';
 
 export type Kind = 'shape' | 'line' | 'text';
 export type Props = Record<string, string>;
@@ -20,6 +21,15 @@ const BUILTIN: Style[] = [
   { name: 'text', kind: 'text', props: { font: 'sans', size: '12', color: 'ink' } },
   { name: 'arrow', kind: 'line', props: { stroke: 'muted', sw: '1.2', head: 'arrow', route: 'ortho', radius: '8' } },
   { name: 'line', kind: 'line', props: { stroke: 'muted', sw: '1', head: 'none', route: 'straight' } },
+  {
+    name: 'legend', kind: 'shape',
+    props: {
+      shape: 'legend', fill: 'none', stroke: 'none', mask: '0', rule: 'ink/0.12', title: 'Legend', size: 'automatic',
+      use: 'a whole legend in one statement: legend at x,y focal="what it means" primary="what it means" ...',
+      'title.font': 'mono', 'title.size': '8', 'title.color': 'muted', 'title.spacing': '0.18', 'title.caps': '1',
+      'item.font': 'sans', 'item.size': '8.5', 'item.color': 'muted',
+    },
+  },
 ];
 
 export function emptyLook(): Look {
@@ -103,4 +113,11 @@ export function fontFamily(look: Look, v: string | undefined): string {
   const fam = look.fonts.get(name) ?? name;
   const generic = name === 'mono' ? 'monospace' : name === 'serif' ? 'serif' : 'sans-serif';
   return `'${fam}', ${generic}`;
+}
+
+let cachedDefault: Look | undefined;
+// The built-in look, used when a diagram names no look of its own.
+export function defaultLook(): Look {
+  cachedDefault ??= parseLook(DEFAULT_LOOK, 'default look');
+  return cachedDefault;
 }

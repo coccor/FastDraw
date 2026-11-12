@@ -8,6 +8,8 @@ import { check } from '../src/check.ts';
 import { renderSvg } from '../src/render.ts';
 import { patchSource, setAt, setSize, setText, setProp, setKind, setEnd, fmtStmt, appendStatements, moveStatement, freshId } from '../src/edit.ts';
 import { loadScene } from '../src/node.ts';
+import { embedSvg, extractSvg, embedPng, extractPng } from '../src/embed.ts';
+import { defaultLook } from '../src/look.ts';
 
 const look = parseLook(readFileSync(new URL('../looks/reference.look', import.meta.url), 'utf8'));
 const scene = (body: string) => buildScene(`look "x.look"\ncanvas 800x400\n${body}`, look);
@@ -114,4 +116,40 @@ test('markup in a diagram file cannot break out of the SVG', () => {
   // an injected attribute would need a literal quote after the =; escaped ones stay inside the value
   assert.equal(/ on(load|click|focus)=["']/.test(svg), false);
   assert.match(svg, /onload=&quot;/);
+});
+
+test('a diagram with no look statement is drawn with the built-in look', () => {
+  const sc = buildScene('a: focal "A" at 40,40\nb: store "B" at 240,40\na -> b style=primary', null);
+  assert.deepEqual(sc.issues.filter((i) => i.level === 'error'), []);
+  assert.equal(sc.look, defaultLook());
+  assert.deepEqual(defaultLook().issues, []);
+  assert.match(renderSvg(sc), /<path d="M/); // the store is a drawn cylinder, not a rectangle
+});
+
+test('legend: one statement lays out entries, wraps rows and stays inside its width', () => {
+  const sc = scene('lg: legend at 40,300 focal="The subject" store="Holds data" primary="Main path" return="Reply" decision="Question" nosuch="x" fill=#fff');
+  const lg = sc.shapes[0];
+  assert.deepEqual(lg.legend!.map((i) => i.style), ['focal', 'store', 'primary', 'return', 'decision']);
+  assert.equal(lg.w, 720); // canvas 800 minus the left margin twice
+  for (const i of lg.legend!) assert.ok(i.x >= 40 && i.x < 760);
+  assert.equal(new Set(lg.legend!.map((i) => i.baseline)).size, 1);
+  const narrow = scene('lg: legend at 40,300 200x10 focal="The subject of it all" store="Holds data" primary="Main path"').shapes[0];
+  assert.ok(new Set(narrow.legend!.map((i) => i.baseline)).size > 1);
+  assert.ok(narrow.h > lg.h);
+  const svg = renderSvg(sc);
+  assert.match(svg, />LEGEND</); assert.match(svg, />Holds data</);
+  assert.match(warns('lg: legend at 40,300').join('|'), /no entries/);
+});
+
+test('exports carry their source and give it back', () => {
+  const payload = { v: 1 as const, diagram: 'a: node "Ünï ✓" at 0,0\n', look: 'style node shape=rect\n' };
+  assert.deepEqual(extractSvg(embedSvg('<svg xmlns="x" viewBox="0 0 1 1">\n<rect/></svg>', payload)), payload);
+  assert.equal(extractSvg('<svg></svg>'), null);
+  // smallest valid PNG: signature, IHDR, IDAT, IEND
+  const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
+  const out = embedPng(png, payload);
+  assert.deepEqual(extractPng(out), payload);
+  assert.equal(extractPng(png), null);
+  assert.deepEqual([...out.subarray(out.length - 12)], [...png.subarray(png.length - 12)]); // IEND still last
+  assert.equal(embedPng(new Uint8Array([1, 2, 3]), payload).length, 3);
 });

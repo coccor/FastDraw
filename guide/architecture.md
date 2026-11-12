@@ -25,4 +25,4 @@ Shows the parts of one system and how a request or data moves between them.
 
 ## Legend
 
-Bottom strip: a rule line across the canvas at about 24px below the lowest element, the word LEGEND 16px under it, and the entries 16–24px under that. Each entry is a 14x10 swatch in the style it explains followed by its text 6px to the right, or a 28px sample arrow followed by its text. Space the entries evenly across the width. The canvas ends about 36px below the entries.
+One `legend at 40,Y` statement, 24px below the lowest element, with an entry for each box style and arrow style you used. Leave about 70px of canvas below Y.

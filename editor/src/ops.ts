@@ -229,3 +229,37 @@ export function setCanvas(src: string, sc: Scene, w: number, h: number): string 
   lines.splice(li + 1, 0, line);
   return lines.join('\n');
 }
+
+// Everything that shares a group name with the given elements.
+export function withGroups(sc: Scene, ids: string[]): string[] {
+  const all = [...sc.shapes, ...sc.texts, ...sc.conns];
+  const groups = new Set(ids.map((id) => all.find((x) => x.id === id)?.p.group).filter((g): g is string => !!g));
+  if (!groups.size) return ids;
+  return [...new Set([...ids, ...all.filter((x) => x.p.group && groups.has(x.p.group)).map((x) => x.id)])];
+}
+
+export function groupElements(src: string, sc: Scene, ids: string[]): string {
+  const used = new Set([...sc.shapes, ...sc.texts, ...sc.conns].map((x) => x.p.group).filter(Boolean));
+  let n = 1;
+  while (used.has(`g${n}`)) n++;
+  return setProps(src, sc, ids, 'group', `g${n}`);
+}
+
+// A legend listing every look style the diagram uses, placed under the drawing.
+export function addLegend(src: string, sc: Scene): { src: string; id: string } | null {
+  const skip = new Set(['rect', 'ellipse', 'diamond', 'text', 'arrow', 'line', 'legend']);
+  const used: string[] = [];
+  const note = (name: string) => { if (!skip.has(name) && sc.look.styles.has(name) && !used.includes(name)) used.push(name); };
+  for (const s of sc.shapes) if (!s.back && Math.min(s.w, s.h) > 12) note(s.style);
+  for (const c of sc.conns) note(c.style);
+  if (sc.conns.some((c) => c.style === 'arrow') && sc.look.styles.has('arrow')) used.push('arrow');
+  if (!used.length) return null;
+  const label = (n: string) => { const u = sc.look.styles.get(n)?.props.use ?? n; const t = u.split(/[:;,.]/)[0].trim(); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const bottom = Math.max(0, ...sc.shapes.filter((s) => s.shape !== 'legend').map((s) => s.y + s.h), ...sc.texts.map((t) => t.y + t.h), ...sc.conns.flatMap((c) => c.pts.map((p) => p.y)));
+  const y = Math.ceil((bottom + 28) / 4) * 4;
+  const id = freshId(src, 'legend');
+  const line = `${id}: legend at 40,${y} ` + used.map((n) => `${n}=${JSON.stringify(label(n))}`).join(' ');
+  let next = appendStatements(src, [line]);
+  if (sc.h < y + 72) next = setCanvas(next, sc, sc.w, y + 72);
+  return { src: next, id };
+}

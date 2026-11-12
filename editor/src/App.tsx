@@ -10,13 +10,14 @@ import { Panel, TextField } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import {
   BringToFront, Check, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, ImageDown, Lock, LockOpen,
-  Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2,
+  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
 import { fontCss } from './fonts.ts';
+import { embedSvg, embedPng, extractSvg, extractPng } from '../../src/embed.ts';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -155,21 +156,34 @@ export function App() {
   const openFile = useCallback(async () => {
     try {
       if (!files.hasFileAccess) {
-        const picked = await files.pickUpload('.fdraw,.look', true);
-        const d = picked.find((f) => f.name.endsWith('.fdraw')), l = picked.find((f) => f.name.endsWith('.look'));
-        if (!d) return;
-        io.current = { fileMod: 0, lookMod: 0, written: '' };
-        setFolderFiles([]);
-        load(await d.text(), l ? await l.text() : null, d.name);
+        const picked = await files.pickUpload('.fdraw,.look,.png,.svg', true);
+        const d = picked.find((f) => !f.name.endsWith('.look')), l = picked.find((f) => f.name.endsWith('.look'));
+        if (d && (await openBlob(d)) && l) setLookSrc(await l.text());
         return;
       }
       const h = await files.pickFile('diagram');
+      if (/\.(png|svg)$/i.test(h.name)) { await openBlob(await h.getFile()); return; }
       await files.ensureWritable(h);
       const { text, modified } = await files.readHandle(h);
       io.current = { file: h, fileMod: modified, lookMod: 0, written: text };
       setFolderFiles([]);
       load(text, null, h.name);
     } catch { /* picker cancelled */ }
+  }, [load]);
+
+  // Open a dropped or uploaded file in memory: a diagram, a look, or an exported image carrying its source.
+  const openBlob = useCallback(async (f: File): Promise<boolean> => {
+    const lower = f.name.toLowerCase();
+    if (lower.endsWith('.look')) { setLookSrc(await f.text()); return true; }
+    let diagram: string | null = null, lookText: string | null | undefined;
+    if (lower.endsWith('.png')) { const p = extractPng(new Uint8Array(await f.arrayBuffer())); if (p) { diagram = p.diagram; lookText = p.look; } }
+    else if (lower.endsWith('.svg')) { const p = extractSvg(await f.text()); if (p) { diagram = p.diagram; lookText = p.look; } }
+    else diagram = await f.text();
+    if (diagram === null) { setStatus(`${f.name} was not exported from FastDraw, so it has no diagram inside`); return false; }
+    io.current = { fileMod: 0, lookMod: 0, written: '' };
+    setFolderFiles([]);
+    load(diagram, lookText ?? null, f.name.replace(/\.(png|svg)$/i, '.fdraw'));
+    return true;
   }, [load]);
 
   const chooseLook = useCallback(async () => {
@@ -187,6 +201,14 @@ export function App() {
     setFolderFiles([]);
     load(text, demoLook, label + ' (example)');
   };
+
+  // dropping a file anywhere on the page opens it
+  useEffect(() => {
+    const over = (e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); };
+    const drop = (e: DragEvent) => { const f = e.dataTransfer?.files?.[0]; if (f) { e.preventDefault(); openBlob(f); } };
+    window.addEventListener('dragover', over); window.addEventListener('drop', drop);
+    return () => { window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); };
+  }, [openBlob]);
 
   // notice changes made outside the editor (an agent rewriting the file)
   useEffect(() => {
@@ -245,6 +267,7 @@ export function App() {
   const startEdit = (id: string) => {
     const e = ops.find(scene, id);
     if (!e || src === null) return;
+    if (e.kind === 'shape' && e.el.shape === 'legend') return; // its entries are edited in the panel
     let box: Box = ops.boxOf(e);
     if (e.kind === 'conn') {
       const l = (e.el as Conn).label;
@@ -291,9 +314,10 @@ export function App() {
       const now = performance.now();
       if (lastClick.current.id === id && now - lastClick.current.t < 450 && !e.shiftKey) { lastClick.current = { id: '', t: 0 }; pendingEdit.current = id; setSel([id]); return; }
       lastClick.current = { id, t: now };
+      const grp = e.altKey ? [id] : ops.withGroups(scene, [id]);
       let ids = sel;
-      if (e.shiftKey) ids = sel.includes(id) ? sel.filter((s) => s !== id) : [...sel, id];
-      else if (!sel.includes(id)) ids = [id];
+      if (e.shiftKey) ids = sel.includes(id) ? sel.filter((s) => !grp.includes(s)) : [...new Set([...sel, ...grp])];
+      else if (!sel.includes(id)) ids = grp;
       setSel(ids);
       if (ids.includes(id)) drag.current = { type: 'move', start: p, ids, base: src, scene, moved: false };
       return;
@@ -449,6 +473,9 @@ export function App() {
     remove: () => src !== null && sel.length > 0 && commit(ops.deleteElements(src, scene, sel), []),
     duplicate: () => { if (src === null || !sel.length) return; const r = ops.duplicateElements(src, scene, sel); commit(r.src, r.ids); },
     setCanvas: (w: number, h: number) => src !== null && commit(ops.setCanvas(src, scene, w, h)),
+    group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
+    ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
+    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no look styles yet'); },
   };
   const actRef = useRef(act); actRef.current = act;
   const stateRef = useRef({ sel, scene, src, editing }); stateRef.current = { sel, scene, src, editing };
@@ -463,6 +490,7 @@ export function App() {
       if (text === null) return;
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); return; }
+      if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
       if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); setSel([...sc.shapes, ...sc.texts, ...sc.conns].map((x) => x.id)); return; }
       if (mod && e.key.toLowerCase() === 'c') { clip.current = s; return; }
@@ -488,15 +516,16 @@ export function App() {
   const startEditRef = useRef(startEdit); startEditRef.current = startEdit;
 
   const exportAs = async (kind: 'png' | 'svg') => {
+    const payload = { v: 1 as const, diagram: cur, look: lookSrc };
     const svg = renderSvg(scene, await fontCss());
-    const base = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '');
-    if (kind === 'svg') { files.download(base + '.svg', svg, 'image/svg+xml'); return; }
+    const base = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
+    if (kind === 'svg') { files.download(base + '.svg', embedSvg(svg, payload), 'image/svg+xml'); return; }
     const img = new Image();
     img.onload = () => {
       const c = document.createElement('canvas');
       c.width = scene.w * 2; c.height = scene.h * 2;
       c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob((b) => b && files.download(base + '.png', b));
+      c.toBlob(async (b) => { if (b) files.download(base + '.png', new Blob([embedPng(new Uint8Array(await b.arrayBuffer()), payload).buffer as ArrayBuffer], { type: 'image/png' })); });
     };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   };
@@ -515,7 +544,7 @@ export function App() {
             {files.hasFileAccess && (
               <button className="choice" onClick={openFolder}><FolderOpen size={20} /><span><b>Open a folder</b><i>Finds the diagrams and their look, saves in place, follows an agent live</i></span></button>
             )}
-            <button className="choice" onClick={openFile}><FileText size={20} /><span><b>Open a file</b><i>{files.hasFileAccess ? 'One diagram; you may be asked for its look file' : 'Pick the diagram and its look file together'}</i></span></button>
+            <button className="choice" onClick={openFile}><FileText size={20} /><span><b>Open a file</b><i>{files.hasFileAccess ? 'A diagram, or a PNG or SVG exported from FastDraw' : 'A diagram with its look file, or an exported PNG or SVG'}</i></span></button>
             <button className="choice" onClick={() => setPasteOpen(true)}><ClipboardPaste size={20} /><span><b>Paste diagram text</b><i>For text an assistant gave you in a chat</i></span></button>
           </div>
           <p className="muted">Or look at an example: {DEMOS.map(([l, t]) => <button key={l} className="linkbtn" onClick={() => openDemo(t, l)}>{l}</button>)}</p>
@@ -526,7 +555,7 @@ export function App() {
           </p>
           {status && <p className="muted warn">{status}</p>}
         </div>
-        {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, demoLook, 'pasted diagram'); }} />}
+        {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, null, 'pasted diagram'); }} />}
       </div>
     );
   }
@@ -605,6 +634,8 @@ export function App() {
             <button role="menuitem" onClick={() => { closePopups(); exportAs('svg'); }}><FileCode size={16} />Export as SVG</button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
             <hr />
+            <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
+            <hr />
             <div className="canvassize">
               <span>Canvas size</span>
               <TextField label="Width" value={String(scene.w)} onCommit={(v) => +v > 0 && act.setCanvas(+v, scene.h)} />
@@ -679,6 +710,8 @@ export function App() {
         <div className="island dropdown ctx" style={{ left: ctx.x, top: ctx.y }} role="menu" onPointerDown={(e) => e.stopPropagation()}>
           {sel.length === 1 && <button role="menuitem" onClick={() => { setCtx(null); startEdit(sel[0]); }}><Pencil size={15} />Edit text<kbd>Enter</kbd></button>}
           <button role="menuitem" onClick={() => { setCtx(null); act.duplicate(); }}><Copy size={15} />Duplicate<kbd>Ctrl+D</kbd></button>
+          {sel.length > 1 && <button role="menuitem" onClick={() => { setCtx(null); act.group(); }}><Group size={15} />Group<kbd>Ctrl+G</kbd></button>}
+          {sel.some((id) => ops.find(scene, id)?.el.p.group) && <button role="menuitem" onClick={() => { setCtx(null); act.ungroup(); }}><Ungroup size={15} />Ungroup<kbd>Ctrl+Shift+G</kbd></button>}
           <hr />
           <button role="menuitem" onClick={() => { setCtx(null); act.reorder('front'); }}><BringToFront size={15} />Bring to front</button>
           <button role="menuitem" onClick={() => { setCtx(null); act.reorder('back'); }}><SendToBack size={15} />Send to back</button>
@@ -687,7 +720,7 @@ export function App() {
         </div>
       )}
 
-      {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; setFolderFiles([]); load(t, lookSrc ?? demoLook, 'pasted diagram'); }} />}
+      {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; setFolderFiles([]); load(t, lookSrc, 'pasted diagram'); }} />}
     </div>
   );
 }
@@ -698,7 +731,7 @@ function PasteDialog({ onClose, onLoad }: { onClose: () => void; onLoad: (text: 
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="card">
         <h3>Paste diagram text</h3>
-        <p className="muted">Paste what an assistant wrote. It opens in memory with the built-in reference look; use Download to keep it.</p>
+        <p className="muted">Paste what an assistant wrote. It opens in memory, drawn with the built-in look unless it names its own. Use Download to keep it.</p>
         <textarea autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder={'a: node "Orders API" at 80,80\nb: store "Orders DB" at 320,80\na -> b "writes"'} />
         <div className="startbtns">
           <button className="primary" disabled={!v.trim()} onClick={() => onLoad(v)}>Open</button>

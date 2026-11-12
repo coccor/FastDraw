@@ -26,14 +26,14 @@ reuse -> note "no"
 40,632 -- 960,632 style=rule
 text "Legend" at 40,660 style=eyebrow
 terminal at 112,651 14x10 radius=2
-text "Start / end" at 136,660 style=legend
+text "Start / end" at 136,660 style=caption
 step at 204,651 14x10 radius=2
-text "Step" at 228,660 style=legend
+text "Step" at 228,660 style=caption
 diamond at 272,650 24x12
-text "Decision" at 304,660 style=legend
+text "Decision" at 304,660 style=caption
 terminal-focal at 364,651 14x10 radius=2
-text "Outcome that matters" at 388,660 style=legend
+text "Outcome that matters" at 388,660 style=caption
 500,657 -> 532,657
-text "Flow" at 540,660 style=legend
+text "Flow" at 540,660 style=caption
 588,657 -> 620,657 style=primary
-text "Main path" at 628,660 style=legend
+text "Main path" at 628,660 style=caption

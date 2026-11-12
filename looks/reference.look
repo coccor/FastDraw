@@ -59,11 +59,11 @@ style rule line stroke=ink/0.10 sw=0.8 route=straight use="thin separator, e.g. 
 // ---- text -----------------------------------------------------------------
 style h1 text font=serif size=28 color=ink use="diagram title"
 style eyebrow text font=mono size=8 color=muted spacing=0.18 caps=1 use="small caps label, e.g. LEGEND"
-style legend text font=sans size=8.5 color=muted use="legend entry"
+style caption text font=sans size=8.5 color=muted use="legend entry"
 style note text font=serif italic=1 size=14 color=muted use="a short editorial aside; at most two"
 style small text font=mono size=9 color=muted use="technical detail: a port, path or command"
 
 guidance "focal, terminal-focal and primary are the accent. Use the accent on at most two things in one diagram."
 guidance "tag= is a 3 or 4 letter type marker in the corner of a box (EXT, EDGE, API, DB). Use it on architecture boxes, not flowchart shapes."
 guidance "sub= is for technical detail in mono type: a product name, path, port or protocol. Names of things go in the main text."
-guidance "Finish with a legend strip along the bottom: a rule line, the word LEGEND in eyebrow style, then a small swatch (style at x,y 14x10 radius=2) and a legend text for each style you used."
+guidance "Finish with a legend: one statement, 'legend at x,y' followed by style=\"what it means\" for each style you used."

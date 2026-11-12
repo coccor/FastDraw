@@ -34,21 +34,21 @@ reader_l@520 -> stats_l@520 "pageview beacon" style=return lpos=724,510
 text "Legend" at 92,596 style=eyebrow
 
 external at 180,588 14x10 radius=2
-text "Outside the system" at 208,596 style=legend
+text "Outside the system" at 208,596 style=caption
 cloud at 332,588 14x10 radius=2
-text "Hosted platform" at 360,596 style=legend
+text "Hosted platform" at 360,596 style=caption
 focal at 484,588 14x10 radius=2
-text "Subject of the diagram" at 512,596 style=legend
+text "Subject of the diagram" at 512,596 style=caption
 optional at 636,588 14x10 radius=2
-text "Optional, asynchronous" at 664,596 style=legend
+text "Optional, asynchronous" at 664,596 style=caption
 bar at 792,586 6x14
-text "Busy (activation)" at 816,596 style=legend
+text "Busy (activation)" at 816,596 style=caption
 
 176,613 -> 200,613 style=link
-text "Request from outside" at 208,616 style=legend
+text "Request from outside" at 208,616 style=caption
 328,613 -> 352,613
-text "Request" at 360,616 style=legend
+text "Request" at 360,616 style=caption
 480,613 -> 504,613 style=return
-text "Response or async" at 512,616 style=legend
+text "Response or async" at 512,616 style=caption
 632,613 -> 656,613 style=primary
-text "Outcome that matters" at 664,616 style=legend
+text "Outcome that matters" at 664,616 style=caption

@@ -5,7 +5,7 @@ import type { Look, Style } from '../../src/look.ts';
 import { buildScene } from '../../src/scene.ts';
 import { renderBody } from '../../src/render.ts';
 
-const BUILTIN = new Set(['rect', 'ellipse', 'diamond', 'text', 'arrow', 'line']);
+const BUILTIN = new Set(['rect', 'ellipse', 'diamond', 'text', 'arrow', 'line', 'legend']);
 
 function Thumb({ look, style }: { look: Look; style: Style }) {
   const view = useMemo(() => {

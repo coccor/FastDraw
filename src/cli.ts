@@ -1,7 +1,10 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook } from './node.ts';
+import { loadScene, loadLook, readSources } from './node.ts';
+import { defaultLook } from './look.ts';
+import { DEFAULT_LOOK } from './defaultLook.ts';
+import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
 import { check } from './check.ts';
 
@@ -14,7 +17,9 @@ function usage(): never {
   check  <file.fdraw>                     report problems, with line numbers
   render <file.fdraw> [-o out.png|.svg] [--scale 2]
                                           draw the diagram (PNG by default)
-  sizes  <file.fdraw | file.look>         list the look's styles and their sizes
+  sizes  [file.fdraw | file.look]         list the look's styles and their sizes
+                                          (the built-in look when no file is given)
+  init-look [path]                        write the built-in look to a file to make your own
   guide  [architecture|flowchart|sequence|look]
                                           print the language guide`);
   process.exit(2);
@@ -48,18 +53,18 @@ if (cmd === 'check') {
     process.exit(1);
   }
   const svg = renderSvg(sc);
-  if (out.endsWith('.svg')) writeFileSync(out, svg);
+  const payload = { v: 1 as const, ...readSources(file) };
+  if (out.endsWith('.svg')) writeFileSync(out, embedSvg(svg, payload));
   else {
     const { Resvg } = await import('@resvg/resvg-js');
     const fontDir = join(root, 'fonts');
     const fontFiles = existsSync(fontDir) ? readdirSync(fontDir).filter((f) => /\.(ttf|otf)$/.test(f)).map((f) => join(fontDir, f)) : [];
     const png = new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng();
-    writeFileSync(out, png);
+    writeFileSync(out, embedPng(new Uint8Array(png), payload));
   }
   console.log(`wrote ${out} (${sc.w}x${sc.h}${out.endsWith('.svg') ? '' : ` at ${scale}x`})`);
 } else if (cmd === 'sizes') {
-  if (!args[0]) usage();
-  const look = args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
+  const look = !args[0] ? defaultLook() : args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
   for (const i of look.issues) console.log(`look:${i.line}  ${i.level}  ${i.msg}`);
   const rows = [...look.styles.values()];
   for (const kind of ['shape', 'line', 'text'] as const) {
@@ -75,6 +80,11 @@ if (cmd === 'check') {
     }
   }
   if (look.guidance.length) { console.log('\nguidance from this look'); for (const g of look.guidance) console.log(`  - ${g}`); }
+} else if (cmd === 'init-look') {
+  const out = args[0] ?? 'team.look';
+  if (existsSync(out)) { console.log(`${out} already exists; choose another path or remove it first`); process.exit(1); }
+  writeFileSync(out, DEFAULT_LOOK);
+  console.log(`wrote ${out}. Point a diagram at it with:  look "./${basename(out)}"`);
 } else if (cmd === 'guide') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');

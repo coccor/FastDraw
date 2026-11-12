@@ -4,7 +4,7 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 
 ## How to work
 
-1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance.
+1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
 2. If the diagram is an architecture diagram, a flowchart or a sequence diagram, run `fastdraw guide architecture|flowchart|sequence` and follow it.
 3. Plan the composition on paper first: canvas size, rows and columns, where the main thing sits.
 4. Write the file.
@@ -18,7 +18,7 @@ When you change an existing diagram: do not move, resize or restyle anything tha
 One statement per line. An indented line continues the statement above it. `//` starts a comment; so does a line starting with `# `.
 
 ```
-look "./team.look"          // path relative to this file
+look "./team.look"          // path relative to this file; leave the line out to use the built-in look
 canvas 1000x480             // width x height in px
 
 // shape:   id: style "text" at x,y WxH key=value ...
@@ -89,6 +89,23 @@ Labels are drawn in small caps on a paper-coloured patch, above a horizontal lin
 
 `text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1`.
 
+### Legend
+
+One statement draws a whole legend: a rule line, a heading, and one entry per style, spaced and wrapped for you.
+
+```
+legend at 40,404 focal="The service this is about" store="Holds data" primary="Main path" return="Response"
+```
+
+- Each `style="what it means"` pair is an entry, in the order written. Use only the styles the diagram uses.
+- It spans the canvas width minus the left margin on both sides; give `WxH` to set another width (the height is always worked out).
+- `title="Key"` changes the heading; `title=none` removes it.
+- Put it 24px under the lowest element and leave about 70px of canvas for it.
+
+### Groups
+
+`group=name` on several elements makes the editor select and move them together. It does not change how they are drawn.
+
 ### Drawing order
 
 Shapes whose style is marked "drawn behind everything" (zones) come first, then all connectors, then connector labels, then shapes, then free text. Within each group, file order.
@@ -106,4 +123,4 @@ These are what make a diagram look designed. `check` enforces the mechanical one
 - **No arrow through a box, no arrow on top of another, no label touching a box or another line.** `check` reports these.
 - **Labels fit their line.** A horizontal arrow needs to be longer than its label. Make the gap wider or the label shorter.
 - **Centre the composition.** The drawing should sit balanced in the canvas, not hug one corner. Size the canvas to the content.
-- **Legend.** If the look asks for a legend, put it in a strip along the bottom with only the styles you used.
+- **Legend.** End with a `legend` statement listing only the styles you used.

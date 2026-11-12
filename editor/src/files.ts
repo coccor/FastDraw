@@ -49,7 +49,7 @@ export const dirOf = (path: string) => (path.includes('/') ? path.slice(0, path.
 
 export async function pickFile(kind: 'diagram' | 'look'): Promise<Handle> {
   const types = kind === 'diagram'
-    ? [{ description: 'FastDraw diagram', accept: { 'text/plain': ['.fdraw'] } }]
+    ? [{ description: 'FastDraw diagram, or an image exported from FastDraw', accept: { 'text/plain': ['.fdraw'], 'image/png': ['.png'], 'image/svg+xml': ['.svg'] } }]
     : [{ description: 'FastDraw look', accept: { 'text/plain': ['.look'] } }];
   // @ts-expect-error: showOpenFilePicker is not in the bundled DOM types
   const [h] = await window.showOpenFilePicker({ types, excludeAcceptAllOption: false });

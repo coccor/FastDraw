@@ -28,3 +28,12 @@ export function loadScene(file: string): Scene {
   if (p) { try { look = parseLook(readFileSync(resolve(dirname(file), p), 'utf8'), p); } catch { look = null; } }
   return buildScene(src, look, file);
 }
+
+// The diagram and look texts as they are on disk, for embedding in exports.
+export function readSources(file: string): { diagram: string; look: string | null } {
+  const diagram = readFileSync(file, 'utf8');
+  const p = lookPath(diagram);
+  let look: string | null = null;
+  if (p) { try { look = readFileSync(resolve(dirname(file), p), 'utf8'); } catch { look = null; } }
+  return { diagram, look };
+}

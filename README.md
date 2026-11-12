@@ -16,6 +16,8 @@ Status: proof of concept. The design document lives outside this repo, in the pl
 | `src/` | Core: parser, look loader, arrow router, SVG renderer, checker, text-edit operations |
 | `src/cli.ts`, `bin/fastdraw` | Command-line tool for agents: `check`, `render`, `sizes`, `guide` |
 | `guide/` | What an agent reads to learn the language and how to compose each kind of diagram |
+| `src/defaultLook.ts` | The built-in look, used when a diagram names none; `fastdraw init-look` writes it out as a starting point |
+| `agents/` | Thin instruction files that point Claude Code, Codex, OpenCode and Copilot at `fastdraw guide` |
 | `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison. Not the look FastDraw will ship with |
 | `editor/` | The browser editor (Vite + React), built as a static site |
 | `examples/test/` | Three diagrams written by agents from the guide alone |
@@ -32,6 +34,7 @@ npm run typecheck
 bin/fastdraw guide        # the language guide
 bin/fastdraw check examples/test/architecture.fdraw
 bin/fastdraw render examples/test/architecture.fdraw
+bin/fastdraw init-look team.look   # start your own look from the built-in one
 npm run dev               # editor at http://localhost:5199
 npm run build:editor      # static site in dist-editor/
 ```
@@ -43,3 +46,6 @@ Needs Node 22.18 or later (the tool runs its TypeScript sources directly).
 In Chrome and Edge the editor saves in place and re-reads the file about once a second, so an
 agent and a person can work on the same diagram at the same time. Other browsers keep changes in
 memory and download the result. Nothing is uploaded; there is no server.
+
+Exported PNG and SVG files carry the diagram and its look inside them. Drop one on the editor
+(or open it) to keep editing, for example an image taken from a wiki page.

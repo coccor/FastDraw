@@ -36,4 +36,4 @@ api_bar.left@408 -> user_l@408 "201 created" style=primary
 - Requests are solid. Responses and async messages use the dashed return style. One message, the outcome that matters, uses the primary style. A request arriving from outside uses the link style if the look has one.
 - Labels sit above their arrow. A long arrow that crosses other lifelines should have its label on a stretch between two lifelines where nothing else is: place it with `lpos=x,y` (x is the label centre, y is 10px above the arrow).
 - One participant, the one the diagram is about, gets the accent box style.
-- Lifelines end 24px after the last message. The legend strip, if the look asks for one, goes below that.
+- Lifelines end 24px after the last message. A `legend at x,Y` statement goes 24px below that.

@@ -143,7 +143,14 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           </div>
         </section>
       )}
-      {els.length === 1 && kind === 'shape' && (
+      {els.length === 1 && first.kind === 'shape' && first.el.legend && (
+        <section>
+          <h4>Legend entries</h4>
+          {first.el.legend.map((it) => <TextField key={it.style} label={it.style} value={it.label} onCommit={(v) => act.setProp(it.style, v || null)} />)}
+          <p className="muted small">Clear an entry to remove it.</p>
+        </section>
+      )}
+      {els.length === 1 && first.kind === 'shape' && !first.el.legend && (
         <section>
           <h4>Extra text</h4>
           <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />

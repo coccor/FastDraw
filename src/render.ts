@@ -45,7 +45,40 @@ function outline(s: Shape, attrs: string): string {
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}"${rx ? ` rx="${rx}"` : ''} ${attrs}/>`;
 }
 
+function drawLegend(look: Look, s: Shape): string {
+  const p = s.p, out: string[] = [];
+  out.push(`<line x1="${s.x}" y1="${s.y}" x2="${s.x + s.w}" y2="${s.y}" stroke="${col(look, p.rule ?? 'ink/0.12')}" stroke-width="0.8"/>`);
+  if ((p.title ?? 'none') !== 'none') {
+    const t = textAttrs(look, p, 'title.', { font: 'mono', size: 8, weight: 400, color: 'muted' });
+    out.push(`<text x="${s.x}" y="${s.y + 16}" ${t.a}>${esc(p['title.caps'] === '0' ? p.title : p.title.toUpperCase())}</text>`);
+  }
+  const it = textAttrs(look, p, 'item.', { font: 'sans', size: 8.5, weight: 400, color: 'muted' });
+  for (const e of s.legend ?? []) {
+    const sp = look.styles.get(e.style)?.props ?? {};
+    const y = e.baseline;
+    if (e.kind === 'line') {
+      const sw = Math.min(num(sp.sw, 1.2), 1.6), stroke = col(look, sp.stroke ?? 'muted');
+      const head = !(sp.head === 'none' || sp.route === 'straight');
+      const dash = sp.dash && sp.dash !== 'none' ? ` stroke-dasharray="${esc(sp.dash)}"` : '';
+      out.push(`<line x1="${e.x}" y1="${y - 3}" x2="${e.x + (head ? 21 : 28)}" y2="${y - 3}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`);
+      if (head) out.push(arrowHead({ x: e.x + 28, y: y - 3 }, { x: e.x, y: y - 3 }, sw, stroke));
+    } else if (e.kind === 'text') {
+      const t = textAttrs(look, { ...sp, size: String(Math.min(num(sp.size, 12), 11)) }, '', { font: 'sans', size: 11, weight: 400, color: 'ink' });
+      out.push(`<text x="${e.x}" y="${y}" ${t.a}>Aa</text>`);
+    } else {
+      const a = strokeAttrs(look, { ...sp, sw: String(Math.min(num(sp.sw, 1), 1.2)) });
+      const m = /^(\d+(?:\.\d+)?)x/.exec(sp.size ?? '');
+      if (sp.shape === 'diamond') out.push(`<polygon points="${e.x + 11},${y - 9} ${e.x + 22},${y - 3} ${e.x + 11},${y + 3} ${e.x},${y - 3}" ${a}/>`);
+      else if (m && +m[1] <= 12) out.push(`<rect x="${e.x + 5}" y="${y - 11}" width="4" height="14" ${a}/>`);
+      else out.push(`<rect x="${e.x}" y="${y - 8}" width="14" height="10" rx="${num(sp.radius, 0) >= 12 ? 5 : 2}" ${a}/>`);
+    }
+    out.push(`<text x="${e.x + e.sample + 6}" y="${y}" ${it.a}>${esc(e.label)}</text>`);
+  }
+  return out.join('\n');
+}
+
 function drawShape(look: Look, s: Shape): string {
+  if (s.shape === 'legend') return drawLegend(look, s);
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));

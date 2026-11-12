@@ -1,13 +1,15 @@
 // Turns a diagram file into a resolved scene: shapes, texts and routed connectors.
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
-import { emptyLook } from './look.ts';
+import { emptyLook, defaultLook } from './look.ts';
+import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
 
 export type Pt = { x: number; y: number };
 export type Box = { x: number; y: number; w: number; h: number };
 export type Side = 'top' | 'bottom' | 'left' | 'right';
-export type Shape = Box & { id: string; line: number; style: string; p: Props; shape: string; text?: string; back: boolean };
+export type LegendItem = { style: string; kind: Kind; label: string; x: number; baseline: number; sample: number };
+export type Shape = Box & { id: string; line: number; style: string; p: Props; shape: string; text?: string; back: boolean; legend?: LegendItem[] };
 export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number };
 export type End = {
   raw: string; kind: 'point' | 'rel' | 'shape' | 'conn';
@@ -29,7 +31,7 @@ const DIRS: Record<Side, Pt> = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, l
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
 
 export function textWidth(text: string, size: number, font: string, weight: number, spacing: number): number {
-  const f = font === 'mono' ? 0.6 : font === 'serif' ? 0.46 : weight >= 600 ? 0.57 : 0.53;
+  const f = font === 'mono' ? 0.6 : font === 'serif' ? 0.46 : weight >= 600 ? 0.58 : 0.56;
   return text.length * size * (f + spacing);
 }
 
@@ -173,14 +175,15 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const warn = (line: number, msg: string) => issues.push({ line, level: 'warn', msg });
   const stmts: Stmt[] = parseStatements(src);
 
-  const look: Look = lookIn ?? emptyLook();
+  const hasLookStmt = stmts.some((s) => s.toks[0]?.t === 'word' && s.toks[0].v === 'look');
+  const look: Look = lookIn ?? (hasLookStmt ? emptyLook() : defaultLook());
   const lookStmt = stmts.find((s) => s.toks[0]?.v === 'look' && s.toks[0].t === 'word');
   if (lookStmt) {
     const p = lookStmt.toks[1]?.v;
     if (!p) err(lookStmt.line, 'look needs a path, e.g. look "./team.look"');
     else if (!lookIn) err(lookStmt.line, `look file not found: ${p}`);
     else for (const i of look.issues) issues.push({ ...i, line: lookStmt.line, msg: `${i.msg} (in look, line ${i.line})` });
-  } else issues.push({ line: 1, level: 'hint', msg: 'no look statement; drawing with plain built-in styles' });
+  }
 
   const shapes: Shape[] = [], texts: TextEl[] = [], conns: Conn[] = [];
   const ids = new Map<string, 'shape' | 'text' | 'conn'>();
@@ -278,11 +281,41 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       continue;
     }
     if (!size && p.size) { const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(p.size); if (m) size = { w: +m[1], h: +m[2] }; }
+    const size0 = size;
     size = size ?? { w: 120, h: 48 };
     const sh: Shape = {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
+    if (sh.shape === 'legend') {
+      // one statement lays out a whole legend: every style="label" pair is an entry
+      const entries = Object.entries(over).filter(([k]) => k !== 'style' && look.styles.has(k));
+      const fs = num(p['item.size'], 8.5), font = p['item.font'] ?? 'sans';
+      const W = size0 ? sh.w : canvas ? Math.max(200, canvas.w - 2 * sh.x) : 920;
+      const titled = (p.title ?? 'none') !== 'none';
+      const items: LegendItem[] = entries.map(([k, label]) => {
+        const st = look.styles.get(k)!;
+        const sample = st.kind === 'line' ? 28 : st.kind === 'text' ? 16 : st.props.shape === 'diamond' ? 22 : 14;
+        return { style: k, kind: st.kind, label, x: 0, baseline: 0, sample };
+      });
+      const widths = items.map((it) => it.sample + 6 + textWidth(it.label, fs, font, 400, 0));
+      const rows: number[][] = [[]];
+      let run = 0;
+      widths.forEach((w, i) => {
+        const row = rows[rows.length - 1];
+        if (row.length && run + 20 + w > W) { rows.push([i]); run = w; } else { run += (row.length ? 20 : 0) + w; row.push(i); }
+      });
+      const first = sh.y + (titled ? 40 : 20);
+      rows.forEach((row, r) => {
+        const sum = row.reduce((a, i) => a + widths[i], 0);
+        const gap = rows.length === 1 && row.length > 1 ? Math.min(64, Math.max(20, (W - sum) / (row.length - 1))) : 24;
+        let x = sh.x;
+        for (const i of row) { items[i].x = Math.round(x); items[i].baseline = first + r * 20; x += widths[i] + gap; }
+      });
+      sh.w = W; sh.h = (titled ? 40 : 20) + (rows.length - 1) * 20 + 12;
+      sh.legend = items;
+      if (!items.length) warn(st.line, 'this legend has no entries; add style="what it means" for each style, e.g. focal="The main service"');
+    }
     if (!at) unplaced.push(sh);
     shapes.push(sh);
   }

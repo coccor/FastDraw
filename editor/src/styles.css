@@ -135,3 +135,5 @@ button.primary:hover { background: var(--accent-ink); }
   .dropdown, .gallerywrap { animation: pop .09s ease-out; }
   @keyframes pop { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 }
+
+.small { font-size: 11.5px; }
