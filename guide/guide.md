@@ -52,6 +52,37 @@ Text properties a shape understands (if the look's style supports them):
 | `tag="API"` | a 3–4 letter marker in the top-left corner |
 | `ghost="01"` | a large faint number in the bottom-right corner |
 
+### Polygons and arcs
+
+Two built-in shapes draw anything a box, ellipse or diamond cannot.
+
+`polygon` takes exact corners, measured from its `at` position (so the top-left of the outline is `0,0`):
+
+```
+top:   polygon "Vision"   at 140,40  points=60,0;120,80;0,80          // a triangle
+mid:   polygon "Strategy" at 100,128 points=40,0;160,0;200,80;0,80    // a trapezoid
+trend: polygon at 60,330 points=0,40;80,10;160,30;240,0 open=1 stroke=accent sw=2
+```
+
+- `open=1` leaves the outline unclosed and unfilled: a line through the points, for a trend or a series.
+- `smooth=1` rounds the outline into a curve that passes through every point.
+- Give `WxH` only to stretch the outline to another size.
+
+`arc` is a slice of the circle (or ellipse) that fills its box. Angles are degrees, clockwise from the top:
+
+```
+won:  arc "42%" at 400,40 200x200 from=0   to=151 fill=accent
+lost: arc "58%" at 400,40 200x200 from=151 to=360 fill=ink/0.1
+ring: arc at 660,40 200x200 from=0 to=250 inner=0.7 fill=link stroke=none
+```
+
+- Slices of one circle all use the same `at` and `WxH`.
+- `inner=0.7` cuts out the middle, leaving a ring segment (0.7 = the hole is 70% of the radius).
+- `open=1` draws only the curved edge.
+- Text sits in the middle of the slice.
+
+Shapes that are meant to overlap (circles of a Venn diagram, faces of a 3D box) need `overlap=ok`, or `check` reports them.
+
 ### Tables
 
 A table is a box with a header and rows, for entities, classes, database tables and grids of values. Write the box as usual, then one indented line per row, each starting with `|`:

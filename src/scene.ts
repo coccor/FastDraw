@@ -16,6 +16,7 @@ export type Col = { x: number; w: number };
 export type Shape = Box & {
   id: string; line: number; style: string; p: Props; shape: string; text?: string; back: boolean; legend?: LegendItem[];
   rows?: Row[]; cols?: Col[]; headH?: number;
+  poly?: Pt[]; // shape=polygon: its corners on the canvas
 };
 export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number };
 export type End = {
@@ -400,6 +401,19 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
+    if (sh.shape === 'polygon') {
+      // points are written relative to the element's position; a given WxH stretches them to fit
+      const rel = (p.points ?? '').split(';').filter(Boolean).map((q) => { const [x, y] = q.split(',').map(Number); return { x, y }; });
+      if (rel.length < 2 || rel.some((q) => isNaN(q.x) || isNaN(q.y))) err(st.line, 'a polygon needs its corners: points=x,y;x,y;x,y measured from its "at" position, e.g. points=60,0;120,100;0,100');
+      else {
+        const nw = Math.max(...rel.map((q) => q.x)), nh = Math.max(...rel.map((q) => q.y));
+        if (rel.some((q) => q.x < 0 || q.y < 0)) err(st.line, 'polygon points cannot be negative; they are measured from the "at" position, which is the top-left of the shape');
+        if (!size0) { sh.w = nw; sh.h = nh; }
+        const kx = nw ? sh.w / nw : 1, ky = nh ? sh.h / nh : 1;
+        sh.poly = rel.map((q) => ({ x: Math.round((sh.x + q.x * kx) * 100) / 100, y: Math.round((sh.y + q.y * ky) * 100) / 100 }));
+      }
+    }
+    if (sh.shape === 'arc') for (const k of ['from', 'to', 'inner']) if (p[k] !== undefined && isNaN(+p[k])) err(st.line, `${k}=${p[k]} must be a number (from= and to= are degrees clockwise from the top; inner= is 0 to 1)`);
     if (sh.shape === 'table') layoutTable(sh, rows, size0?.w ?? 0, (m) => err(st.line, m));
     else if (rows.length) err(st.line, `rows (the parts starting with "|") only work on a table style; "${styleName}" is not one`);
     if (sh.shape === 'legend') {

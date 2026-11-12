@@ -29,6 +29,7 @@ type Drag =
   | { type: 'conn'; op: string; from: string; start: Pt; style?: string }
   | { type: 'end'; id: string; which: 'a' | 'b'; base: string; scene: Scene }
   | { type: 'seg'; id: string; index: number; base: string; scene: Scene }
+  | { type: 'vertex'; id: string; index: number; base: string; scene: Scene }
   | { type: 'label'; id: string; base: string; scene: Scene; dx: number; dy: number };
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 type Editing = { id: string; value: string; box: Box } | null;
@@ -341,6 +342,8 @@ export function App() {
       const cx = s0 && s0.kind === 'shape' ? s0.el.x + (handle.includes('w') ? 0 : s0.el.w) : p.x, cy = s0 && s0.kind === 'shape' ? s0.el.y + (handle.includes('n') ? 0 : s0.el.h) : p.y;
       drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene, dx: cx - p.x, dy: cy - p.y }; return;
     }
+    const vertex = t.getAttribute('data-vertex');
+    if (vertex !== null && sel.length === 1) { lastClick.current = { id: '', t: 0 }; drag.current = { type: 'vertex', id: sel[0], index: +vertex, base: src, scene }; return; }
     if (end && sel.length === 1) { drag.current = { type: 'end', id: sel[0], which: end as 'a' | 'b', base: src, scene }; return; }
     const seg = t.getAttribute('data-seg');
     if (seg !== null && sel.length === 1) { drag.current = { type: 'seg', id: sel[0], index: +seg, base: src, scene }; return; }
@@ -433,6 +436,11 @@ export function App() {
       if (e0?.kind === 'conn') setDraft(ops.reattach(d.base, e0.el, d.which, attachAt(d.scene, p, d.id)));
       return;
     }
+    if (d.type === 'vertex') {
+      const e0 = ops.find(d.scene, d.id);
+      if (e0?.kind === 'shape') setDraft(ops.movePolyPoint(d.base, e0.el, d.index, e.altKey ? p : { x: snap(p.x), y: snap(p.y) }));
+      return;
+    }
     if (d.type === 'seg' || d.type === 'label') {
       const e0 = ops.find(d.scene, d.id);
       if (e0?.kind !== 'conn') return;
@@ -454,7 +462,7 @@ export function App() {
     if (pendingEdit.current) { const id = pendingEdit.current; pendingEdit.current = null; startEdit(id); return; }
     if (!d || src === null) return;
     const p = world(e);
-    if (d.type === 'move' || d.type === 'resize' || d.type === 'end' || d.type === 'seg' || d.type === 'label') { if (draft !== null) commit(draft); else setDraft(null); return; }
+    if (d.type === 'move' || d.type === 'resize' || d.type === 'end' || d.type === 'seg' || d.type === 'label' || d.type === 'vertex') { if (draft !== null) commit(draft); else setDraft(null); return; }
     if (d.type === 'marquee') {
       const box = { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) };
       if (box.w < 3 && box.h < 3) return;
@@ -654,6 +662,11 @@ export function App() {
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
               {([['nw', single.el.x - 4, single.el.y - 4], ['ne', single.el.x + single.el.w + 4, single.el.y - 4], ['sw', single.el.x - 4, single.el.y + single.el.h + 4], ['se', single.el.x + single.el.w + 4, single.el.y + single.el.h + 4]] as [string, number, number][])
                 .map(([c, x, y]) => <rect key={c} data-handle={c} x={x - hs / 2} y={y - hs / 2} width={hs} height={hs} rx={1.5 / view.k} style={{ cursor: c === 'nw' || c === 'se' ? 'nwse-resize' : 'nesw-resize' }} />)}
+            </g>
+          )}
+          {single?.kind === 'shape' && single.el.poly && tool === 'select' && (
+            <g fill="var(--accent)" stroke="#fff" strokeWidth={1 / view.k}>
+              {single.el.poly.map((q, i) => <circle key={i} data-vertex={i} cx={q.x} cy={q.y} r={hs * 0.55} style={{ cursor: 'move' }}><title>Drag to move this corner</title></circle>)}
             </g>
           )}
           {single?.kind === 'conn' && tool === 'select' && (

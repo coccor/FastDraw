@@ -329,6 +329,17 @@ export function setLabelPos(src: string, c: Conn, p: Pt): string {
   return patchSource(src, new Map([[c.line, (t) => setProp(t, 'lpos', `${Math.round(p.x / 2) * 2},${Math.round(p.y / 2) * 2}`)]]));
 }
 
+// Move one corner of a polygon. Corners are stored relative to the top-left of the shape, so the position
+// and size are rewritten to fit the new outline.
+export function movePolyPoint(src: string, s: Shape, index: number, p: Pt): string {
+  if (!s.poly) return src;
+  const pts = s.poly.map((q, i) => (i === index ? { x: Math.round(p.x), y: Math.round(p.y) } : { x: Math.round(q.x), y: Math.round(q.y) }));
+  const x0 = Math.min(...pts.map((q) => q.x)), y0 = Math.min(...pts.map((q) => q.y));
+  const w = Math.max(...pts.map((q) => q.x)) - x0, h = Math.max(...pts.map((q) => q.y)) - y0;
+  const points = pts.map((q) => `${q.x - x0},${q.y - y0}`).join(';');
+  return patchSource(src, new Map([[s.line, (t) => setProp(setSize(setAt(t, x0, y0), w, h), 'points', points)]]));
+}
+
 // Change how lines run (right angles, straight, curved); a hand-set route belongs to the old shape, so it goes.
 export function setRoute(src: string, sc: Scene, ids: string[], route: string): string {
   const patches = new Map<number, Patch>();

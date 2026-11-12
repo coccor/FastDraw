@@ -22,14 +22,14 @@ export function check(sc: Scene): Issue[] {
 
   for (let i = 0; i < front.length; i++) for (let j = i + 1; j < front.length; j++) {
     const a = front[i], b = front[j];
-    if (!inter(a, b, 0.5) || contains(a, b) || contains(b, a)) continue;
+    if (!inter(a, b, 0.5) || contains(a, b) || contains(b, a) || a.p.overlap === 'ok' || b.p.overlap === 'ok') continue;
     const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
     warn(b.line, `${b.id} overlaps ${a.id} by ${Math.round(Math.min(ox, oy))}px; move one of them`);
   }
 
   for (const s of front) {
     if (tiny(s)) continue;
-    const off = [s.x, s.y, s.w, s.h].some((v) => v % 4 !== 0);
+    const off = s.shape !== 'polygon' && [s.x, s.y, s.w, s.h].some((v) => v % 4 !== 0);
     if (off) hint(s.line, `${s.id} is off the 4px grid (${s.x},${s.y} ${s.w}x${s.h}); use multiples of 4`);
     const p = s.p;
     if (s.text && p['title.pos'] !== 'top') {
@@ -113,7 +113,7 @@ export function check(sc: Scene): Issue[] {
 
   for (const t of sc.texts) {
     if (t.x < 0 || t.y < 0 || t.x + t.w > sc.w || t.y + t.h > sc.h) warn(t.line, `text ${t.id} runs outside the canvas (${sc.w}x${sc.h})`);
-    for (const s of front) if (!tiny(s) && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
+    for (const s of front) if (!tiny(s) && s.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
     for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1)) warn(o.line, `text ${o.id} overlaps text ${t.id}`);
   }
   for (const s of sc.shapes) if (s.x < 0 || s.y < 0 || s.x + s.w > sc.w || s.y + s.h > sc.h) warn(s.line, `${s.id} is outside the canvas (${sc.w}x${sc.h})`);

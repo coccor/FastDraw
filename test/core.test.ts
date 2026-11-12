@@ -317,3 +317,21 @@ test('route=curve draws a smooth line: bend bows it, via points are passed throu
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   assert.match(check(scene(two + 'a -> b route=wavy\n')).map((i) => i.msg).join(), /route=wavy is not a route; use ortho, straight or curve/);
 });
+
+test('polygons take exact corners and arcs take angles', () => {
+  const sc = scene('tri: polygon "T" at 100,40 points=60,0;120,80;0,80 fill=accent\nwide: polygon at 300,40 240x40 points=60,0;120,80;0,80\npie: arc "42%" at 40,200 200x200 from=0 to=90\nring: arc at 300,200 200x200 inner=0.5\nedge: arc at 560,200 100x100 from=0 to=180 open=1\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const tri = sc.shapes[0], wide = sc.shapes[1];
+  assert.deepEqual([tri.w, tri.h, tri.poly], [120, 80, [{ x: 160, y: 40 }, { x: 220, y: 120 }, { x: 100, y: 120 }]]);
+  assert.deepEqual(wide.poly, [{ x: 420, y: 40 }, { x: 540, y: 80 }, { x: 300, y: 80 }]); // stretched to 240x40
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('<polygon points="160,40 220,120 100,120"'));
+  assert.ok(svg.includes('M 140,200 A 100 100 0 0 1 210.71,229.29 A 100 100 0 0 1 240,300 L 140,300 Z')); // quarter slice from the top
+  assert.ok(svg.includes('fill-rule="evenodd"') && svg.includes('stroke-linecap="round"'));
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('p: polygon at 0,0\n'), /a polygon needs its corners/);
+  assert.match(msgs('a: arc at 0,0 80x80 from=north\n'), /from=north must be a number/);
+  // circles that are meant to overlap say so
+  assert.match(msgs('a: ellipse at 40,40 160x160\nb: ellipse at 140,40 160x160\n'), /b overlaps a/);
+  assert.doesNotMatch(msgs('a: ellipse at 40,40 160x160 overlap=ok\nb: ellipse at 140,40 160x160 overlap=ok\n'), /overlaps/);
+});

@@ -19,6 +19,8 @@ const BUILTIN: Style[] = [
   { name: 'rect', kind: 'shape', props: { shape: 'rect', fill: 'none', stroke: 'ink', sw: '1' } },
   { name: 'ellipse', kind: 'shape', props: { shape: 'ellipse', fill: 'none', stroke: 'ink', sw: '1' } },
   { name: 'diamond', kind: 'shape', props: { shape: 'diamond', fill: 'none', stroke: 'ink', sw: '1' } },
+  { name: 'polygon', kind: 'shape', props: { shape: 'polygon', fill: 'none', stroke: 'ink', sw: '1', size: 'automatic', use: 'any outline from exact corners: polygon at x,y points=60,0;120,100;0,100 (measured from at). open=1 leaves it unclosed, smooth=1 rounds it' } },
+  { name: 'arc', kind: 'shape', props: { shape: 'arc', fill: 'none', stroke: 'ink', sw: '1', use: 'a slice of a circle: arc at x,y WxH from=0 to=90 (degrees clockwise from the top). inner=0.6 makes it a ring segment, open=1 draws only the curved edge' } },
   { name: 'text', kind: 'text', props: { font: 'sans', size: '12', color: 'ink' } },
   { name: 'arrow', kind: 'line', props: { stroke: 'muted', sw: '1.2', head: 'arrow', route: 'ortho', radius: '8' } },
   { name: 'line', kind: 'line', props: { stroke: 'muted', sw: '1', head: 'none', route: 'straight' } },

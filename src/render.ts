@@ -41,6 +41,38 @@ function outline(s: Shape, attrs: string): string {
     const d = s.p.path.replace(/-?\d*\.?\d+/g, (n) => { const v = isX ? x + +n * w : y + +n * h; isX = !isX; return String(r2(v)); });
     return `<path d="${esc(d)}" ${attrs}/>`;
   }
+  if (s.shape === 'polygon' && s.poly) {
+    const P = s.poly, open = s.p.open === '1';
+    const a = open ? attrs.replace(/fill="[^"]*"/, 'fill="none"') : attrs;
+    if (s.p.smooth === '1' && P.length > 2) {
+      // a smooth line through every corner
+      const at = (i: number) => (open ? P[Math.min(Math.max(i, 0), P.length - 1)] : P[(i + P.length) % P.length]);
+      let d = `M ${P[0].x},${P[0].y}`;
+      for (let i = 0; i < (open ? P.length - 1 : P.length); i++) {
+        const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
+        d += ` C ${r2(p1.x + (p2.x - p0.x) / 6)},${r2(p1.y + (p2.y - p0.y) / 6)} ${r2(p2.x - (p3.x - p1.x) / 6)},${r2(p2.y - (p3.y - p1.y) / 6)} ${p2.x},${p2.y}`;
+      }
+      return `<path d="${d}${open ? '' : ' Z'}" stroke-linejoin="round" ${a}/>`;
+    }
+    return `<${open ? 'polyline' : 'polygon'} points="${P.map((q) => `${q.x},${q.y}`).join(' ')}" stroke-linejoin="round" ${a}/>`;
+  }
+  if (s.shape === 'arc') {
+    // a slice of the ellipse that fills the box: from= and to= in degrees clockwise from the top
+    const a0 = num(s.p.from, 0), a1 = num(s.p.to, 360), inner = Math.min(Math.max(num(s.p.inner, 0), 0), 0.98), open = s.p.open === '1';
+    const cx0 = x + w / 2, cy0 = y + h / 2;
+    const pt = (deg: number, k: number) => `${r2(cx0 + (w / 2) * k * Math.sin((deg * Math.PI) / 180))},${r2(cy0 - (h / 2) * k * Math.cos((deg * Math.PI) / 180))}`;
+    const sweep = (k: number, f: number, t: number) => {
+      // an arc cannot draw a full turn in one go, so it is drawn in two halves
+      const mid = (f + t) / 2, dir = t > f ? 1 : 0, r = `${r2((w / 2) * k)} ${r2((h / 2) * k)}`;
+      return `A ${r} 0 0 ${dir} ${pt(mid, k)} A ${r} 0 0 ${dir} ${pt(t, k)}`;
+    };
+    const full = Math.abs(a1 - a0) >= 360;
+    let d = `M ${pt(a0, 1)} ${sweep(1, a0, a1)}`;
+    if (open) return `<path d="${d}" ${attrs.replace(/fill="[^"]*"/, 'fill="none"')} stroke-linecap="round"/>`;
+    if (inner > 0) d += full ? ` Z M ${pt(a1, inner)} ${sweep(inner, a1, a0)} Z` : ` L ${pt(a1, inner)} ${sweep(inner, a1, a0)} Z`;
+    else d += full ? ' Z' : ` L ${r2(cx0)},${r2(cy0)} Z`;
+    return `<path d="${d}" fill-rule="evenodd" stroke-linejoin="round" ${attrs}/>`;
+  }
   const rx = Math.min(num(s.p.radius, 0), w / 2, h / 2);
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}"${rx ? ` rx="${rx}"` : ''} ${attrs}/>`;
 }
@@ -128,7 +160,12 @@ function drawShape(look: Look, s: Shape): string {
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));
   out.push(outline(s, strokeAttrs(look, p)));
-  const cxm = s.x + s.w / 2, cym = s.y + s.h / 2;
+  let cxm = s.x + s.w / 2, cym = s.y + s.h / 2;
+  if (s.shape === 'arc' && Math.abs(num(p.to, 360) - num(p.from, 0)) < 360) {
+    // text sits in the middle of the slice, not the middle of the whole circle
+    const mid = ((num(p.from, 0) + num(p.to, 360)) / 2) * (Math.PI / 180), inner = num(p.inner, 0), k = inner > 0 ? (1 + inner) / 2 : 0.62;
+    cxm = r2(cxm + (s.w / 2) * k * Math.sin(mid)); cym = r2(cym - (s.h / 2) * k * Math.cos(mid));
+  }
   if (p.ghost) {
     const t = textAttrs(look, p, 'ghost.', { font: 'mono', size: 32, weight: 600, color: 'ink/0.06' });
     out.push(`<text x="${s.x + s.w - 8}" y="${s.y + s.h - 4}" text-anchor="end" ${t.a}>${esc(p.ghost)}</text>`);

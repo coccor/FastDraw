@@ -297,3 +297,16 @@ test('line shape: switch an arrow to curved and bend it by dragging its middle',
   await page.getByRole('button', { name: 'Right angles' }).click();
   expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=ortho');
 });
+
+test('polygon: drag a corner, move and resize it', async ({ page }) => {
+  await paste(page, 'canvas 600x400\ntri: polygon "T" at 100,100 points=60,0;120,80;0,80 fill=accent/0.2\n');
+  const k = await zoom(page);
+  const c = await at(page, 160, 160);
+  await page.mouse.click(c.x, c.y);
+  const v = (await page.locator('[data-vertex="0"]').boundingBox())!;
+  await drag(page, { x: v.x + v.width / 2, y: v.y + v.height / 2 }, 40 * k, -40 * k);
+  expect(lineOf(await source(page), 'tri')).toBe('tri: polygon "T" at 100,60 120x120 points=100,0;120,120;0,120 fill=accent/0.2');
+  await page.keyboard.press('ArrowRight');
+  expect(lineOf(await source(page), 'tri')).toContain('at 104,60 120x120 points=100,0;120,120;0,120');
+  await expect(page.locator('.problems')).toHaveText('No problems');
+});

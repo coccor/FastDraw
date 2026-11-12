@@ -73,7 +73,7 @@ if (cmd === 'check') {
     for (const s of rows.filter((r) => r.kind === kind)) {
       const p = s.props;
       const bits: string[] = [];
-      if (kind === 'shape') bits.push(`shape=${p.shape ?? 'rect'}`, p.shape === 'table' ? 'sizes itself from its rows' : p.size ? `default size ${p.size}` : 'no default size: always give WxH', p.layer === 'back' ? 'drawn behind everything' : '');
+      if (kind === 'shape') bits.push(`shape=${p.shape ?? 'rect'}`, p.shape === 'table' ? 'sizes itself from its rows' : p.shape === 'polygon' ? 'sized by its points' : p.size ? `default size ${p.size}` : 'no default size: always give WxH', p.layer === 'back' ? 'drawn behind everything' : '');
       if (kind === 'line') bits.push(`route=${p.route ?? 'ortho'}`, p.dash ? `dash=${p.dash}` : 'solid', `stroke=${p.stroke ?? 'muted'}`);
       if (kind === 'text') bits.push(`font=${p.font ?? 'sans'}`, `size=${p.size ?? 12}`, p.caps === '1' ? 'caps' : '');
       if (p.use) bits.push(`use: ${p.use}`);
@@ -96,7 +96,7 @@ if (cmd === 'check') {
   const look = file ? loadLook(file) : defaultLook();
   const errs = look.issues.filter((i) => i.level === 'error');
   if (errs.length) { for (const i of errs) console.log(`${file}:${i.line}  error  ${i.msg}`); process.exit(1); }
-  const skip = new Set(['rect', 'ellipse', 'diamond', 'text', 'line', 'legend']);
+  const skip = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'arc', 'text', 'line', 'legend']);
   const all = [...look.styles.values()].filter((s) => !skip.has(s.name));
   const L: string[] = [];
   const W = 880;

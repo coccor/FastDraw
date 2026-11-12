@@ -110,7 +110,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 
 ### Built-in styles you can restyle
 
-`rect`, `ellipse`, `diamond`, `table`, `text`, `arrow`, `line` and `legend` exist in every look. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
+`rect`, `ellipse`, `diamond`, `polygon`, `arc`, `table`, `text`, `arrow`, `line` and `legend` exist in every look. A style can also be built on `polygon` or `arc` (`style slice extends arc stroke=paper sw=2`); the corners and angles are still given on each element. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
 
 ### Guidance
 
