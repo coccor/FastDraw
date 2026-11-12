@@ -1,0 +1,54 @@
+look "../../looks/reference.look"
+canvas 1000x648
+
+// grid: lifelines at x = 164, 388, 612, 836 (224 apart); messages every 56px from y = 208
+
+text "Article request, cold cache" at 92,64 style=h1
+
+// ---- participants ----------------------------------------------------------
+reader: external "Reader" sub="browser" tag="EXT" at 92,96 144x56
+cf: cloud "Cloudflare" sub="Pages · edge cache" tag="EDGE" at 316,96 144x56
+origin: focal "Astro Origin" sub="SSR + MDX" tag="SSR" at 540,96 144x56
+stats: optional "Analytics" sub="beacon endpoint" tag="OPT" at 764,96 144x56
+
+// ---- lifelines -------------------------------------------------------------
+reader_l: reader.bottom -- +0,392 style=lifeline
+cf_l: cf.bottom -- +0,392 style=lifeline
+origin_l: origin.bottom -- +0,392 style=lifeline
+stats_l: stats.bottom -- +0,392 style=lifeline
+
+// ---- activation bars -------------------------------------------------------
+cf_bar: bar at 384,212 8x256
+origin_bar: bar at 608,268 8x144
+
+// ---- messages, in time order -----------------------------------------------
+reader_l@208 -> cf_l@208 "GET /articles/slug" style=link
+cf_bar.right@264 -> origin_l@264 "cache miss"
+origin_bar.right@320 -> origin_bar.right@352 "render MDX"
+origin_bar.left@408 -> cf_bar.right@408 "200 HTML + max-age" style=return
+cf_bar.left@464 -> reader_l@464 "200 edge-cached" style=primary
+reader_l@520 -> stats_l@520 "pageview beacon" style=return lpos=724,510
+
+// ---- legend ----------------------------------------------------------------
+92,572 -- 908,572 style=rule
+text "Legend" at 92,596 style=eyebrow
+
+external at 180,588 14x10 radius=2
+text "Outside the system" at 208,596 style=legend
+cloud at 332,588 14x10 radius=2
+text "Hosted platform" at 360,596 style=legend
+focal at 484,588 14x10 radius=2
+text "Subject of the diagram" at 512,596 style=legend
+optional at 636,588 14x10 radius=2
+text "Optional, asynchronous" at 664,596 style=legend
+bar at 792,586 6x14
+text "Busy (activation)" at 816,596 style=legend
+
+176,613 -> 200,613 style=link
+text "Request from outside" at 208,616 style=legend
+328,613 -> 352,613
+text "Request" at 360,616 style=legend
+480,613 -> 504,613 style=return
+text "Response or async" at 512,616 style=legend
+632,613 -> 656,613 style=primary
+text "Outcome that matters" at 664,616 style=legend

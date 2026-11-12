@@ -1,0 +1,109 @@
+# FastDraw guide
+
+FastDraw draws diagrams from a small text file (`.fdraw`). You place every element yourself, at exact coordinates. A separate look file (`.look`) decides how each named style is drawn. A person may later edit the same file in a visual editor, so keep it tidy.
+
+## How to work
+
+1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance.
+2. If the diagram is an architecture diagram, a flowchart or a sequence diagram, run `fastdraw guide architecture|flowchart|sequence` and follow it.
+3. Plan the composition on paper first: canvas size, rows and columns, where the main thing sits.
+4. Write the file.
+5. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
+6. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 5 until it is clean and looks good.
+
+When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
+
+## The file
+
+One statement per line. An indented line continues the statement above it. `//` starts a comment; so does a line starting with `# `.
+
+```
+look "./team.look"          // path relative to this file
+canvas 1000x480             // width x height in px
+
+// shape:   id: style "text" at x,y WxH key=value ...
+api: node "Orders API" sub="REST · :8080" tag="API" at 200,120
+db:  store "Orders DB" at 440,120 160x64
+
+// connector:   [id:] from -> to "label" key=value ...
+api -> db "writes"
+
+// free text:   [id:] text "words" at x,y style=name key=value ...
+text "Legend" at 40,420 style=eyebrow
+```
+
+### Shapes
+
+`id: style "text" at x,y WxH props`
+
+- `id` is a short unique name followed by a colon. Give every box an id. Small decorative things (legend swatches) may omit it.
+- `style` is a shape style from the look, or one of the plain built-ins `rect`, `ellipse`, `diamond`.
+- `at x,y` is the **top-left corner**. No space after the comma.
+- `WxH` is the size. Leave it out to get the style's default size.
+- `"text"` is the main label and may be left out. Use `\n` for a line break. On a zone it is drawn as a small caption at the top.
+- Use multiples of 4 for positions and sizes.
+
+Text properties a shape understands (if the look's style supports them):
+
+| Property | Meaning |
+|---|---|
+| `sub="..."` | a second, smaller line under the main text |
+| `tag="API"` | a 3–4 letter marker in the top-left corner |
+| `ghost="01"` | a large faint number in the bottom-right corner |
+
+Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.
+
+### Connectors
+
+`from -> to "label" props`
+
+| Operator | Draws |
+|---|---|
+| `->` | arrow with a head at `to` |
+| `<->` | heads at both ends |
+| `--` | plain line, no head |
+
+`style=name` picks a line style from the look. Without it, `->` uses `arrow` and `--` uses `line`.
+
+An end can be:
+
+| Form | Meaning |
+|---|---|
+| `api` | the shape; FastDraw picks the side that faces the other end |
+| `api.right` | a side: `top`, `bottom`, `left`, `right` |
+| `api.right@0.25` | a point along that side, as a fraction (0 = top or left end) |
+| `api.right@172` | a point along that side at absolute coordinate 172 (y for left/right, x for top/bottom) |
+| `400,300` | a free point |
+| `+0,260` | a point relative to the other end (only one end may be relative) |
+| `life1@176` | a point on another line: where line `life1` has coordinate 176 (y on a vertical line, x on a horizontal one); a value ≤ 1 is a fraction along it |
+
+Routing: arrows turn at right angles with rounded corners. Two ends that line up give a straight line. Otherwise the arrow leaves the first shape sideways and enters the second from above or below, or uses a mid-way step. When several arrows share a side, they are spread along it automatically. To steer a route:
+
+- name the sides: `a.bottom -> b.left`
+- add waypoints: `via=300,200` or `via=300,200;300,360`
+- for a loop back to the same side (`x.right@190 -> x.right@220`), `loop=36` sets how far it sticks out
+
+Labels are drawn in small caps on a paper-coloured patch, above a horizontal line or to the right of a vertical one, at the middle of the longest segment. Keep them to about 14 characters. To move one: `lside=below` (or `left` for vertical lines), or `lpos=x,y` (centre x, text baseline y; the default baseline is 10px above a horizontal line, or 18px below it with `lside=below`). `label.caps=0` keeps the label's own letter case, for paths and header names.
+
+### Text
+
+`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1`.
+
+### Drawing order
+
+Shapes whose style is marked "drawn behind everything" (zones) come first, then all connectors, then connector labels, then shapes, then free text. Within each group, file order.
+
+## Composition rules
+
+These are what make a diagram look designed. `check` enforces the mechanical ones; the rest are yours.
+
+- **Fewer elements.** Aim for nine boxes or fewer and twelve arrows or fewer. If two boxes always go together, make them one. If an arrow says nothing the layout doesn't already say, remove it.
+- **One focus.** Use the look's accent style on one or two things only.
+- **A grid you can name.** Pick column x-positions and row y-positions and reuse them. Boxes in a row share a top edge and height; boxes in a column share a left edge or centre.
+- **Even gaps.** Use the same gap between neighbours along a row (48–56px between boxes that an arrow with a label connects; at least 40px otherwise).
+- **Margins.** Keep 40px clear on the left and right of the canvas and above the first row.
+- **Straight arrows where possible.** Line things up so the main path is straight lines. Use elbows for branches.
+- **No arrow through a box, no arrow on top of another, no label touching a box or another line.** `check` reports these.
+- **Labels fit their line.** A horizontal arrow needs to be longer than its label. Make the gap wider or the label shorter.
+- **Centre the composition.** The drawing should sit balanced in the canvas, not hug one corner. Size the canvas to the content.
+- **Legend.** If the look asks for a legend, put it in a strip along the bottom with only the styles you used.

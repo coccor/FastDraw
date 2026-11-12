@@ -1,0 +1,39 @@
+look "../../looks/reference.look"
+canvas 1000x700
+
+text "Should you write this as a skill?" at 40,72 style=h1
+
+// The spine and the outcome column are centred as one group (260..740).
+// spine: centre x = 360
+start:  terminal "New workflow" at 280,112
+manual: step "Do it manually once" at 280,188
+repeat: decision "Will you repeat it\n>3 times?" at 260,264
+reuse:  decision "Reusable across\nprojects?" at 260,400
+skill:  terminal-focal "Write a skill" sub="reusable + assets" at 280,536
+
+// side outcomes: one column, level with their question
+oneoff: terminal "One-off" sub="keep manual" at 580,288
+note:   terminal "Project note" sub="project-scoped" at 580,424
+
+start -> manual
+manual -> repeat
+repeat -> reuse "yes"
+reuse -> skill "yes" style=primary
+repeat -> oneoff "no"
+reuse -> note "no"
+
+// legend
+40,632 -- 960,632 style=rule
+text "Legend" at 40,660 style=eyebrow
+terminal at 112,651 14x10 radius=2
+text "Start / end" at 136,660 style=legend
+step at 204,651 14x10 radius=2
+text "Step" at 228,660 style=legend
+diamond at 272,650 24x12
+text "Decision" at 304,660 style=legend
+terminal-focal at 364,651 14x10 radius=2
+text "Outcome that matters" at 388,660 style=legend
+500,657 -> 532,657
+text "Flow" at 540,660 style=legend
+588,657 -> 620,657 style=primary
+text "Main path" at 628,660 style=legend
