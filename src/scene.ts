@@ -216,7 +216,7 @@ function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
 }
 
 // Lays out a table box: a header with the title, then rows of cells in columns. The height always follows the rows.
-function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => void): void {
+function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => void, warn: (m: string) => void): void {
   const p = sh.p;
   const fs = num(p['cell.size'], 10), font = p['cell.font'] ?? 'mono';
   const rowH = num(p['row.h'], 24), pad = num(p['cell.pad'], 12), gap = num(p['cell.gap'], 16);
@@ -228,6 +228,7 @@ function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => v
   const natural = n ? pad * 2 + widths.reduce((a, b) => a + b, 0) + gap * (n - 1) : 0;
   const titleW = sh.text ? textWidth(sh.text, num(p['title.size'], 12), p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0)) + pad * 2 : 0;
   const W = Math.ceil(Math.max(minW, natural, titleW, 48) / 4) * 4;
+  if (minW && Math.max(natural, titleW) > minW + 4) warn(`${sh.id} was given a width of ${minW} but its content needs ${W}, so it is drawn ${W} wide; shorten the cells or give it room`);
   if (n) widths[0] += W - natural; // spare width goes to the first column, so the others sit against the right edge
   const cols: Col[] = [];
   let x = pad;
@@ -424,7 +425,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       }
     }
     if (sh.shape === 'arc') for (const k of ['from', 'to', 'inner']) if (p[k] !== undefined && isNaN(+p[k])) err(st.line, `${k}=${p[k]} must be a number (from= and to= are degrees clockwise from the top; inner= is 0 to 1)`);
-    if (sh.shape === 'table') layoutTable(sh, rows, size0?.w ?? 0, (m) => err(st.line, m));
+    if (sh.shape === 'table') layoutTable(sh, rows, size0?.w ?? 0, (m) => err(st.line, m), (m) => warn(st.line, m));
     else if (sh.shape === 'chart') {
       sh.rows = rows;
       if (!size0) err(st.line, 'a chart needs a size for its plot area: at x,y WxH');
