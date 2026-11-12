@@ -1,0 +1,7 @@
+look "../r2-stack.look"
+canvas 1000x500
+text "Support tickets closed last month, by team" at 40,40 style=h1
+tk: chart at 96,80 864x292 x="Billing,Search,Mobile,Auth,Data,Web,Infra" y=0..300 step=50 labels=1 stack=1 key=0 ytitle="Tickets closed"
+  | bars "Other teams" 142 118 _ 97 126 154 83 fill=soft
+  | bars "Mobile" _ _ 268 _ _ _ _ fill=accent
+legend at 40,420 swatch.accent="Mobile · most closed" swatch.soft="Other teams"

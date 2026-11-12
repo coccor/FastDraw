@@ -1,0 +1,52 @@
+// Round 2, "Bolt". Angular like the logo's lightning bolt: every box has one cut corner, edge
+// labels sit in solid black chips, the subject is electric yellow. Inter Tight, heavy titles.
+// (Cut corners and chips are mocked by post-processing.)
+fontdir "./fonts"
+canvas paper=ground
+
+color ground #ffffff
+color ink    #111214
+color muted  #5c5f66
+color soft   #8d9098
+color accent #ffd400
+color link   #1d4ed8
+color tint   #f1f2f4
+
+font sans  "Inter Tight"
+font mono  "IBM Plex Mono"
+font serif "Inter Tight"
+
+style node shape=rect radius=0 size=144x64 fill=tint stroke=ink sw=1.5
+    title.weight=700 title.size=13 sub.size=10 sub.color=muted
+    tag.font=mono tag.size=8 tag.color=muted tag.border=ink/0.3
+    use="default box: a service, component or step"
+style focal extends node fill=accent stroke=ink title.color=ink sub.color=ink/0.75 tag.color=ink tag.border=ink
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=tint use="something that holds data or state"
+style cloud extends node fill=link/0.08 stroke=link use="a hosted or third-party platform"
+style external extends node fill=#ffffff stroke=ink dash=5,3 use="a person or system outside what you own"
+style optional extends node fill=#ffffff stroke=soft dash=2,3 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=0 size=160x48 fill=ink stroke=ink sw=1.5 title.weight=700 title.color=#ffffff sub.color=#ffffff/0.75 sub.size=10 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent title.color=ink use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=tint stroke=ink sw=1.5 title.weight=700 use="flowchart yes/no question"
+style zone shape=rect radius=0 fill=none stroke=ink/0.35 sw=1 dash=6,4 layer=back
+    title.pos=top title.align=left title.font=sans title.size=10 title.weight=800 title.caps=1 title.spacing=0.1 title.color=ink
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=ink stroke=none use="sequence activation bar"
+style table shape=table radius=0 fill=#ffffff stroke=ink sw=1.5 head.fill=accent rule=ink/0.12 cell.font=mono cell.size=10 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 cell.font=sans use="a grid of values"
+style arrow line stroke=soft sw=1.75 route=ortho radius=0 label.font=sans label.size=9 label.weight=700 label.caps=1 label.spacing=0.06 label.color=#ffffff use="default arrow"
+style primary extends arrow stroke=ink sw=3 label.color=accent use="the main path"
+style link extends arrow stroke=link label.color=#ffffff use="a request crossing a boundary"
+style return extends arrow stroke=soft dash=5,4 use="a response"
+style relation extends relation label.font=sans label.size=9 label.color=muted
+style lifeline line head=none stroke=soft sw=1 dash=2,3 route=straight use="lifeline"
+style rule line head=none stroke=ink sw=1.5 route=straight use="thin separator"
+style h1 text font=sans size=30 weight=800 color=ink use="diagram title"
+style eyebrow text font=sans size=10 weight=800 color=ink use="small heading"
+style caption text font=sans size=10 color=muted use="small explanatory text"
+style note text font=sans size=14 color=muted use="a short aside"
+style small text font=mono size=9 color=muted use="technical detail"
