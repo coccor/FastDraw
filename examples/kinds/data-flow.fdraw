@@ -1,63 +1,55 @@
 look "../../looks/reference.look"
-canvas 1112x624
-
-text "Role-scoped analytics pipeline" at 40,60 style=h1
-
-// step headers: a numbered pill and a name, centred on each column (x = 296 + 172*n)
-s1: rect "01" at 276,88 40x20 radius=10 fill=ink/0.08 stroke=none
+canvas 1284x624
+text "Role-scoped analytics pipeline" at 40,52 style=h1
+rect "01" at 276,88 40x20 radius=10 stroke=none fill=ink/0.08
 text "Ingest" at 296,124 style=eyebrow anchor=middle
-s2: rect "02" at 448,88 40x20 radius=10 fill=ink/0.08 stroke=none
+rect "02" at 448,88 40x20 radius=10 stroke=none fill=ink/0.08
 text "Store" at 468,124 style=eyebrow anchor=middle
-s3: rect "03" at 620,88 40x20 radius=10 fill=accent/0.18 stroke=none
-text "Transform" at 640,124 style=eyebrow anchor=middle color=accent
-s4: rect "04" at 792,88 40x20 radius=10 fill=ink/0.08 stroke=none
-text "Analyze" at 812,124 style=eyebrow anchor=middle
-s5: rect "05" at 964,88 40x20 radius=10 fill=ink/0.08 stroke=none
-text "Publish" at 984,124 style=eyebrow anchor=middle
-
-// lanes: one band per role, 120 high, the role name in the left 168px
-l1: zone at 40,136 1032x120 radius=0 fill=ink/0.03
-l2: zone at 40,256 1032x120 radius=0 fill=ink/0.015
-l3: zone at 40,376 1032x120 radius=0 fill=ink/0.03
+rect "03" at 620,88 40x20 radius=10 stroke=none fill=accent/0.18
+text "Clean" at 640,124 style=eyebrow anchor=middle color=accent
+rect "04" at 792,88 40x20 radius=10 stroke=none fill=ink/0.08
+text "Model" at 812,124 style=eyebrow anchor=middle
+rect "05" at 964,88 40x20 radius=10 stroke=none fill=ink/0.08
+text "Analyze" at 984,124 style=eyebrow anchor=middle
+rect "06" at 1136,88 40x20 radius=10 stroke=none fill=ink/0.08
+text "Publish" at 1156,124 style=eyebrow anchor=middle
+l0: zone at 40,136 1204x120 radius=0 stroke=none fill=ink/0.03
+l1: zone at 40,256 1204x120 radius=0 stroke=none fill=ink/0.015
+l2: zone at 40,376 1204x120 radius=0 stroke=none fill=ink/0.03
 208,136 -- 208,496 style=rule
 text "Data\nengineer" at 124,194 style=eyebrow anchor=middle
 text "Data\nscientist" at 124,314 style=eyebrow anchor=middle
 text "Analytics\nanalyst" at 124,434 style=eyebrow anchor=middle
-
-// nodes: x = 224 + 172*n, y = lane top + 16
-capture: node "Capture Events" sub="NiFi ingest" tag="ENG" at 224,152 144x88
-land:    node "Land Records" sub="Object storage" tag="ENG" at 396,152 144x88
-clean:   focal "Clean & Model" sub="Trino · notebooks" tag="SCI" at 568,272 144x88
-curate:  node "Curate Metrics" sub="Trino SQL" tag="SCI" at 740,272 144x88
-publish: node "Publish Dashboard" sub="BI workspace" tag="ANL" at 912,392 144x88
-
-// data-type chips: what comes in (bottom-left) and what goes out (bottom-right)
-rect "LS" at 232,220 28x12 radius=3 fill=#4a7c59 stroke=none title.color=#ffffff title.size=7 overlap=ok
-rect "DB" at 332,220 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7 overlap=ok
-rect "DB" at 404,220 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7 overlap=ok
+b0: node "Capture Events" sub="NiFi ingest" tag="ENG" at 224,152 144x88
+rect "LS" at 332,220 28x12 radius=3 fill=#4a7c59 stroke=none title.color=#ffffff title.size=7 overlap=ok
+b1: node "Land Records" sub="Object storage" tag="ENG" at 396,152 144x88
+rect "LS" at 404,220 28x12 radius=3 fill=#4a7c59 stroke=none title.color=#ffffff title.size=7 overlap=ok
 rect "DB" at 504,220 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7 overlap=ok
+b2: focal "Clean & Model" sub="Trino · notebooks" tag="SCI" at 568,272 144x88
 rect "DB" at 576,340 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7 overlap=ok
 rect "TB" at 676,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
+b3: node "Curate Metrics" sub="Trino SQL" tag="SCI" at 740,272 144x88
 rect "TB" at 748,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
 rect "TB" at 848,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
-rect "TB" at 920,460 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
-rect "FL" at 1020,460 28x12 radius=3 fill=#9c6b50 stroke=none title.color=#ffffff title.size=7 overlap=ok
-
-capture -> land
-land.right -> clean.top "raw table" style=primary
-clean -> curate
-curate.right -> publish.top style=link
-
+b4: node "Check Quality" sub="Great Expectations" tag="SCI" at 912,272 144x88
+rect "TB" at 920,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
+rect "TB" at 1020,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
+b5: node "Publish Dashboard" sub="BI workspace" tag="ANL" at 1084,392 144x88
+rect "TB" at 1092,460 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
+rect "FL" at 1192,460 28x12 radius=3 fill=#9c6b50 stroke=none title.color=#ffffff title.size=7 overlap=ok
+b0 -> b1
+b1.right -> b2.top "raw table" style=primary
+b2 -> b3
+b3 -> b4
+b4.right -> b5.top style=link
 legend at 40,520 focal="The step the pipeline turns on" primary="The hand-off that matters" arrow="Hand-off" link="Published output"
-
-// key for the chips, built by hand under the legend
 text "Data type" at 40,598 style=eyebrow
 rect "LS" at 120,588 28x12 radius=3 fill=#4a7c59 stroke=none title.color=#ffffff title.size=7
 text "Stream" at 156,598 style=caption
-rect "DB" at 204,588 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7
-text "Dataset" at 240,598 style=caption
-rect "TB" at 292,588 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7
-text "Table" at 328,598 style=caption
-rect "FL" at 368,588 28x12 radius=3 fill=#9c6b50 stroke=none title.color=#ffffff title.size=7
-text "Dashboard" at 404,598 style=caption
-text "left chip = what comes in · right chip = what goes out" at 484,598 style=caption
+rect "DB" at 216,588 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7
+text "Dataset" at 252,598 style=caption
+rect "TB" at 318,588 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7
+text "Table" at 354,598 style=caption
+rect "FL" at 408,588 28x12 radius=3 fill=#9c6b50 stroke=none title.color=#ffffff title.size=7
+text "Dashboard" at 444,598 style=caption
+text "left chip = what comes in · right chip = what goes out" at 538,598 style=caption

@@ -7,9 +7,9 @@ FastDraw has no lane or chip elements. Build them from `zone`, `rect` and `text`
 ## Composition
 
 - Limits: 4 roles and 6 steps. More than that is two diagrams.
-- Columns: the first 168px (x 40 to 208) hold the role names. Step n has its box at `x = 224 + 172*n`, 144 wide, so boxes in one lane are 28px apart and the column centre is `296 + 172*n`.
+- Title: `text "..." at 40,52 style=h1`. Columns: the first 168px (x 40 to 208) hold the role names. Step n (from 0) has its box at `x = 224 + 172*n`, 144 wide, so boxes in one lane are 28px apart and the column centre is `296 + 172*n`. For s steps the lanes are `172*(s+1)` wide and the canvas `172*s + 252` (five steps: 1032 and 1112; six: 1204 and 1284).
 - Step headers sit above the lanes, centred on the column: a pill `rect "01" at cx-20,88 40x20 radius=10 fill=ink/0.08 stroke=none`, and the step name under it as `text "Ingest" at cx,124 style=eyebrow anchor=middle`.
-- Lanes: one `zone at 40,Y 1032x120 radius=0` per role, with no text, touching each other, the first at y=136. Alternate `fill=ink/0.03` and `fill=ink/0.015` so the bands can be told apart. Use `zone`, not `rect`: a rect counts as a box and every arrow and label on it is reported.
+- Lanes: one `zone at 40,Y 1032x120 radius=0 stroke=none` per role (the built-in zone is dashed), with no text, touching each other, the first at y=136 (lane i at 136 + 120*i). Alternate `fill=ink/0.03` and `fill=ink/0.015` so the bands can be told apart. Use `zone`, not `rect`: a rect counts as a box and every arrow and label on it is reported.
 - Role name: `text "Data\nengineer" at 124,Y+58 style=eyebrow anchor=middle` (two lines), and one `208,136 -- 208,BOTTOM style=rule` to close the name column.
 - Boxes: 144x88 at lane top + 16. Main text is the action ("Clean & Model"), `sub=` the tool, `tag=` a three-letter code for the role.
 - A role that does nothing at a step gets nothing in that cell. No placeholder box.
@@ -24,7 +24,7 @@ rect "DB" at X+8,Y+68   28x12 radius=3 fill=#5e7a9b stroke=none title.color=#fff
 rect "TB" at X+108,Y+68 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
 ```
 
-(X,Y is the box's `at`.) Use one two-letter code and one quiet colour per kind of data, four kinds at most, and never the accent. `overlap=ok` is needed because the chip sits on its box.
+(X,Y is the box's `at`; the chips do not clash with `sub=` on one line.) Use one two-letter code and one quiet colour per kind of data, four kinds at most, and never the accent. `overlap=ok` is needed because the chip sits on its box.
 
 ## Arrows
 
@@ -39,4 +39,4 @@ One box (the one that receives the primary arrow) uses `focal`. Its step header 
 
 ## Legend
 
-`legend at 40,Y` 24px under the last lane, for the box and arrow styles. The chips need their own row 78px below that, built by hand: `text "Data type" at 40,Y+78 style=eyebrow`, then for each kind the same chip rect (without `overlap=ok`) at y = Y+68 and its name as `text ... style=caption` 36px to the right of the chip's left edge, and at the end the caption "left chip = what comes in · right chip = what goes out". Leave 104px of canvas below Y.
+`legend at 40,Y` 24px under the last lane (Y = 136 + 120 * roles + 24), for the box and arrow styles. The chips need their own row, built by hand because the legend cannot draw hex colours: `text "Data type" at 40,Y+78 style=eyebrow`, then for each kind the same chip rect (without `overlap=ok`) at y = Y+68, starting x=120 and about 130px apart, and its name as `text ... style=caption` at chip x+36, baseline Y+78; at the end the caption "left chip = what comes in · right chip = what goes out". Canvas height = Y + 104.

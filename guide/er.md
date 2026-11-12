@@ -23,10 +23,11 @@ author.id -- article.author "writes" style=arrow tail=only-one head=many
 
 ## Composition
 
-- Three to six entities. Put the central entity in the middle and the others around it, in two or three columns 216 to 248 wide with 120px between columns, so a relationship has room for both end marks and a label.
+- Title at 40,52 (`style=h1`); tables start at y=112 or lower. Three to six entities in columns 200 to 248 wide with 104 to 120px between columns, so a relationship has room for both end marks and a label. If one entity joins the rest (a hub), put it in the middle with the others around it. If the model is a chain (A to B to C to D), lay it out left to right in one row, the accent on the entity the model is about wherever it falls; six in a chain go in two rows of three, the second row running back under the first.
 - Give every table a width (`216x0`); the height follows the rows. Do not pad entities to the same height.
-- A row's centre is at `table y + 44 + 24 * n` (n = 0 for the first row). Place the tables so the two rows of the main relationship are at the same y: that line is then straight. Putting a foreign key right under the primary key makes this easy.
+- A row's centre is at `table y + 44 + 24 * n` (n = 0 for the first row). Place the tables so the two rows of every relationship are at the same y: that line is then straight. Going along a chain, each next table's y is the previous one's plus 24 times (its key row number minus the previous table's foreign-key row number): a 4-entity chain steps down 24 or 48 each time, as a staircase. Putting a foreign key right under the primary key makes this easy.
 - Six to eight fields per entity at most. Leave out fields that say nothing about the model (timestamps, flags).
+- Two relationships must not leave the same row on the same side (their lines jog onto each other): move one to another row or end it on the top or bottom edge (`a.bottom -- b.top`).
 - With more than about six relationships, do not draw them all: group related entities close together and draw only the ones the diagram is about.
 
 ## Relationships
@@ -38,11 +39,11 @@ author.id -- article.author "writes" style=arrow tail=only-one head=many
 
 ## Legend
 
-`legend at 40,Y focal="Aggregate root" node="Entity" optional="Join entity"`, 24px under the lowest table. The `node` swatch stands for the plain table. The statement cannot show key prefixes or end marks, so add them by hand on the same line as the entries (their text baseline is at Y+40), to the right of the last entry:
+`legend at 40,Y 360x0 focal="Aggregate root" node="Entity" optional="Join entity"`, 24px under the lowest table. The `node` swatch stands for the plain table. Give the legend a width (360 holds three entries; add 120 for each more) so the entries stay on the left. The statement cannot show key prefixes or end marks, so add them by hand to its right, from `x = 40 + legend width + 40`, on the entries' line (text baseline Y+40, the line sample at Y+37); each next x is the last text's x plus `6 * its characters + 24`:
 
 ```
-text "#" at 420,452 style=small color=ink
-text "Primary key" at 432,452 style=caption
-600,449 -- 648,449 style=arrow tail=only-one head=many
-text "Exactly one to many" at 660,452 style=caption
+text "#" at 440,452 style=small color=ink
+text "Primary key" at 452,452 style=caption
+560,449 -- 608,449 style=arrow tail=only-one head=many
+text "Exactly one to many" at 620,452 style=caption
 ```

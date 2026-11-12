@@ -1,7 +1,7 @@
 look "../../looks/reference.look"
 canvas 1000x452
 
-text "Who can do what on the data platform" at 40,60 style=h1
+text "Who can do what on the data platform" at 40,52 style=h1
 
 // columns: labels at x=40 (200 wide), then one per role: x = 248 + 144*j, 136 wide
 // rows: header at y=96 (52 high), then y = 160 + 40*k, 36 high

@@ -1,13 +1,15 @@
 look "../../looks/reference.look"
-canvas 1000x500
+canvas 1000x560
 
-// plot 96,48 to 960,364: 43.2px per deploy across, 13.17px per day up
-dora: chart at 96,48 864x316 x=0..20 xstep=4 y=0..24 step=6 grid=both key=0 xtitle="Deploys per week" ytitle="Lead time (days)"
+title: text "Teams that deploy often wait least" at 40,52 style=h1
+
+// plot 96,96 to 960,412: 43.2px per deploy across, 13.17px per day up
+dora: chart at 96,96 864x316 x=0..20 xstep=4 y=0..24 step=6 grid=both key=0 xtitle="Deploys per week" ytitle="Lead time (days)"
   | line 1,20 20,1 stroke=ink/0.3 sw=1 dash=4,3
   | dots "Engineering team" 2,20 4,18 4,16 6,14 8,12 8,10 10,8 12,6 12,10 16,4 20,2 fill=muted r=5 opacity=0.55
   | dots "Platform team" 18,3 fill=accent r=6
 
-// the one point the chart is about is named; x = 96 + 18 * 43.2, y = 364 - 3 * 13.17
-text "Platform" at 874,346 anchor=middle size=11 weight=600 color=accent
+// the one point the chart is about is named; x = 96 + 18 * 43.2, y = 412 - 3 * 13.17
+text "Platform" at 874,394 anchor=middle size=11 weight=600 color=accent
 
-legend at 40,424 dot.accent="Platform team · ships most often, waits least" dot.muted="Other engineering teams" line.soft="Trend"
+legend at 40,480 dot.accent="Platform team · ships most often, waits least" dot.muted/0.55="Other engineering teams" line.soft="Trend"

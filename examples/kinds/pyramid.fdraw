@@ -1,34 +1,19 @@
 look "../../looks/reference.look"
-canvas 1000x500
-
-// direction of the ranking, left of the pyramid
-rank: 100,344 -> 100,28 stroke=ink/0.3 sw=1
-text "Rarer" at 84,36 style=eyebrow anchor=end
-text "Common" at 84,340 style=eyebrow anchor=end
-
-// centre x=500; each layer is 64 high and 64 narrower on each side than the one below
-l2: polygon "Long-form guides" sub="quarterly · 4,000+ words" at 308,152 points=64,0;320,0;384,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
-l3: polygon "Essays" sub="weekly · 800–1,500 words" at 244,216 points=64,0;448,0;512,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
-l4: polygon "Short posts" sub="daily · ~200 words" at 180,280 points=64,0;576,0;640,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
-// the apex comes last so its accent outline is not covered by the layer below; its text is
-// placed by hand in the lower, wider part of the triangle
-apex: polygon at 372,24 points=128,0;256,128;0,128 fill=accent/0.08 stroke=accent sw=1
-text "Flagship book" at 500,120 anchor=middle weight=600 color=ink
-text "every 3–5 years" at 500,136 style=small anchor=middle
-
-// how many of each, beside the right edge
-text "the apex" at 656,112 style=small color=accent
-text "~4/yr" at 716,188 style=small color=soft
-text "~48/yr" at 780,252 style=small color=soft
-text "~240/yr" at 844,316 style=small color=soft
-
-text "The base funds the apex. The apex defines the base." at 500,384 style=caption anchor=middle italic=1
-
-// legend, by hand
-40,436 -- 960,436 style=rule
-text "Legend" at 40,452 style=eyebrow
-rect at 40,464 16x12 fill=accent/0.08 stroke=accent sw=1
-text "Apex: rarest, highest leverage" at 64,474 style=caption
-rect at 280,464 16x12 fill=ink/0.05 stroke=ink/0.25 sw=1
-text "Supporting layer: the volume work" at 304,474 style=caption
-text "Layer width is honest: narrower = shipped less often." at 560,474 style=caption italic=1
+canvas 1000x534
+text "What the blog publishes" at 40,52 style=h1
+text "Layer width is honest: narrower = shipped less often." at 40,74 style=caption
+rank: 100,416 -> 100,104 stroke=ink/0.3 sw=1
+text "Common, high volume" at 84,416 style=eyebrow rotate=-90
+text "Rare, high leverage" at 84,104 style=eyebrow rotate=-90 anchor=end
+l2: polygon "Long-form guides" sub="quarterly · 4,000+ words" at 308,224 points=64,0;320,0;384,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
+l3: polygon "Essays" sub="weekly · 800–1,500 words" at 244,288 points=64,0;448,0;512,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
+l4: polygon "Short posts" sub="daily · ~200 words" at 180,352 points=64,0;576,0;640,64;0,64 fill=ink/0.05 stroke=ink/0.12 sw=1
+apex: polygon at 372,96 points=128,0;256,128;0,128 fill=accent/0.08 stroke=accent sw=1
+text "Flagship book" at 500,192 anchor=middle weight=600 color=ink
+text "every 3–5 years" at 500,208 style=small anchor=middle
+text "the apex" at 656,184 style=small color=accent
+text "~4/yr" at 716,260 style=small
+text "~48/yr" at 780,324 style=small
+text "~240/yr" at 844,388 style=small
+text "The base funds the apex. The apex defines the base." at 500,448 style=caption anchor=middle italic=1
+legend at 40,464 swatch.accent/0.1="Apex: rarest, highest leverage" swatch.ink/0.1="Supporting layer: the volume work"

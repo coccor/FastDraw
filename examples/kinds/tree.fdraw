@@ -1,10 +1,10 @@
 look "../../looks/reference.look"
 canvas 1000x500
 
-// rows: y = 104, 224, 344 (48px boxes, 72px between rows; the bus runs half-way, at y = 188 and 308)
+// rows: y = 104, 224, 344 (48px boxes, 72px between rows; the bus runs half-way between rows)
 // leaves: 144 wide, 24 apart, centres x = 164, 332, 500, 668, 836; each parent is centred over its children
 
-text "Skills, by category" at 40,64 style=h1
+text "Skills, by category" at 40,52 style=h1
 
 root: focal "Skills" at 420,104 160x48
 
@@ -18,23 +18,17 @@ investigate: cloud "investigate" sub="root cause · evidence" at 428,344 144x48
 review: cloud "review" sub="pre-land diff · sql" at 596,344 144x48
 ship: cloud "ship" sub="merge · deploy · verify" at 764,344 144x48
 
-// connectors: trunk down to the bus, the bus across, one drop per child
-root.bottom -- 500,188
-248,188 -- 752,188
-248,188 -- design.top
-500,188 -- research.top
-752,188 -- eng.top
+// connectors: children share the parent's start point, so the bus draws itself
+root.bottom@0.5 -- design.top style=relation
+root.bottom@0.5 -- research.top style=relation
+root.bottom@0.5 -- eng.top style=relation
 
-design.bottom -- 248,308
-164,308 -- 332,308
-164,308 -- polish.top
-332,308 -- critique.top
+design.bottom@0.5 -- polish.top style=relation
+design.bottom@0.5 -- critique.top style=relation
 
-research.bottom -- investigate.top
+research.bottom -- investigate.top style=relation
 
-eng.bottom -- 752,308
-668,308 -- 836,308
-668,308 -- review.top
-836,308 -- ship.top
+eng.bottom@0.5 -- review.top style=relation
+eng.bottom@0.5 -- ship.top style=relation
 
 legend at 40,424 focal="Root" node="Category" cloud="Leaf skill"

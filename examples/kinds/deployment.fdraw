@@ -1,52 +1,53 @@
 look "../../looks/reference.look"
-canvas 1000x490
+canvas 936x520
+text "Checkout service, production" at 40,52 style=h1
 
-text "Checkout service, production" at 40,60 style=h1
+prod: zone "Prod / eu-west-1" at 40,96 232x304 dash=4,4 stroke=ink/0.2
+data: zone "Data" at 352,96 232x304 dash=4,4 stroke=ink/0.2
+arch: zone "Archive" at 664,96 232x272 dash=4,4 stroke=ink/0.2
 
-// zones: real boundaries, 16px around their hosts, 32px at the top for the name
-edge: zone "Edge" at 72,92 232x132 dash=4,4 stroke=ink/0.2
-prod: zone "Prod / eu-west-1" at 384,92 232x304 dash=4,4 stroke=ink/0.2
-data: zone "Data" at 696,92 232x304 dash=4,4 stroke=ink/0.2
+ingress: node tag="POD" at 56,128 200x84
+icon at 68,156 20x20 icon=gateway
+text "ingress" at 96,171 weight=600
+rect at 64,180 184x24 radius=4 fill=paper stroke=ink/0.25 overlap=ok
+text "nginx-ingress" at 72,196
+text "v1.11" at 240,196 style=small anchor=end
 
-// hosts: a box with a type tag, its name as text, and one chip per thing installed on it
-cdn: cloud tag="CDN" at 88,124 200x84
-text "Cloudflare" at 188,164 weight=600 anchor=middle
-store at 96,176 184x24 radius=4
-text "edge-cache" at 104,192
-text "v1.2" at 272,192 style=small anchor=end
+app: node tag="POD" at 56,268 200x116
+icon at 68,296 20x20 icon=container
+text "app" at 96,311 weight=600
+rect "x3" at 220,276 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400 overlap=ok
+rect at 64,320 184x24 radius=4 fill=paper stroke=ink/0.25 overlap=ok
+text "checkout-api" at 72,336
+text "v2.4.1" at 240,336 style=small anchor=end
+rect at 64,352 184x24 radius=4 fill=paper stroke=ink/0.25 overlap=ok
+text "sidecar-otel" at 72,368
+text "v0.9" at 240,368 style=small anchor=end
 
-ingress: node tag="POD" at 400,124 200x84
-text "ingress" at 500,164 weight=600 anchor=middle
-store at 408,176 184x24 radius=4
-text "nginx-ingress" at 416,192
-text "v1.11" at 584,192 style=small anchor=end
+standby: cloud tag="MANAGED" at 368,128 200x84
+icon at 380,156 20x20 icon=database
+text "rds-standby" at 408,171 weight=600
+rect at 376,180 184x24 radius=4 fill=paper stroke=ink/0.25 overlap=ok
+text "postgres" at 384,196
+text "16.2" at 552,196 style=small anchor=end
 
-app: node tag="POD" at 400,264 200x116
-text "app" at 500,304 weight=600 anchor=middle
-rect "x3" at 564,272 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
-store at 408,316 184x24 radius=4
-text "checkout-api" at 416,332
-text "v2.4.1" at 584,332 style=small anchor=end
-store at 408,348 184x24 radius=4
-text "sidecar-otel" at 416,364
-text "v0.9" at 584,364 style=small anchor=end
+primary: focal tag="MANAGED" at 368,284 200x84
+icon at 380,312 20x20 icon=database
+text "rds-primary" at 408,327 weight=600
+rect at 376,336 184x24 radius=4 fill=paper stroke=none overlap=ok
+text "postgres" at 384,352
+text "16.2" at 552,352 style=small anchor=end
 
-standby: store tag="MANAGED" at 712,124 200x84
-text "rds-standby" at 812,164 weight=600 anchor=middle
-store at 720,176 184x24 radius=4
-text "postgres" at 728,192
-text "16.2" at 896,192 style=small anchor=end
+bucket: cloud tag="MANAGED" at 680,268 200x84
+icon at 692,296 20x20 icon=bucket
+text "s3-logs" at 720,311 weight=600
+rect at 688,320 184x24 radius=4 fill=paper stroke=ink/0.25 overlap=ok
+text "parquet" at 696,336
+text "2024-10" at 864,336 style=small anchor=end
 
-primary: focal tag="MANAGED" at 712,280 200x84
-text "rds-primary" at 812,320 weight=600 anchor=middle
-store at 720,332 184x24 radius=4
-text "postgres" at 728,348
-text "16.2" at 896,348 style=small anchor=end
-
-// network paths: protocol and port on every one
-cdn -> ingress "HTTPS:443" style=link lpos=344,156
 ingress -> app "HTTP:8080"
-app -> primary "TLS:5432" style=link lpos=656,312
+app -> primary "TLS:5432" style=link lpos=312,316
 primary -> standby "WAL stream" style=return
+app.bottom@120 -> bucket.bottom@780 "S3:443" style=return via=120,424;780,424 lpos=450,440
 
-legend at 40,420 focal="Single point of failure" node="Pod" store="Standby / installed artifact" cloud="Managed edge" link="Crosses a zone" arrow="Inside a zone" return="Replication"
+legend at 40,456 focal="Single point of failure" node="Pod" cloud="Managed service" link="Crosses a zone" arrow="Inside a zone" return="Replication or async"

@@ -1,9 +1,11 @@
 look "../../looks/reference.look"
-canvas 1000x500
+canvas 1000x544
 
-// plot 96,52 to 960,372; y 0..400, so 0.8px per unit: value v is at y = 372 - 0.8v
+text "Cloud spend, FY25 to FY26" at 40,52 style=h1
+
+// plot 96,104 to 960,424; y 0..400, so 0.8px per unit: value v is at y = 424 - 0.8v
 // one series per kind of bar; every bar is a pair "from,to", and stack=1 keeps them at full width
-wf: chart at 96,52 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Cloud spend · $k / month"
+wf: chart at 96,104 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Cloud spend · $k / month"
     x="FY25 base,Headcount,Reserved inst.,ML workloads,Storage tiering,FY26 plan"
   | bars "Total"   0,240 _       _       _       _       0,236 fill=ink
   | bars "Added"   _     240,304 _       266,288 _       _     fill=muted
@@ -11,10 +13,10 @@ wf: chart at 96,52 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Clou
   | bars "Focus"   _     _       _       _       288,236 _     fill=accent
 
 // carries: the running total crosses each gap at its own level (bars are 90px wide, centred every 144px)
-213,180 -- 267,180 stroke=ink/0.55 sw=1
-357,128.8 -- 411,128.8 stroke=ink/0.55 sw=1
-501,159.2 -- 555,159.2 stroke=ink/0.55 sw=1
-645,141.6 -- 699,141.6 stroke=ink/0.55 sw=1
-789,183.2 -- 843,183.2 stroke=ink/0.55 sw=1
+213,232 -- 267,232 stroke=ink/0.55 sw=1
+357,180.8 -- 411,180.8 stroke=ink/0.55 sw=1
+501,211.2 -- 555,211.2 stroke=ink/0.55 sw=1
+645,193.6 -- 699,193.6 stroke=ink/0.55 sw=1
+789,235.2 -- 843,235.2 stroke=ink/0.55 sw=1
 
-legend at 40,420 swatch.ink="Start and end total" swatch.muted="Cost added" swatch.soft="Cost removed" swatch.accent="Storage tiering · largest saving"
+legend at 40,472 swatch.ink="Start and end total" swatch.muted="Cost added" swatch.soft="Cost removed" swatch.accent="Storage tiering · largest saving"

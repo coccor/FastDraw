@@ -1,63 +1,63 @@
 look "../../looks/reference.look"
-canvas 1000x520
+canvas 1000x592
 
-// centre 500,232, radius 160 = 100%, so 1.6px per point. Eight windows, the first straight up, then clockwise.
-text "Request demand by UTC window" at 40,48 size=12 weight=600 color=ink
-text "% of daily peak · 0 to 100" at 40,64 style=eyebrow
+// centre 500,300, radius 160 = 100%, so 1.6px per point. Eight windows, the first straight up, then clockwise.
+title: text "Request demand by UTC window" at 40,52 style=h1
+text "% of daily peak · 0 to 100" at 40,74 style=caption
 
 // rings at 20, 40, 60, 80 and 100
-ellipse at 468,200 64x64 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
-ellipse at 436,168 128x128 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
-ellipse at 404,136 192x192 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
-ellipse at 372,104 256x256 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
-ellipse at 340,72 320x320 fill=none stroke=ink/0.25 sw=1 overlap=ok mask=0
+ellipse at 468,268 64x64 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 436,236 128x128 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 404,204 192x192 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 372,172 256x256 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+ellipse at 340,140 320x320 fill=none stroke=ink/0.25 sw=1 overlap=ok mask=0
 
 // one ray per window, from the centre to its value, with a ring on the end; then the name and the value outside the outer ring
-500,232 -- 500,72 stroke=ink/0.14 sw=1
-500,232 -- 500,181 stroke=muted sw=1.5
-ellipse at 496,177 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "00–03" at 500,42 anchor=middle size=11 weight=600 color=ink
-text "32" at 500,55 anchor=middle style=small color=muted
-500,232 -- 613,119 stroke=ink/0.14 sw=1
-500,232 -- 520,212 stroke=muted sw=1.5
-ellipse at 516,208 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "03–06" at 627,107 size=11 weight=600 color=ink
-text "18" at 627,120 style=small color=muted
-500,232 -- 660,232 stroke=ink/0.14 sw=1
-500,232 -- 538,232 stroke=muted sw=1.5
-ellipse at 534,228 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "06–09" at 680,234 size=11 weight=600 color=ink
-text "24" at 680,247 style=small color=muted
-500,232 -- 613,345 stroke=ink/0.14 sw=1
-500,232 -- 566,298 stroke=muted sw=1.5
-ellipse at 562,294 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "09–12" at 627,361 size=11 weight=600 color=ink
-text "58" at 627,374 style=small color=muted
-500,232 -- 500,392 stroke=ink/0.14 sw=1
-500,232 -- 500,392 stroke=accent sw=2
-ellipse at 495,387 10x10 fill=paper stroke=accent sw=2 overlap=ok
-text "12–15" at 500,420 anchor=middle size=11 weight=600 color=accent
-text "100" at 500,434 anchor=middle style=small color=accent
-500,232 -- 387,345 stroke=ink/0.14 sw=1
-500,232 -- 407,325 stroke=muted sw=1.5
-ellipse at 403,321 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "15–18" at 373,361 anchor=end size=11 weight=600 color=ink
-text "82" at 373,374 anchor=end style=small color=muted
-500,232 -- 340,232 stroke=ink/0.14 sw=1
-500,232 -- 378,232 stroke=muted sw=1.5
-ellipse at 374,228 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "18–21" at 320,234 anchor=end size=11 weight=600 color=ink
-text "76" at 320,247 anchor=end style=small color=muted
-500,232 -- 387,119 stroke=ink/0.14 sw=1
-500,232 -- 449,181 stroke=muted sw=1.5
-ellipse at 445,177 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
-text "21–24" at 373,107 anchor=end size=11 weight=600 color=ink
-text "45" at 373,120 anchor=end style=small color=muted
+500,300 -- 500,140 stroke=ink/0.14 sw=1
+500,300 -- 500,249 stroke=muted sw=1.5
+ellipse at 496,245 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "00–03" at 500,110 anchor=middle size=11 weight=600 color=ink
+text "32" at 500,123 anchor=middle style=small color=muted
+500,300 -- 613,187 stroke=ink/0.14 sw=1
+500,300 -- 520,280 stroke=muted sw=1.5
+ellipse at 516,276 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "03–06" at 627,175 size=11 weight=600 color=ink
+text "18" at 627,188 style=small color=muted
+500,300 -- 660,300 stroke=ink/0.14 sw=1
+500,300 -- 538,300 stroke=muted sw=1.5
+ellipse at 534,296 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "06–09" at 680,302 size=11 weight=600 color=ink
+text "24" at 680,315 style=small color=muted
+500,300 -- 613,413 stroke=ink/0.14 sw=1
+500,300 -- 566,366 stroke=muted sw=1.5
+ellipse at 562,362 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "09–12" at 627,429 size=11 weight=600 color=ink
+text "58" at 627,442 style=small color=muted
+500,300 -- 500,460 stroke=ink/0.14 sw=1
+500,300 -- 500,460 stroke=accent sw=2
+ellipse at 495,455 10x10 fill=paper stroke=accent sw=2 overlap=ok
+text "12–15" at 500,488 anchor=middle size=11 weight=600 color=accent
+text "100" at 500,502 anchor=middle style=small color=accent
+500,300 -- 387,413 stroke=ink/0.14 sw=1
+500,300 -- 407,393 stroke=muted sw=1.5
+ellipse at 403,389 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "15–18" at 373,429 anchor=end size=11 weight=600 color=ink
+text "82" at 373,442 anchor=end style=small color=muted
+500,300 -- 340,300 stroke=ink/0.14 sw=1
+500,300 -- 378,300 stroke=muted sw=1.5
+ellipse at 374,296 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "18–21" at 320,302 anchor=end size=11 weight=600 color=ink
+text "76" at 320,315 anchor=end style=small color=muted
+500,300 -- 387,187 stroke=ink/0.14 sw=1
+500,300 -- 449,249 stroke=muted sw=1.5
+ellipse at 445,245 8x8 fill=paper stroke=muted sw=1.5 overlap=ok
+text "21–24" at 373,175 anchor=end size=11 weight=600 color=ink
+text "45" at 373,188 anchor=end style=small color=muted
 
 // scale, beside the first spoke
-text "20" at 494,203 style=small size=8 color=soft anchor=end
-text "40" at 494,171 style=small size=8 color=soft anchor=end
-text "60" at 494,139 style=small size=8 color=soft anchor=end
-text "80" at 494,107 style=small size=8 color=soft anchor=end
+text "20" at 494,271 style=small size=8 color=soft anchor=end
+text "40" at 494,239 style=small size=8 color=soft anchor=end
+text "60" at 494,207 style=small size=8 color=soft anchor=end
+text "80" at 494,175 style=small size=8 color=soft anchor=end
 
-legend at 40,452 dot.accent="12–15 UTC · the daily peak" dot.muted="Other three-hour windows" title="Distance from the centre = demand"
+legend at 40,520 dot.accent="12–15 UTC · the daily peak" dot.muted="Other three-hour windows" title="Distance from the centre = demand"

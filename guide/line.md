@@ -5,18 +5,21 @@ Shows how a number changes over time or along an ordered scale: signups per week
 ## Building blocks
 
 ```
-// plot 96,56 to 960,372 on a 1000x500 canvas. The series the chart is about is written last, so it is drawn on top
-sig: chart at 96,56 864x316 x="W1,W2,W3,W4" y=0..240 step=40 key=0 ytitle="Signups per week"
+// canvas 1000x540. Title at y=52, plot 96,96 to 960,412. The series the chart is about is written last, so it is drawn on top
+title: text "Signups grew every week" at 40,52 style=h1
+sig: chart at 96,96 864x316 x="W1,W2,W3,W4" y=0..240 step=40 key=0 ytitle="Signups per week"
   | line "Referral" 45 52 48 60 stroke=soft sw=1.5
   | line "Direct" 80 82 88 90 stroke=muted sw=1.5
   | area "Organic" 120 135 148 162 stroke=accent fill=accent/0.08 dots=1
-text "Organic · 162" at 912,80 size=11 weight=600 color=accent anchor=end
-legend at 40,420 line.accent="Organic" line.muted="Direct" line.soft="Referral"
+text "Organic · 162" at 852,188 size=11 weight=600 color=accent anchor=end
+text "Direct" at 852,283 size=10 color=muted anchor=end
+text "Referral" at 852,323 size=10 color=soft anchor=end
+legend at 40,464 line.accent="Organic" line.muted="Direct" line.soft="Referral"
 ```
 
 ## Composition
 
-- Canvas 1000x500, plot `at 96,56 864x316`, legend at y=420.
+- Canvas 1000x540: title at y=52, plot `at 96,96 864x316` (tick labels end near y=440), legend at y=464. Add 20px of canvas if there is an `xtitle=`.
 - Four to twelve points per line. With more, sum them into longer periods.
 - Five lines at most. One is the subject: `stroke=accent`, default width, `dots=1`. The others are `stroke=muted`, `soft` or `ink/0.5` with `sw=1.5` and no dots.
 - Use `area` instead of `line` for the subject only when the amount under the line means something (a volume, a count). Give it `fill=accent/0.08`; the default tint is heavy and dulls the lines under it.
@@ -26,24 +29,25 @@ legend at 40,420 line.accent="Organic" line.muted="Direct" line.soft="Referral"
 
 ## Text
 
-- Name each line at its right end, above the line, right-aligned to the last point: `anchor=end`, size 10 or 11, in the line's colour. The last point of n categories is at `plot x + plot width * (n - 0.5) / n`; its height is `plot bottom - value / ymax * plot height`. Put the baseline 10px above that.
-- Write the latest value of the subject line in the same label. Do not use `labels=1` with several lines; the numbers pile up.
+- Name each line at its right end, right-aligned to the last point: `anchor=end`, size 10 or 11, in the line's colour. The last point of n categories is at `x = 96 + 864 * (n - 0.5) / n` (852 for four, 906 for eight); its height is `y = 412 - value / ymax * 316`. Put the baseline 10px above that.
+- Two lines that end closer than 14px (a few units, `14 / 316 * ymax`) would put their labels on top of each other. Keep the upper label 10px above its point and put the lower one below its point (baseline 16px under it). Do not move the lines. If three end together, name the third in the legend only.
+- Write the latest value of the subject line in its label. Do not use `labels=1` with several lines; the numbers pile up.
 
 ## Slopegraph
 
 Two states (before and after), four to ten things, one straight line each. The reader compares slopes. Use a chart with two categories and hide its own axes:
 
 ```
-// y 100..550 over 320px: value v is at y = 376 - (v - 100) * 320 / 450. The two states are at x=350 and x=650
-zone at 350,56 1x320 fill=ink/0.25 stroke=none radius=0     // the two state rules, as zones so they sit behind the lines
-zone at 650,56 1x320 fill=ink/0.25 stroke=none radius=0
-sl: chart at 200,56 600x320 x="Before,After" y=100..550 yaxis=0 grid=0 key=0 stroke=none tick.size=10
+// y 100..550 over 320px: value v is at y = 416 - (v - 100) * 320 / 450. The two states are at x=350 and x=650
+350,96 -- 350,416 stroke=ink/0.25 layer=back                 // the two state rules, behind the lines
+650,96 -- 650,416 stroke=ink/0.25 layer=back
+sl: chart at 200,96 600x320 x="Before,After" y=100..550 yaxis=0 grid=0 key=0 stroke=none tick.size=10
   | line 512 208 stroke=ink/0.7 sw=1.2 dots=1
   | line 238 431 stroke=accent sw=2.5 dots=1               // the subject last
-text "Search" at 290,87 anchor=end size=11 color=ink         // name, then value, left of the left rule
-text "512" at 338,87 anchor=end style=small color=muted
-text "431" at 662,145 style=small color=muted                 // value, then name, right of the right rule
-text "Recommender" at 694,145 size=11 weight=600 color=ink
+text "Search" at 290,127 anchor=end size=11 color=ink         // name, then value, left of the left rule
+text "512" at 338,127 anchor=end style=small color=muted
+text "431" at 662,185 style=small color=muted                 // value, then name, right of the right rule
+text "Recommender" at 694,185 size=11 weight=600 color=ink
 ```
 
 - With two categories the points are a quarter and three quarters of the way across the chart box.
@@ -56,7 +60,7 @@ text "Recommender" at 694,145 size=11 weight=600 color=ink
 Ranks at three to six moments. The same construction with more categories. The y range must run upwards, so plot `ranks + 1 - rank` to put rank 1 on top:
 
 ```
-bp: chart at 320,40 480x336 x="Q1,Q2,Q3,Q4" y=0.5..6.5 step=10 yaxis=0 grid=0 key=0 stroke=none tick.size=10
+bp: chart at 320,96 480x336 x="Q1,Q2,Q3,Q4" y=0.5..6.5 step=10 yaxis=0 grid=0 key=0 stroke=none tick.size=10
   | line 5 4 4 5 stroke=ink/0.6 sw=1.2 dots=1      // ranks 2, 3, 3, 2
   | line 6 5 3 1 stroke=accent sw=2.5 dots=1       // ranks 1, 2, 4, 6
 ```
@@ -71,15 +75,16 @@ One distribution per row, rows overlapping, to compare shapes. Each row is its o
 
 ```
 // rows 56px apart, each 120px high, so a peak may reach into the row above but not two rows up
-r1: chart at 320,32 384x120 y=0..50 yaxis=0 grid=0 key=0 stroke=none overlap=ok
+r1: chart at 320,96 384x120 y=0..50 yaxis=0 grid=0 key=0 stroke=none overlap=ok
   | area 0 22 30 18 9 5 2 1 0 0 0 0 0 stroke=ink/0.7 sw=1 fill=ink/0.1
-r2: chart at 320,88 384x120 y=0..50 yaxis=0 grid=0 key=0 stroke=none overlap=ok
+r2: chart at 320,152 384x120 y=0..50 yaxis=0 grid=0 key=0 stroke=none overlap=ok
   | area 0 5 24 31 16 7 3 1 1 0 0 0 0 stroke=ink/0.7 sw=1 fill=ink/0.1
-320,152 -- 704,152 stroke=ink/0.6 sw=1                       // the baseline of r1: its y + height
-text "static-cdn" at 304,156 anchor=end size=11 color=ink
+320,216 -- 704,216 stroke=ink/0.6 sw=1                       // the baseline of r1: its y + height
+text "static-cdn" at 304,220 anchor=end size=11 color=ink
 ```
 
 - Three to eight rows. The subject row takes `stroke=accent sw=2 fill=accent/0.15`.
+- Canvas height = last row's y + 120 + 64 (its tick labels and the scale name), then the legend 24px lower and 70px of canvas under it. Five rows fit in 540; eight need about 700.
 - Only the last chart has `x="0,,,120,,,240"`: one entry per bin, empty where no tick label is wanted. Name the scale in a `small` text under it.
 - Order the rows by something you can state (median, peak position) and say it in the legend heading.
 
@@ -89,7 +94,7 @@ A total and its parts over many periods, drawn as bands around a centre line. Th
 
 ```
 // boundaries from the top one down; each area paints over the ones before it; the last, in paper colour, clears below the stream
-st: chart at 60,56 880x320 x="W01,W02,W03,W04" y=0..200 yaxis=0 grid=0 key=0 stroke=none
+st: chart at 60,96 880x320 x="W01,W02,W03,W04" y=0..200 yaxis=0 grid=0 key=0 stroke=none
   | area 140 142 146 152 fill=soft   stroke=paper sw=1      // top of the top layer
   | area 130 133 138 143 fill=accent stroke=paper sw=1
   | area 120 120 118 116 fill=ink    stroke=paper sw=1
@@ -104,4 +109,4 @@ st: chart at 60,56 880x320 x="W01,W02,W03,W04" y=0..200 yaxis=0 grid=0 key=0 str
 
 ## Legend
 
-`legend at 40,420` with one `line.COLOUR=` entry per line (`swatch.COLOUR=` for ridgeline and streamgraph). The subject comes first and its entry says why it matters.
+`legend at 40,464` (24px under the lowest element) with one `line.COLOUR=` entry per line (`swatch.COLOUR=` for ridgeline and streamgraph). The subject comes first and its entry says why it matters.
