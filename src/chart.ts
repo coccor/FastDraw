@@ -14,10 +14,16 @@ export function niceStep(span: number, max = 6): number {
   for (const m of [1, 2, 2.5, 5, 10]) if (m * pow >= raw) return m * pow;
   return 10 * pow;
 }
+// A tick step from the file is only used if it is a real positive number that gives a sane number of ticks;
+// diagram files are untrusted, and step=0 would otherwise never finish.
+const safeStep = (v: string | undefined, span: number): number => {
+  const s = Number(v);
+  return v !== undefined && Number.isFinite(s) && s > 0 && span / s <= 200 ? s : niceStep(span);
+};
 const fmt = (v: number) => String(Math.round(v * 1000) / 1000);
 const range = (v: string | undefined): [number, number] | null => {
   const m = /^(-?[\d.]+)\.\.(-?[\d.]+)$/.exec(v ?? '');
-  return m ? [+m[1], +m[2]] : null;
+  return m && Number.isFinite(+m[1]) && Number.isFinite(+m[2]) && +m[2] > +m[1] ? [+m[1], +m[2]] : null; // must run upwards
 };
 
 export function drawChart(look: Look, s: Shape): string {
@@ -27,12 +33,15 @@ export function drawChart(look: Look, s: Shape): string {
   // ---- scales --------------------------------------------------------------
   const xr = range(p.x), cats = !xr && p.x ? p.x.split(',').map((c) => c.trim()) : [];
   const n = xr ? 0 : Math.max(cats.length, ...rows.map((r) => r.vals.length), 1);
+  const finite = (v: number) => Number.isFinite(v);
   const ys = rows.flatMap((r) => r.vals.flatMap((v) => (r.id === 'bars' || (r.id === 'dots' && !xr) ? pairs(v) : pairs(v).slice(-1))));
   const stacked = p.stack === '1';
   if (stacked) for (let i = 0; i < n; i++) ys.push(rows.filter((r) => r.id === 'bars').reduce((a, r) => a + (+r.vals[i] || 0), 0));
+  for (let i = ys.length - 1; i >= 0; i--) if (!finite(ys[i])) ys.splice(i, 1);
   const yr = range(p.y);
   let y0 = yr ? yr[0] : Math.min(0, ...ys), y1 = yr ? yr[1] : Math.max(0, ...ys);
-  const step = num(p.step, niceStep(y1 - y0));
+  if (!(y1 > y0)) y1 = y0 + 1;
+  const step = safeStep(p.step, y1 - y0);
   if (!yr) { y0 = Math.floor(y0 / step) * step; y1 = Math.ceil(y1 / step) * step; if (y1 === y0) y1 = y0 + step; }
   const Y = (v: number) => r2(y + h - ((v - y0) / (y1 - y0)) * h);
   const bw = n ? w / n : 0;
@@ -50,7 +59,7 @@ export function drawChart(look: Look, s: Shape): string {
     if (p.yaxis !== '0') out.push(`<text x="${x - 8}" y="${r2(gy + tick.size * 0.35)}" text-anchor="end" ${tick.a}>${esc(pre + fmt(v) + unit)}</text>`);
   }
   if (xr) {
-    const xs = num(p.xstep, niceStep(xr[1] - xr[0]));
+    const xs = safeStep(p.xstep, xr[1] - xr[0]);
     for (let v = Math.ceil(xr[0] / xs - 1e-9) * xs; v <= xr[1] + 1e-9; v += xs) {
       if (p.grid === 'both' && v > xr[0]) out.push(`<line x1="${XV(v)}" y1="${y}" x2="${XV(v)}" y2="${y + h}" stroke="${grid}" stroke-width="1"/>`);
       out.push(`<text x="${XV(v)}" y="${y + h + 8 + tick.size}" text-anchor="middle" ${tick.a}>${esc(fmt(v) + (p.xunit ?? ''))}</text>`);

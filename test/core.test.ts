@@ -355,3 +355,16 @@ test('a chart draws axes and its series from the numbers given', async () => {
   const xy = renderSvg(scene('c: chart at 80,80 400x200 x=0..100 y=0..400\n  | dots "p50" 50,200 100,400\n'));
   assert.ok(xy.includes('<circle cx="280" cy="180"') && xy.includes('<circle cx="480" cy="80"'));
 });
+
+test('a chart with a hostile step or range still renders, quickly, and says what is wrong', () => {
+  for (const bad of ['step=0', 'step=-5', 'step=1e-12', 'step=NaN', 'y=100..0', 'y=5..5', 'x=10..0 xstep=0', 'x=0..1e9 xstep=1e-9']) {
+    const sc = scene(`c: chart at 80,80 400x200 ${bad}\n  | bars "A" 1 2 3\n  | dots "B" 1,2 3,4\n`);
+    const t = performance.now();
+    const svg = renderSvg(sc);
+    assert.ok(performance.now() - t < 200, bad);
+    assert.ok(svg.length < 60000 && !svg.includes('NaN') && !svg.includes('Infinity'), bad);
+  }
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('c: chart at 80,80 400x200 step=0\n  | bars "A" 1 2\n'), /step=0 must be a number above 0/);
+  assert.match(msgs('c: chart at 80,80 400x200 y=100..0\n  | bars "A" 1 2\n'), /y=100..0 must run upwards/);
+});

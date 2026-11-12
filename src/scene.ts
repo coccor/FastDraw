@@ -421,6 +421,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     else if (sh.shape === 'chart') {
       sh.rows = rows;
       if (!size0) err(st.line, 'a chart needs a size for its plot area: at x,y WxH');
+      for (const k of ['step', 'xstep']) if (p[k] !== undefined && !(Number(p[k]) > 0)) err(st.line, `${k}=${p[k]} must be a number above 0`);
+      for (const k of ['x', 'y']) { const m = /^(-?[\d.]+)\.\.(-?[\d.]+)$/.exec(p[k] ?? ''); if (m && !(+m[2] > +m[1])) err(st.line, `${k}=${p[k]} must run upwards, e.g. ${k}=0..100`); }
       const n = p.x && !/^-?[\d.]+\.\.-?[\d.]+$/.test(p.x) ? p.x.split(',').length : 0;
       for (const r of rows) {
         if (!r.id || !SERIES.includes(r.id)) err(st.line, `a chart row starts with the kind of series: ${SERIES.join(', ')}; e.g. | bars "Revenue" 42 61 75`);
