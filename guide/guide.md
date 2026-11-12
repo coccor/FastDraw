@@ -48,7 +48,7 @@ Text properties a shape understands (if the look's style supports them):
 
 | Property | Meaning |
 |---|---|
-| `sub="..."` | a second, smaller line under the main text |
+| `sub="..."` | a second, smaller line under the main text (`\n` for more lines) |
 | `tag="API"` | a 3–4 letter marker in the top-left corner |
 | `ghost="01"` | a large faint number in the bottom-right corner |
 | `title.align=left` | text against the left edge instead of centred (`right` too). On a zone, the caption moves to that corner |

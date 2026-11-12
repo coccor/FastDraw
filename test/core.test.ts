@@ -391,3 +391,13 @@ test('legend swatches, turned text, lines behind boxes, text in a triangle, and 
   assert.match(msgs('a: node "A" at 40,40 100x40\nb: node "B" at 140,80 100x40\na.right@80 -> b.left@80\n'), /meet at the same point \(140,80\)/);
   assert.match(msgs('text "x" at 40,40 rotate=45\n'), /text can be turned by 90/);
 });
+
+test('sub text can run over several lines, and a tag on a short box is reported', () => {
+  const sc = scene('a: node "Checkout" sub="cart to order\\nstorefront" at 40,40 176x72\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('>cart to order<') && svg.includes('>storefront<'));
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('r: focal "Row-level permissions" sub="RPT-114" tag="RISK" at 40,40 176x48\n'), /the tag "RISK" sits on the text of r; make it at least 52px tall/);
+  assert.doesNotMatch(msgs('r: focal "Orders API" sub="REST" tag="API" at 40,40\n'), /sits on the text/);
+});

@@ -39,9 +39,16 @@ export function check(sc: Scene): Issue[] {
         if (tw > room) warn(s.line, `text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${Math.round(room)}px of room); widen it or break the line with \\n`);
       }
     }
-    if (p.sub) {
-      const tw = textWidth(p.sub, num(p['sub.size'], 9), p['sub.font'] ?? 'mono', 400, 0);
-      if (tw > s.w - 12) warn(s.line, `sub text "${p.sub}" (~${Math.round(tw)}px) does not fit in ${s.id} (${s.w - 12}px of room)`);
+    for (const l of p.sub ? p.sub.split('\n') : []) {
+      const tw = textWidth(l, num(p['sub.size'], 9), p['sub.font'] ?? 'mono', 400, 0);
+      if (tw > s.w - 12) warn(s.line, `sub text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${s.w - 12}px of room)`);
+    }
+    if (p.tag && (s.text || p.sub) && p['title.pos'] !== 'top' && !s.rows && s.shape !== 'chart') {
+      // the same sums the renderer does: the corner tag ends 20px down, the text block is centred 8px low
+      const size = num(p['title.size'], 12), subSize = num(p['sub.size'], 9), subs = p.sub ? p.sub.split('\n').length : 0;
+      const block = (s.text ? s.text.split('\n').length : 0) * Math.round(size * 1.17) + (subs ? subSize + 7 + (subs - 1) * Math.round(subSize * 1.3) : 0);
+      const need = Math.ceil((block + 20) / 4) * 4; // text top must clear the tag: h/2 - block/2 + 8 >= 18
+      if (s.h < need) warn(s.line, `the tag "${p.tag}" sits on the text of ${s.id}; make it at least ${need}px tall or drop the tag`);
     }
   }
 

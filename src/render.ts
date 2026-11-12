@@ -197,11 +197,12 @@ function drawShape(look: Look, s: Shape): string {
     const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
     const lh = Math.round(title.size * 1.17);
     const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
-    const block = lines.length * lh + (p.sub ? sub.size + 7 : 0);
+    const subs = p.sub ? p.sub.split('\n') : [], slh = Math.round(sub.size * 1.3);
+    const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
     const top = cym - block / 2 + (p.tag ? 8 : 0);
     const al = p['title.align'], tx = al === 'left' ? s.x + 12 : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
-    if (p.sub) out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3)}" text-anchor="${anchor}" ${sub.a}>${esc(p.sub)}</text>`);
+    subs.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3 + i * slh)}" text-anchor="${anchor}" ${sub.a}>${esc(l)}</text>`));
   }
   return out.join('\n');
 }
