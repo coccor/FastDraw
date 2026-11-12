@@ -418,6 +418,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
+    if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon)) err(st.line, `there is no icon called "${p.icon}"; the look has: ${[...look.icons.keys()].join(', ')}`);
+    if (p['icon.pos'] && !['left', 'top'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)`);
     for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {
       // points are written relative to the element's position; a given WxH stretches them to fit

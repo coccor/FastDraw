@@ -165,6 +165,30 @@ function drawTable(look: Look, s: Shape): string {
   return out.join('\n');
 }
 
+// Where a shape's icon goes and how far it pushes the text. Shared with the checker.
+export function iconBox(s: Shape): { x: number; y: number; size: number; dx: number; dy: number } | null {
+  const p = s.p;
+  if (!p.icon || p.icon === 'none') return null;
+  const hasText = !!(s.text || p.sub) && p['title.pos'] !== 'top';
+  const size = num(p['icon.size'], hasText ? 20 : Math.max(8, Math.min(s.w, s.h, 96) - (s.style === 'icon' ? 0 : 16)));
+  if (!hasText) return { x: s.x + (s.w - size) / 2, y: s.y + (s.h - size) / 2, size, dx: 0, dy: 0 };
+  if (p['icon.pos'] === 'top') return { x: s.x + (s.w - size) / 2, y: 0, size, dx: 0, dy: (size + 6) / 2 }; // y set by the caller from the text block
+  if (p['title.align'] === 'left' || p['title.align'] === 'right') return { x: s.x + 12, y: s.y + (s.h - size) / 2, size, dx: (size + 8) / 2, dy: 0 };
+  // centred text: the icon sits right beside it, and the pair is centred in the box
+  const widths = [
+    ...(s.text ? s.text.split('\n') : []).map((l) => textWidth(p['title.caps'] === '1' ? l.toUpperCase() : l, num(p['title.size'], 12), p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0))),
+    ...(p.sub ? p.sub.split('\n') : []).map((l) => textWidth(l, num(p['sub.size'], 9), p['sub.font'] ?? 'mono', 400, 0)),
+  ];
+  const tw = Math.max(0, ...widths), x = Math.max(s.x + 8, s.x + (s.w - (size + 8 + tw)) / 2);
+  return { x, y: s.y + (s.h - size) / 2, size, dx: (size + 8) / 2, dy: 0 };
+}
+
+function drawIcon(look: Look, name: string, x: number, y: number, size: number, colour: string): string {
+  const k = r2(size / 24);
+  const paths = (look.icons.get(name) ?? []).map((d) => `<path d="${esc(d)}"/>`).join('');
+  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="none" stroke="${colour}" stroke-width="${r2(Math.max(1.5, 1.2 / k))}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
+}
+
 function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'legend') return drawLegend(look, s);
   if (s.shape === 'table') return drawTable(look, s);
@@ -196,6 +220,9 @@ function drawShape(look: Look, s: Shape): string {
     out.push(`<text x="${s.x + 8 + tw / 2}" y="${s.y + 17}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
   }
   const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
+  const ib = iconBox(s), iconCol = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
+  if (ib) { cxm += ib.dx; cym += ib.dy; }
+  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p.icon, ib.x, ib.y, ib.size, iconCol));
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
     const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
@@ -210,7 +237,8 @@ function drawShape(look: Look, s: Shape): string {
     const subs = p.sub ? p.sub.split('\n') : [], slh = Math.round(sub.size * 1.3);
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
     const top = cym - block / 2 + (p.tag ? 8 : 0);
-    const al = p['title.align'], tx = al === 'left' ? s.x + 12 : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
+    if (ib && ib.dy > 0) out.push(drawIcon(look, p.icon, ib.x, top - ib.size - 6, ib.size, iconCol));
+    const al = p['title.align'], tx = al === 'left' ? s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
     subs.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3 + i * slh)}" text-anchor="${anchor}" ${sub.a}>${esc(l)}</text>`));
   }

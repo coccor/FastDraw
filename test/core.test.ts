@@ -441,3 +441,22 @@ test('chart: one bar in its own colour, outlines, signed steps, vertical grid, b
   assert.ok(svg.includes('<circle cx="590" cy="160" r="12"'));
   assert.equal((svg.match(/y1="160" x2="740" y2="160"/g) ?? []).length, 1); // the grid line at 0, and no axis line on top of it
 });
+
+test('icons: on a box, on their own, from the look, and with clear errors', () => {
+  const sc = scene('a: node "Orders DB" icon=database at 40,40\nb: node "Top" icon=server icon.pos=top at 240,40 144x96\nc: icon at 440,40 icon=cloud\nd: node icon=lock at 520,40 48x48\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  assert.equal((svg.match(/<g transform="translate\(/g) ?? []).length, 4);
+  assert.ok(svg.includes('scale(1)') && svg.includes('stroke-linecap="round"'));
+  // the icon and the text are centred as a pair: the title no longer sits on the box centre
+  const x = Number(/<text x="([\d.]+)"[^>]*>Orders DB</.exec(svg)![1]);
+  assert.ok(x > 40 + 72 + 8);
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('a: node "A" icon=unicorn at 40,40\n'), /there is no icon called "unicorn"; the look has: /);
+  assert.match(msgs('a: node "A" icon=server icon.pos=top at 40,40 144x40\n'), /the icon and text of a need \d+px of height/);
+  assert.match(msgs('a: node "A long name here" icon=server at 40,40 120x48\n'), /does not fit in a/);
+  const look = parseLook('icon bolt "M13 3 L4 14 H12 L11 21 L20 10 H12 Z"\nicon bad "<script>"\nstyle hot extends rect icon=bolt\n');
+  assert.ok(look.icons.has('bolt') && !look.icons.has('bad') && look.icons.has('server'));
+  assert.match(look.issues.map((i) => i.msg).join(), /icon bad needs its outline as SVG path data/);
+  assert.ok(renderSvg(buildScene('look "x.look"\nh: hot "Fast" at 40,40 120x48\n', look)).includes('M13 3 L4 14'));
+});

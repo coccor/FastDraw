@@ -329,3 +329,23 @@ test('chart: place one from the gallery, change its numbers and add a series', a
   await expect(page.locator('.problems')).toHaveText('No problems');
   expect(errors).toEqual([]);
 });
+
+test('icons: choose one for a box in the panel, move it above the text, and place an icon on its own', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await page.getByLabel('Icon', { exact: true }).selectOption('database');
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
+  await expect(page.locator('svg.canvas g[stroke-linecap="round"] path').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Above the text' }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.pos=top$/);
+  await page.getByLabel('Icon', { exact: true }).selectOption('none');
+  expect(lineOf(await source(page), 'db')).not.toContain('icon=database');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
+  const spot = await at(page, 700, 340);
+  await page.mouse.click(spot.x, spot.y);
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=server$/);
+  expect(errors).toEqual([]);
+});

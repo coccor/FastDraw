@@ -58,3 +58,6 @@ The kinds of diagram FastDraw has guides for, and many of the composition ideas 
 copyright (c) 2025 Cathryn Lavery). The guides are written anew for FastDraw's language. The
 pictures in `compare/kinds/*-ref.png` are renders of diagram-design's own example pages, kept for
 side-by-side comparison; `looks/reference.look` mirrors its default palette for the same purpose.
+
+The bundled icons (`src/icons.ts`) are from [Tabler Icons](https://tabler.io/icons) (MIT licence,
+copyright (c) 2020-2024 Paweł Kuna), the same generic set diagram-design uses.

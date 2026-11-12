@@ -123,6 +123,16 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 
 `rect`, `ellipse`, `diamond`, `polygon`, `arc`, `table`, `chart`, `text`, `arrow`, `line`, `relation` and `legend` exist in every look. A style can also be built on `polygon` or `arc` (`style slice extends arc stroke=paper sw=2`); the corners and angles are still given on each element. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
 
+### Icons
+
+Every look starts with a set of outline icons (see `fastdraw sizes`). Add your own, or replace one, with
+
+```
+icon queue "M4 6h16" "M4 12h16" "M4 18h16"
+```
+
+The quoted parts are SVG path data drawn in a 24x24 box; they are stroked, not filled, in the colour of the box's text. Keep to simple outlines with a 1.5 stroke in mind, so they match the bundled ones. A style can carry an icon (`style store extends node icon=database`), and `icon.size=`, `icon.color=`, `icon.pos=top` work in a style too.
+
 ### Guidance
 
 `guidance "..."` lines are shown to agents by `fastdraw sizes`. Use them for rules a drawing tool cannot enforce: how many accent elements are allowed, when to use `tag=`, what `sub=` is for.
@@ -139,7 +149,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 
 ## Limits today
 
-- Shapes cannot contain icons or extra drawn details beyond the outline, the tag and the ghost number. The tag's position is fixed.
+- Shapes cannot contain extra drawn details beyond the outline, one icon, the tag and the ghost number. The tag's position is fixed. Icons are outlines in one colour.
 - The background can have dots but not grid lines.
 - `path` outlines have no arcs (`A`); use curves (`C`, `Q`). Arrows attach to the outline's bounding box.
 - Exported images carry the diagram and look but not the font files, so someone reopening an image without the repo sees fallback fonts for any font that is not bundled.

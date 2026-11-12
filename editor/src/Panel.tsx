@@ -227,6 +227,22 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <p className="muted small">Clear an entry to remove it.</p>
         </section>
       )}
+      {same && kind === 'shape' && !first.el.legend && !first.el.rows && (
+        <section>
+          <h4>Icon</h4>
+          <select aria-label="Icon" value={p.icon ?? 'none'} onChange={(e) => act.setProp('icon', e.target.value === 'none' ? null : e.target.value)}>
+            <option value="none">None</option>
+            {[...sc.look.icons.keys()].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+          {p.icon && p.icon !== 'none' && (
+            <div className="seg" style={{ marginTop: 6 }}>
+              {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
+                <button key={l} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l}</button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
       {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
       {els.length === 1 && first.kind === 'shape' && !first.el.legend && !first.el.rows && (
         <section>

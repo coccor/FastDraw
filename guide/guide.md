@@ -157,6 +157,15 @@ users: table "users" at 40,100
 
 An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left or right edge of the table, level with that row, on the side facing the other end; `users.id.left` forces a side.
 
+### Icons
+
+`icon=name` puts a small outline icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, laptop, api and about forty more).
+
+- The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height.
+- With no text, the icon fills the box. A box of style `icon` has no outline, so it is an icon on its own: `icon at 60,220 icon=server` (24x24; give `WxH` for another size).
+- `icon.size=20` and `icon.color=link` change it; by default it takes the colour of the box's text.
+- Use icons where they say something the name does not (what kind of thing a box is), on every box of a row or on none. Two or three kinds of icon in one diagram is plenty.
+
 A shape's text is styled with `title.size=`, `title.color=`, `title.weight=`, `title.font=` (and `sub.` the same for the second line).
 
 Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.

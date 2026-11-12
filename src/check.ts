@@ -2,6 +2,7 @@
 import type { Issue } from './look.ts';
 import { textWidth } from './scene.ts';
 import { segHits } from './router.ts';
+import { iconBox } from './render.ts';
 import type { Scene, Box, Pt, Conn, Shape } from './scene.ts';
 
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -33,12 +34,18 @@ export function check(sc: Scene): Issue[] {
     if (off) hint(s.line, `${s.id} is off the 4px grid (${s.x},${s.y} ${s.w}x${s.h}); use multiples of 4`);
     const p = s.p;
     if (s.text && p['title.pos'] !== 'top') {
-      const size = num(p['title.size'], 12), room = (s.shape === 'diamond' || s.shape === 'ellipse' ? s.w * 0.72 : s.w - 16);
+      const size = num(p['title.size'], 12), ib = iconBox(s), room = (s.shape === 'diamond' || s.shape === 'ellipse' ? s.w * 0.72 : s.w - 16) - (ib && ib.dx ? ib.size + 8 + 8 : 0);
       for (const l of s.text.split('\n')) {
         const tw = textWidth(l, size, p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0));
         if (tw > room) warn(s.line, `text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${Math.round(room)}px of room); widen it or break the line with \\n`);
       }
     }
+    const ic = iconBox(s);
+    if (ic && ic.dy > 0) {
+      const lines = s.text ? s.text.split('\n').length : 0, subs = p.sub ? p.sub.split('\n').length : 0;
+      const need = Math.ceil((lines * Math.round(num(p['title.size'], 12) * 1.17) + (subs ? num(p['sub.size'], 9) + 7 + (subs - 1) * Math.round(num(p['sub.size'], 9) * 1.3) : 0) + ic.size + 6 + 16) / 4) * 4;
+      if (s.h < need) warn(s.line, `the icon and text of ${s.id} need ${need}px of height; make it taller or use icon.pos=left`);
+    } else if (ic && ic.size + 8 > Math.min(s.w, s.h) && s.style !== 'icon') warn(s.line, `the ${ic.size}px icon does not fit in ${s.id}; make the box bigger or set icon.size=`);
     for (const l of p.sub ? p.sub.split('\n') : []) {
       const tw = textWidth(l, num(p['sub.size'], 9), p['sub.font'] ?? 'mono', 400, 0);
       if (tw > s.w - 12) warn(s.line, `sub text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${s.w - 12}px of room)`);

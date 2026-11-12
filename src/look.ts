@@ -1,5 +1,6 @@
 import { parseStatements } from './parse.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
+import { ICONS } from './icons.ts';
 
 export type Kind = 'shape' | 'line' | 'text';
 export type Props = Record<string, string>;
@@ -11,6 +12,7 @@ export type Look = {
   fontDirs: string[]; // folders of TTF/OTF files, relative to the look file
   canvas: Props;
   styles: Map<string, Style>;
+  icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
   guidance: string[];
   issues: Issue[];
 };
@@ -21,6 +23,7 @@ const BUILTIN: Style[] = [
   { name: 'diamond', kind: 'shape', props: { shape: 'diamond', fill: 'none', stroke: 'ink', sw: '1' } },
   { name: 'polygon', kind: 'shape', props: { shape: 'polygon', fill: 'none', stroke: 'ink', sw: '1', size: 'automatic', use: 'any outline from exact corners: polygon at x,y points=60,0;120,100;0,100 (measured from at). open=1 leaves it unclosed, smooth=1 rounds it' } },
   { name: 'arc', kind: 'shape', props: { shape: 'arc', fill: 'none', stroke: 'ink', sw: '1', use: 'a slice of a circle: arc at x,y WxH from=0 to=90 (degrees clockwise from the top). inner=0.6 makes it a ring segment, open=1 draws only the curved edge' } },
+  { name: 'icon', kind: 'shape', props: { shape: 'rect', fill: 'none', stroke: 'none', mask: '0', size: '24x24', use: 'an icon on its own: icon at x,y icon=database (give WxH for another size)' } },
   { name: 'text', kind: 'text', props: { font: 'sans', size: '12', color: 'ink' } },
   { name: 'arrow', kind: 'line', props: { stroke: 'muted', sw: '1.2', head: 'arrow', route: 'ortho', radius: '8' } },
   { name: 'line', kind: 'line', props: { stroke: 'muted', sw: '1', head: 'none', route: 'straight' } },
@@ -57,6 +60,7 @@ export function emptyLook(): Look {
     fontDirs: [],
     canvas: {},
     styles: new Map(),
+    icons: new Map(Object.entries(ICONS)),
     guidance: [],
     issues: [],
   };
@@ -69,7 +73,15 @@ export function parseLook(src: string, path = 'look'): Look {
   for (const st of parseStatements(src)) {
     const [head, ...rest] = st.toks;
     const err = (msg: string) => look.issues.push({ line: st.line, level: 'error', msg, file: path });
-    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style or guidance'); continue; }
+    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon or guidance'); continue; }
+    if (head.v === 'icon') {
+      // icon name "path data" ["more path data" ...]: outlines in a 24x24 box
+      const name = rest[0]?.t === 'word' ? rest[0].v : undefined, paths = rest.slice(1).filter((t) => t.t === 'str').map((t) => t.v);
+      if (!name || !/^[a-z][a-z0-9-]*$/.test(name)) err('icon needs a name in small letters, e.g. icon queue "M4 6h16 M4 12h16 M4 18h16"');
+      else if (!paths.length || paths.some((d) => !/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) || d.length > 4000) || paths.length > 12) err(`icon ${name} needs its outline as SVG path data in quotes, drawn in a 24x24 box, e.g. "M4 6h16 M4 12h16"`);
+      else look.icons.set(name, paths);
+      continue;
+    }
     if (head.v === 'fontdir') {
       if (!rest[0]) err('fontdir needs a folder, e.g. fontdir "./fonts"'); else look.fontDirs.push(rest[0].v);
       continue;

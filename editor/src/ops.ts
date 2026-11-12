@@ -199,7 +199,7 @@ export function addShape(src: string, style: string, b: Box, sized: boolean, tab
     const head = `${id}: ${style} "Name" at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}`;
     return { src: appendStatements(src, [head + '\n  | r1 "first" "value"\n  | r2 "second" "value"']), id };
   }
-  const line = `${id}: ${style} at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}`;
+  const line = `${id}: ${style} at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}${style === 'icon' ? ' icon=server' : ''}`;
   return { src: appendStatements(src, [line]), id };
 }
 

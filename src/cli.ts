@@ -83,6 +83,7 @@ if (cmd === 'check') {
   const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);
   console.log('\nfonts');
   for (const [role, fam] of look.fonts) console.log(`  ${role.padEnd(12)} ${fam}${lf.missing.includes(fam) ? '   (no font file found: will fall back)' : ''}`);
+  console.log(`\nicons (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
   if (look.guidance.length) { console.log('\nguidance from this look'); for (const g of look.guidance) console.log(`  - ${g}`); }
 } else if (cmd === 'init-look') {
   const out = args[0] ?? 'team.look';
@@ -96,7 +97,7 @@ if (cmd === 'check') {
   const look = file ? loadLook(file) : defaultLook();
   const errs = look.issues.filter((i) => i.level === 'error');
   if (errs.length) { for (const i of errs) console.log(`${file}:${i.line}  error  ${i.msg}`); process.exit(1); }
-  const skip = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'arc', 'text', 'line', 'legend']);
+  const skip = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'arc', 'icon', 'text', 'line', 'legend']);
   const all = [...look.styles.values()].filter((s) => !skip.has(s.name));
   const L: string[] = [];
   const W = 880;
@@ -135,6 +136,14 @@ if (cmd === 'check') {
     L.push(`${cx},${y + 16} ${s.props.head === 'none' || s.props.route === 'straight' ? '--' : '->'} ${cx + 176},${y + 16} ${JSON.stringify(s.name)} style=${s.name}`);
   });
   y += 60;
+  heading('Icons');
+  [...look.icons.keys()].forEach((n, i) => {
+    const cx = 40 + (i % 11) * 80;
+    if (i && i % 11 === 0) y += 60;
+    L.push(`icon at ${cx + 20},${y} icon=${n}`);
+    L.push(`text ${JSON.stringify(n)} at ${cx + 32},${y + 40} size=8 color=muted font=sans anchor=middle`);
+  });
+  y += 76;
   heading('Text');
   for (const s of all.filter((t) => t.kind === 'text')) {
     const size = +(s.props.size ?? 12);
