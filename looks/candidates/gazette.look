@@ -27,7 +27,7 @@ style focal extends node fill=accent title.color=#ffffff sub.color=#ffffff/0.85 
 style store extends node size=144x72
     path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
     shape=path fill=block stroke=#ffffff sw=1.5 use="something that holds data or state"
-style cloud extends node fill=slate title.color=#ffffff sub.color=#ffffff/0.8 use="a hosted or third-party platform"
+style cloud extends node fill=slate/0.12 title.color=slate sub.color=slate/0.8 use="a hosted or third-party platform"
 style external extends node fill=ground stroke=soft sw=1 dash=3,3 use="a person or system outside what you own"
 style optional extends node fill=ground stroke=rule sw=1 dash=2,3 use="optional or asynchronous participant"
 style step extends node size=160x48 use="flowchart action"

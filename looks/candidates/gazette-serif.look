@@ -1,0 +1,57 @@
+// "Gazette, serif headline". Gazette with a Newsreader serif title and dek: serif headline over clean grotesque graphics.
+// family where weight does the work, flat pale-grey blocks with square corners and no outlines,
+// grey for context and a muted crimson for the subject, slate for platforms. No shadows.
+fontdir "./fonts"
+canvas paper=ground
+
+color ground  #ffffff
+color ink     #1f2328
+color muted   #5f6670
+color soft    #a3a9b1
+color block   #e4e7eb
+color rule    #cfd4da
+color accent  #b3354d
+color link    #45607e
+color slate   #45607e
+
+font sans  "Libre Franklin Thin"
+font mono  "IBM Plex Mono"
+font serif "Newsreader 16pt 16pt"
+
+style node shape=rect radius=2 size=144x64 fill=block stroke=none sw=0
+    title.weight=700 title.size=13 title.color=ink sub.font=sans sub.size=11 sub.color=muted
+    tag.font=sans tag.size=8 tag.weight=700 tag.color=muted tag.border=none
+    use="default box: a service, component or step"
+style focal extends node fill=accent title.color=#ffffff sub.color=#ffffff/0.85 tag.color=#ffffff/0.85 ghost.color=#ffffff/0.15
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=block stroke=#ffffff sw=1.5 use="something that holds data or state"
+style cloud extends node fill=slate/0.12 title.color=slate sub.color=slate/0.8 use="a hosted or third-party platform"
+style external extends node fill=ground stroke=soft sw=1 dash=3,3 use="a person or system outside what you own"
+style optional extends node fill=ground stroke=rule sw=1 dash=2,3 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=ground stroke=ink sw=1 title.weight=700 title.color=ink sub.color=muted sub.size=11 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent stroke=accent title.color=#ffffff sub.color=#ffffff/0.85 use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=block stroke=none title.weight=700 use="flowchart yes/no question"
+style zone shape=rect radius=0 fill=none stroke=rule sw=1 dash=1,3 layer=back
+    title.pos=top title.align=left title.font=sans title.size=10 title.weight=700 title.caps=1 title.spacing=0.06 title.color=muted
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=block stroke=none use="sequence activation bar"
+style table shape=table radius=0 fill=ground stroke=rule sw=1 head.fill=block rule=rule cell.font=sans cell.size=11 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 use="a grid of values"
+style chart shape=chart fill=none stroke=ink/0.6 sw=1 mask=0 bar.radius=0 grid.color=ink/0.08
+    use="axes with your numbers drawn for you: chart at x,y WxH x=\"Q1,Q2,Q3\" y=0..100, then a line per series: | bars \"Revenue\" 42 61 75"
+style arrow line stroke=#80868f sw=1.25 route=ortho radius=4 label.font=sans label.size=11 label.weight=400 label.caps=0 label.spacing=0 label.color=muted use="default arrow"
+style primary extends arrow stroke=accent sw=2.25 label.color=accent label.weight=700 use="the main path"
+style link extends arrow stroke=slate label.color=slate use="a request crossing a boundary"
+style return extends arrow stroke=soft dash=3,3 use="a response"
+style relation extends relation stroke=#80868f label.font=sans label.size=11 label.color=muted
+style lifeline line head=none stroke=rule sw=1 dash=1,3 route=straight use="lifeline"
+style rule line head=none stroke=rule sw=1 route=straight use="thin separator"
+style h1 text font=serif size=34 weight=500 color=ink use="diagram title"
+style dek text font=sans size=15 color=muted use="one-line takeaway under the title"
+style eyebrow text font=sans size=10 weight=700 color=muted caps=1 spacing=0.08 use="small kicker above the title"
+style caption text font=sans size=11 color=muted use="small explanatory text"
+style note text font=serif italic=1 size=15 color=muted use="a short aside"
+style small text font=sans size=10 color=soft use="source line or technical detail"

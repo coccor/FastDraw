@@ -2,7 +2,7 @@
 # Render the magazine looks on five trial diagrams. Usage: render-mag.sh <worktree>
 set -euo pipefail
 W="$1"; C="$W/looks/candidates"; SRC="$C/mock-src"; T="$(dirname "$0")"
-for L in gazette quarterly schematic-mag; do
+for L in ${LOOKS:-gazette quarterly schematic-mag}; do
   OUT="$C/mag/$L"; mkdir -p "$OUT"
   concept=none; [ "$L" = schematic-mag ] && concept=echo
   for d in high-level state bar swimlane process; do
