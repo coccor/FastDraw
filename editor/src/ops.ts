@@ -2,8 +2,8 @@
 import { parseStatements } from '../../src/parse.ts';
 import type { Tok } from '../../src/parse.ts';
 import type { Scene, Shape, TextEl, Conn, End, Box, Pt } from '../../src/scene.ts';
-import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement } from '../../src/edit.ts';
-import type { Patch } from '../../src/edit.ts';
+import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement, setRows as editRows } from '../../src/edit.ts';
+import type { Patch, RowSpec } from '../../src/edit.ts';
 
 export type El = { kind: 'shape'; el: Shape } | { kind: 'text'; el: TextEl } | { kind: 'conn'; el: Conn };
 
@@ -31,10 +31,12 @@ export function stmtToks(src: string, line: number): Tok[] | undefined {
 
 // The text a person typed for this element, exactly as written in the file.
 export function rawText(src: string, e: El): string {
-  return stmtToks(src, e.el.line)?.find((t) => t.t === 'str')?.v ?? '';
+  const toks = stmtToks(src, e.el.line) ?? [];
+  const rows = toks.findIndex((t) => t.t === 'word' && (t.v === '|' || t.v === '|='));
+  return toks.find((t, i) => t.t === 'str' && (rows < 0 || i < rows))?.v ?? '';
 }
 
-const fmtEnd = (e: End, v: number) => `${e.id}${e.side ? '.' + e.side : ''}@${Math.round(v)}`;
+const fmtEnd = (e: End, v: number) => `${e.id}${e.row ? '.' + e.row : ''}${e.side ? '.' + e.side : ''}@${Math.round(v)}`;
 const shiftPts = (v: string, dx: number, dy: number) =>
   v.split(';').map((p) => { const [x, y] = p.split(',').map(Number); return `${Math.round(x + dx)},${Math.round(y + dy)}`; }).join(';');
 
@@ -122,9 +124,10 @@ export function setStyle(src: string, sc: Scene, ids: string[], name: string): s
   return patchSource(src, patches);
 }
 
+// Choosing plain / one arrowhead / two arrowheads also forgets any hand-picked end markers.
 export function setOperator(src: string, sc: Scene, ids: string[], op: string): string {
   const patches = new Map<number, Patch>();
-  for (const id of ids) { const e = find(sc, id); if (e?.kind === 'conn') patches.set(e.el.line, (t) => setOp(t, op)); }
+  for (const id of ids) { const e = find(sc, id); if (e?.kind === 'conn') patches.set(e.el.line, (t) => setProp(setProp(setOp(t, op), 'head', null), 'tail', null)); }
   return patchSource(src, patches);
 }
 
@@ -175,8 +178,23 @@ export function duplicateElements(src: string, sc: Scene, ids: string[], dx = 24
   return { src: cur, ids: newIds };
 }
 
-export function addShape(src: string, style: string, b: Box, sized: boolean): { src: string; id: string } {
+// Replace the rows of a table. Arrows that ended on a row that is gone now end on the table itself.
+export function setRows(src: string, sc: Scene, s: Shape, rows: RowSpec[]): string {
+  const keep = new Set(rows.map((r) => r.id).filter(Boolean));
+  const patches = new Map<number, Patch>([[s.line, (t) => editRows(t, rows)]]);
+  for (const c of sc.conns) {
+    const lost = (['a', 'b'] as const).filter((w) => c[w].id === s.id && c[w].row && !keep.has(c[w].row));
+    if (lost.length) patches.set(c.line, (t) => lost.reduce((acc, w) => setEnd(acc, w, s.id), t));
+  }
+  return patchSource(src, patches);
+}
+
+export function addShape(src: string, style: string, b: Box, sized: boolean, table = false): { src: string; id: string } {
   const id = freshId(src, style.replace(/-/g, '_'));
+  if (table) {
+    const head = `${id}: ${style} "Name" at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}`;
+    return { src: appendStatements(src, [head + '\n  | r1 "first" "value"\n  | r2 "second" "value"']), id };
+  }
   const line = `${id}: ${style} at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}`;
   return { src: appendStatements(src, [line]), id };
 }

@@ -18,6 +18,7 @@ function Thumb({ look, style }: { look: Look; style: Style }) {
       w = Math.max(176, sw + 24); h = sh + 24;
       const label = sw < 40 ? '' : p['title.pos'] === 'top' ? '"Group"' : '"Name"';
       src = `canvas ${w}x${h}\ns: ${style.name} ${label} at ${(w - sw) / 2},${(h - sh) / 2} ${sw}x${sh}`;
+      if (p.shape === 'table') { h = 104; src = `canvas ${w}x${h}\ns: ${style.name} "Name" at 24,12 128x0\n  | "first" "value"\n  | "second" "value"`; }
     } else if (style.kind === 'line') {
       src = `canvas ${w}x${h}\n20,${h / 2 + 6} ${p.head === 'none' || p.route === 'straight' ? '--' : '->'} ${w - 20},${h / 2 + 6} "label" style=${style.name}`;
     } else {

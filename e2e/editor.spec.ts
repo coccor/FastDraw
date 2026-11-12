@@ -235,3 +235,51 @@ test('markup in pasted text is drawn as text, and problems are listed and select
   await expect(page.locator('[data-handle]')).toHaveCount(4);
   expect(errors).toEqual([]);
 });
+
+const ER = 'canvas 880x360\nusers: table "users" at 40,80\n  | id "id" "uuid" "PK"\n  | email "email" "text"\norders: table "orders" at 440,80\n  | id "id" "uuid" "PK"\n  | user_id "user_id" "uuid" "FK"\nfk: orders.user_id -- users.id style=relation tail=many head=only-one\n';
+
+test('tables: edit, add and remove rows in the panel; arrows follow rows; line ends are chosen from a list', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, ER);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  await page.mouse.click(...Object.values(await corner(page, 'users')) as [number, number]);
+  const row = (n: number) => page.getByLabel(`Row ${n}`, { exact: true });
+  await row(2).fill('email | citext | UK');
+  await row(2).press('Enter');
+  expect(await source(page)).toContain('  | email "email" "citext" "UK"\n');
+  await page.getByRole('button', { name: 'Add row' }).click();
+  expect(await source(page)).toContain('  | email "email" "citext" "UK"\n  | r1 "name" "value"\norders:');
+  // moving the table keeps every row on its own line
+  await page.keyboard.press('ArrowDown');
+  expect(await source(page)).toContain('users: table "users" at 40,84\n  | id "id" "uuid" "PK"\n');
+  // removing the row an arrow ends on re-attaches the arrow to the table
+  await row(1).fill('');
+  await row(1).press('Enter');
+  expect(lineOf(await source(page), 'fk')).toMatch(/^fk: orders\.user_id -- users /);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // drag the arrow's end onto a row that has an id
+  const k = await zoom(page);
+  await page.keyboard.press('Escape');
+  const mid = await page.locator('polyline[data-id="fk"]').boundingBox();
+  await page.mouse.click(mid!.x + mid!.width / 2, mid!.y + mid!.height / 2);
+  const end = (await page.locator('[data-end="b"]').boundingBox())!;
+  const target = await at(page, 120, 84 + 32 + 24 + 12); // second row of users: r1
+  await drag(page, { x: end.x + end.width / 2, y: end.y + end.height / 2 }, target.x - end.x - end.width / 2, target.y - end.y - end.height / 2);
+  expect(lineOf(await source(page), 'fk')).toMatch(/^fk: orders\.user_id -- users\.r1 /);
+  await page.getByLabel('End of the line').selectOption('zero-one');
+  expect(lineOf(await source(page), 'fk')).toContain('head=zero-one');
+  await page.locator('.panel button[title="Arrowhead at the end"]').click();
+  expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -> users.r1 style=relation');
+  void k;
+  expect(errors).toEqual([]);
+});
+
+test('a table can be placed from the look styles gallery', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.locator('.thumbcard', { hasText: 'table' }).first().click();
+  const spot = await at(page, 700, 320);
+  await page.mouse.click(spot.x, spot.y);
+  expect(await source(page)).toMatch(/table: table "Name" at \d+,\d+\n  \| r1 "first" "value"\n  \| r2 "second" "value"\n$/);
+  await expect(page.getByLabel('Row 1', { exact: true })).toHaveValue('first | value');
+});

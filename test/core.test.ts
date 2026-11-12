@@ -6,7 +6,7 @@ import { parseLook } from '../src/look.ts';
 import { buildScene } from '../src/scene.ts';
 import { check } from '../src/check.ts';
 import { renderSvg } from '../src/render.ts';
-import { patchSource, setAt, setSize, setText, setProp, setKind, setEnd, fmtStmt, appendStatements, moveStatement, freshId } from '../src/edit.ts';
+import { patchSource, setAt, setSize, setText, setProp, setKind, setEnd, fmtStmt, appendStatements, moveStatement, freshId, setRows } from '../src/edit.ts';
 import { loadScene, readSources } from '../src/node.ts';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -246,4 +246,57 @@ test('a label that would land on a box moves to the other side of its line, unle
   assert.ok(l.y >= m.y + m.h || l.y + l.h <= m.y);
   // an explicit side is the author's call, even when it collides
   assert.ok(check(scene(src(' lside=above'))).some((i) => i.msg.includes('collides with m')));
+});
+
+const TABLES = `users: table "users" at 40,100
+  | id "id" "uuid" "PK"
+  | email "email" "text"
+  | ---
+  | "created_at" "timestamptz"
+orders: table "orders" at 400,100 240x0
+  | id "id" "uuid"
+  | user_id "user_id" "uuid" "FK"
+fk: orders.user_id -- users.id tail=many head=only-one style=arrow
+`;
+
+test('a table sizes itself from its rows, and an arrow can end on a row', () => {
+  const sc = scene(TABLES);
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const users = sc.shapes.find((s) => s.id === 'users')!, orders = sc.shapes.find((s) => s.id === 'orders')!;
+  assert.equal(users.h, 32 + 3 * 24); // header and three rows; the divider takes no room
+  assert.equal(orders.w, 240);
+  assert.equal(users.rows!.map((r) => r.kind).join(), 'row,row,rule,row');
+  const fk = sc.conns[0], row = (s: typeof users, id: string) => s.rows!.find((r) => r.id === id)!;
+  assert.deepEqual(fk.pts[0], { x: orders.x, y: row(orders, 'user_id').y + 12 });
+  assert.deepEqual(fk.pts[fk.pts.length - 1], { x: users.x + users.w, y: row(users, 'id').y + 12 });
+  assert.equal(fk.headM, 'only-one');
+  assert.equal(fk.tailM, 'many');
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('>timestamptz<') && svg.includes('>users<'));
+});
+
+test('tables and markers report mistakes in words an agent can act on', () => {
+  const msgs = (body: string) => check(scene(body)).map((i) => i.msg).join('\n');
+  assert.match(msgs(TABLES + 'x: node "X" at 40,300\nx -> users.nope\n'), /"users" has no row called "nope"; its rows: id, email/);
+  assert.match(msgs('x: node "X" at 40,40\n  | "a"\n'), /only work on a table style/);
+  assert.match(msgs('a: node "A" at 40,40\nb: node "B" at 300,40\na -> b head=fork\n'), /"fork" is not an end marker; use one of: none, arrow/);
+  assert.match(msgs('x: node "X" at 40,300\nx -> x.middle\n'), /only a table has rows/);
+});
+
+test('markers: -> keeps the style head, head= and tail= override, <-> mirrors', () => {
+  const c = (line: string) => scene(`a: node "A" at 40,40\nb: node "B" at 300,40\n${line}\n`).conns[0];
+  assert.deepEqual([c('a -> b').tailM, c('a -> b').headM], ['none', 'arrow']);
+  assert.deepEqual([c('a -- b').tailM, c('a -- b').headM], ['none', 'none']);
+  assert.deepEqual([c('a <-> b head=open').tailM, c('a <-> b head=open').headM], ['open', 'open']);
+  assert.deepEqual([c('a -> b head=triangle tail=diamond-solid').tailM, c('a -> b head=triangle tail=diamond-solid').headM], ['diamond-solid', 'triangle']);
+  assert.ok(renderSvg(scene('a: node "A" at 40,40\nb: node "B" at 300,40\na -- b tail=zero-many\n')).includes('<circle'));
+});
+
+test('editing a table keeps one row per line and leaves its cells alone', () => {
+  const src = `look "x.look"\ncanvas 800x400\n${TABLES}`;
+  const moved = patchSource(src, new Map([[3, (t) => setProp(setText(setAt(t, 80, 120), 'people'), 'fill', 'accent/0.08')]]));
+  assert.equal(moved.split('\n').slice(2, 7).join('\n'), 'users: table "people" at 80,120 fill=accent/0.08\n  | id "id" "uuid" "PK"\n  | email "email" "text"\n  | ---\n  | "created_at" "timestamptz"');
+  assert.equal(moved.split('\n').slice(7).join('\n'), src.split('\n').slice(7).join('\n'));
+  const fewer = patchSource(src, new Map([[3, (t) => setRows(t, [{ kind: 'head', cells: ['a', 'b'] }, { id: 'r1', kind: 'row', cells: ['x', ''] }])]]));
+  assert.equal(fewer.split('\n').slice(2, 5).join('\n'), 'users: table "users" at 40,100\n  |= "a" "b"\n  | r1 "x" ""');
 });

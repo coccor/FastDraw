@@ -4,7 +4,9 @@ import {
   BringToFront, Copy, SendToBack, Trash2,
 } from 'lucide-react';
 import { color } from '../../src/look.ts';
-import type { Scene } from '../../src/scene.ts';
+import { MARKERS } from '../../src/scene.ts';
+import type { Scene, Row } from '../../src/scene.ts';
+import type { RowSpec } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
 import type { AlignMode } from './ops.ts';
 
@@ -18,6 +20,7 @@ export type PanelActions = {
   duplicate: () => void;
   setCanvas: (w: number, h: number) => void;
   resetRoute: () => void;
+  setRows: (rows: RowSpec[]) => void;
 };
 
 function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
@@ -44,6 +47,41 @@ export function TextField({ label, value, onCommit }: { label: string; value: st
         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
     </label>
   );
+}
+
+const MARKER_NAMES: Record<string, string> = {
+  none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond',
+  dot: 'Dot', circle: 'Circle', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
+};
+
+// The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
+function RowsEditor({ rows, onChange }: { rows: Row[]; onChange: (rows: RowSpec[]) => void }) {
+  const specs: RowSpec[] = rows.map((r) => ({ id: r.id, kind: r.kind, cells: r.cells, p: r.p }));
+  const show = (r: RowSpec) => (r.kind === 'rule' ? '---' : r.cells.join(' | '));
+  const nextId = () => { for (let i = 1; ; i++) if (!specs.some((r) => r.id === `r${i}`)) return `r${i}`; };
+  const commit = (i: number, v: string) => {
+    const text = v.trim();
+    if (!text) return onChange(specs.filter((_, k) => k !== i));
+    const next: RowSpec = text === '---' ? { kind: 'rule', cells: [] } : { ...specs[i], kind: specs[i].kind === 'rule' ? 'row' : specs[i].kind, cells: text.split('|').map((c) => c.trim()) };
+    onChange(specs.map((r, k) => (k === i ? next : r)));
+  };
+  return (
+    <section>
+      <h4>Rows</h4>
+      {specs.map((r, i) => <RowInput key={i + show(r)} value={show(r)} label={`Row ${i + 1}`} onCommit={(v) => commit(i, v)} />)}
+      <div className="seg">
+        <button title="Add a row at the bottom" onClick={() => onChange([...specs, { id: nextId(), kind: 'row', cells: ['name', 'value'] }])}>Add row</button>
+        <button title="Add a dividing line at the bottom" onClick={() => onChange([...specs, { kind: 'rule', cells: [] }])}>Add divider</button>
+      </div>
+      <p className="muted small">Separate columns with |. Clear a row to remove it.</p>
+    </section>
+  );
+}
+function RowInput({ value, label, onCommit }: { value: string; label: string; onCommit: (v: string) => void }) {
+  const [v, setV] = React.useState(value);
+  React.useEffect(() => setV(value), [value]);
+  return <input className="rowinput" aria-label={label} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)}
+    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />;
 }
 
 // Small drawn glyphs for the line options, where a picture says more than a word.
@@ -126,6 +164,17 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               <button title="Arrowheads at both ends" className={op === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
             </div>
           </section>
+          <section>
+            <h4>Line ends</h4>
+            {([['tail', 'Start', first.kind === 'conn' ? first.el.tailM : 'none'], ['head', 'End', first.kind === 'conn' ? first.el.headM : 'none']] as const).map(([k, label, cur]) => (
+              <label className="field" key={k}>
+                <span>{label}</span>
+                <select aria-label={`${label} of the line`} value={cur} onChange={(e) => act.setProp(k, e.target.value)}>
+                  {MARKERS.map((m) => <option key={m} value={m}>{MARKER_NAMES[m] ?? m}</option>)}
+                </select>
+              </label>
+            ))}
+          </section>
           {(p.via || p.lpos) && (
             <section>
               <h4>Route</h4>
@@ -157,7 +206,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <p className="muted small">Clear an entry to remove it.</p>
         </section>
       )}
-      {els.length === 1 && first.kind === 'shape' && !first.el.legend && (
+      {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} onChange={act.setRows} />}
+      {els.length === 1 && first.kind === 'shape' && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Extra text</h4>
           <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />

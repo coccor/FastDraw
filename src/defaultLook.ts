@@ -49,12 +49,20 @@ style zone shape=rect radius=6 fill=ink/0.03 stroke=ink/0.18 sw=1 dash=6,4 layer
 style bar shape=rect size=8x80 fill=#ffffff stroke=ink sw=1.2
     use="sequence diagram activation bar, centred on a lifeline; always give WxH"
 
+style table shape=table radius=4 fill=#ffffff stroke=ink sw=1.2 head.fill=ink/0.06 rule=ink/0.1
+    cell.font=mono cell.size=10 detail.color=muted
+    use="an entity, class or database table: a header and rows. One line per row: | id \\"name\\" \\"type\\" \\"key\\". Arrows can end on a row: orders.user_id -> users.id"
+style matrix extends table align=center grid=1 cell.font=sans
+    use="a grid of values: first row with |= for the column headings, first cell of each row is its name"
+
 // ---- lines ----------------------------------------------------------------
 style arrow line stroke=ink sw=1.3 route=ortho radius=6 label.font=sans label.size=10 label.caps=0 label.spacing=0 label.color=muted
     use="default arrow"
 style primary extends arrow stroke=accent sw=2 label.color=accent use="the main path; at most two per diagram"
 style link extends arrow stroke=link label.color=link use="a request crossing a boundary"
 style return extends arrow stroke=muted dash=5,4 use="a response, or something optional or asynchronous"
+style relation line stroke=ink sw=1.2 route=ortho radius=6 label.font=sans label.size=10 label.caps=0 label.spacing=0 label.color=muted
+    use="a relationship between two tables or classes; write it with -- and choose the ends with head= and tail="
 style lifeline line stroke=soft sw=1 dash=2,4 route=straight use="sequence diagram lifeline"
 style rule line stroke=ink/0.15 sw=1 route=straight use="thin separator"
 

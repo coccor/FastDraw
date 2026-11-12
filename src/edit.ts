@@ -16,7 +16,24 @@ export function fmtTok(t: Tok): string {
   if (t.t === 'prop') return `${t.k}=${t.v === '' || /[\s"]/.test(t.v) ? quote(t.v) : t.v}`;
   return t.v;
 }
-export const fmtStmt = (toks: Tok[]) => toks.map(fmtTok).join(' ');
+// A table row ("|" or "|=") starts its own indented line, so tables stay readable after an edit.
+const isRowStart = (t: Tok) => t.t === 'word' && (t.v === '|' || t.v === '|=');
+export const fmtStmt = (toks: Tok[]) => toks.map((t, i) => (i === 0 ? '' : isRowStart(t) ? '\n  ' : ' ') + fmtTok(t)).join('');
+
+export type RowSpec = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; p?: Record<string, string> };
+// Replace all rows of a table statement.
+export function setRows(toks: Tok[], rows: RowSpec[]): Tok[] {
+  const i = toks.findIndex(isRowStart);
+  const out = i >= 0 ? toks.slice(0, i) : toks;
+  for (const r of rows) {
+    out.push({ t: 'word', v: r.kind === 'head' ? '|=' : '|' });
+    if (r.kind === 'rule') { out.push({ t: 'word', v: '---' }); continue; }
+    if (r.id) out.push({ t: 'word', v: r.id });
+    for (const c of r.cells) out.push({ t: 'str', v: c });
+    for (const [k, v] of Object.entries(r.p ?? {})) out.push({ t: 'prop', k, v });
+  }
+  return out;
+}
 
 export type Patch = (toks: Tok[]) => Tok[] | null; // null deletes the statement
 
@@ -84,7 +101,8 @@ export function setSize(toks: Tok[], w: number, h: number): Tok[] {
 }
 
 export function setText(toks: Tok[], text: string): Tok[] {
-  const i = toks.findIndex((t) => t.t === 'str');
+  const r0 = toks.findIndex(isRowStart), lim = r0 >= 0 ? r0 : toks.length;
+  const i = toks.findIndex((t, n) => n < lim && t.t === 'str');
   if (i >= 0) { if (text === '') toks.splice(i, 1); else toks[i] = { t: 'str', v: text }; return toks; }
   if (text === '') return toks;
   const op = opIndex(toks);
@@ -93,9 +111,11 @@ export function setText(toks: Tok[], text: string): Tok[] {
 }
 
 export function setProp(toks: Tok[], k: string, v: string | null): Tok[] {
-  const i = toks.findIndex((t) => t.t === 'prop' && t.k === k);
+  const r0 = toks.findIndex(isRowStart), lim = r0 >= 0 ? r0 : toks.length; // a table's own properties come before its rows
+  const i = toks.findIndex((t, n) => n < lim && t.t === 'prop' && t.k === k);
   if (v === null) { if (i >= 0) toks.splice(i, 1); return toks; }
-  if (i >= 0) toks[i] = { t: 'prop', k, v }; else toks.push({ t: 'prop', k, v });
+  if (i >= 0) toks[i] = { t: 'prop', k, v };
+  else { const r = toks.findIndex(isRowStart); toks.splice(r >= 0 ? r : toks.length, 0, { t: 'prop', k, v }); }
   return toks;
 }
 

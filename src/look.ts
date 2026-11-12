@@ -23,6 +23,13 @@ const BUILTIN: Style[] = [
   { name: 'arrow', kind: 'line', props: { stroke: 'muted', sw: '1.2', head: 'arrow', route: 'ortho', radius: '8' } },
   { name: 'line', kind: 'line', props: { stroke: 'muted', sw: '1', head: 'none', route: 'straight' } },
   {
+    name: 'table', kind: 'shape',
+    props: {
+      shape: 'table', fill: 'paper', stroke: 'ink', sw: '1', size: 'automatic',
+      use: 'a box with a header and rows; add a line per row: | id "cell" "cell". An arrow can end on a row: other -> table.id',
+    },
+  },
+  {
     name: 'legend', kind: 'shape',
     props: {
       shape: 'legend', fill: 'none', stroke: 'none', mask: '0', rule: 'ink/0.12', title: 'Legend', size: 'automatic',

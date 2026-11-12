@@ -10,17 +10,23 @@ export type Pt = { x: number; y: number };
 export type Box = { x: number; y: number; w: number; h: number };
 export type Side = 'top' | 'bottom' | 'left' | 'right';
 export type LegendItem = { style: string; kind: Kind; label: string; x: number; baseline: number; sample: number };
-export type Shape = Box & { id: string; line: number; style: string; p: Props; shape: string; text?: string; back: boolean; legend?: LegendItem[] };
+// One row of a table box. y and h are filled in by the layout; a 'rule' row is a dividing line with no height.
+export type Row = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; p: Props; y: number; h: number };
+export type Col = { x: number; w: number };
+export type Shape = Box & {
+  id: string; line: number; style: string; p: Props; shape: string; text?: string; back: boolean; legend?: LegendItem[];
+  rows?: Row[]; cols?: Col[]; headH?: number;
+};
 export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number };
 export type End = {
   raw: string; kind: 'point' | 'rel' | 'shape' | 'conn';
-  id?: string; side?: Side; v?: number; rel?: Pt;
+  id?: string; row?: string; side?: Side; v?: number; rel?: Pt;
   pt: Pt; dir: Pt | null; fanned?: boolean;
 };
 export type Label = Box & { text: string; cx: number; baseline: number; size: number; spacing: number; font: string };
 export type Conn = {
   id: string; line: number; style: string; p: Props;
-  a: End; b: End; pts: Pt[]; head: boolean; tail: boolean; ortho: boolean; ushape: boolean;
+  a: End; b: End; pts: Pt[]; head: boolean; tail: boolean; headM: string; tailM: string; ortho: boolean; ushape: boolean;
   text?: string; label?: Label;
 };
 export type Scene = {
@@ -28,6 +34,9 @@ export type Scene = {
   fontFiles?: string[]; // extra font files the look brings (command line only)
   shapes: Shape[]; texts: TextEl[]; conns: Conn[]; issues: Issue[];
 };
+
+// What can sit on the end of a line. The last six are the entity-relationship cardinalities.
+export const MARKERS = ['none', 'arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many'];
 
 const DIRS: Record<Side, Pt> = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -157,6 +166,33 @@ function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
   return hits(other) ? first : other;
 }
 
+// Lays out a table box: a header with the title, then rows of cells in columns. The height always follows the rows.
+function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => void): void {
+  const p = sh.p;
+  const fs = num(p['cell.size'], 10), font = p['cell.font'] ?? 'mono';
+  const rowH = num(p['row.h'], 24), pad = num(p['cell.pad'], 12), gap = num(p['cell.gap'], 16);
+  const headH = sh.text ? num(p['head.h'], 32) : 0;
+  const n = Math.max(0, ...rows.map((r) => r.cells.length));
+  const widths: number[] = [];
+  for (let j = 0; j < n; j++) widths.push(Math.max(...rows.map((r) => (r.cells[j] === undefined ? 0 : textWidth(r.cells[j], fs, font, r.kind === 'head' ? 600 : 400, 0)))));
+  if (p.align === 'center' && n > 1) { const m = Math.max(...widths.slice(1)); for (let j = 1; j < n; j++) widths[j] = m; }
+  const natural = n ? pad * 2 + widths.reduce((a, b) => a + b, 0) + gap * (n - 1) : 0;
+  const titleW = sh.text ? textWidth(sh.text, num(p['title.size'], 12), p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0)) + pad * 2 : 0;
+  const W = Math.ceil(Math.max(minW, natural, titleW, 48) / 4) * 4;
+  if (n) widths[0] += W - natural; // spare width goes to the first column, so the others sit against the right edge
+  const cols: Col[] = [];
+  let x = pad;
+  for (const w of widths) { cols.push({ x, w }); x += w + gap; }
+  let y = sh.y + headH;
+  const seen = new Set<string>();
+  for (const r of rows) {
+    r.y = y; r.h = r.kind === 'rule' ? 0 : num(r.p.h, rowH); y += r.h;
+    if (r.id) { if (seen.has(r.id)) err(`the row id "${r.id}" is used twice in ${sh.id}`); seen.add(r.id); }
+  }
+  sh.w = W; sh.h = Math.max(y - sh.y, rowH);
+  sh.rows = rows; sh.cols = cols; sh.headH = headH;
+}
+
 function parseEnd(raw: string): End | null {
   const base = { raw, pt: { x: 0, y: 0 }, dir: null };
   // relative end: starts with "+", or both numbers carry a sign (+0,260  +40,-20  -40,+0)
@@ -164,8 +200,13 @@ function parseEnd(raw: string): End | null {
   if (m) return { ...base, kind: 'rel', rel: { x: +m[1], y: +m[2] } };
   m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(raw);
   if (m) return { ...base, kind: 'point', pt: { x: +m[1], y: +m[2] } };
-  m = /^([A-Za-z_][\w-]*)(?:\.(top|bottom|left|right))?(?:@(-?[\d.]+))?$/.exec(raw);
-  if (m) return { ...base, kind: 'shape', id: m[1], side: m[2] as Side | undefined, v: m[3] === undefined ? undefined : +m[3] };
+  // id, id.side, id.side@pos, and for a table row: id.row or id.row.left|right
+  m = /^([A-Za-z_][\w-]*)(?:\.([A-Za-z_][\w-]*))?(?:\.(left|right))?(?:@(-?[\d.]+))?$/.exec(raw);
+  if (m) {
+    const isSide = m[2] !== undefined && m[2] in DIRS;
+    if (isSide && m[3]) return null;
+    return { ...base, kind: 'shape', id: m[1], row: isSide ? undefined : m[2], side: (isSide ? m[2] : m[3]) as Side | undefined, v: m[4] === undefined ? undefined : +m[4] };
+  }
   return null;
 }
 
@@ -240,9 +281,16 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         continue;
       }
       const p = { ...style.props, ...over };
+      // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
+      const styleHead = style.props.head && style.props.head !== 'none' ? style.props.head : 'arrow';
+      const headM = over.head ?? (op === '--' ? 'none' : styleHead);
+      const tailM = over.tail ?? (op === '<->' ? headM : op === '--' ? 'none' : style.props.tail ?? 'none');
+      for (const mk of [headM, tailM]) if (!MARKERS.includes(mk)) err(st.line, `"${mk}" is not an end marker; use one of: ${MARKERS.join(', ')}`);
+      const ok = (mk: string) => (MARKERS.includes(mk) ? mk : 'arrow');
       conns.push({
         id: register('conn', 'c'), line: st.line, style: styleName, p, a, b, pts: [],
-        head: op !== '--', tail: op === '<->', ortho: (p.route ?? 'ortho') !== 'straight', ushape: false, text,
+        head: headM !== 'none', tail: tailM !== 'none', headM: ok(headM), tailM: ok(tailM),
+        ortho: (p.route ?? 'ortho') !== 'straight', ushape: false, text,
       });
       continue;
     }
@@ -256,8 +304,20 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     }
     let text: string | undefined, at: Pt | undefined, size: { w: number; h: number } | undefined;
     const over: Props = {};
+    const rows: Row[] = [];
     for (; i < toks.length; i++) {
       const t = toks[i];
+      if (t.t === 'word' && (t.v === '|' || t.v === '|=')) { rows.push({ kind: t.v === '|' ? 'row' : 'head', cells: [], p: {}, y: 0, h: 0 }); continue; }
+      const row = rows[rows.length - 1];
+      if (row) {
+        // everything after a "|" belongs to that row: an optional id, then one "text" per column
+        if (t.t === 'str') row.cells.push(t.v);
+        else if (t.t === 'prop') row.p[t.k!] = t.v;
+        else if (t.v === '---' && !row.cells.length && !row.id) row.kind = 'rule';
+        else if (!row.id && !row.cells.length && /^[A-Za-z_][\w-]*$/.test(t.v) && !(t.v in DIRS)) row.id = t.v;
+        else err(st.line, `unexpected word "${t.v}" in a table row; a row is: | id "cell" "cell" (the id is optional, and cannot be top, bottom, left or right)`);
+        continue;
+      }
       if (t.t === 'str') text = text ?? t.v;
       else if (t.t === 'prop') over[t.k!] = t.v;
       else if (t.v === 'at') {
@@ -294,6 +354,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
+    if (sh.shape === 'table') layoutTable(sh, rows, size0?.w ?? 0, (m) => err(st.line, m));
+    else if (rows.length) err(st.line, `rows (the parts starting with "|") only work on a table style; "${styleName}" is not one`);
     if (sh.shape === 'legend') {
       // one statement lays out a whole legend: every style="label" pair is an entry
       const entries = Object.entries(over).filter(([k]) => k !== 'style' && look.styles.has(k));
@@ -343,12 +405,27 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   for (const s of shapes) shapeById.set(s.id, s);
   for (const t of texts) shapeById.set(t.id, { x: t.x - 4, y: t.y - 2, w: t.w + 8, h: t.h + 4 });
   const connById = new Map(conns.map((c) => [c.id, c]));
+  const rowsById = new Map(shapes.filter((s) => s.rows).map((s) => [s.id, s.rows!]));
+  // what an end attaches to: the whole shape, or one row of a table
+  const tgt = (e: End): Box & { shape?: string } => {
+    const S = shapeById.get(e.id!)!;
+    const r = e.row ? rowsById.get(e.id!)?.find((q) => q.id === e.row) : undefined;
+    return r ? { x: S.x, y: r.y, w: S.w, h: r.h } : S;
+  };
+  const sideKey = (e: End) => `${e.id}${e.row ? '.' + e.row : ''}|${e.side}`;
   const done = new Set<Conn>();
   const bad = new Set<Conn>();
 
   for (const c of conns) for (const e of [c.a, c.b]) {
     if (e.kind !== 'shape') continue;
-    if (shapeById.has(e.id!)) continue;
+    if (shapeById.has(e.id!)) {
+      if (e.row && !rowsById.get(e.id!)?.some((r) => r.id === e.row)) {
+        const have = (rowsById.get(e.id!) ?? []).filter((r) => r.id).map((r) => r.id);
+        err(c.line, `${e.raw}: "${e.id}" has no row called "${e.row}"${have.length ? `; its rows: ${have.join(', ')}` : ' (only a table has rows; a side is top, bottom, left or right)'}`);
+        bad.add(c);
+      }
+      continue;
+    }
     if (connById.has(e.id!)) {
       e.kind = 'conn';
       if (e.side) { err(c.line, `${e.raw}: "${e.id}" is a line, so it has no sides; use ${e.id}@position`); bad.add(c); }
@@ -360,7 +437,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const taken: [Pt, Pt][] = []; // segments already routed, so detours can keep off them
   const resolvePass = (batch: Conn[]) => {
     const boxOf = (e: End): Box | null => {
-      if (e.kind === 'shape') return shapeById.get(e.id!)!;
+      if (e.kind === 'shape') return tgt(e);
       if (e.kind === 'point') return { x: e.pt.x, y: e.pt.y, w: 0, h: 0 };
       if (e.kind === 'conn') { e.pt = pointAlong(connById.get(e.id!)!, e.v!); return { x: e.pt.x, y: e.pt.y, w: 0, h: 0 }; }
       return null;
@@ -369,9 +446,12 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     for (const c of batch) {
       const ba = boxOf(c.a), bb = boxOf(c.b);
       const relSide = (r: Pt): Side => (Math.abs(r.y) >= Math.abs(r.x) ? (r.y >= 0 ? 'bottom' : 'top') : r.x >= 0 ? 'right' : 'left');
-      if (c.a.kind === 'shape' && !c.a.side) { c.a.side = bb ? autoSides(ba!, bb)[0] : relSide(c.b.rel!); c.a.fanned = true; }
+      // a table row is reached from the left or right edge of the table, whichever faces the other end
+      const rowSide = (me: Box, other: Box | null, rel: Pt): Side => ((other ? cx(other) >= cx(me) : rel.x >= 0) ? 'right' : 'left');
+      if (c.a.kind === 'shape' && !c.a.side) { c.a.side = c.a.row ? rowSide(ba!, bb, c.b.rel ?? { x: 0, y: 0 }) : bb ? autoSides(ba!, bb)[0] : relSide(c.b.rel!); c.a.fanned = true; }
       if (c.b.kind === 'shape' && !c.b.side) {
-        c.b.side = ba ? autoSides(ba, bb!)[1] : relSide({ x: -c.a.rel!.x, y: -c.a.rel!.y });
+        const back = c.a.rel ? { x: -c.a.rel.x, y: -c.a.rel.y } : { x: 0, y: 0 };
+        c.b.side = c.b.row ? rowSide(bb!, ba, back) : ba ? autoSides(ba, bb!)[1] : relSide(back);
         c.b.fanned = true;
       }
     }
@@ -379,7 +459,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     const groups = new Map<string, { c: Conn; e: End; o: End }[]>();
     for (const c of batch) for (const [e, o] of [[c.a, c.b], [c.b, c.a]] as [End, End][]) {
       if (e.kind !== 'shape' || e.v !== undefined) continue;
-      const k = `${e.id}|${e.side}`;
+      const k = sideKey(e);
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k)!.push({ c, e, o });
     }
@@ -395,7 +475,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     for (const c of batch) {
       for (const e of [c.a, c.b]) {
         if (e.kind === 'shape') {
-          const S = shapeById.get(e.id!)!;
+          const S = tgt(e);
           e.pt = sidePoint(S, e.side!, e.v, frac.get(e) ?? 0.5);
           e.dir = DIRS[e.side!];
           if (e.v !== undefined && e.v > 1) {
@@ -409,7 +489,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       const a = c.a, b = c.b;
       const opposing = a.dir && b.dir && a.dir.x === -b.dir.x && a.dir.y === -b.dir.y;
       if (a.kind === 'shape' && b.kind === 'shape' && opposing) {
-        const A = shapeById.get(a.id!)!, B = shapeById.get(b.id!)!;
+        const A = tgt(a), B = tgt(b);
         const horiz = a.side === 'top' || a.side === 'bottom';
         const lo = horiz ? Math.max(A.x, B.x) : Math.max(A.y, B.y);
         const hi = horiz ? Math.min(A.x + A.w, B.x + B.w) : Math.min(A.y + A.h, B.y + B.h);
@@ -420,7 +500,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
             const small = (horiz ? A.w <= B.w : A.h <= B.h) ? ca : cb, other = small === ca ? cb : ca;
             pos = within(small, lo, hi) ? small : within(other, lo, hi) ? other : (lo + hi) / 2;
           } else if (!single.has(a) && !single.has(b) && a.v === undefined && b.v === undefined) {
-            const ga = groups.get(`${a.id}|${a.side}`)!, gb = groups.get(`${b.id}|${b.side}`)!;
+            const ga = groups.get(sideKey(a))!, gb = groups.get(sideKey(b))!;
             const same = ga.length === gb.length && ga.every((m) => gb.some((n) => n.c === m.c));
             if (same) pos = lo + (hi - lo) * frac.get(a)!;
           } else if (single.has(a) && b.v !== undefined) pos = horiz ? b.pt.x : b.pt.y;
@@ -433,7 +513,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       }
       for (const [e, o] of [[a, b], [b, a]] as [End, End][]) {
         if (e.kind !== 'shape' || !single.has(e) || (o.kind !== 'point' && o.kind !== 'conn')) continue;
-        const S = shapeById.get(e.id!)!;
+        const S = tgt(e);
         const horiz = e.side === 'top' || e.side === 'bottom';
         const pos = horiz ? o.pt.x : o.pt.y;
         if (within(pos, (horiz ? S.x : S.y) + 2, (horiz ? S.x + S.w : S.y + S.h) - 2)) e.pt = sidePoint(S, e.side!, Math.max(pos, 1.0001), 0.5);

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseLook } from '../../src/look.ts';
 import { buildScene, lookPath } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn } from '../../src/scene.ts';
+import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
 import { renderBody, renderSvg } from '../../src/render.ts';
 import * as ops from './ops.ts';
@@ -277,7 +278,11 @@ export function App() {
   // What a connector end dropped at p should attach to: a shape, a point on a straight line, or a free point.
   const attachAt = (sc: Scene, p: Pt, not?: string): string => {
     const s = shapeAt(sc, p);
-    if (s) return s.id;
+    if (s) {
+      // on a table, a row that has an id takes the arrow; anywhere else the whole table does
+      const row = s.rows?.find((r) => r.id && p.y >= r.y && p.y <= r.y + r.h);
+      return row ? `${s.id}.${row.id}` : s.id;
+    }
     for (const c of sc.conns) {
       if (c.id === not || c.pts.length !== 2 || c.head || c.id.startsWith('_')) continue;
       const [a, b] = c.pts;
@@ -473,7 +478,8 @@ export function App() {
       const box = big
         ? { x: snap(Math.min(d.start.x, p.x)), y: snap(Math.min(d.start.y, p.y)), w: snap(Math.abs(p.x - d.start.x)), h: snap(Math.abs(p.y - d.start.y)) }
         : { x: snap(d.start.x - dw / 2), y: snap(d.start.y - dh / 2), w: dw, h: dh };
-      const r = ops.addShape(src, d.style, box, big || !m);
+      const table = style.props.shape === 'table';
+      const r = ops.addShape(src, d.style, table && !big ? { ...box, x: snap(d.start.x - 80), y: snap(d.start.y - 40) } : box, table ? big : big || !m, table);
       commit(r.src, [r.id]); doneDrawing();
       return;
     }
@@ -519,6 +525,7 @@ export function App() {
     group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
     ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
+    setRows: (rows: RowSpec[]) => { const e = ops.find(scene, sel[0]); if (src !== null && e?.kind === 'shape') commit(ops.setRows(src, scene, e.el, rows)); },
     legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no look styles yet'); },
   };
   const actRef = useRef(act); actRef.current = act;

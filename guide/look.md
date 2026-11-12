@@ -68,7 +68,7 @@ font sans "Fira Sans"
 
 | Key | Meaning |
 |---|---|
-| `shape=` | `rect`, `ellipse`, `diamond`, or `path` |
+| `shape=` | `rect`, `ellipse`, `diamond`, `path`, or `table` (a header and rows, see below) |
 | `path="..."` | with `shape=path`: an outline written in a box that runs from 0,0 to 1,1 and is stretched to the element. Commands `M`, `L`, `C`, `Q`, `Z` only, absolute. Example cylinder: `"M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"`. Every part of a path is filled, so a detail line such as the rim is traced there and back to enclose no area |
 | `radius=` | corner radius of a `rect`; half the height or more makes a pill |
 | `size=WxH` | default size when a diagram gives none |
@@ -83,6 +83,18 @@ On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `ta
 
 The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a paper-coloured patch behind it.
 
+**Table styles** (`shape=table`) use `fill`, `stroke`, `sw`, `radius`, `dash` and `title.*` like any box, plus:
+
+| Key | Meaning |
+|---|---|
+| `head.fill=`, `head.h=` | the header band's colour and height (default 32) |
+| `row.h=` | row height (default 24) |
+| `cell.font=`, `cell.size=`, `cell.color=` | cell text; `cell.color` is the first column |
+| `detail.color=` | text colour of every column after the first |
+| `rule=` | colour of the thin lines between rows; `rules=0` removes them |
+| `cell.pad=`, `cell.gap=` | space at the left and right edges (default 12) and between columns (default 16) |
+| `align=center`, `grid=1` | centre the columns after the first; draw lines between columns |
+
 **Line styles** (`style name line ...`)
 
 | Key | Meaning |
@@ -90,14 +102,15 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 | `stroke=`, `sw=`, `dash=` | colour, width, dash pattern |
 | `route=` | `ortho` (right-angle turns) or `straight` |
 | `radius=` | corner radius of the turns |
-| `head=none` | a style meant for plain lines, never arrows |
+| `head=` | the marker `->` draws: `arrow` (default), `open`, `triangle`, `diamond`, `diamond-solid`, `dot`, `circle`, or one of the relationship ends (`one`, `only-one`, `many`, `one-many`, `zero-one`, `zero-many`). `head=none` marks a style meant for plain lines, never arrows |
+| `tail=` | a marker for the start of the line, if the style always has one |
 | `label.*` | the text on the line: `label.font`, `label.size`, `label.color`, `label.spacing`, `label.caps=0` to keep the label's own case (default is capitals) |
 
 **Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`.
 
 ### Built-in styles you can restyle
 
-`rect`, `ellipse`, `diamond`, `text`, `arrow`, `line` and `legend` exist in every look. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
+`rect`, `ellipse`, `diamond`, `table`, `text`, `arrow`, `line` and `legend` exist in every look. Redefine one to change it. For the legend: `style legend extends legend rule=ink/0.2 title="Key" title.font=sans item.size=10`. Its keys are `rule` (the line's colour), `title` (heading text, or `none`), `title.font`, `title.size`, `title.color`, `title.spacing`, `title.caps`, and `item.font`, `item.size`, `item.color` for the entries.
 
 ### Guidance
 
@@ -116,6 +129,6 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 ## Limits today
 
 - Shapes cannot contain icons or extra drawn details beyond the outline, the tag and the ghost number. The tag's position is fixed.
-- The background can have dots but not grid lines. Arrowheads have one shape.
+- The background can have dots but not grid lines.
 - `path` outlines have no arcs (`A`); use curves (`C`, `Q`). Arrows attach to the outline's bounding box.
 - Exported images carry the diagram and look but not the font files, so someone reopening an image without the repo sees fallback fonts for any font that is not bundled.

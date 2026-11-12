@@ -52,6 +52,29 @@ Text properties a shape understands (if the look's style supports them):
 | `tag="API"` | a 3–4 letter marker in the top-left corner |
 | `ghost="01"` | a large faint number in the bottom-right corner |
 
+### Tables
+
+A table is a box with a header and rows, for entities, classes, database tables and grids of values. Write the box as usual, then one indented line per row, each starting with `|`:
+
+```
+users: table "users" at 40,100
+  | id    "id"         "uuid"        "PK"
+  | email "email"      "text"        "UK"
+  |       "created_at" "timestamptz"
+  | ---
+  |       "note"       "soft-deleted rows stay"
+```
+
+- A row is `| id "cell" "cell" ...`: one quoted text per column. The row id is optional; give one to every row an arrow ends on. It cannot be `top`, `bottom`, `left` or `right`.
+- `| ---` draws a full dividing line (between the attributes and the operations of a class, say).
+- `|= "Role" "Read" "Write"` is a heading row, drawn bold on a tint. Use it for the column headings of a grid.
+- The size works itself out: columns are as wide as their longest cell and the height follows the rows (32px header, 24px per row with the built-in look). To make a table wider, give a width: `at 40,100 240x0`. Spare width goes to the first column.
+- A row can have its own tint: `| late "Shipping" "3 days" fill=accent/0.1`.
+- `align=center grid=1` on the table centres every column after the first and draws column lines, for a matrix.
+- Rows come last in the statement. Properties of the table itself go on the first line.
+
+An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left or right edge of the table, level with that row, on the side facing the other end; `users.id.left` forces a side.
+
 Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.
 
 ### Connectors
@@ -66,6 +89,22 @@ Any appearance property can be overridden on one element: `fill=`, `stroke=`, `s
 
 `style=name` picks a line style from the look. Without it, `->` uses `arrow` and `--` uses `line`.
 
+`head=` and `tail=` put a marker of your choice on the `to` end and the `from` end. They work with any operator; with `--` they are the only markers drawn.
+
+| Marker | Looks like | Usual meaning |
+|---|---|---|
+| `arrow` | filled arrowhead | the default head |
+| `open` | two strokes, not filled | a dependency, an asynchronous message |
+| `triangle` | hollow triangle | inherits from / implements (points at the parent) |
+| `diamond`, `diamond-solid` | hollow or filled diamond | aggregation, composition (sits on the owner) |
+| `dot`, `circle` | filled or hollow circle | a start point, a provided interface |
+| `one`, `only-one` | one bar, two bars | exactly one |
+| `many`, `one-many` | crow's foot, crow's foot and bar | many, one or more |
+| `zero-one`, `zero-many` | circle and bar, circle and crow's foot | optional one, optional many |
+| `none` | nothing | removes a head the operator would draw |
+
+Example: `orders.user_id -- users.id tail=many head=only-one style=relation` reads "many orders, exactly one user".
+
 An end can be:
 
 | Form | Meaning |
@@ -76,6 +115,7 @@ An end can be:
 | `api.right@172` | a point along that side at absolute coordinate 172 (y for left/right, x for top/bottom) |
 | `400,300` | a free point |
 | `+0,260` | a point relative to the other end (only one end may be relative) |
+| `users.email` | a row of a table: the edge of the table level with that row. `users.email.left` picks the side |
 | `life1@176` | a point on another line: where line `life1` has coordinate 176 (y on a vertical line, x on a horizontal one); a value ≤ 1 is a fraction along it |
 
 Routing: arrows turn at right angles with rounded corners, and go around a box that is in the way without being told. Two ends that line up give a straight line. Otherwise the arrow leaves the first shape sideways and enters the second from above or below, or uses a mid-way step. When several arrows share a side, they are spread along it automatically. Lay boxes out so the important arrows are straight; a detour is a fallback, not a design. To steer a route yourself:

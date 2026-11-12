@@ -58,10 +58,11 @@ function drawLegend(look: Look, s: Shape): string {
     const y = e.baseline;
     if (e.kind === 'line') {
       const sw = Math.min(num(sp.sw, 1.2), 1.6), stroke = col(look, sp.stroke ?? 'muted');
-      const head = !(sp.head === 'none' || sp.route === 'straight');
+      const mk = sp.head === 'none' || sp.route === 'straight' ? 'none' : sp.head ?? 'arrow', head = mk !== 'none';
+      const hm = marker(mk, { x: e.x + 28, y: y - 3 }, { x: e.x, y: y - 3 }, sw, stroke, col(look, look.canvas.paper ?? 'paper'));
       const dash = sp.dash && sp.dash !== 'none' ? ` stroke-dasharray="${esc(sp.dash)}"` : '';
-      out.push(`<line x1="${e.x}" y1="${y - 3}" x2="${e.x + (head ? 21 : 28)}" y2="${y - 3}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`);
-      if (head) out.push(arrowHead({ x: e.x + 28, y: y - 3 }, { x: e.x, y: y - 3 }, sw, stroke));
+      out.push(`<line x1="${e.x}" y1="${y - 3}" x2="${r2(e.x + 28 - hm.trim)}" y2="${y - 3}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`);
+      if (head) out.push(hm.svg);
     } else if (e.kind === 'text') {
       const t = textAttrs(look, { ...sp, size: String(Math.min(num(sp.size, 12), 11)) }, '', { font: 'sans', size: 11, weight: 400, color: 'ink' });
       out.push(`<text x="${e.x}" y="${y}" ${t.a}>Aa</text>`);
@@ -77,8 +78,52 @@ function drawLegend(look: Look, s: Shape): string {
   return out.join('\n');
 }
 
+// A table box: a header band with the title, then rows of cells. Geometry comes from the scene.
+function drawTable(look: Look, s: Shape): string {
+  const p = s.p, out: string[] = [], rows = s.rows ?? [], cols = s.cols ?? [], headH = s.headH ?? 0;
+  const paper = col(look, look.canvas.paper ?? 'paper'), stroke = col(look, p.stroke), sw = num(p.sw, 1);
+  const r = Math.min(num(p.radius, 0), s.w / 2, s.h / 2), x2 = s.x + s.w;
+  out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} fill="${paper}"/>`);
+  out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} fill="${col(look, p.fill)}"/>`);
+  if (headH) {
+    const hy = s.y + headH;
+    out.push(`<path d="M ${s.x},${hy} L ${s.x},${s.y + r} Q ${s.x},${s.y} ${s.x + r},${s.y} L ${x2 - r},${s.y} Q ${x2},${s.y} ${x2},${s.y + r} L ${x2},${hy} Z" fill="${col(look, p['head.fill'] ?? 'ink/0.06')}"/>`);
+    const t = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
+    const txt = p['title.caps'] === '1' ? s.text!.toUpperCase() : s.text!;
+    out.push(`<text x="${s.x + s.w / 2}" y="${r2(hy - headH / 2 + t.size * 0.36)}" text-anchor="middle" ${t.a}>${esc(txt)}</text>`);
+    if (rows.length) out.push(`<line x1="${s.x}" y1="${hy}" x2="${x2}" y2="${hy}" stroke="${stroke}" stroke-width="${sw}"/>`);
+  }
+  const first = textAttrs(look, p, 'cell.', { font: 'mono', size: 10, weight: 400, color: 'ink' });
+  const rest = textAttrs(look, { ...p, 'cell.color': p['detail.color'] ?? 'muted' }, 'cell.', { font: 'mono', size: 10, weight: 400, color: 'muted' });
+  const strong = textAttrs(look, { ...p, 'cell.weight': '600' }, 'cell.', { font: 'mono', size: 10, weight: 600, color: 'ink' });
+  const center = p.align === 'center', rule = col(look, p.rule ?? 'ink/0.1');
+  rows.forEach((row, i) => {
+    if (row.kind === 'rule') { out.push(`<line x1="${s.x}" y1="${row.y}" x2="${x2}" y2="${row.y}" stroke="${stroke}" stroke-width="${sw}"/>`); return; }
+    const fill = row.p.fill ?? (row.kind === 'head' ? p['head.fill'] ?? 'ink/0.06' : undefined);
+    if (fill && fill !== 'none') out.push(`<rect x="${s.x + sw / 2}" y="${row.y}" width="${s.w - sw}" height="${row.h - (i === rows.length - 1 ? sw / 2 : 0)}" fill="${col(look, fill)}"/>`);
+    const prev = rows[i - 1];
+    if (prev && prev.kind !== 'rule' && p.rules !== '0') out.push(`<line x1="${s.x}" y1="${row.y}" x2="${x2}" y2="${row.y}" stroke="${rule}" stroke-width="0.8"/>`);
+    row.cells.forEach((cell, j) => {
+      const c = cols[j]; if (!c || cell === '') return;
+      const a = row.kind === 'head' ? strong : j === 0 ? first : rest;
+      const mid = center && j > 0;
+      out.push(`<text x="${r2(s.x + c.x + (mid ? c.w / 2 : 0))}" y="${r2(row.y + row.h / 2 + a.size * 0.36)}"${mid ? ' text-anchor="middle"' : ''} ${a.a}>${esc(cell)}</text>`);
+    });
+  });
+  if (p.grid === '1' && rows.length) for (const c of cols.slice(1)) {
+    const gx = r2(s.x + c.x - num(p['cell.gap'], 16) / 2);
+    out.push(`<line x1="${gx}" y1="${s.y + headH}" x2="${gx}" y2="${s.y + s.h}" stroke="${rule}" stroke-width="0.8"/>`);
+  }
+  let border = `fill="none" stroke="${stroke}"`;
+  if (p.stroke && p.stroke !== 'none') border += ` stroke-width="${sw}"`;
+  if (p.dash && p.dash !== 'none') border += ` stroke-dasharray="${esc(p.dash)}"`;
+  out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} ${border}/>`);
+  return out.join('\n');
+}
+
 function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'legend') return drawLegend(look, s);
+  if (s.shape === 'table') return drawTable(look, s);
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));
@@ -133,20 +178,43 @@ function pathD(pts: Pt[], radius: number, trimEnd: number, trimStart: number): s
   return d;
 }
 
-function arrowHead(tip: Pt, from: Pt, sw: number, fill: string): string {
+// An end marker drawn at tip, pointing away from `from`. trim is how much of the line to cut back so it
+// does not show through the marker.
+function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, paper: string): { svg: string; trim: number } {
   const dx = tip.x - from.x, dy = tip.y - from.y, len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len, L = 8 * Math.max(sw, 1), W = 3 * Math.max(sw, 1);
-  const bx = tip.x - ux * L, by = tip.y - uy * L;
-  return `<polygon points="${r2(tip.x)},${r2(tip.y)} ${r2(bx - uy * W)},${r2(by + ux * W)} ${r2(bx + uy * W)},${r2(by - ux * W)}" fill="${fill}"/>`;
+  const ux = dx / len, uy = dy / len, k = Math.max(sw, 1);
+  // a point `back` along the line from the tip and `side` across it
+  const at = (back: number, side: number) => `${r2(tip.x - ux * back - uy * side)},${r2(tip.y - uy * back + ux * side)}`;
+  const line = `fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
+  const hollow = `fill="${paper}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"`;
+  const bar = (b: number) => `<path d="M ${at(b, 6)} L ${at(b, -6)}" ${line}/>`;
+  const ring = (b: number, r: number, a: string) => `<circle cx="${r2(tip.x - ux * b)}" cy="${r2(tip.y - uy * b)}" r="${r}" ${a}/>`;
+  const crow = `<path d="M ${at(0, 6)} L ${at(12, 0)} L ${at(0, -6)}" ${line}/>`;
+  switch (kind) {
+    case 'none': return { svg: '', trim: 0 };
+    case 'open': return { svg: `<path d="M ${at(8 * k, 4 * k)} L ${at(0, 0)} L ${at(8 * k, -4 * k)}" ${line}/>`, trim: 0 };
+    case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11, 6)} ${at(11, -6)}" ${hollow}/>`, trim: 11 };
+    case 'diamond': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" ${hollow}/>`, trim: 16 };
+    case 'diamond-solid': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" fill="${stroke}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`, trim: 16 };
+    case 'dot': return { svg: ring(3.5, 3.5, `fill="${stroke}"`), trim: 3.5 };
+    case 'circle': return { svg: ring(4, 4, hollow), trim: 8 };
+    case 'one': return { svg: bar(8), trim: 0 };
+    case 'only-one': return { svg: bar(7) + bar(12), trim: 0 };
+    case 'many': return { svg: crow, trim: 0 };
+    case 'one-many': return { svg: crow + bar(16), trim: 0 };
+    case 'zero-one': return { svg: bar(8) + ring(16, 4, hollow), trim: 0 };
+    case 'zero-many': return { svg: crow + ring(17, 4, hollow), trim: 0 };
+    default: return { svg: `<polygon points="${at(0, 0)} ${at(8 * k, 3 * k)} ${at(8 * k, -3 * k)}" fill="${stroke}"/>`, trim: 6 * k };
+  }
 }
 
 function drawConn(look: Look, c: Conn): string {
   const p = c.p, sw = num(p.sw, 1.2), stroke = col(look, p.stroke ?? 'muted');
-  const n = c.pts.length;
-  const trim = 6 * Math.max(sw, 1);
-  let s = `<path d="${pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, c.head ? trim : 0, c.tail ? trim : 0)}" fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}/>`;
-  if (c.head) s += '\n' + arrowHead(c.pts[n - 1], c.pts[n - 2], sw, stroke);
-  if (c.tail) s += '\n' + arrowHead(c.pts[0], c.pts[1], sw, stroke);
+  const n = c.pts.length, paper = col(look, look.canvas.paper ?? 'paper');
+  const head = marker(c.headM, c.pts[n - 1], c.pts[n - 2], sw, stroke, paper), tail = marker(c.tailM, c.pts[0], c.pts[1], sw, stroke, paper);
+  let s = `<path d="${pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim)}" fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}/>`;
+  if (head.svg) s += '\n' + head.svg;
+  if (tail.svg) s += '\n' + tail.svg;
   return s;
 }
 
