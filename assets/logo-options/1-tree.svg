@@ -1,4 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <title>FastDraw</title>
-  <g fill="#0e7c66"><mask id="t1" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="#fff"/><g fill="#000" stroke="none"><path d="M114.5 23.9L162 23.9L142.2 67.4L167.3 67.4L102.6 132.1L119.1 83.3L94.7 83.3Z"/><path d="M128 146V162M50 190V176A14 14 0 0 1 64 162H192A14 14 0 0 1 206 176V190M128 162V190" fill="none" stroke="#000" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><rect x="22" y="186" width="56" height="46" rx="14"/><rect x="100" y="186" width="56" height="46" rx="14"/><rect x="178" y="186" width="56" height="46" rx="14"/></g></mask><path d="M36 0H220A36 36 0 0 1 256 36V220A36 36 0 0 1 220 256H36A36 36 0 0 1 0 220V36A36 36 0 0 1 36 0Z" mask="url(#t1)"/></g>
-</svg>
