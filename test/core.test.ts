@@ -439,5 +439,5 @@ test('chart: one bar in its own colour, outlines, signed steps, vertical grid, b
   assert.ok(svg.includes('>+60<') && svg.includes('>100<') && !svg.includes('>+100<'));
   assert.equal((svg.match(/stroke-width="1"\/>/g) ?? []).length >= 2, true);
   assert.ok(svg.includes('<circle cx="590" cy="160" r="12"'));
-  assert.ok(!svg.includes('y1="160" x2="740" y2="160"')); // no zero line
+  assert.equal((svg.match(/y1="160" x2="740" y2="160"/g) ?? []).length, 1); // the grid line at 0, and no axis line on top of it
 });
