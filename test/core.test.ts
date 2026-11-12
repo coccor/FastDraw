@@ -357,8 +357,8 @@ test('a chart draws axes and its series from the numbers given', async () => {
 });
 
 test('a chart with a hostile step or range still renders, quickly, and says what is wrong', () => {
-  for (const bad of ['step=0', 'step=-5', 'step=1e-12', 'step=NaN', 'y=100..0', 'y=5..5', 'x=10..0 xstep=0', 'x=0..1e9 xstep=1e-9']) {
-    const sc = scene(`c: chart at 80,80 400x200 ${bad}\n  | bars "A" 1 2 3\n  | dots "B" 1,2 3,4\n`);
+  for (const bad of ['step=0', 'step=-5', 'step=1e-12', 'step=NaN', 'y=100..0', 'y=5..5', 'x=10..0 xstep=0', 'x=0..1e9 xstep=1e-9', 'y=100000000000000000..100000000000000050 step=1', 'y=0..999999999999999 step=0.5', 'x=99999999999999990..99999999999999999 xstep=1']) {
+    const sc = scene(`c: chart at 80,80 400x200 ${bad}\n  | bars "A" 1 2 3 1e300 100000000000000000\n  | dots "B" 1,2 3,4\n`);
     const t = performance.now();
     const svg = renderSvg(sc);
     assert.ok(performance.now() - t < 200, bad);

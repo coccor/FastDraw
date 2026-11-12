@@ -20,10 +20,18 @@ const safeStep = (v: string | undefined, span: number): number => {
   const s = Number(v);
   return v !== undefined && Number.isFinite(s) && s > 0 && span / s <= 200 ? s : niceStep(span);
 };
+// Tick values across lo..hi. Counted, never "add the step until past the end": with very large numbers adding
+// a small step changes nothing and such a loop would not finish.
+function ticks(lo: number, hi: number, step: number): number[] {
+  const k0 = Math.ceil(lo / step - 1e-9), k1 = Math.floor(hi / step + 1e-9), out: number[] = [];
+  if (!Number.isFinite(k0) || !Number.isFinite(k1)) return out;
+  for (let k = k0; k <= k1 && out.length <= 200; k++) out.push(k * step);
+  return out;
+}
 const fmt = (v: number) => String(Math.round(v * 1000) / 1000);
 const range = (v: string | undefined): [number, number] | null => {
   const m = /^(-?[\d.]+)\.\.(-?[\d.]+)$/.exec(v ?? '');
-  return m && Number.isFinite(+m[1]) && Number.isFinite(+m[2]) && +m[2] > +m[1] ? [+m[1], +m[2]] : null; // must run upwards
+  return m && Math.abs(+m[1]) < 1e15 && Math.abs(+m[2]) < 1e15 && +m[2] > +m[1] ? [+m[1], +m[2]] : null; // must run upwards
 };
 
 export function drawChart(look: Look, s: Shape): string {
@@ -37,7 +45,7 @@ export function drawChart(look: Look, s: Shape): string {
   const ys = rows.flatMap((r) => r.vals.flatMap((v) => (r.id === 'bars' || (r.id === 'dots' && !xr) ? pairs(v) : pairs(v).slice(-1))));
   const stacked = p.stack === '1';
   if (stacked) for (let i = 0; i < n; i++) ys.push(rows.filter((r) => r.id === 'bars').reduce((a, r) => a + (+r.vals[i] || 0), 0));
-  for (let i = ys.length - 1; i >= 0; i--) if (!finite(ys[i])) ys.splice(i, 1);
+  for (let i = ys.length - 1; i >= 0; i--) if (!finite(ys[i]) || Math.abs(ys[i]) >= 1e15) ys.splice(i, 1);
   const yr = range(p.y);
   let y0 = yr ? yr[0] : Math.min(0, ...ys), y1 = yr ? yr[1] : Math.max(0, ...ys);
   if (!(y1 > y0)) y1 = y0 + 1;
@@ -53,14 +61,14 @@ export function drawChart(look: Look, s: Shape): string {
   const axis = col(look, p.stroke ?? 'ink/0.5'), grid = col(look, p['grid.color'] ?? 'ink/0.08'), sw = num(p.sw, 1);
   const unit = p.unit ?? '', pre = p.prefix ?? '';
   if (p.fill && p.fill !== 'none') out.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${col(look, p.fill)}"/>`);
-  for (let v = Math.ceil(y0 / step - 1e-9) * step; v <= y1 + 1e-9; v += step) {
+  for (const v of ticks(y0, y1, step)) {
     const gy = Y(v);
     if (p.grid !== '0' && Math.abs(gy - (y + h)) > 0.5) out.push(`<line x1="${x}" y1="${gy}" x2="${x + w}" y2="${gy}" stroke="${grid}" stroke-width="1"/>`);
     if (p.yaxis !== '0') out.push(`<text x="${x - 8}" y="${r2(gy + tick.size * 0.35)}" text-anchor="end" ${tick.a}>${esc(pre + fmt(v) + unit)}</text>`);
   }
   if (xr) {
     const xs = safeStep(p.xstep, xr[1] - xr[0]);
-    for (let v = Math.ceil(xr[0] / xs - 1e-9) * xs; v <= xr[1] + 1e-9; v += xs) {
+    for (const v of ticks(xr[0], xr[1], xs)) {
       if (p.grid === 'both' && v > xr[0]) out.push(`<line x1="${XV(v)}" y1="${y}" x2="${XV(v)}" y2="${y + h}" stroke="${grid}" stroke-width="1"/>`);
       out.push(`<text x="${XV(v)}" y="${y + h + 8 + tick.size}" text-anchor="middle" ${tick.a}>${esc(fmt(v) + (p.xunit ?? ''))}</text>`);
     }
