@@ -50,7 +50,10 @@ export function check(sc: Scene): Issue[] {
   const fillOf = (s: Shape): RGB | null => (s.p.fill && s.p.fill !== 'none' && rgba(sc.look, s.p.fill) ? over(rgba(sc.look, s.p.fill), paperRgb) : null);
   for (const s of front) {
     if (s.rows || s.shape === 'legend' || s.shape === 'chart' || s.p['title.pos'] === 'top') continue;
-    const bg = fillOf(s) ?? paperRgb;
+    // a box with no fill of its own shows whatever filled shape lies under its middle
+    const cxs = s.x + s.w / 2, cys = s.y + s.h / 2, at = sc.shapes.indexOf(s);
+    const below = fillOf(s) ? undefined : sc.shapes.slice(0, at).reverse().find((o) => !o.back && !o.rows && fillOf(o) && cxs >= o.x && cxs <= o.x + o.w && cys >= o.y && cys <= o.y + o.h);
+    const bg = fillOf(s) ?? (below ? fillOf(below)! : paperRgb);
     for (const [what, has, key, dflt] of [['text', s.text, 'title.color', 'ink'], ['second line', s.p.sub, 'sub.color', 'muted']] as const) {
       const fg = rgba(sc.look, s.p[key] ?? dflt);
       if (has && fg && fg[3] > 0.3 && contrast(over(fg, bg), bg) < FAINT) warn(s.line, `the ${what} of ${s.id} is almost the same colour as its background and cannot be read; set ${key}= to a colour that stands out (on a dark or accent fill, #ffffff)`);

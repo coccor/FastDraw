@@ -510,3 +510,12 @@ test('text that cannot be read against its background is reported; plain-line st
   const sc = buildScene('canvas 800x400\n40,100 -> 400,100 style=rule\n40,200 -> 400,200 style=rule head=open\n40,300 -> 400,300\n', null);
   assert.deepEqual(sc.conns.map((c) => c.headM), ['none', 'open', 'arrow']);
 });
+
+test('legend swatches take hex colours; an unfilled badge on a filled box is judged against that box', () => {
+  const dflt = (b: string) => buildScene(`canvas 800x400\n${b}`, null);
+  const sc = dflt('f: focal "Shared types" at 40,40 160x64\nb: rect "4 in" at 152,44 40x16 fill=none stroke=#ffffff title.color=#ffffff title.size=8 overlap=ok\nlegend at 40,300 swatch.#4a7c59="Stream" dot.#b07a2a/0.5="Table"\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  assert.ok(renderSvg(sc).includes('fill="#4a7c59"'));
+  // the same white badge with no dark box under it is on paper, and is reported
+  assert.match(check(dflt('b: rect "4 in" at 152,44 48x16 fill=none stroke=ink title.color=#ffffff title.size=8\n')).map((i) => i.msg).join(), /the text of b is almost the same colour as its background/);
+});
