@@ -1,19 +1,20 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo.svg" alt="FastDraw" height="64">
-  </picture>
-</p>
+<div align="center">
 
-<p align="center"><b>Diagrams that an AI agent writes and a person can edit.</b></p>
+<img src="assets/fastdraw-icon.svg" alt="FastDraw" width="96" height="96">
+
+# FastDraw
+
+**Diagrams that an AI agent writes and a person can edit.**
 
 An agent writes a diagram as a small text file and places every element itself. A person opens
 the same file in a browser editor, changes anything on a free canvas, and the change is saved
 back as a small edit to the text. Neither side has to redo the other's work.
 
-<p align="center">
-  <img src="assets/how-it-works.png" alt="An AI agent writes diagram.fdraw; a person edits the same file in the browser editor; a look file sets the styles" width="860">
-</p>
+[A first diagram](#a-first-diagram) · [Getting started](#getting-started) · [Commands](#the-command-line-tool) · [Agents](#using-it-with-an-agent) · [Editor](#the-editor) · [Looks](#looks) · [Gallery](#gallery)
+
+<img src="assets/how-it-works.png" alt="An AI agent writes diagram.fdraw; a person edits the same file in the browser editor; a look file sets the styles" width="860">
+
+</div>
 
 > **Status: proof of concept.** The language, the tool and the editor all work, but nothing is
 > published as a package yet and details may change.
@@ -144,7 +145,7 @@ All of these were written by agents from the guides alone. Sources are in
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
 | `fonts/` | Geist, Geist Mono and Instrument Serif (SIL Open Font License, texts included) |
-| `assets/` | The logo, and the diagrams shown on this page with their sources |
+| `assets/` | The icon, and the diagrams shown on this page with their sources |
 | `test/`, `e2e/` | Core tests and editor tests |
 
 ## Development
