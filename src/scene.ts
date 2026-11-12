@@ -221,7 +221,7 @@ function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => v
   const fs = num(p['cell.size'], 10), font = p['cell.font'] ?? 'mono';
   const rowH = num(p['row.h'], 24), pad = num(p['cell.pad'], 12), gap = num(p['cell.gap'], 16);
   const tsize = num(p['title.size'], 12), tlines = sh.text ? sh.text.split('\n') : [];
-  const headH = sh.text ? num(p['head.h'], 32) + (tlines.length - 1) * Math.round(tsize * 1.25) : 0;
+  const headH = sh.text ? num(p['head.h'], 32) + (tlines.length - 1) * Math.ceil((tsize * 1.25) / 4) * 4 : 0; // each extra line adds a multiple of 4, to stay on the grid
   const n = Math.max(0, ...rows.map((r) => r.cells.length));
   const widths: number[] = [];
   // a row with a single cell in a table of several columns runs across the whole width instead of widening column 1

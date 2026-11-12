@@ -414,7 +414,7 @@ test('tables: cell tints, spanning rows, two-line headers, and -- between rows i
   const sc = scene('a: table "«interface»\\nPayment" at 40,40\n  | id "id" "uuid" "PK" fill.3=accent/0.2 color.3=accent\n  | "idx_orders_customer_id_created_at"\nb: table "B" at 400,120\n  | fk "a_id" "uuid"\nb.fk -- a.id tail=many head=only-one\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   const a = sc.shapes[0], c = sc.conns[0];
-  assert.equal(a.headH, 32 + 15);
+  assert.equal(a.headH, 32 + 16);
   assert.ok(a.cols![0].w > 100); // spare width, not the long single cell, sets column 1... the span row sets the table width
   assert.equal(c.style, 'relation');
   assert.ok(c.ortho && c.pts.every((p, i) => i === 0 || p.x === c.pts[i - 1].x || p.y === c.pts[i - 1].y));
