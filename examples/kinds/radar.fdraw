@@ -1,0 +1,46 @@
+look "../../looks/reference.look"
+canvas 1000x500
+
+// centre 500,236, radius 160 = score 10, so 16px per point. Five axes, the first straight up, then clockwise.
+// every polygon is written "at 0,0" so that its points are canvas coordinates
+
+// rings at 2, 4, 6, 8 and 10
+polygon at 0,0 points=500,204;530,226;519,262;481,262;470,226 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,172;561,216;538,288;462,288;439,216 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,140;591,206;556,314;444,314;409,206 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,108;622,196;575,340;425,340;378,196 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
+polygon at 0,0 points=500,76;652,187;594,365;406,365;348,187 fill=none stroke=ink/0.25 sw=1 overlap=ok mask=0
+
+// spokes
+500,236 -- 500,76 stroke=ink/0.2 sw=1
+500,236 -- 652,187 stroke=ink/0.2 sw=1
+500,236 -- 594,365 stroke=ink/0.2 sw=1
+500,236 -- 406,365 stroke=ink/0.2 sw=1
+500,236 -- 348,187 stroke=ink/0.2 sw=1
+
+// one polygon per option, the recommended one last
+ceph: polygon at 0,0 points=500,124;607,201;566,327;462,288;409,206 fill=soft/0.06 stroke=soft sw=1.5 overlap=ok mask=0
+gcs: polygon at 0,0 points=500,140;637,192;575,340;444,314;393,201 fill=muted/0.06 stroke=muted sw=1.5 overlap=ok mask=0
+s3: polygon at 0,0 points=500,140;652,187;585,352;453,301;378,196 fill=link/0.06 stroke=link sw=1.5 overlap=ok mask=0
+minio: polygon at 0,0 points=500,92;622,196;585,352;415,352;363,192 fill=accent/0.14 stroke=accent sw=2 overlap=ok mask=0
+ellipse at 496,88 8x8 fill=accent stroke=none overlap=ok
+ellipse at 618,192 8x8 fill=accent stroke=none overlap=ok
+ellipse at 581,348 8x8 fill=accent stroke=none overlap=ok
+ellipse at 411,348 8x8 fill=accent stroke=none overlap=ok
+ellipse at 359,188 8x8 fill=accent stroke=none overlap=ok
+
+// scale, on the first axis only
+text "2" at 494,207 style=small size=8 color=muted anchor=end
+text "4" at 494,175 style=small size=8 color=muted anchor=end
+text "6" at 494,143 style=small size=8 color=muted anchor=end
+text "8" at 494,111 style=small size=8 color=muted anchor=end
+text "10" at 494,79 style=small size=8 color=muted anchor=end
+
+// axis names, 16px outside the outer ring
+text "Small-file handling" at 500,58 anchor=middle size=11 weight=600 color=ink
+text "Large-object reads" at 668,190 size=11 weight=600 color=ink
+text "Write throughput" at 606,392 size=11 weight=600 color=ink
+text "Operational simplicity" at 394,392 anchor=end size=11 weight=600 color=ink
+text "Iceberg integration" at 332,190 anchor=end size=11 weight=600 color=ink
+
+legend at 40,424 swatch.accent="MinIO · recommended" swatch.link="Amazon S3" swatch.muted="Google Cloud Storage" swatch.soft="Ceph"

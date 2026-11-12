@@ -63,26 +63,31 @@ export function drawChart(look: Look, s: Shape): string {
   if (p.fill && p.fill !== 'none') out.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${col(look, p.fill)}"/>`);
   for (const v of ticks(y0, y1, step)) {
     const gy = Y(v);
-    if (p.grid !== '0' && Math.abs(gy - (y + h)) > 0.5) out.push(`<line x1="${x}" y1="${gy}" x2="${x + w}" y2="${gy}" stroke="${grid}" stroke-width="1"/>`);
+    if (p.grid !== '0' && p.grid !== 'x' && Math.abs(gy - (y + h)) > 0.5) out.push(`<line x1="${x}" y1="${gy}" x2="${x + w}" y2="${gy}" stroke="${grid}" stroke-width="1"/>`);
     if (p.yaxis !== '0') out.push(`<text x="${x - 8}" y="${r2(gy + tick.size * 0.35)}" text-anchor="end" ${tick.a}>${esc(pre + fmt(v) + unit)}</text>`);
   }
   if (xr) {
     const xs = safeStep(p.xstep, xr[1] - xr[0]);
     for (const v of ticks(xr[0], xr[1], xs)) {
-      if (p.grid === 'both' && v > xr[0]) out.push(`<line x1="${XV(v)}" y1="${y}" x2="${XV(v)}" y2="${y + h}" stroke="${grid}" stroke-width="1"/>`);
+      if ((p.grid === 'both' || p.grid === 'x') && v > xr[0]) out.push(`<line x1="${XV(v)}" y1="${y}" x2="${XV(v)}" y2="${y + h}" stroke="${grid}" stroke-width="1"/>`);
       out.push(`<text x="${XV(v)}" y="${y + h + 8 + tick.size}" text-anchor="middle" ${tick.a}>${esc(fmt(v) + (p.xunit ?? ''))}</text>`);
     }
-  } else cats.forEach((c, i) => out.push(`<text x="${X(i)}" y="${y + h + 8 + tick.size}" text-anchor="middle" ${tick.a}>${esc(c)}</text>`));
+  } else cats.forEach((c, i) => {
+    if (p.grid === 'x' && i > 0) out.push(`<line x1="${r2(x + bw * i)}" y1="${y}" x2="${r2(x + bw * i)}" y2="${y + h}" stroke="${grid}" stroke-width="1"/>`);
+    out.push(`<text x="${X(i)}" y="${y + h + 8 + tick.size}" text-anchor="middle" ${tick.a}>${esc(c)}</text>`);
+  });
   // ---- series ---------------------------------------------------------------
   const lab = textAttrs(look, p, 'value.', { font: 'mono', size: 9, weight: 400, color: 'ink' });
   const labels = p.labels === '1';
-  const value = (cx: number, cy: number, v: number) => labels && out.push(`<text x="${cx}" y="${r2(cy)}" text-anchor="middle" ${lab.a}>${esc(pre + fmt(v) + unit)}</text>`);
+  const value = (cx: number, cy: number, v: number, plus = false) => labels && out.push(`<text x="${cx}" y="${r2(cy)}" text-anchor="middle" ${lab.a}>${esc((plus ? '+' : '') + pre + fmt(v) + unit)}</text>`);
   const bars = rows.filter((r) => r.id === 'bars');
   const colour = (r: (typeof rows)[number], k: 'fill' | 'stroke') => r.p[k] ?? r.p.fill ?? r.p.stroke ?? PALETTE[rows.indexOf(r) % PALETTE.length];
   const group = bw * num(p['bar.width'], 0.64), each = stacked || !bars.length ? group : group / bars.length;
   const tops: number[] = [];
   bars.forEach((r, k) => {
-    const fill = col(look, colour(r, 'fill')), rad = num(p['bar.radius'], 2);
+    const rad = num(p['bar.radius'], 2);
+    // fill.3=accent colours the third bar of the series on its own
+    const outline = r.p.stroke && r.p.fill ? ` stroke="${col(look, r.p.stroke)}" stroke-width="${num(r.p.sw, 1)}"` : '';
     r.vals.forEach((raw, i) => {
       const q = pairs(raw);
       if (!q.length) return;
@@ -90,24 +95,25 @@ export function drawChart(look: Look, s: Shape): string {
       if (stacked && q.length === 1) { lo = tops[i] ?? 0; hi = lo + q[0]; tops[i] = hi; }
       const top = Math.min(Y(lo), Y(hi)), bh = Math.abs(Y(lo) - Y(hi));
       const bx = r2(X(i) - group / 2 + (stacked ? 0 : k * each) + (each > 6 ? 1 : 0)), ww = r2(each - (each > 6 ? 2 : 0));
-      out.push(`<rect x="${bx}" y="${top}" width="${ww}" height="${r2(Math.max(bh, 0.5))}"${rad && bh > rad * 2 && !stacked ? ` rx="${rad}"` : ''} fill="${fill}"/>`);
-      value(r2(bx + ww / 2), hi >= lo ? top - 4 : top + bh + lab.size + 2, q.length === 2 ? hi - lo : q[0]);
+      out.push(`<rect x="${bx}" y="${top}" width="${ww}" height="${r2(Math.max(bh, 0.5))}"${rad && bh > rad * 2 && !stacked ? ` rx="${rad}"` : ''} fill="${col(look, r.p[`fill.${i + 1}`] ?? colour(r, 'fill'))}"${outline}/>`);
+      // a floating step that does not start at zero is a change: say so with a sign
+      value(r2(bx + ww / 2), hi >= lo ? top - 4 : top + bh + lab.size + 2, q.length === 2 ? hi - lo : q[0], q.length === 2 && lo !== 0 && hi > lo);
     });
   });
   for (const r of rows) {
     if (r.id === 'bars') continue;
     const stroke = col(look, colour(r, 'stroke')), lw = num(r.p.sw, 2);
-    const pts = r.vals.map((raw, i) => ({ raw, i })).filter((e) => e.raw !== '_').map(({ raw, i }) => { const q = pairs(raw); return q.length === 2 && xr ? { x: XV(q[0]), y: Y(q[1]), v: q[1], r: 0 } : { x: X(i), y: Y(q[0]), v: q[0], r: q[1] ?? 0 }; });
+    const pts = r.vals.map((raw, i) => ({ raw, i })).filter((e) => e.raw !== '_').map(({ raw, i }) => { const q = pairs(raw); return q.length >= 2 && xr ? { x: XV(q[0]), y: Y(q[1]), v: q[1], r: q[2] ?? 0, i } : { x: X(i), y: Y(q[0]), v: q[0], r: q[1] ?? 0, i }; });
     if (!pts.length) continue;
     const d = pts.map((q) => `${q.x},${q.y}`).join(' ');
-    if (r.id === 'area') out.push(`<polygon points="${pts[0].x},${base} ${d} ${pts[pts.length - 1].x},${base}" fill="${col(look, r.p.fill ?? colour(r, 'stroke') + (/\/[\d.]+$/.test(colour(r, 'stroke')) ? '' : '/0.15'))}"/>`);
+    if (r.id === 'area') out.push(`<polygon points="${pts[0].x},${base} ${d} ${pts[pts.length - 1].x},${base}" fill="${col(look, r.p.fill ?? colour(r, 'stroke') + (/\/[\d.]+$/.test(colour(r, 'stroke')) ? '' : '/0.1'))}"/>`);
     if (r.id !== 'dots') out.push(`<polyline points="${d}" fill="none" stroke="${stroke}" stroke-width="${lw}" stroke-linejoin="round" stroke-linecap="round"${r.p.dash ? ` stroke-dasharray="${esc(r.p.dash)}"` : ''}/>`);
-    if (r.id === 'dots' || r.p.dots === '1') for (const q of pts) out.push(`<circle cx="${q.x}" cy="${q.y}" r="${r.id === 'dots' ? num(r.p.r, q.r || 4) : 3}" fill="${r.id === 'dots' ? stroke : col(look, look.canvas.paper ?? 'paper')}" stroke="${stroke}" stroke-width="${r.id === 'dots' ? 0 : lw}"${r.id === 'dots' && r.p.opacity ? ` fill-opacity="${num(r.p.opacity, 1)}"` : ''}/>`);
+    if (r.id === 'dots' || r.p.dots === '1') for (const q of pts) out.push(`<circle cx="${q.x}" cy="${q.y}" r="${r.id === 'dots' ? num(r.p.r, q.r || 4) : 3}" fill="${r.id === 'dots' ? col(look, r.p[`fill.${q.i + 1}`] ?? r.p.fill ?? colour(r, 'stroke')) : col(look, look.canvas.paper ?? 'paper')}" stroke="${r.id === 'dots' && !(r.p.fill && r.p.stroke) ? 'none' : stroke}" stroke-width="${r.id === 'dots' ? num(r.p.sw, 1.2) : lw}"${r.id === 'dots' && r.p.opacity ? ` fill-opacity="${num(r.p.opacity, 1)}"` : ''}/>`);
     for (const q of pts) value(q.x, q.y - 8, q.v);
   }
   // ---- axis lines, titles and the key ----------------------------------------
   out.push(`<path d="M ${x},${y} L ${x},${y + h} L ${x + w},${y + h}" fill="none" stroke="${axis}" stroke-width="${sw}"/>`);
-  if (y0 < 0 && y1 > 0) out.push(`<line x1="${x}" y1="${base}" x2="${x + w}" y2="${base}" stroke="${axis}" stroke-width="${sw}"/>`);
+  if (y0 < 0 && y1 > 0 && p.zero !== '0') out.push(`<line x1="${x}" y1="${base}" x2="${x + w}" y2="${base}" stroke="${axis}" stroke-width="${sw}"/>`);
   const ttl = textAttrs(look, p, 'axis.', { font: 'sans', size: 10, weight: 400, color: 'muted' });
   if (p.xtitle) out.push(`<text x="${x + w / 2}" y="${y + h + 36}" text-anchor="middle" ${ttl.a}>${esc(p.xtitle)}</text>`);
   if (p.ytitle) out.push(`<text x="${x}" y="${y - 12}" ${ttl.a}>${esc(p.ytitle)}</text>`);

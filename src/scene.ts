@@ -372,7 +372,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         else if (t.t === 'prop') row.p[t.k!] = t.v;
         else if (t.v === '---' && !row.cells.length && !row.id) row.kind = 'rule';
         else if (!row.id && !row.cells.length && /^[A-Za-z_][\w-]*$/.test(t.v) && !(t.v in DIRS)) row.id = t.v;
-        else if (/^([+-]?\d*\.?\d+(,[+-]?\d*\.?\d+)?|_)$/.test(t.v)) row.vals.push(t.v); // a number, a pair (3,40), or _ for no value
+        else if (/^([+-]?\d*\.?\d+(,[+-]?\d*\.?\d+){0,2}|_)$/.test(t.v)) row.vals.push(t.v); // a number, a pair (3,40), a triple (x,y,radius), or _ for no value
         else err(st.line, `unexpected word "${t.v}" in a table row; a row is: | id "cell" "cell" (the id is optional, and cannot be top, bottom, left or right)`);
         continue;
       }

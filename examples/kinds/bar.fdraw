@@ -1,0 +1,9 @@
+look "../../looks/reference.look"
+canvas 1000x500
+
+// plot area 96,56 to 960,372. Two series, one per colour; stack=1 keeps every bar at full width
+vel: chart at 96,56 864x316 x="S1,S2,S3,S4,S5,S6,S7,S8" y=0..120 step=20 labels=1 stack=1 key=0 ytitle="Story points per sprint"
+  | bars "Other sprints" 72 88 95 78 _ 102 85 93 fill=soft
+  | bars "Sprint 5" _ _ _ _ 110 _ _ _ fill=accent
+
+legend at 40,420 swatch.accent="Sprint 5 · record high" swatch.soft="Other sprints"

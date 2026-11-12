@@ -431,3 +431,13 @@ test('a cell colour is plain text even when it looks like a replacement pattern'
     assert.ok(!/ onload="/.test(svg), evil);
   }
 });
+
+test('chart: one bar in its own colour, outlines, signed steps, vertical grid, bubbles on a numeric axis', () => {
+  const sc = scene('c: chart at 80,60 300x120 x="A,B,C" labels=1 grid=x\n  | bars "S" 0,100 100,160 fill=soft fill.2=accent stroke=ink\nd: chart at 440,60 300x200 x=0..10 y=-10..10 zero=0\n  | dots "B" 5,0,12 2,5\ntext "note" at 76,100 anchor=middle\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('>+60<') && svg.includes('>100<') && !svg.includes('>+100<'));
+  assert.equal((svg.match(/stroke-width="1"\/>/g) ?? []).length >= 2, true);
+  assert.ok(svg.includes('<circle cx="590" cy="160" r="12"'));
+  assert.ok(!svg.includes('y1="160" x2="740" y2="160"')); // no zero line
+});

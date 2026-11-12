@@ -1,0 +1,45 @@
+look "../../looks/reference.look"
+canvas 1000x480
+
+text "Blog content model" at 40,60 style=h1
+
+author: table "Author" at 40,152 216x0
+  | id "# id"     "uuid"
+  |    "handle"   "text"
+  |    "name"     "text"
+  |    "bio"      "text"
+  |    "site_url" "text"
+
+article: table "Article" at 376,128 248x0 stroke=accent fill=accent/0.08
+  | id     "# id"         "uuid"
+  | author "→ author_id"  "uuid"
+  |        "title"        "text"
+  |        "slug"         "text · unique"
+  |        "body_mdx"     "text"
+  |        "published_at" "timestamp"
+  |        "status"       "enum"
+  |        "og_image"     "text · url"
+
+tag: table "Tag" at 744,128 216x0
+  | id "# id"        "uuid"
+  |    "slug"        "text · unique"
+  |    "name"        "text"
+  |    "description" "text"
+
+atag: table "ArticleTag" at 744,312 216x0 dash=4,3 stroke=muted fill=ink/0.05
+  | article "→ article_id" "uuid"
+  | tag     "→ tag_id"     "uuid"
+
+author.id -- article.author "writes" style=arrow tail=only-one head=many
+article.id -- atag.article "tagged" style=arrow tail=only-one head=many
+tag.bottom -- atag.top style=arrow tail=only-one head=many
+
+legend at 40,412 focal="Aggregate root" node="Entity" optional="Join entity"
+
+// the marks the legend statement cannot draw: key prefixes and line ends
+text "#" at 420,452 style=small color=ink
+text "Primary key" at 432,452 style=caption
+text "→" at 508,452 style=small color=ink
+text "Foreign key" at 522,452 style=caption
+600,449 -- 648,449 style=arrow tail=only-one head=many
+text "Exactly one to many" at 660,452 style=caption

@@ -1,0 +1,52 @@
+look "../../looks/reference.look"
+canvas 1100x764
+
+text "Order tables and their foreign keys" at 40,60 style=h1
+
+billing: zone "billing" at 40,96 256x148 title.align=left
+
+inv: table "billing.invoices" at 56,128 224x0
+  | id       "id"        "PK"    "uuid"
+  | order_id "order_id"  "FK NN" "uuid"
+  |          "issued_at" "NN"    "timestamptz"
+
+orders: table "public.orders" at 392,152 296x0
+  | id          "id"          "PK"    "uuid"
+  | customer_id "customer_id" "FK NN" "uuid"
+  |             "status"      "NN"    "text"
+  |             "total"       "NN"    "numeric(12,2)"
+  |             "placed_at"   "NN"    "timestamptz"
+  |= "Indexes"
+  | "idx_orders_customer_id"
+  | "idx_orders_status"
+
+cust: table "public.customers" at 56,424 224x0
+  | id "id"         "PK"    "uuid"
+  |    "email"      "UQ NN" "text"
+  |    "created_at" "NN"    "timestamptz"
+
+items: table "public.order_items" at 392,424 296x0 stroke=accent fill=accent/0.08
+  |            "id"         "PK"    "uuid"
+  | order_id   "order_id"   "FK NN" "uuid"
+  | product_id "product_id" "FK NN" "uuid"
+  |            "qty"        "NN"    "integer"
+  |            "unit_price" "NN"    "numeric(12,2)"
+
+prod: table "public.products" at 800,472 260x0
+  | id "id"    "PK"    "uuid"
+  |    "sku"   "UQ NN" "text"
+  |    "name"  "NN"    "text"
+  |    "price" "NN"    "numeric(12,2)"
+  |    "+ 3 more columns"
+  |= "Indexes"
+  | "uq_products_sku"
+
+inv.order_id -> orders.id "restrict"
+orders.customer_id -> cust.id "restrict"
+items.product_id -> prod.id "restrict"
+items.order_id.right -> orders.id.right "cascade" style=primary
+
+text "Deleting an order" at 800,196 style=note
+text "deletes its items." at 800,216 style=note
+
+legend at 40,696 node="Table" focal="Rows deleted with their parent" zone="Schema other than public" arrow="Foreign key · label = ON DELETE" primary="Destructive delete"

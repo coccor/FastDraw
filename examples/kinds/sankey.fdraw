@@ -1,0 +1,60 @@
+look "../../looks/reference.look"
+canvas 1000x560
+
+// scale: 0.02px per minute (12,000 min = 240px) · bars 12 wide at x = 120, 500, 880
+
+text "BUDGET" at 126,76 style=eyebrow anchor=middle
+text "TEST STAGE" at 506,76 style=eyebrow anchor=middle
+text "OUTCOME" at 886,76 style=eyebrow anchor=middle
+
+// bands, plain ones first
+b_unit: rect at 132,120 368x104 shape=path path="M0,0 C0.5,0 0.5,0 1,0 L1,1 C0.5,1 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+b_e2e: rect at 132,224 368x112 shape=path path="M0,0 C0.5,0 0.5,0.286 1,0.286 L1,1 C0.5,1 0.5,0.714 0,0.714 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+b_build: rect at 132,304 368x104 shape=path path="M0,0 C0.5,0 0.5,0.615 1,0.615 L1,1 C0.5,1 0.5,0.385 0,0.385 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+b_lint: rect at 132,344 368x112 shape=path path="M0,0 C0.5,0 0.5,0.857 1,0.857 L1,1 C0.5,1 0.5,0.143 0,0.143 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+unit_pass: rect at 512,136 368x100 shape=path path="M0,0 C0.5,0 0.5,0.12 1,0.12 L1,1 C0.5,1 0.5,0.88 0,0.88 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+e2e_pass: rect at 512,236 368x100 shape=path path="M0,0.24 C0.5,0.24 0.5,0 1,0 L1,0.76 C0.5,0.76 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+build_pass: rect at 512,312 368x72 shape=path path="M0,0.778 C0.5,0.778 0.5,0 1,0 L1,0.222 C0.5,0.222 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+build_fail: rect at 512,344 368x64 shape=path path="M0,0.625 C0.5,0.625 0.5,0 1,0 L1,0.375 C0.5,0.375 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+lint_pass: rect at 512,328 368x120 shape=path path="M0,0.933 C0.5,0.933 0.5,0 1,0 L1,0.067 C0.5,0.067 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+lint_fail: rect at 512,368 368x88 shape=path path="M0,0.909 C0.5,0.909 0.5,0 1,0 L1,0.091 C0.5,0.091 0.5,1 0,1 Z" fill=muted/0.18 stroke=none overlap=ok mask=0
+unit_flake: rect at 512,120 368x16 shape=path path="M0,0 C0.5,0 0.5,0 1,0 L1,1 C0.5,1 0.5,1 0,1 Z" fill=accent/0.28 stroke=none overlap=ok mask=0
+e2e_flake: rect at 512,136 368x124 shape=path path="M0,0.968 C0.5,0.968 0.5,0 1,0 L1,0.032 C0.5,0.032 0.5,1 0,1 Z" fill=accent/0.28 stroke=none overlap=ok mask=0
+
+// bars
+ci:     rect at 120,120 12x240 fill=ink stroke=none radius=0
+unit:   rect at 500,120 12x104 fill=ink stroke=none radius=0
+e2e:    rect at 500,256 12x80 fill=ink stroke=none radius=0
+build:  rect at 500,368 12x40 fill=ink stroke=none radius=0
+lint:   rect at 500,440 12x16 fill=ink stroke=none radius=0
+flaked: rect at 880,120 12x20 fill=ink stroke=none radius=0
+passed: rect at 880,148 12x188 fill=ink stroke=none radius=0
+failed: rect at 880,344 12x32 fill=ink stroke=none radius=0
+
+text "CI minutes" at 104,236 anchor=end weight=600 color=ink
+text "12,000 min" at 104,252 style=small anchor=end
+text "Unit tests" at 506,96 anchor=middle weight=600 color=ink
+text "5,200 min" at 506,112 style=small anchor=middle
+text "E2E" at 506,236 anchor=middle weight=600 color=ink
+text "4,000 min" at 506,250 style=small anchor=middle
+text "Build" at 506,348 anchor=middle weight=600 color=ink
+text "2,000 min" at 506,362 style=small anchor=middle
+text "Lint" at 506,420 anchor=middle weight=600 color=ink
+text "800 min" at 506,434 style=small anchor=middle
+text "Flaked" at 908,124 weight=600 color=ink
+text "1,000 min" at 908,138 style=small
+text "Passed" at 908,240 weight=600 color=ink
+text "9,400 min" at 908,256 style=small
+text "Failed" at 908,358 weight=600 color=ink
+text "1,600 min" at 908,374 style=small
+
+// legend by hand: a legend swatch cannot show a tint
+40,492 -- 960,492 style=rule
+text "Legend" at 40,510 style=eyebrow
+rect at 40,520 16x8 fill=muted/0.18 stroke=muted radius=0
+text "Flow · stage routing" at 64,528 style=caption
+rect at 220,520 16x8 fill=accent/0.28 stroke=accent radius=0
+text "Flaked path · reruns" at 244,528 style=caption
+rect at 420,520 16x8 fill=ink stroke=none radius=0
+text "Bar · stage total" at 444,528 style=caption
+text "Two coral bands: flaky reruns burn about 8% of the monthly CI budget." at 600,528 style=caption italic=1

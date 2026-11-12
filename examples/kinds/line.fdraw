@@ -1,0 +1,15 @@
+look "../../looks/reference.look"
+canvas 1000x500
+
+// plot 96,56 to 960,372. The series the chart is about is written last, so it is drawn on top
+sig: chart at 96,56 864x316 x="W1,W2,W3,W4,W5,W6,W7,W8" y=0..240 step=40 key=0 ytitle="Signups per week"
+  | line "Referral" 45 52 48 60 55 68 62 75 stroke=soft sw=1.5
+  | line "Direct" 80 82 88 90 86 92 95 98 stroke=muted sw=1.5
+  | area "Organic" 120 135 148 162 155 178 195 210 stroke=accent fill=accent/0.08 dots=1
+
+// each line is named above its right end, so the reader never has to match colours with the legend
+text "Organic · 210" at 912,80 size=11 weight=600 color=accent anchor=end
+text "Direct" at 912,232 size=10 color=muted anchor=end
+text "Referral" at 912,262 size=10 color=soft anchor=end
+
+legend at 40,420 line.accent="Organic · up 75% in eight weeks" line.muted="Direct" line.soft="Referral"

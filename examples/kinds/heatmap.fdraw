@@ -1,0 +1,70 @@
+look "../../looks/reference.look"
+canvas 1000x468
+
+// grid: 6 columns from x=172, 120px apart; 5 rows from y=72, 60px apart; cells 116x56 with a 4px gap
+// fill = ink at (value / 9 * 0.65): 9% is the largest value outside the focal cell
+text "Sprint" at 530,36 style=eyebrow anchor=middle
+text "Service" at 52,220 style=eyebrow anchor=middle rotate=-90
+text "S1" at 230,60 style=small size=10 color=muted anchor=middle
+text "S2" at 350,60 style=small size=10 color=muted anchor=middle
+text "S3" at 470,60 style=small size=10 color=muted anchor=middle
+text "S4" at 590,60 style=small size=10 color=muted anchor=middle
+text "S5" at 710,60 style=small size=10 color=muted anchor=middle
+text "S6" at 830,60 style=small size=10 color=muted anchor=middle
+
+text "auth" at 160,104 style=small size=10 color=ink anchor=end
+aut1: rect "4%" at 172,72 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+aut2: rect "5%" at 292,72 116x56 fill=ink/0.36 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+aut3: rect "6%" at 412,72 116x56 fill=ink/0.43 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+aut4: rect "3%" at 532,72 116x56 fill=ink/0.22 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+aut5: rect "2%" at 652,72 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+aut6: rect "2%" at 772,72 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+
+text "payments" at 160,164 style=small size=10 color=ink anchor=end
+pay1: rect "3%" at 172,132 116x56 fill=ink/0.22 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+pay2: rect "4%" at 292,132 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+pay3: rect "5%" at 412,132 116x56 fill=ink/0.36 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+pay4: rect "47%" sub="REGRESSION" at 532,132 116x56 fill=accent/0.85 stroke=accent sw=1.2 radius=0 title.size=12 title.weight=700 title.font=mono sub.color=ink sub.size=8
+pay5: rect "6%" at 652,132 116x56 fill=ink/0.43 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+pay6: rect "4%" at 772,132 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+
+text "api-gateway" at 160,224 style=small size=10 color=ink anchor=end
+api1: rect "2%" at 172,192 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+api2: rect "3%" at 292,192 116x56 fill=ink/0.22 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+api3: rect "4%" at 412,192 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+api4: rect "2%" at 532,192 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+api5: rect "1%" at 652,192 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+api6: rect "1%" at 772,192 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+
+text "billing" at 160,284 style=small size=10 color=ink anchor=end
+bil1: rect "5%" at 172,252 116x56 fill=ink/0.36 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+bil2: rect "7%" at 292,252 116x56 fill=ink/0.51 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+bil3: rect "9%" at 412,252 116x56 fill=ink/0.65 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+bil4: rect "6%" at 532,252 116x56 fill=ink/0.43 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+bil5: rect "4%" at 652,252 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+bil6: rect "3%" at 772,252 116x56 fill=ink/0.22 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+
+text "notifications" at 160,344 style=small size=10 color=ink anchor=end
+not1: rect "1%" at 172,312 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+not2: rect "2%" at 292,312 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+not3: rect "2%" at 412,312 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+not4: rect "2%" at 532,312 116x56 fill=ink/0.14 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+not5: rect "1%" at 652,312 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+not6: rect "1%" at 772,312 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+
+// legend by hand: the ramp from low to high, then the focal cell
+40,392 -- 960,392 style=rule
+text "Legend" at 40,412 style=eyebrow
+text "Low" at 132,412 style=eyebrow color=soft anchor=end
+rect at 140,402 20x12 fill=ink/0.07 stroke=none radius=0
+rect at 162,402 20x12 fill=ink/0.14 stroke=none radius=0
+rect at 184,402 20x12 fill=ink/0.22 stroke=none radius=0
+rect at 206,402 20x12 fill=ink/0.29 stroke=none radius=0
+rect at 228,402 20x12 fill=ink/0.36 stroke=none radius=0
+rect at 250,402 20x12 fill=ink/0.43 stroke=none radius=0
+rect at 272,402 20x12 fill=ink/0.51 stroke=none radius=0
+rect at 294,402 20x12 fill=ink/0.65 stroke=none radius=0
+text "High" at 324,412 style=eyebrow color=soft
+rect at 400,402 20x12 fill=accent/0.85 stroke=accent radius=0
+text "payments · S4 · 47%: a deploy regression, since fixed" at 428,412 style=caption
+text "CI failure rate per service and sprint. The grey scale covers 1% to 9%; the accent cell is outside it." at 40,440 style=caption

@@ -1,0 +1,62 @@
+look "../../looks/reference.look"
+canvas 1000x712
+
+text "Payment classes" at 40,60 style=h1
+
+// row 1: the interface and the class that depends on it
+svc: table "PaymentService" at 40,112 264x0
+  | "+ charge(order: Order): Receipt"
+pm: table "«interface» PaymentMethod" at 520,100 360x0 stroke=accent fill=accent/0.08
+  | "+ authorize(amount: Money): AuthResult"
+  | "+ capture(ref: String): void"
+
+// row 2: the implementations, under the interface
+card: table "Card" at 456,264 200x0
+  | "- number: String"
+  | "- expiry: Date"
+  | "- cvv: String"
+bank: table "BankTransfer" at 704,264 256x0
+  | "- iban: String"
+  | "- accountHolder: String"
+
+// row 3: the order model
+order: table "Order" at 40,440 264x0
+  | "- id: String"
+  | "- placedAt: Date"
+  | "- total: Money"
+oline: table "OrderLine" at 456,440 200x0
+  | "- sku: String"
+  | "- qty: Int"
+  | "- price: Money"
+cust: table "Customer" at 704,440 256x0
+  | "- id: String"
+  | "- name: String"
+  | "- email: String"
+
+svc -> pm "uses" style=return head=open
+card.top -> pm.bottom@556 style=return head=triangle stroke=accent
+bank.top -> pm.bottom@832 style=return head=triangle stroke=accent
+order -- oline style=arrow tail=diamond-solid
+order.bottom -> cust.bottom head=open via=172,580;832,580
+
+// multiplicities: beside each end, 8px off the line
+text "1" at 328,484 style=small
+text "1..*" at 424,484 style=small
+text "0..*" at 180,556 style=small
+text "1" at 840,560 style=small
+
+legend at 40,612 focal="The interface being implemented"
+
+// the six relationships, drawn as samples (the legend statement has no entry for line ends)
+40,685 -> 80,685 head=triangle
+text "Inheritance" at 88,688 style=caption
+192,685 -> 232,685 style=return head=triangle
+text "Realization" at 240,688 style=caption
+344,685 -- 384,685 style=arrow tail=diamond-solid
+text "Composition · owns" at 392,688 style=caption
+520,685 -- 560,685 style=arrow tail=diamond
+text "Aggregation · has" at 568,688 style=caption
+688,685 -> 728,685 head=open
+text "Association" at 736,688 style=caption
+840,685 -> 880,685 style=return head=open
+text "Dependency" at 888,688 style=caption

@@ -125,7 +125,7 @@ export function check(sc: Scene): Issue[] {
 
   for (const t of sc.texts) {
     if (t.x < 0 || t.y < 0 || t.x + t.w > sc.w || t.y + t.h > sc.h) warn(t.line, `text ${t.id} runs outside the canvas (${sc.w}x${sc.h})`);
-    for (const s of front) if (!tiny(s) && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
+    for (const s of front) if (!tiny(s) && s.shape !== 'chart' && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
     for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1) && t.p.overlap !== 'ok' && o.p.overlap !== 'ok') warn(o.line, `text ${o.id} overlaps text ${t.id}`);
   }
   for (const s of sc.shapes) if (s.x < 0 || s.y < 0 || s.x + s.w > sc.w || s.y + s.h > sc.h) warn(s.line, `${s.id} is outside the canvas (${sc.w}x${sc.h})`);

@@ -105,9 +105,11 @@ Each row is one series: `| kind "name" numbers... props`.
 | `bars` | one bar per category. Several `bars` series stand side by side; `stack=1` on the chart stacks them. A pair `lo,hi` is a floating bar (a bridge step, a range) |
 | `line` | a line through the values; `dots=1` marks each point, `dash=4,4` dashes it |
 | `area` | a line with the space under it tinted |
-| `dots` | points only. With a numeric x axis each point is `x,y`; with categories a pair is `value,radius` (a bubble) |
+| `dots` | points only. With a numeric x axis each point is `x,y` or `x,y,radius`; with categories a pair is `value,radius` (a bubble). `r=5` sets one radius for all, `opacity=0.6` thins them |
 
 - `_` in place of a number leaves a gap.
+- One bar or dot can take its own colour by its position from 1: `| bars "Sales" 72 88 110 fill=soft fill.3=accent`. `fill=` together with `stroke=` gives bars and dots an outline.
+- A floating bar that does not start at zero is labelled as a change, with a plus sign on a rise.
 - Colour a series with `fill=` or `stroke=` on its row. Without it the series take the accent first, then the link colour, then greys. Keep the accent for the series the chart is about.
 
 Chart properties:
@@ -121,7 +123,9 @@ Chart properties:
 | `prefix="$"`, `unit="k"` | written around every y value |
 | `labels=1` | write each value above its bar or point |
 | `xtitle=`, `ytitle=` | axis titles |
-| `grid=0`, `grid=both` | no grid lines; or vertical ones too (numeric x) |
+| `grid=0`, `grid=both`, `grid=x` | no grid lines; vertical ones too; vertical ones only |
+| `stroke=none` | no axis lines |
+| `zero=0` | no line at zero when the y range runs from negative to positive |
 | `key=0` | hide the series key (drawn top-right when there are two or more named series) |
 | `yaxis=0` | hide the y tick labels (when `labels=1` already says it) |
 | `bar.width=0.64` | share of each category's width that bars fill |
@@ -152,6 +156,8 @@ users: table "users" at 40,100
 - Rows come last in the statement. Properties of the table itself go on the first line.
 
 An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left or right edge of the table, level with that row, on the side facing the other end; `users.id.left` forces a side.
+
+A shape's text is styled with `title.size=`, `title.color=`, `title.weight=`, `title.font=` (and `sub.` the same for the second line).
 
 Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.
 
