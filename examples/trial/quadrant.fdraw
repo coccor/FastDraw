@@ -1,0 +1,43 @@
+canvas 1000x500
+
+// scale: x = 120 + cost*76 (cost 0-10), y = 424 - value*34.4 (value 0-10)
+text "Feature requests: customer value against build cost" at 40,44 style=h1
+
+zone at 120,80 380x172 fill=accent/0.03 stroke=none radius=0
+
+xaxis: 120,252 -> 880,252 stroke=ink/0.45 sw=1
+yaxis: 500,424 -> 500,80 stroke=ink/0.45 sw=1
+
+text "Low build cost" at 120,268 style=eyebrow
+text "High build cost" at 880,268 style=eyebrow anchor=end
+text "High customer value" at 512,92 style=eyebrow
+text "Low customer value" at 512,424 style=eyebrow
+
+text "Quick wins" at 140,100 style=eyebrow size=9 color=accent weight=600
+text "Big bets" at 860,100 style=eyebrow size=9 anchor=end
+text "Fill-ins" at 140,404 style=eyebrow size=9
+text "Money pits" at 860,404 style=eyebrow size=9 anchor=end
+
+sso: ellipse at 342,126 12x12 fill=accent stroke=none
+text "Single sign-on" at 358,134 size=11 weight=600 color=ink
+csv: ellipse at 230,196 8x8 fill=ink stroke=none
+text "CSV export" at 246,204 size=11 color=muted
+audit: ellipse at 405,179 8x8 fill=ink stroke=none
+text "Audit log" at 421,187 size=11 color=muted
+dark: ellipse at 306,334 8x8 fill=ink stroke=none
+text "Dark mode" at 322,342 size=11 color=muted
+mobile: ellipse at 800,145 8x8 fill=ink stroke=none
+text "Mobile app" at 784,153 size=11 color=muted anchor=end
+ai: ellipse at 724,220 8x8 fill=ink stroke=none
+text "AI assistant" at 740,228 size=11 color=muted
+themes: ellipse at 610,334 8x8 fill=ink stroke=none
+text "Custom themes" at 626,342 size=11 color=muted
+onprem: ellipse at 762,368 8x8 fill=ink stroke=none
+text "On-prem install" at 746,376 size=11 color=muted anchor=end
+
+rule1: 120,456 -- 880,456 style=rule
+text "Legend" at 120,474 style=eyebrow
+lg1: ellipse at 170,468 12x12 fill=accent stroke=none
+text "Act on first" at 190,478 style=caption
+lg2: ellipse at 290,470 8x8 fill=ink stroke=none
+text "Other request" at 306,478 style=caption

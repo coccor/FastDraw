@@ -1,0 +1,61 @@
+canvas 1000x420
+
+text "The first two years of a startup" at 40,56 style=h1
+
+// scale: Jan 2025 at x=80, 35px per month, Jan 2027 at x=920
+axis: 80,210 -- 920,210 stroke=muted/0.45 sw=1
+80,202 -- 80,218 stroke=ink/0.2 sw=1
+500,202 -- 500,218 stroke=ink/0.2 sw=1
+920,202 -- 920,218 stroke=ink/0.2 sw=1
+text "JAN 2025" at 80,236 style=eyebrow anchor=middle color=soft
+text "JAN 2026" at 500,236 style=eyebrow anchor=middle color=soft
+text "JAN 2027" at 920,236 style=eyebrow anchor=middle color=soft
+
+115,210 -- 115,266 sw=1 stroke=ink/0.3
+e1: ellipse at 111,206 8x8 fill=ink stroke=none
+text "FEB 2025" at 115,282 style=eyebrow anchor=middle
+text "Company founded" at 115,298 anchor=middle weight=600 color=ink
+text "two founders" at 115,314 style=small anchor=middle
+185,154 -- 185,210 sw=1 stroke=ink/0.3
+e2: ellipse at 181,206 8x8 fill=ink stroke=none
+text "APR 2025" at 185,118 style=eyebrow anchor=middle
+text "First prototype" at 185,134 anchor=middle weight=600 color=ink
+text "demo to 5 users" at 185,150 style=small anchor=middle
+255,210 -- 255,266 sw=1 stroke=ink/0.3
+e3: ellipse at 251,206 8x8 fill=ink stroke=none
+text "JUN 2025" at 255,282 style=eyebrow anchor=middle
+text "First paying client" at 255,298 anchor=middle weight=600 color=ink
+text "a local bakery chain" at 255,314 style=small anchor=middle
+360,154 -- 360,210 sw=1 stroke=ink/0.3
+e4: ellipse at 356,206 8x8 fill=ink stroke=none
+text "SEP 2025" at 360,118 style=eyebrow anchor=middle
+text "Seed round" at 360,134 anchor=middle weight=600 color=ink
+text "1.2M raised" at 360,150 style=small anchor=middle
+465,210 -- 465,266 sw=1 stroke=accent
+e5: ellipse at 459,204 12x12 fill=accent stroke=none
+text "DEC 2025" at 465,282 style=eyebrow anchor=middle color=accent
+text "Pivot to B2B" at 465,298 anchor=middle weight=600 color=ink size=14
+text "turning point" at 465,314 style=small anchor=middle
+570,154 -- 570,210 sw=1 stroke=ink/0.3
+e6: ellipse at 566,206 8x8 fill=ink stroke=none
+text "MAR 2026" at 570,118 style=eyebrow anchor=middle
+text "10 enterprise clients" at 570,134 anchor=middle weight=600 color=ink
+text "all on annual plans" at 570,150 style=small anchor=middle
+710,210 -- 710,266 sw=1 stroke=ink/0.3
+e7: ellipse at 706,206 8x8 fill=ink stroke=none
+text "JUL 2026" at 710,282 style=eyebrow anchor=middle
+text "Series A" at 710,298 anchor=middle weight=600 color=ink
+text "8M raised" at 710,314 style=small anchor=middle
+850,154 -- 850,210 sw=1 stroke=ink/0.3
+e8: ellipse at 846,206 8x8 fill=ink stroke=none
+text "NOV 2026" at 850,118 style=eyebrow anchor=middle
+text "Team of 25" at 850,134 anchor=middle weight=600 color=ink
+text "three offices" at 850,150 style=small anchor=middle
+
+40,356 -- 960,356 style=rule
+text "Legend" at 40,380 style=eyebrow
+ldot1: ellipse at 120,372 8x8 fill=ink stroke=none
+text "Event" at 136,380 style=caption
+ldot2: ellipse at 200,370 12x12 fill=accent stroke=none
+text "Turning point" at 220,380 style=caption
+text "Spacing follows real time: 35px per month" at 340,380 style=caption

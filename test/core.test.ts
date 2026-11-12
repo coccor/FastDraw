@@ -500,3 +500,13 @@ test('a look cannot reach outside its own folder for icons or fonts, nor through
   assert.deepEqual(names('./icons/../../outside'), []);
   assert.match(loadLook(root + '/proj/t.look').issues.map((i) => i.msg).join(), /icondir must be a folder inside the folder that holds the look file/);
 });
+
+test('text that cannot be read against its background is reported; plain-line styles never grow heads', () => {
+  const dflt = (b: string) => check(buildScene(`canvas 800x400\n${b}`, null)).map((i) => i.msg).join('\n');
+  assert.match(dflt('b: focal "Blocked" sub="waiting" at 40,40 dash=4,4 fill=accent/0.05\n'), /the text of b is almost the same colour as its background/);
+  assert.match(dflt('f: focal "Assess" at 40,40 160x80\ntext "case and report" at 60,100 size=9\ntext "ok" at 60,84 size=9 color=accent\n'), /text the unnamed element on line 4 is almost the same colour as f behind it/);
+  assert.doesNotMatch(dflt('f: focal "Assess" sub="fine" at 40,40\nn: node "Plain" sub="also fine" at 240,40\ntext "on paper" at 40,200\ntext "2025" at 40,300 size=60 color=ink/0.06\n'), /cannot be read/);
+  assert.match(dflt('r: rect at 41,40 100x40\n'), /the unnamed element|r is off the 4px grid/);
+  const sc = buildScene('canvas 800x400\n40,100 -> 400,100 style=rule\n40,200 -> 400,200 style=rule head=open\n40,300 -> 400,300\n', null);
+  assert.deepEqual(sc.conns.map((c) => c.headM), ['none', 'open', 'arrow']);
+});

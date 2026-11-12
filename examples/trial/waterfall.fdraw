@@ -1,0 +1,15 @@
+canvas 1000x544
+text "How last year's profit became this year's" at 40,36 style=h1
+wf: chart at 96,96 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Profit · $k"
+    x="FY25 profit,Sales growth,Cost of goods,Pricing,Marketing,New products,FY26 profit"
+  | bars "Total"   0,240 _       _       _       _       _       0,283 fill=ink
+  | bars "Added"   _     240,300 _       255,293 _       _       _     fill=muted
+  | bars "Removed" _     _       300,255 _       293,263 _       _     fill=soft
+  | bars "Focus"   _     _       _       _       _       263,283 _     fill=accent
+196,224.0 -- 243,224.0 stroke=ink/0.55 sw=1
+320,176.0 -- 366,176.0 stroke=ink/0.55 sw=1
+443,212.0 -- 490,212.0 stroke=ink/0.55 sw=1
+566,181.6 -- 613,181.6 stroke=ink/0.55 sw=1
+690,205.6 -- 736,205.6 stroke=ink/0.55 sw=1
+813,189.6 -- 860,189.6 stroke=ink/0.55 sw=1
+legend at 40,464 swatch.ink="Start and end profit" swatch.muted="Added" swatch.soft="Removed" swatch.accent="New products: the step we launched"

@@ -1,0 +1,65 @@
+canvas 1280x576
+
+text "Drawing program: shapes" at 40,56 style=h1
+
+renderer: table "«interface» Renderer" at 40,100 216x0
+  | "+ draw(s: Shape): void"
+  | "+ clear(): void"
+
+canvas: table "Canvas" at 376,100 216x0
+  | "- shapes: List<Shape>"
+  | "- renderer: Renderer"
+  | ---
+  | "+ add(s: Shape): void"
+  | "+ render(): void"
+
+shape: table "Shape" at 712,100 440x0 stroke=accent fill=accent/0.08
+  | "# color: Color"
+  | "# origin: Point"
+  | ---
+  | "+ area(): double"
+  | "+ draw(r: Renderer): void"
+
+circle: table "Circle" at 628,320 192x0
+  | "- radius: double"
+  | ---
+  | "+ area(): double"
+  | "+ draw(r: Renderer)"
+
+rect: table "Rectangle" at 836,320 192x0
+  | "- width: double"
+  | "- height: double"
+  | ---
+  | "+ area(): double"
+  | "+ draw(r: Renderer)"
+
+tri: table "Triangle" at 1044,320 192x0
+  | "- a: Point"
+  | "- b: Point"
+  | "- c: Point"
+  | ---
+  | "+ area(): double"
+
+circle.top -> shape.bottom@724 head=triangle stroke=accent
+rect.top -> shape.bottom@932 head=triangle stroke=accent
+tri.top -> shape.bottom@1140 head=triangle stroke=accent
+
+canvas.right@150 -- shape.left@150 style=arrow tail=diamond-solid stroke=accent
+text "1" at 616,142 style=small
+text "0..*" at 688,142 style=small anchor=end
+
+canvas.left@150 -> renderer.right@150 "uses" style=return head=open
+
+legend at 40,472 focal="Abstract base class"
+40,557 -> 80,557 head=triangle
+text "Inheritance" at 88,560 style=caption
+192,557 -> 232,557 style=return head=triangle
+text "Realization" at 240,560 style=caption
+344,557 -- 384,557 style=arrow tail=diamond-solid
+text "Composition · owns" at 392,560 style=caption
+496,557 -- 536,557 style=arrow tail=diamond
+text "Aggregation" at 544,560 style=caption
+648,557 -> 688,557 head=open
+text "Association" at 696,560 style=caption
+800,557 -> 840,557 style=return head=open
+text "Dependency · uses" at 848,560 style=caption

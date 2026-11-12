@@ -1,0 +1,39 @@
+canvas 1200x628
+
+text "IoT sensor platform, devices to dashboards" at 40,56 style=h1
+
+p1: polygon "DEVICES"    at 40,88  points=0,0;216,0;232,16;216,32;0,32 fill=ink stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
+p2: polygon "INGESTION"  at 264,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=muted stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
+p3: polygon "STORAGE"    at 488,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=ink stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
+p4: polygon "PROCESSING" at 712,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=muted stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
+p5: polygon "DASHBOARDS" at 936,88 points=0,0;224,0;224,32;0,32;16,16 fill=ink stroke=none title.color=#ffffff title.font=mono title.size=8 overlap=ok
+
+zsrc: zone "Field" at 48,136 208x252 dash=4,3
+zk: zone "Kubernetes cluster" at 272,136 888x252
+
+sensors: external "Sensors" at 72,172 160x56
+gw:      external "Gateways" at 72,244 160x56
+plc:     external "Legacy PLCs" at 72,316 160x56
+
+broker: node "MQTT broker" at 304,168
+tsdb:   focal "Time-series DB" at 528,168
+cold:   store "Cold storage" at 528,280
+stream: node "Stream analytics" at 752,168
+rules:  node "Alert rules" at 752,280
+dash:   node "Dashboards" at 976,168
+notify: node "Notifications" at 976,280
+
+idp: cloud "Identity and access" at 40,412 1120x48
+mon: cloud "Monitoring and logging" at 40,484 1120x48
+
+sensors.right -> broker.left
+gw.right -> broker.bottom@352
+plc.right -> broker.bottom@400
+broker -> tsdb style=primary
+tsdb.bottom -> cold.top
+tsdb -> stream style=primary
+stream.bottom -> rules.top
+stream -> dash
+rules -> notify
+
+legend at 40,556 external="Device or source" focal="Storage hub" node="Service" store="Archive" cloud="Spans every phase" primary="Main data path" arrow="Data flow"

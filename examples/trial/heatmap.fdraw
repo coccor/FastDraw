@@ -1,0 +1,73 @@
+canvas 1000x628
+text "Website visits by weekday and time of day" at 40,40 style=h1
+// fill = ink at (value / 540 * 0.65), at least 0.07: 540 is the largest value outside the focal cell
+text "HOUR OF DAY" at 528,76 style=eyebrow anchor=middle
+text "WEEKDAY" at 40,322 style=eyebrow anchor=middle rotate=-90
+text "00-04" at 230,100 style=small size=10 color=muted anchor=middle
+text "04-08" at 350,100 style=small size=10 color=muted anchor=middle
+text "08-12" at 470,100 style=small size=10 color=muted anchor=middle
+text "12-16" at 590,100 style=small size=10 color=muted anchor=middle
+text "16-20" at 710,100 style=small size=10 color=muted anchor=middle
+text "20-24" at 830,100 style=small size=10 color=muted anchor=middle
+text "Mon" at 160,144 style=small size=10 color=ink anchor=end
+c11: rect "20" at 172,112 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c12: rect "60" at 292,112 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c13: rect "420" at 412,112 116x56 fill=ink/0.51 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c14: rect "480" at 532,112 116x56 fill=ink/0.58 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c15: rect "360" at 652,112 116x56 fill=ink/0.43 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c16: rect "180" at 772,112 116x56 fill=ink/0.22 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+text "Tue" at 160,204 style=small size=10 color=ink anchor=end
+c21: rect "25" at 172,172 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c22: rect "70" at 292,172 116x56 fill=ink/0.08 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c23: rect "450" at 412,172 116x56 fill=ink/0.54 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c24: rect "510" at 532,172 116x56 fill=ink/0.61 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c25: rect "390" at 652,172 116x56 fill=ink/0.47 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c26: rect "200" at 772,172 116x56 fill=ink/0.24 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+text "Wed" at 160,264 style=small size=10 color=ink anchor=end
+c31: rect "22" at 172,232 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c32: rect "75" at 292,232 116x56 fill=ink/0.09 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c33: rect "470" at 412,232 116x56 fill=ink/0.57 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c34: rect "520" at 532,232 116x56 fill=ink/0.63 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c35: rect "400" at 652,232 116x56 fill=ink/0.48 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c36: rect "190" at 772,232 116x56 fill=ink/0.23 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+text "Thu" at 160,324 style=small size=10 color=ink anchor=end
+c41: rect "30" at 172,292 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c42: rect "80" at 292,292 116x56 fill=ink/0.1 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c43: rect "440" at 412,292 116x56 fill=ink/0.53 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+t44: rect "1,480" sub="PEAK" at 532,292 116x56 fill=accent/0.85 stroke=accent sw=1.2 radius=0 title.size=12 title.weight=700 title.font=mono sub.color=ink sub.size=8
+c45: rect "380" at 652,292 116x56 fill=ink/0.46 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c46: rect "210" at 772,292 116x56 fill=ink/0.25 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+text "Fri" at 160,384 style=small size=10 color=ink anchor=end
+c51: rect "40" at 172,352 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c52: rect "90" at 292,352 116x56 fill=ink/0.11 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c53: rect "400" at 412,352 116x56 fill=ink/0.48 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c54: rect "540" at 532,352 116x56 fill=ink/0.65 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c55: rect "350" at 652,352 116x56 fill=ink/0.42 stroke=none radius=0 title.size=9 title.font=mono title.weight=400 title.color=#ffffff
+c56: rect "260" at 772,352 116x56 fill=ink/0.31 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+text "Sat" at 160,444 style=small size=10 color=ink anchor=end
+c61: rect "90" at 172,412 116x56 fill=ink/0.11 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c62: rect "60" at 292,412 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c63: rect "180" at 412,412 116x56 fill=ink/0.22 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c64: rect "240" at 532,412 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c65: rect "260" at 652,412 116x56 fill=ink/0.31 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c66: rect "300" at 772,412 116x56 fill=ink/0.36 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+text "Sun" at 160,504 style=small size=10 color=ink anchor=end
+c71: rect "70" at 172,472 116x56 fill=ink/0.08 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c72: rect "40" at 292,472 116x56 fill=ink/0.07 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c73: rect "150" at 412,472 116x56 fill=ink/0.18 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c74: rect "210" at 532,472 116x56 fill=ink/0.25 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c75: rect "240" at 652,472 116x56 fill=ink/0.29 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+c76: rect "280" at 772,472 116x56 fill=ink/0.34 stroke=none radius=0 title.size=9 title.font=mono title.weight=400
+40,548 -- 960,548 style=rule
+text "Legend" at 40,576 style=eyebrow
+text "Low" at 120,576 style=caption
+lg1: rect at 156,566 20x12 fill=ink/0.07 stroke=none radius=0
+lg2: rect at 180,566 20x12 fill=ink/0.19 stroke=none radius=0
+lg3: rect at 204,566 20x12 fill=ink/0.31 stroke=none radius=0
+lg4: rect at 228,566 20x12 fill=ink/0.43 stroke=none radius=0
+lg5: rect at 252,566 20x12 fill=ink/0.54 stroke=none radius=0
+lg6: rect at 276,566 20x12 fill=ink/0.65 stroke=none radius=0
+text "High" at 304,576 style=caption
+lgf: rect at 360,566 20x12 fill=accent/0.85 stroke=accent radius=0
+text "Thursday 12-16: a product launch email drove 1,480 visits" at 388,576 style=caption
+text "Visits per block, averaged over four weeks. Grey scale runs from 20 to 540 visits; the peak is left out of it." at 40,600 style=caption

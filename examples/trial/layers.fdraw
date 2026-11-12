@@ -1,0 +1,37 @@
+canvas 1000x620
+
+text "Layers of a mobile banking app" at 40,56 style=h1
+
+l6: rect at 136,104 824x64 fill=ink/0.03 stroke=ink/0.15
+l5: rect at 136,168 824x64 fill=ink/0.03 stroke=ink/0.15
+l3: rect at 136,296 824x64 fill=ink/0.03 stroke=ink/0.15
+l2: rect at 136,360 824x64 fill=ink/0.03 stroke=ink/0.15
+l1: rect at 136,424 824x64 fill=ink/0.03 stroke=ink/0.15
+l4: focal at 136,232 824x64 radius=0
+
+text "L6" at 156,140 style=eyebrow
+text "Customer device" at 224,142 size=16 weight=600
+text "phone, biometrics, keystore" at 940,141 style=small size=10 anchor=end
+text "L5" at 156,204 style=eyebrow
+text "Mobile app" at 224,206 size=16 weight=600
+text "screens, local cache" at 940,205 style=small size=10 anchor=end
+text "L4" at 156,268 style=eyebrow color=#ffffff
+text "API gateway" at 224,270 size=16 weight=600 color=#ffffff
+text "auth, rate limits, TLS" at 940,269 style=small size=10 anchor=end color=#ffffff
+text "L3" at 156,332 style=eyebrow
+text "Banking services" at 224,334 size=16 weight=600
+text "accounts, payments, cards" at 940,333 style=small size=10 anchor=end
+text "L2" at 156,396 style=eyebrow
+text "Integration" at 224,398 size=16 weight=600
+text "message bus, adapters" at 940,397 style=small size=10 anchor=end
+text "L1" at 156,460 style=eyebrow
+text "Core banking" at 224,462 size=16 weight=600
+text "ledger, batch jobs" at 940,461 style=small size=10 anchor=end
+
+text "Customer" at 76,92 style=eyebrow anchor=middle
+76,488 -> 76,104
+text "Ledger" at 76,508 style=eyebrow anchor=middle
+
+text "Every request is authenticated here before it touches money." at 136,536 style=note
+
+legend at 40,560 focal="The layer this diagram is about"

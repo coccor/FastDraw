@@ -1,0 +1,10 @@
+canvas 1000x520
+text "Monthly active users, last twelve months" at 40,40 style=h1
+mau: chart at 96,88 864x316 x="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec" y=0..140 step=20 key=0 ytitle="Monthly active users (thousands)"
+  | line "Calendar" 44 46 45 47 48 47 49 50 49 51 50 52 stroke=soft sw=1.5
+  | line "Mail" 100 98 99 96 95 94 93 91 92 90 89 88 stroke=muted sw=1.5
+  | line "Notes" 52 55 61 64 70 78 83 91 97 104 109 116 stroke=accent dots=1
+text "Notes · 116" at 924,132 size=11 weight=600 color=accent anchor=end
+text "Mail · 88" at 924,195 size=11 color=muted anchor=end
+text "Calendar · 52" at 924,277 size=11 color=soft anchor=end
+legend at 40,456 line.accent="Notes · more than doubled" line.muted="Mail" line.soft="Calendar"

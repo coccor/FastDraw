@@ -1,0 +1,55 @@
+canvas 1000x450
+text "Who may do what in the document system" at 40,56 style=h1
+corner: rect "Area" sub="vs. AD group" at 40,96 200x52 radius=6 fill=#ffffff stroke=ink/0.12 title.size=11
+r1: rect "Owner" sub="GRP-OWNERS" at 248,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+r2: rect "Editor" sub="GRP-EDITORS" at 392,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+r3: rect "Reviewer" sub="GRP-REVIEW" at 536,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+r4: rect "Viewer" sub="GRP-VIEWERS" at 680,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+r5: rect "Guest" sub="GRP-GUESTS" at 824,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+c1: rect "Document library" at 40,160 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
+text "S3" at 228,181 style=small anchor=end
+c11: rect "Manage" at 248,160 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=ink/0.12 title.weight=600
+c12: rect "Edit" at 392,160 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=#ffffff title.weight=400
+c13: rect "Read" at 536,160 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c14: rect "Read" at 680,160 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c15: rect "None" at 824,160 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c2: rect "Version history" at 40,200 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
+text "DB" at 228,221 style=small anchor=end
+c21: rect "Manage" at 248,200 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=ink/0.12 title.weight=600
+c22: rect "Restore" at 392,200 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=#ffffff title.weight=400
+c23: rect "Read" at 536,200 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c24: rect "Read" at 680,200 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c25: rect "None" at 824,200 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c3: rect "Sharing links" at 40,240 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
+text "API" at 228,261 style=small anchor=end
+c31: rect "Manage" at 248,240 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=ink/0.12 title.weight=600
+c32: rect "Create" at 392,240 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=#ffffff title.weight=400
+c33: rect "Create" at 536,240 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=#ffffff title.weight=400
+c34: rect "None" at 680,240 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c35: rect "None" at 824,240 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c4: rect "Audit log" at 40,280 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
+text "SIEM" at 228,301 style=small anchor=end
+c41: rect "Full" at 248,280 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=ink/0.12 title.weight=600
+c42: rect "Read" at 392,280 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c43: rect "Read" at 536,280 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c44: rect "Read" at 680,280 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=muted/0.08 title.color=muted title.weight=400
+c45: rect "None" at 824,280 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c5: rect "Retention policy" at 40,320 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
+text "ADMIN" at 228,341 style=small anchor=end
+c51: rect "Set" sub="only owners" at 248,320 136x36 radius=4 title.size=10 fill=accent/0.08 stroke=accent sw=1.4 title.color=accent title.weight=600 sub.color=accent sub.size=8
+c52: rect "None" at 392,320 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c53: rect "None" at 536,320 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c54: rect "None" at 680,320 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+c55: rect "None" at 824,320 136x36 radius=4 title.size=10 stroke=ink/0.12 fill=none title.color=soft title.weight=400
+40,380 -- 960,380 style=rule
+text "Legend" at 40,400 style=eyebrow
+lg1: rect at 40,408 16x12 radius=2 stroke=ink/0.12 fill=ink/0.12
+text "Full / admin" at 64,418 style=caption
+lg2: rect at 160,408 16x12 radius=2 stroke=ink/0.12 fill=#ffffff
+text "Read and write" at 184,418 style=caption
+lg3: rect at 280,408 16x12 radius=2 stroke=ink/0.12 fill=muted/0.08
+text "Read only" at 304,418 style=caption
+lg4: rect at 400,408 16x12 radius=2 stroke=ink/0.12 fill=none
+text "No access" at 424,418 style=caption
+lg5: rect at 520,408 16x12 radius=2 fill=accent/0.08 stroke=accent sw=1.4
+text "The rule to remember: only owners set retention" at 544,418 style=caption

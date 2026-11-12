@@ -1,0 +1,29 @@
+canvas 1008x584
+
+text "Retail IT landscape today" at 40,56 style=h1
+text "Orders and stock reach finance through batch files and one manual spreadsheet copy." at 40,88
+
+z1: zone "Sales channels" at 40,136 240x352
+z2: zone "Head office" at 384,136 240x352
+z3: zone "Partners" at 728,136 240x352
+
+pos:  node "POS terminals" sub="42 stores, local database" at 56,176 208x64
+srv:  store "Store server" sub="nightly batch upload" at 56,288 208x64
+shop: node "Web shop" sub="hosted in a colo rack" at 56,400 208x64
+
+wms:  node "Warehouse system" sub="CSV every hour" at 400,176 208x64
+erp:  focal "On-prem ERP" sub="one VM, no failover" at 400,288 208x64
+fin:  focal "Finance spreadsheets" sub="manual month-end copy" at 400,400 208x64
+
+carrier: optional "Courier portal" sub="web form" at 744,288 208x64
+bank:    optional "Bank portal" sub="file upload" at 744,400 208x64
+
+pos -> srv "sync"
+srv.right -> erp.left@320 "batch file" lpos=332,310
+shop.right -> erp.left@336 "export" style=primary via=348,432;348,336 lpos=306,422
+wms -> erp "CSV"
+erp -> fin "copy" style=primary
+erp -> carrier "email" style=return lpos=676,310
+fin -> bank "upload" style=return lpos=676,422
+
+legend at 40,512 focal="Pain point" optional="Outside the company" store="System of record" arrow="Hand-off" primary="Manual hand-off" return="Crosses company edge"

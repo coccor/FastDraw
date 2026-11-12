@@ -1,0 +1,58 @@
+canvas 1240x580
+
+text "A patient's first clinic appointment" at 40,44 style=h1
+
+// columns cx=228,444,660,876,1092; feeling lines y=160 high, 240 neutral, 320 low (halves 200, 280)
+text "Stage 1" at 228,100 style=eyebrow anchor=middle
+text "Book" at 228,120 weight=600 anchor=middle
+text "Stage 2" at 444,100 style=eyebrow anchor=middle
+text "Prepare" at 444,120 weight=600 anchor=middle
+text "Stage 3" at 660,100 style=eyebrow anchor=middle
+text "Arrive" at 660,120 weight=600 anchor=middle
+text "Stage 4" at 876,100 style=eyebrow anchor=middle
+text "Consult" at 876,120 weight=600 anchor=middle
+text "Stage 5" at 1092,100 style=eyebrow anchor=middle
+text "Follow up" at 1092,120 weight=600 anchor=middle
+128,160 -- 1200,160 style=rule
+text "High" at 112,163 style=eyebrow anchor=end
+128,240 -- 1200,240 style=rule
+text "Neutral" at 112,243 style=eyebrow anchor=end
+128,320 -- 1200,320 style=rule
+text "Low" at 112,323 style=eyebrow anchor=end
+228,200 -- 444,240 sw=1.5
+444,240 -- 660,320 sw=1.5 stroke=accent
+660,320 -- 876,160 sw=1.5
+876,160 -- 1092,200 sw=1.5
+ellipse at 223,195 10x10 fill=muted stroke=none
+ellipse at 439,235 10x10 fill=muted stroke=none
+ellipse at 655,315 10x10 fill=accent stroke=none
+ellipse at 871,155 10x10 fill=muted stroke=none
+ellipse at 1087,195 10x10 fill=muted stroke=none
+128,344 -- 1200,344 style=rule
+128,440 -- 1200,440 style=rule
+128,496 -- 1200,496 style=rule
+text "Does" at 112,375 style=eyebrow anchor=end
+text "Where" at 112,471 style=eyebrow anchor=end
+text "Picks a slot online" at 228,372 anchor=middle
+text "Clinic website" at 228,468 style=small anchor=middle
+text "Fills in intake form" at 444,372 anchor=middle
+text "Email and SMS" at 444,468 style=small anchor=middle
+text "Waits to be called" at 660,372 anchor=middle
+text "Front desk kiosk" at 660,468 style=small anchor=middle
+text "Talks with the doctor" at 876,372 anchor=middle
+text "Consulting room" at 876,468 style=small anchor=middle
+text "Gets summary and bill" at 1092,372 anchor=middle
+text "Patient portal" at 1092,468 style=small anchor=middle
+rect "NO WAIT TIME SHOWN" at 568,384 184x16 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
+    title.font=mono title.size=8 title.weight=400 title.color=accent title.spacing=0.1
+rect "FORMS ASKED TWICE" at 568,408 184x16 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
+    title.font=mono title.size=8 title.weight=400 title.color=accent title.spacing=0.1
+128,520 -- 1200,520 style=rule
+text "Legend" at 128,544 style=eyebrow
+204,540 -- 228,540 sw=1.5
+ellipse at 212,536 8x8 fill=muted stroke=none
+text "How the patient feels" at 240,544 style=caption
+ellipse at 436,536 8x8 fill=accent stroke=none
+text "Lowest point" at 452,544 style=caption
+rect at 560,534 16x10 radius=2 fill=accent/0.08 stroke=accent/0.5 sw=0.8 dash=3,3
+text "What goes wrong" at 584,544 style=caption

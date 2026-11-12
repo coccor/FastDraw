@@ -249,6 +249,14 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 
 Shapes whose style is marked "drawn behind everything" (zones) come first, then all connectors, then connector labels, then shapes, then free text. Within each group, file order.
 
+### Title
+
+A diagram that has a title puts it first: `title: text "What this shows" at 40,52 style=h1`, with an optional one-line `caption` at 40,74. Everything else then starts at y=96 or lower. When a kind's guide gives positions that start nearer the top, they are for a diagram with no title: add 56 to every y to make room for one.
+
+### Plain lines
+
+A separator, an axis without a head, a grid line: write these with `--` between two points (`40,380 -- 960,380 style=rule`). `->` is for arrows.
+
 ## Composition rules
 
 These are what make a diagram look designed. `check` enforces the mechanical ones; the rest are yours.

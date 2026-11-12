@@ -340,7 +340,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (p.route && !['ortho', 'straight', 'curve'].includes(p.route)) err(st.line, `route=${p.route} is not a route; use ortho, straight or curve`);
       // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
       const styleHead = style.props.head && style.props.head !== 'none' ? style.props.head : 'arrow';
-      const headM = over.head ?? (op === '--' ? 'none' : styleHead);
+      // a style made for plain lines (head=none: a rule, a lifeline) never grows a head, even when written with ->
+      const plain = style.props.head === 'none' && styleName !== 'line';
+      const headM = over.head ?? (op === '--' || plain ? 'none' : styleHead);
       const tailM = over.tail ?? (op === '<->' ? headM : op === '--' ? 'none' : style.props.tail ?? 'none');
       for (const mk of [headM, tailM]) if (!MARKERS.includes(mk)) err(st.line, `"${mk}" is not an end marker; use one of: ${MARKERS.join(', ')}`);
       const ok = (mk: string) => (MARKERS.includes(mk) ? mk : 'arrow');

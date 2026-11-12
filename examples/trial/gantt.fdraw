@@ -1,0 +1,68 @@
+canvas 1000x600
+
+// time: week 1 starts at x=200, 64px per week, 12 weeks (ends at 968); month = 4 weeks
+text "Office move: three months, one deadline" at 24,28 style=h1
+p_plan: zone "Plan" at 12,76 976x136 title.align=left
+p_prepare: zone "Prepare" at 12,220 976x176 title.align=left
+p_move: zone "Move" at 12,404 976x136 title.align=left
+zone at 264,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 328,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 392,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 456,36 1x504 fill=ink/0.16 stroke=none radius=0
+zone at 520,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 584,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 648,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 712,36 1x504 fill=ink/0.16 stroke=none radius=0
+zone at 776,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 840,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 904,64 1x476 fill=ink/0.06 stroke=none radius=0
+zone at 904,36 1x504 fill=accent/0.6 stroke=none radius=0
+text "OLD LEASE ENDS" at 904,30 style=small size=8 color=accent anchor=middle
+text "March" at 328,48 size=9 weight=600 color=ink anchor=middle
+text "April" at 584,48 size=9 weight=600 color=ink anchor=middle
+text "May" at 840,48 size=9 weight=600 color=ink anchor=middle
+text "W1" at 232,59 style=small size=7 color=soft anchor=middle
+text "W2" at 296,59 style=small size=7 color=soft anchor=middle
+text "W3" at 360,59 style=small size=7 color=soft anchor=middle
+text "W4" at 424,59 style=small size=7 color=soft anchor=middle
+text "W5" at 488,59 style=small size=7 color=soft anchor=middle
+text "W6" at 552,59 style=small size=7 color=soft anchor=middle
+text "W7" at 616,59 style=small size=7 color=soft anchor=middle
+text "W8" at 680,59 style=small size=7 color=soft anchor=middle
+text "W9" at 744,59 style=small size=7 color=soft anchor=middle
+text "W10" at 808,59 style=small size=7 color=soft anchor=middle
+text "W11" at 872,59 style=small size=7 color=soft anchor=middle
+text "W12" at 936,59 style=small size=7 color=soft anchor=middle
+200,64 -- 968,64 stroke=ink/0.2 sw=0.8
+200,36 -- 200,540 stroke=ink/0.2 sw=0.8
+text "Choose new building" at 24,116 size=10 weight=600 color=ink
+rect at 200,100 128x24 radius=4 fill=muted/0.15 stroke=muted
+text "Space plan and budget" at 24,156 size=10 weight=600 color=ink
+rect at 264,140 192x24 radius=4 fill=muted/0.15 stroke=muted
+text "Sign new lease" at 24,196 size=10 weight=600 color=ink
+rect at 328,180 128x24 radius=4 fill=muted/0.15 stroke=muted
+text "Order furniture" at 24,260 size=10 weight=600 color=ink
+rect at 392,244 192x24 radius=4 fill=muted/0.15 stroke=muted
+text "Fit-out works" at 24,300 size=10 weight=600 color=ink
+rect at 456,284 320x24 radius=4 fill=muted/0.15 stroke=muted
+text "Staff comms and labelling" at 24,340 size=10 weight=600 color=ink
+rect at 520,324 320x24 radius=4 fill=muted/0.15 stroke=muted
+text "IT and network install" at 24,380 size=10 weight=600 color=ink
+rect at 648,364 192x24 radius=4 fill=muted/0.15 stroke=muted
+text "Pack up" at 24,444 size=10 weight=600 color=ink
+rect at 712,428 128x24 radius=4 fill=muted/0.15 stroke=muted
+text "Move weekend" at 24,484 size=10 weight=600 color=accent
+m1: rect at 840,468 64x24 radius=4 fill=accent/0.12 stroke=accent
+text "GATE" at 872,484 style=small anchor=middle color=accent
+text "Settle in" at 24,524 size=10 weight=600 color=ink
+rect at 904,508 64x24 radius=4 fill=muted/0.15 stroke=muted
+24,556 -- 968,556 style=rule
+text "Legend" at 24,576 style=eyebrow
+rect at 120,566 20x12 radius=3 fill=accent/0.12 stroke=accent
+text "Move weekend: everything leads to it" at 148,576 style=caption
+rect at 400,566 20x12 radius=3 fill=muted/0.15 stroke=muted
+text "Task" at 428,576 style=caption
+rect at 500,566 20x12 fill=ink/0.06 stroke=none
+text "Phase" at 528,576 style=caption
+rect at 600,566 20x12 fill=accent/0.6 stroke=none
+text "Hard deadline" at 628,576 style=caption

@@ -1,0 +1,33 @@
+canvas 1000x520
+// whole = 916x380 at 40,40, laid out largest first; area = share of the $48.2k monthly bill
+compute: rect at 40,40 327x380 radius=2 fill=ink/0.16 stroke=ink/0.3
+text "Compute" at 56,68 size=14 weight=600 color=ink
+text "$17.4k · 36%" at 56,88 style=small color=muted
+database: rect at 371,40 307x218 radius=2 fill=accent/0.16 stroke=accent sw=1.5
+text "Database" at 387,68 size=14 weight=600 color=ink
+text "$9.6k · 20%" at 387,88 style=small color=muted
+storage: rect at 371,262 307x158 radius=2 fill=ink/0.14 stroke=ink/0.3
+text "Storage" at 387,290 size=14 weight=600 color=ink
+text "$6.8k · 14%" at 387,310 style=small color=muted
+networking: rect at 682,40 150x226 radius=2 fill=ink/0.12 stroke=ink/0.3
+text "Networking" at 698,68 size=13 weight=600 color=ink
+text "$4.9k · 10%" at 698,88 style=small color=muted
+analytics: rect at 836,40 120x226 radius=2 fill=ink/0.1 stroke=ink/0.3
+text "Analytics" at 852,68 size=13 weight=600 color=ink
+text "$3.8k · 8%" at 852,88 style=small color=muted
+monitoring: rect at 682,270 121x150 radius=2 fill=ink/0.08 stroke=ink/0.3
+text "Monitoring" at 698,298 size=13 weight=600 color=ink
+text "$2.6k · 5%" at 698,318 style=small color=muted
+security: rect at 807,270 149x78 radius=2 fill=ink/0.06 stroke=ink/0.3
+text "Security" at 823,298 size=13 weight=600 color=ink
+text "$1.7k · 4%" at 823,318 style=small color=muted
+other: rect at 807,352 149x68 radius=2 fill=ink/0.04 stroke=ink/0.3
+text "Other" at 823,380 size=13 weight=600 color=ink
+text "$1.4k · 3%" at 823,400 style=small color=muted
+40,444 -- 960,444 style=rule
+text "Legend" at 40,464 style=eyebrow
+text "Area = monthly cost · $48.2k in total" at 960,464 style=caption anchor=end
+lg1: rect at 40,478 20x12 radius=2 fill=accent/0.16 stroke=accent sw=1.5
+text "Database: the bill we are reviewing" at 68,488 style=caption
+lg2: rect at 340,478 20x12 radius=2 fill=ink/0.1 stroke=ink/0.3
+text "Other services, darker for larger" at 368,488 style=caption
