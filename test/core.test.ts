@@ -467,12 +467,12 @@ test('icon files from a look folder: named from the file, drawn as images, carri
   const file = 'examples/look-test/team-icons.fdraw';
   const sc = loadScene(file);
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
-  assert.deepEqual([...sc.look.images.keys()], ['virtual-machine', 'hostile', 'storage-account']);
+  assert.deepEqual([...sc.look.images.keys()], ['sample-screen', 'hostile', 'sample-grid']);
   const svg = renderSvg(sc);
   assert.equal((svg.match(/<image [^>]*href="data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+"\/>/g) ?? []).length, 4);
   assert.ok(!svg.includes('<script') && !svg.includes('onload') && !svg.includes('example.invalid')); // the hostile file stays sealed inside its image
   const payload = readSources(file, sc);
-  assert.deepEqual(Object.keys(payload.icons ?? {}).sort(), ['hostile', 'storage-account', 'virtual-machine']);
+  assert.deepEqual(Object.keys(payload.icons ?? {}).sort(), ['hostile', 'sample-grid', 'sample-screen']);
   // an image someone hands you can carry icons: only well-formed SVG data URIs under sane names are taken
   const look = withIconImages(loadLook('looks/reference.look'), [{ name: 'not-svg.svg', bytes: new TextEncoder().encode('hello') }, { name: 'big.svg', bytes: new Uint8Array(400_000) }], {
     ok: svgDataUri(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>')), js: 'javascript:alert(1)', html: 'data:text/html;base64,PHNjcmlwdD4=',
@@ -480,8 +480,8 @@ test('icon files from a look folder: named from the file, drawn as images, carri
   });
   assert.deepEqual([...look.images.keys()], ['ok']);
   assert.ok(!isIconUri('data:image/svg+xml;base64,AA" x="'));
-  const msgs = check(buildScene('look "x.look"\na: rect "A" at 40,40 120x48 icon=virtual-mashine\n', sc.look)).map((i) => i.msg).join();
-  assert.match(msgs, /there is no icon called "virtual-mashine"; the look has: virtual-machine, hostile, storage-account, /);
+  const msgs = check(buildScene('look "x.look"\na: rect "A" at 40,40 120x48 icon=sample\n', sc.look)).map((i) => i.msg).join();
+  assert.match(msgs, /there is no icon called "sample"; the look has: sample-screen, sample-grid, hostile, /);
 });
 
 test('a look cannot reach outside its own folder for icons or fonts, nor through symbolic links', async () => {

@@ -356,8 +356,8 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   const icon = (n: string) => ({ base64: repoBase64(dir + 'icons/' + n) });
   await openFolder(page, {
     'docs/team-icons.fdraw': repoText(dir + 'team-icons.fdraw'), 'docs/team-icons.look': repoText(dir + 'team-icons.look'),
-    'docs/icons/10021-icon-service-Virtual-Machine.svg': icon('10021-icon-service-Virtual-Machine.svg'),
-    'docs/icons/Storage Account.svg': icon('Storage Account.svg'), 'docs/icons/hostile.svg': icon('hostile.svg'),
+    'docs/icons/10021-icon-service-Sample-Screen.svg': icon('10021-icon-service-Sample-Screen.svg'),
+    'docs/icons/Sample Grid.svg': icon('Sample Grid.svg'), 'docs/icons/hostile.svg': icon('hostile.svg'),
   });
   const images = page.locator('svg.canvas image[href^="data:image/svg+xml;base64,"]');
   await expect(images).toHaveCount(4);
@@ -365,9 +365,9 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   await expect(page.locator('.banner')).toHaveCount(0);
   // the picker offers the folder's icons by their file-derived names
   await page.mouse.click(...Object.values(await corner(page, 'st')) as [number, number]);
-  await page.getByLabel('Icon', { exact: true }).selectOption('virtual-machine');
+  await page.getByLabel('Icon', { exact: true }).selectOption('sample-screen');
   await saved(page);
-  expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=virtual-machine');
+  expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=sample-screen');
   // an exported image carries the icons it uses, so it still shows them when opened with no folder
   await page.getByRole('button', { name: 'Menu' }).click();
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: 'Export as PNG' }).click()]);
