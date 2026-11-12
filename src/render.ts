@@ -87,7 +87,7 @@ function drawLegend(look: Look, s: Shape): string {
   }
   const it = textAttrs(look, p, 'item.', { font: 'sans', size: 8.5, weight: 400, color: 'muted' });
   for (const e of s.legend ?? []) {
-    const sp = look.styles.get(e.style)?.props ?? {};
+    const sp = e.props ?? look.styles.get(e.style)?.props ?? {};
     const y = e.baseline;
     if (e.kind === 'line') {
       const sw = Math.min(num(sp.sw, 1.2), 1.6), stroke = col(look, sp.stroke ?? 'muted');
@@ -102,7 +102,8 @@ function drawLegend(look: Look, s: Shape): string {
     } else {
       const a = strokeAttrs(look, { ...sp, sw: String(Math.min(num(sp.sw, 1), 1.2)) });
       const m = /^(\d+(?:\.\d+)?)x/.exec(sp.size ?? '');
-      if (sp.shape === 'diamond') out.push(`<polygon points="${e.x + 11},${y - 9} ${e.x + 22},${y - 3} ${e.x + 11},${y + 3} ${e.x},${y - 3}" ${a}/>`);
+      if (sp.shape === 'dot') out.push(`<circle cx="${e.x + 7}" cy="${y - 3}" r="4.5" ${a}/>`);
+      else if (sp.shape === 'diamond') out.push(`<polygon points="${e.x + 11},${y - 9} ${e.x + 22},${y - 3} ${e.x + 11},${y + 3} ${e.x},${y - 3}" ${a}/>`);
       else if (m && +m[1] <= 12) out.push(`<rect x="${e.x + 5}" y="${y - 11}" width="4" height="14" ${a}/>`);
       else out.push(`<rect x="${e.x}" y="${y - 8}" width="14" height="10" rx="${num(sp.radius, 0) >= 12 ? 5 : 2}" ${a}/>`);
     }
@@ -163,6 +164,12 @@ function drawShape(look: Look, s: Shape): string {
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));
   out.push(outline(s, strokeAttrs(look, p)));
   let cxm = s.x + s.w / 2, cym = s.y + s.h / 2;
+  if (s.shape === 'polygon' && s.poly && s.p.open !== '1') {
+    // text sits at the centre of the outline's area, so it lands in the wide part of a triangle
+    let A = 0, gx = 0, gy = 0;
+    s.poly.forEach((q, i) => { const n = s.poly![(i + 1) % s.poly!.length], k = q.x * n.y - n.x * q.y; A += k; gx += (q.x + n.x) * k; gy += (q.y + n.y) * k; });
+    if (Math.abs(A) > 1) { cxm = r2(gx / (3 * A)); cym = r2(gy / (3 * A)); }
+  }
   if (s.shape === 'arc' && Math.abs(num(p.to, 360) - num(p.from, 0)) < 360) {
     // text sits in the middle of the slice, not the middle of the whole circle
     const mid = ((num(p.from, 0) + num(p.to, 360)) / 2) * (Math.PI / 180), inner = num(p.inner, 0), k = inner > 0 ? (1 + inner) / 2 : 0.62;
@@ -271,7 +278,9 @@ function drawLabel(look: Look, c: Conn): string {
 function drawText(look: Look, t: TextEl): string {
   const a = textAttrs(look, t.p, '', { font: 'sans', size: 12, weight: 400, color: 'ink' });
   const anchor = t.p.anchor && t.p.anchor !== 'start' ? ` text-anchor="${esc(t.p.anchor)}"` : '';
-  return t.text.split('\n').map((l, i) => `<text x="${t.ax}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}>${esc(l)}</text>`).join('\n');
+  const rot = num(t.p.rotate, 0);
+  const body = t.text.split('\n').map((l, i) => `<text x="${t.ax}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}>${esc(l)}</text>`).join('\n');
+  return rot === 90 || rot === -90 ? `<g transform="rotate(${rot} ${t.ax} ${t.ay})">${body}</g>` : body;
 }
 
 export function renderBody(sc: Scene): string {

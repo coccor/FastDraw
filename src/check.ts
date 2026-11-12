@@ -68,6 +68,7 @@ export function check(sc: Scene): Issue[] {
       const A = c.pts[i], B = c.pts[i + 1];
       if (c.ortho && A.x !== B.x && A.y !== B.y) warn(c.line, `${name(c)} has a diagonal segment (${A.x},${A.y} to ${B.x},${B.y}); fix the via points so each step is horizontal or vertical`);
       for (const s of front) {
+        if (c.p.layer === 'back') break; // a grid line or guide meant to run behind the boxes
         if (s.id === c.a.id || s.id === c.b.id || tiny(s) || hit.has(s.id)) continue;
         if (hasPt(s, c.pts[0]) || hasPt(s, c.pts[c.pts.length - 1])) continue;
         if (segHits(A, B, inset(s, 1))) { hit.add(s.id); warn(c.line, `${name(c)} passes through ${s.id}; route around it with from=/to= sides or via=x,y`); }
@@ -116,8 +117,8 @@ export function check(sc: Scene): Issue[] {
 
   for (const t of sc.texts) {
     if (t.x < 0 || t.y < 0 || t.x + t.w > sc.w || t.y + t.h > sc.h) warn(t.line, `text ${t.id} runs outside the canvas (${sc.w}x${sc.h})`);
-    for (const s of front) if (!tiny(s) && s.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
-    for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1)) warn(o.line, `text ${o.id} overlaps text ${t.id}`);
+    for (const s of front) if (!tiny(s) && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
+    for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1) && t.p.overlap !== 'ok' && o.p.overlap !== 'ok') warn(o.line, `text ${o.id} overlaps text ${t.id}`);
   }
   for (const s of sc.shapes) if (s.x < 0 || s.y < 0 || s.x + s.w > sc.w || s.y + s.h > sc.h) warn(s.line, `${s.id} is outside the canvas (${sc.w}x${sc.h})`);
 

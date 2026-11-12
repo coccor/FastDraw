@@ -375,3 +375,19 @@ test('lines that share a start point may share a trunk; text can sit left or rig
   const svg = renderSvg(scene('z: zone "Group" at 40,40 400x200 title.align=left\nn: node "Name" at 80,100 200x64 sub="detail" title.align=right\n'));
   assert.ok(svg.includes('text-anchor="end"') && svg.includes(`x="${80 + 200 - 12}"`));
 });
+
+test('legend swatches, turned text, lines behind boxes, text in a triangle, and a line with no length', () => {
+  const sc = scene('n: node "N" at 200,100\n40,132 -- 600,132 layer=back\nt: polygon "Top" at 400,200 points=60,0;120,90;0,90\ntext "Revenue" at 30,300 rotate=-90\nwm: text "2025" at 60,60 size=40 overlap=ok\ntext "label" at 70,50\nlegend at 40,340 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on" focal="Main"\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('transform="rotate(-90 30 300)"'));
+  assert.ok(svg.includes('<text x="460" y="') && svg.includes('>Top<')); // centred on the triangle's area: lower than the box middle
+  assert.ok(Number(/<text x="460" y="([\d.]+)"/.exec(svg)![1]) > 250);
+  assert.equal(sc.shapes.find((s) => s.legend)!.legend!.length, 4);
+  assert.ok(svg.includes('>Shipped<') && svg.includes('r="4.5"'));
+  const turned = sc.texts.find((t) => t.text === 'Revenue')!;
+  assert.ok(turned.h > turned.w && turned.y < 300 && turned.y + turned.h <= 300.01);
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('a: node "A" at 40,40 100x40\nb: node "B" at 140,80 100x40\na.right@80 -> b.left@80\n'), /meet at the same point \(140,80\)/);
+  assert.match(msgs('text "x" at 40,40 rotate=45\n'), /text can be turned by 90/);
+});

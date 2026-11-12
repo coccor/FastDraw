@@ -9,7 +9,8 @@ import { crosses, routeAround } from './router.ts';
 export type Pt = { x: number; y: number };
 export type Box = { x: number; y: number; w: number; h: number };
 export type Side = 'top' | 'bottom' | 'left' | 'right';
-export type LegendItem = { style: string; kind: Kind; label: string; x: number; baseline: number; sample: number };
+// style is the key written in the legend statement: a style name, or swatch.colour / dot.colour / line.colour
+export type LegendItem = { style: string; kind: Kind; label: string; x: number; baseline: number; sample: number; props?: Props };
 // One row of a table box. y and h are filled in by the layout; a 'rule' row is a dividing line with no height.
 // On a chart a row is one series: id is its kind (bars, line, area, dots), cells[0] its name, vals its numbers.
 export type Row = { id?: string; kind: 'row' | 'head' | 'rule'; cells: string[]; vals: string[]; p: Props; y: number; h: number };
@@ -394,7 +395,13 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       const w = Math.max(...lines.map((l) => textWidth(l, fs, p.font ?? 'sans', num(p.weight, 400), num(p.spacing, 0))));
       const anchor = p.anchor ?? 'start';
       const x = anchor === 'middle' ? at.x - w / 2 : anchor === 'end' ? at.x - w : at.x;
-      texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, x, y: at.y - fs, w, h: fs * 1.3 * lines.length });
+      const th = fs * 1.3 * lines.length;
+      // rotate=-90 reads upwards, rotate=90 downwards; the text turns about its "at" point
+      const rot = num(p.rotate, 0);
+      if (p.rotate !== undefined && ![0, 90, -90].includes(rot)) err(st.line, `rotate=${p.rotate}: text can be turned by 90 (reading down) or -90 (reading up)`);
+      const dx = x - at.x; // where the text starts, measured along its own baseline
+      const box = rot === -90 ? { x: at.x - fs, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs, y: at.y + dx, w: th, h: w } : { x, y: at.y - fs, w, h: th };
+      texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, ...box });
       continue;
     }
     if (!size && p.size) { const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(p.size); if (m) size = { w: +m[1], h: +m[2] }; }
@@ -433,11 +440,19 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     else if (rows.length) err(st.line, `rows (the parts starting with "|") only work on a table style; "${styleName}" is not one`);
     if (sh.shape === 'legend') {
       // one statement lays out a whole legend: every style="label" pair is an entry
-      const entries = Object.entries(over).filter(([k]) => k !== 'style' && look.styles.has(k));
+      const adhoc = (k: string) => /^(swatch|dot|line)\.(.+)$/.exec(k);
+      const entries = Object.entries(over).filter(([k]) => k !== 'style' && (look.styles.has(k) || adhoc(k)));
       const fs = num(p['item.size'], 8.5), font = p['item.font'] ?? 'sans';
       const W = size0 ? sh.w : canvas ? Math.max(200, canvas.w - 2 * sh.x) : 920;
       const titled = (p.title ?? 'none') !== 'none';
-      const items: LegendItem[] = entries.map(([k, label]) => {
+      const items: LegendItem[] = entries.map(([k, label]): LegendItem => {
+        const m = adhoc(k);
+        if (m) {
+          // an entry for something that is not a style of the look: a colour swatch, a dot or a line
+          const c = m[2];
+          if (m[1] === 'line') return { style: k, kind: 'line', label, x: 0, baseline: 0, sample: 28, props: { stroke: c, sw: '1.6', head: 'none' } };
+          return { style: k, kind: 'shape', label, x: 0, baseline: 0, sample: 14, props: m[1] === 'dot' ? { shape: 'dot', fill: c, stroke: 'none' } : { shape: 'rect', fill: c, stroke: 'none', radius: '2' } };
+        }
         const st = look.styles.get(k)!;
         const sample = st.kind === 'line' ? 28 : st.kind === 'text' ? 16 : st.props.shape === 'diamond' ? 22 : 14;
         return { style: k, kind: st.kind, label, x: 0, baseline: 0, sample };
@@ -600,6 +615,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         via = c.p.via.split(';').map((s) => { const [x, y] = s.split(',').map(Number); return { x, y }; });
         if (via.some((v) => isNaN(v.x) || isNaN(v.y))) { err(c.line, 'via must look like via=x,y or via=x,y;x,y'); via = []; }
       }
+      if (a.pt.x === b.pt.x && a.pt.y === b.pt.y) warn(c.line, `${c.a.raw} and ${c.b.raw} meet at the same point (${a.pt.x},${a.pt.y}), so this line has no length and is not drawn; attach it to other sides`);
       c.pts = c.curve ? curvePts(a.pt, a.dir, b.pt, b.dir, via, num(c.p.bend, NaN)) : route(c, via);
       // the simple route cuts through a box: find a way around (hand-set via points are left alone)
       if (c.ortho && !via.length && !c.ushape) {

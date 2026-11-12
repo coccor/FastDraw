@@ -82,7 +82,11 @@ ring: arc at 660,40 200x200 from=0 to=250 inner=0.7 fill=link stroke=none
 - `open=1` draws only the curved edge.
 - Text sits in the middle of the slice.
 
-Shapes that are meant to overlap (circles of a Venn diagram, faces of a 3D box) need `overlap=ok`, or `check` reports them.
+Shapes that are meant to overlap (circles of a Venn diagram, faces of a 3D box) need `overlap=ok`, or `check` reports them. `overlap=ok` also works on text (a faint watermark behind labels).
+
+A filled shape first paints a patch of paper colour under itself, so that lines behind it do not show through a tint. For see-through shapes that should blend where they overlap, add `mask=0`.
+
+Text in a polygon is centred on the outline's area, so it sits in the wide part of a triangle.
 
 ### Charts
 
@@ -195,6 +199,7 @@ Routing: arrows turn at right angles with rounded corners, and go around a box t
 - name the sides: `a.bottom -> b.left`
 - add waypoints: `via=300,200` or `via=300,200;300,360`
 - draw it as a smooth curve: `route=curve`. It leaves and arrives square to the sides it is attached to. `bend=40` instead bows it 40px to the left of its direction of travel (negative: to the right), which is how to draw the arcs of a cycle. `via=x,y;x,y` makes the curve pass through those points. Curves do not avoid boxes; you place them. `route=straight` gives one straight line
+- a line that is meant to run behind boxes (a grid line, a guide) takes `layer=back`, and `check` stops reporting the boxes it crosses
 - several lines may share one trunk, as in a tree: give them the same start point (`root.bottom@0.5 -> a.top`, `root.bottom@0.5 -> b.top`) or the same end point. Lines that overlap anywhere else are reported
 - for a loop back to the same side (`x.right@190 -> x.right@220`), `loop=36` sets how far it sticks out
 
@@ -202,7 +207,7 @@ Labels are drawn in small caps on a paper-coloured patch, above a horizontal lin
 
 ### Text
 
-`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1`.
+`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. `rotate=-90` turns the text to read upwards about its `at` point (`rotate=90`: downwards), for a label along a vertical axis. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1`.
 
 ### Legend
 
@@ -215,6 +220,7 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 - Each `style="what it means"` pair is an entry, in the order written. Use only the styles the diagram uses.
 - It spans the canvas width minus the left margin on both sides; give `WxH` to set another width (the height is always worked out).
 - `title="Key"` changes the heading; `title=none` removes it.
+- For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look: `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
 - Put it 24px under the lowest element and leave about 70px of canvas for it.
 
 ### Groups
