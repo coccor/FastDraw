@@ -22,6 +22,7 @@ function usage(): never {
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
   preview-look [file.look] [-o out.png]   draw every style of a look on one sheet
+  icons  [file.look] [word]               list the icons a look offers, or search them
   guide  [topic]                          print the language guide, or the guide for one kind of diagram
   guide  list                             list the kinds of diagram that have a guide`);
   process.exit(2);
@@ -55,7 +56,7 @@ if (cmd === 'check') {
     process.exit(1);
   }
   const svg = renderSvg(sc);
-  const payload = { v: 1 as const, ...readSources(file) };
+  const payload = { v: 1 as const, ...readSources(file, sc) };
   if (out.endsWith('.svg')) writeFileSync(out, embedSvg(svg, payload));
   else {
     const { Resvg } = await import('@resvg/resvg-js');
@@ -83,7 +84,9 @@ if (cmd === 'check') {
   const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);
   console.log('\nfonts');
   for (const [role, fam] of look.fonts) console.log(`  ${role.padEnd(12)} ${fam}${lf.missing.includes(fam) ? '   (no font file found: will fall back)' : ''}`);
-  console.log(`\nicons (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
+  const own = [...look.images.keys()];
+  if (own.length) console.log(`\nicons from the look's folders (${own.length}; "fastdraw icons <look> [word]" lists or searches them)\n  ${own.slice(0, 60).join(', ')}${own.length > 60 ? ', ...' : ''}`);
+  console.log(`\n${own.length ? 'built-in outline icons' : 'icons'} (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
   if (look.guidance.length) { console.log('\nguidance from this look'); for (const g of look.guidance) console.log(`  - ${g}`); }
 } else if (cmd === 'init-look') {
   const out = args[0] ?? 'team.look';
@@ -167,6 +170,12 @@ if (cmd === 'check') {
     writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
   }
   console.log(`wrote ${out}: ${all.length} styles`);
+} else if (cmd === 'icons') {
+  // icons [file.look] [word]: every icon a look offers, optionally only those whose name contains the word
+  const file = args[0]?.endsWith('.look') ? args[0] : undefined, word = (file ? args[1] : args[0])?.toLowerCase();
+  const look = file ? loadLook(file) : defaultLook();
+  const names = [...look.images.keys(), ...look.icons.keys()].filter((n) => !word || n.includes(word));
+  console.log(names.length ? names.join('\n') : `no icon${word ? ` with "${word}" in its name` : ''}`);
 } else if (cmd === 'guide') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');

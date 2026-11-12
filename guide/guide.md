@@ -164,6 +164,7 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 - The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height.
 - With no text, the icon fills the box. A box of style `icon` has no outline, so it is an icon on its own: `icon at 60,220 icon=server` (24x24; give `WxH` for another size).
 - `icon.size=20` and `icon.color=link` change it; by default it takes the colour of the box's text.
+- A look can bring its own colour icons (a cloud vendor's set, product logos). `fastdraw sizes <look>` lists them first; use them the same way: `icon=virtual-machine`. They keep their own colours. Run `fastdraw icons <look> word` to search a large set.
 - Use icons where they say something the name does not (what kind of thing a box is), on every box of a row or on none. Two or three kinds of icon in one diagram is plenty.
 
 A shape's text is styled with `title.size=`, `title.color=`, `title.weight=`, `title.font=` (and `sub.` the same for the second line).

@@ -1,0 +1,8 @@
+look "./team-icons.look"
+canvas 720x260
+t: h1 "Icons from the team's own folder" at 40,52
+vm: focal "Web VM" sub="Standard_D2s" icon=virtual-machine at 40,96
+st: node "Blobs" sub="hot tier" icon=storage-account icon.pos=top at 300,80 176x96
+bad: node "Untrusted file" icon=hostile at 520,96 160x64
+big: icon at 560,180 48x48 icon=virtual-machine
+vm -> st "writes"

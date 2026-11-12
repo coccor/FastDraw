@@ -13,6 +13,8 @@ export type Look = {
   canvas: Props;
   styles: Map<string, Style>;
   icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
+  iconDirs: string[]; // folders of SVG icon files, relative to the look file
+  images: Map<string, string>; // name -> data URI of an icon file, filled in by whoever can read the folders
   guidance: string[];
   issues: Issue[];
 };
@@ -61,6 +63,8 @@ export function emptyLook(): Look {
     canvas: {},
     styles: new Map(),
     icons: new Map(Object.entries(ICONS)),
+    iconDirs: [],
+    images: new Map(),
     guidance: [],
     issues: [],
   };
@@ -73,7 +77,11 @@ export function parseLook(src: string, path = 'look'): Look {
   for (const st of parseStatements(src)) {
     const [head, ...rest] = st.toks;
     const err = (msg: string) => look.issues.push({ line: st.line, level: 'error', msg, file: path });
-    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon or guidance'); continue; }
+    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icondir or guidance'); continue; }
+    if (head.v === 'icondir') {
+      if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"'); else look.iconDirs.push(rest[0].v);
+      continue;
+    }
     if (head.v === 'icon') {
       // icon name "path data" ["more path data" ...]: outlines in a 24x24 box
       const name = rest[0]?.t === 'word' ? rest[0].v : undefined, paths = rest.slice(1).filter((t) => t.t === 'str').map((t) => t.v);

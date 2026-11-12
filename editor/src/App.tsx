@@ -19,6 +19,7 @@ import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
 import { fontCss, setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
 import { embedSvg, embedPng, extractSvg, extractPng } from '../../src/embed.ts';
+import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -84,7 +85,27 @@ export function App() {
   // read by the browser tests
   useEffect(() => { (window as unknown as { __fastdraw: unknown }).__fastdraw = { source: () => srcRef.current }; }, []);
 
-  const look = useMemo(() => (lookSrc != null ? parseLook(lookSrc) : null), [lookSrc]);
+  const parsedLook = useMemo(() => (lookSrc != null ? parseLook(lookSrc) : null), [lookSrc]);
+  // Icon files: read from the look's icon folders when a folder is open, or carried inside an opened image.
+  const [iconFiles, setIconFiles] = useState<{ name: string; bytes: Uint8Array }[]>([]);
+  const [carriedIcons, setCarriedIcons] = useState<Record<string, string>>({});
+  const [iconNote, setIconNote] = useState('');
+  const look = useMemo(() => (parsedLook && (iconFiles.length || Object.keys(carriedIcons).length) ? withIconImages(parsedLook, iconFiles, carriedIcons) : parsedLook), [parsedLook, iconFiles, carriedIcons]);
+  useEffect(() => {
+    let stale = false;
+    (async () => {
+      const s = io.current, dirs = parsedLook?.iconDirs ?? [];
+      const lp = srcRef.current ? lookPath(srcRef.current) : undefined;
+      const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
+      const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES)))).flat() : [];
+      if (stale) return;
+      setIconFiles(found);
+      setIconNote(!dirs.length || found.length || Object.keys(carriedIcons).length ? '' : s.folder
+        ? `No SVG files found in the look's icon folder (${dirs.join(', ')}).`
+        : `This look brings its own icons from a folder (${dirs.join(', ')}). Open the folder that holds the diagram so they can be loaded.`);
+    })();
+    return () => { stale = true; };
+  }, [parsedLook, name, carriedIcons]);
   // Load the fonts the look brings (possible when a folder is open), and say so when it can't be done.
   const [fontNote, setFontNote] = useState('');
   useEffect(() => {
@@ -200,13 +221,14 @@ export function App() {
   const openBlob = useCallback(async (f: File): Promise<boolean> => {
     const lower = f.name.toLowerCase();
     if (lower.endsWith('.look')) { setLookSrc(await f.text()); return true; }
-    let diagram: string | null = null, lookText: string | null | undefined;
-    if (lower.endsWith('.png')) { const p = extractPng(new Uint8Array(await f.arrayBuffer())); if (p) { diagram = p.diagram; lookText = p.look; } }
-    else if (lower.endsWith('.svg')) { const p = extractSvg(await f.text()); if (p) { diagram = p.diagram; lookText = p.look; } }
+    let diagram: string | null = null, lookText: string | null | undefined, carried: Record<string, string> = {};
+    if (lower.endsWith('.png')) { const p = extractPng(new Uint8Array(await f.arrayBuffer())); if (p) { diagram = p.diagram; lookText = p.look; carried = p.icons ?? {}; } }
+    else if (lower.endsWith('.svg')) { const p = extractSvg(await f.text()); if (p) { diagram = p.diagram; lookText = p.look; carried = p.icons ?? {}; } }
     else diagram = await f.text();
     if (diagram === null) { setStatus(`${f.name} was not exported from FastDraw, so it has no diagram inside`); return false; }
     io.current = { fileMod: 0, lookMod: 0, written: '' };
     setFolderFiles([]);
+    setCarriedIcons(carried && typeof carried === 'object' ? carried : {}); // checked again, name by name, before use
     load(diagram, lookText ?? null, f.name.replace(/\.(png|svg)$/i, '.fdraw'));
     return true;
   }, [load]);
@@ -577,7 +599,8 @@ export function App() {
   const startEditRef = useRef(startEdit); startEditRef.current = startEdit;
 
   const exportAs = async (kind: 'png' | 'svg') => {
-    const payload = { v: 1 as const, diagram: cur, look: lookSrc };
+    const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter(Boolean));
+    const payload = { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
     const svg = renderSvg(scene, await fontCss(renderSvg(scene)));
     const base = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
     if (kind === 'svg') { files.download(base + '.svg', embedSvg(svg, payload), 'image/svg+xml'); return; }
@@ -736,6 +759,7 @@ export function App() {
         {galleryOpen && <div className="island gallerywrap"><Gallery look={scene.look} current={tool} onPick={(t) => { setTool(t); setGalleryOpen(false); }} /></div>}
         {armed && !galleryOpen && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
         {fontNote && <div className="banner">{fontNote}</div>}
+        {iconNote && <div className="banner">{iconNote}</div>}
         {missingLook && (
           <div className="banner">
             This diagram uses the look “{lookPath(cur)}”, which is not loaded, so it is drawn with plain styles.

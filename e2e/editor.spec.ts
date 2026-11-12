@@ -349,3 +349,49 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=server$/);
   expect(errors).toEqual([]);
 });
+
+test("a look's own colour icons load in folder mode, survive an export, and loose files get a notice", async ({ page }) => {
+  const errors = noPageErrors(page);
+  const dir = 'examples/look-test/';
+  const icon = (n: string) => ({ base64: repoBase64(dir + 'icons/' + n) });
+  await openFolder(page, {
+    'docs/team-icons.fdraw': repoText(dir + 'team-icons.fdraw'), 'docs/team-icons.look': repoText(dir + 'team-icons.look'),
+    'docs/icons/10021-icon-service-Virtual-Machine.svg': icon('10021-icon-service-Virtual-Machine.svg'),
+    'docs/icons/Storage Account.svg': icon('Storage Account.svg'), 'docs/icons/hostile.svg': icon('hostile.svg'),
+  });
+  const images = page.locator('svg.canvas image[href^="data:image/svg+xml;base64,"]');
+  await expect(images).toHaveCount(4);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  await expect(page.locator('.banner')).toHaveCount(0);
+  // the picker offers the folder's icons by their file-derived names
+  await page.mouse.click(...Object.values(await corner(page, 'st')) as [number, number]);
+  await page.getByLabel('Icon', { exact: true }).selectOption('virtual-machine');
+  await saved(page);
+  expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=virtual-machine');
+  // an exported image carries the icons it uses, so it still shows them when opened with no folder
+  await page.getByRole('button', { name: 'Menu' }).click();
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: 'Export as PNG' }).click()]);
+  const bytes = (await import('node:fs')).readFileSync(await dl.path()).toString('base64');
+  await page.goto('/');
+  await page.waitForSelector('.welcome');
+  await page.evaluate((b64) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'from-wiki.png', { type: 'image/png' }));
+    window.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, bytes);
+  await page.waitForSelector('svg.canvas');
+  await expect(images).toHaveCount(4);
+  await expect(page.locator('.banner')).toHaveCount(0);
+  // the loose diagram and look, with no folder: the icons cannot be read, and the editor says why
+  await page.goto('/');
+  await page.waitForSelector('.welcome');
+  for (const n of ['team-icons.fdraw', 'team-icons.look']) {
+    await page.evaluate(({ n, text }) => {
+      const dt = new DataTransfer(); dt.items.add(new File([text], n));
+      window.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    }, { n, text: repoText(dir + n) });
+    await page.waitForSelector('svg.canvas');
+  }
+  await expect(page.locator('.banner')).toContainText('This look brings its own icons from a folder');
+  expect(errors).toEqual([]);
+});

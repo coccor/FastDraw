@@ -133,6 +133,18 @@ icon queue "M4 6h16" "M4 12h16" "M4 18h16"
 
 The quoted parts are SVG path data drawn in a 24x24 box; they are stroked, not filled, in the colour of the box's text. Keep to simple outlines with a 1.5 stroke in mind, so they match the bundled ones. A style can carry an icon (`style store extends node icon=database`), and `icon.size=`, `icon.color=`, `icon.pos=top` work in a style too.
 
+**Colour icons and vendor sets** go in a folder of SVG files next to the look:
+
+```
+icondir "./icons"
+```
+
+Every `.svg` file directly in that folder becomes an icon, drawn exactly as the file looks, in its own colours. The icon's name is the file name in small letters with everything that is not a letter or digit turned into `-`, and a leading number-and-`icon-service-` prefix dropped: `10021-icon-service-Virtual-Machine.svg` is `icon=virtual-machine`, `Load Balancer.svg` is `icon=load-balancer`. `fastdraw icons team.look` lists them and `fastdraw icons team.look storage` searches. This is how a team adds, say, the Azure or AWS architecture icons: download the set from the vendor, copy the files you use into the folder, and commit them with the look (check the vendor's terms first; FastDraw ships none of them).
+
+- A file icon keeps its colours; `icon.color=` does not apply to it.
+- Files over 300 KB are skipped. Only the icons a diagram uses are carried inside its exported image.
+- A file with the same name as a built-in icon replaces it.
+
 ### Guidance
 
 `guidance "..."` lines are shown to agents by `fastdraw sizes`. Use them for rules a drawing tool cannot enforce: how many accent elements are allowed, when to use `tag=`, what `sub=` is for.

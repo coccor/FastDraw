@@ -6,10 +6,28 @@ import { dirname, resolve } from 'node:path';
 import { parseLook, emptyLook } from './look.ts';
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
+import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
+import { statSync } from 'node:fs';
 import type { Scene } from './scene.ts';
 
+// The SVG files in the look's icon folders. Only *.svg files directly inside a folder are read.
+function iconFiles(lookFile: string, look: Look): { name: string; bytes: Uint8Array }[] {
+  const out: { name: string; bytes: Uint8Array }[] = [];
+  for (const d of look.iconDirs) {
+    const dir = resolve(dirname(lookFile), d);
+    if (!existsSync(dir)) { look.issues.push({ line: 0, level: 'warn', msg: `icon folder not found: ${d} (icondir is relative to the look file)` }); continue; }
+    for (const f of readdirSync(dir).filter((n) => /\.svg$/i.test(n)).sort()) {
+      if (out.length >= MAX_ICON_FILES) break;
+      const full = resolve(dir, f);
+      try { if (statSync(full).isFile() && statSync(full).size <= MAX_ICON_BYTES) out.push({ name: f, bytes: new Uint8Array(readFileSync(full)) }); } catch { /* unreadable: skipped */ }
+    }
+  }
+  return out;
+}
+const withIcons = (lookFile: string, look: Look): Look => (look.iconDirs.length ? withIconImages(look, iconFiles(lookFile, look)) : look);
+
 export function loadLook(path: string): Look {
-  try { return parseLook(readFileSync(path, 'utf8'), path); }
+  try { return withIcons(path, parseLook(readFileSync(path, 'utf8'), path)); }
   catch {
     const look = emptyLook();
     look.issues.push({ line: 0, level: 'error', msg: `look file not found: ${path}` });
@@ -52,7 +70,7 @@ export function loadScene(file: string): Scene {
   }
   const p = lookPath(src);
   const r = readLook(file, p);
-  const sc = buildScene(src, r.text === null ? null : parseLook(r.text, p), file);
+  const sc = buildScene(src, r.text === null ? null : withIcons(resolve(dirname(file), p!), parseLook(r.text, p)), file);
   const fonts = lookFonts(r.text === null ? undefined : resolve(dirname(file), p!), sc.look);
   sc.fontFiles = fonts.files;
   for (const fam of fonts.missing) {
@@ -64,12 +82,13 @@ export function loadScene(file: string): Scene {
 
 // The diagram and look texts as they are on disk, for embedding in exports. A look that does
 // not parse cleanly is left out.
-export function readSources(file: string): { diagram: string; look: string | null } {
+export function readSources(file: string, sc?: Scene): { diagram: string; look: string | null; icons?: Record<string, string> } {
   const diagram = readFileSync(file, 'utf8');
   const p = lookPath(diagram);
   const { text } = readLook(file, p);
   const clean = text !== null && parseLook(text, p).issues.every((i) => i.level !== 'error');
-  return { diagram, look: clean ? text : null };
+  const icons = sc ? usedIconImages(sc.look, sc.shapes.map((s) => s.p.icon).filter(Boolean)) : {};
+  return { diagram, look: clean ? text : null, ...(Object.keys(icons).length ? { icons } : {}) };
 }
 
 // The look file a diagram points to, if it names one that may be read.

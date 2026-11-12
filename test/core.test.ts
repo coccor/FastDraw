@@ -7,7 +7,7 @@ import { buildScene } from '../src/scene.ts';
 import { check } from '../src/check.ts';
 import { renderSvg } from '../src/render.ts';
 import { patchSource, setAt, setSize, setText, setProp, setKind, setEnd, fmtStmt, appendStatements, moveStatement, freshId, setRows } from '../src/edit.ts';
-import { loadScene, readSources } from '../src/node.ts';
+import { loadScene, readSources, loadLook } from '../src/node.ts';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -459,4 +459,27 @@ test('icons: on a box, on their own, from the look, and with clear errors', () =
   assert.ok(look.icons.has('bolt') && !look.icons.has('bad') && look.icons.has('server'));
   assert.match(look.issues.map((i) => i.msg).join(), /icon bad needs its outline as SVG path data/);
   assert.ok(renderSvg(buildScene('look "x.look"\nh: hot "Fast" at 40,40 120x48\n', look)).includes('M13 3 L4 14'));
+});
+
+test('icon files from a look folder: named from the file, drawn as images, carried in exports, never trusted', async () => {
+  const { iconName, withIconImages, isIconUri, svgDataUri } = await import('../src/iconfiles.ts');
+  assert.deepEqual(['10021-icon-service-Virtual-Machine.svg', 'Load Balancer.SVG', '  App_Service (v2).svg'].map(iconName), ['virtual-machine', 'load-balancer', 'app-service-v2']);
+  const file = 'examples/look-test/team-icons.fdraw';
+  const sc = loadScene(file);
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  assert.deepEqual([...sc.look.images.keys()], ['virtual-machine', 'hostile', 'storage-account']);
+  const svg = renderSvg(sc);
+  assert.equal((svg.match(/<image [^>]*href="data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+"\/>/g) ?? []).length, 4);
+  assert.ok(!svg.includes('<script') && !svg.includes('onload') && !svg.includes('example.invalid')); // the hostile file stays sealed inside its image
+  const payload = readSources(file, sc);
+  assert.deepEqual(Object.keys(payload.icons ?? {}).sort(), ['hostile', 'storage-account', 'virtual-machine']);
+  // an image someone hands you can carry icons: only well-formed SVG data URIs under sane names are taken
+  const look = withIconImages(loadLook('looks/reference.look'), [{ name: 'not-svg.svg', bytes: new TextEncoder().encode('hello') }, { name: 'big.svg', bytes: new Uint8Array(400_000) }], {
+    ok: svgDataUri(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>')), js: 'javascript:alert(1)', html: 'data:text/html;base64,PHNjcmlwdD4=',
+    'bad name"': 'data:image/svg+xml;base64,AAAA', quote: 'data:image/svg+xml;base64,AAAA" onload="alert(1)', num: 5,
+  });
+  assert.deepEqual([...look.images.keys()], ['ok']);
+  assert.ok(!isIconUri('data:image/svg+xml;base64,AA" x="'));
+  const msgs = check(buildScene('look "x.look"\na: rect "A" at 40,40 120x48 icon=virtual-mashine\n', sc.look)).map((i) => i.msg).join();
+  assert.match(msgs, /there is no icon called "virtual-mashine"; the look has: virtual-machine, hostile, storage-account, /);
 });

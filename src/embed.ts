@@ -1,6 +1,7 @@
 // Exported images carry the diagram and its look, so an image taken from a wiki page can be
 // opened and edited again without the repo.
-export type Payload = { v: 1; diagram: string; look: string | null };
+// icons: the icon files the diagram uses (name -> data URI), so they survive without the look's folder
+export type Payload = { v: 1; diagram: string; look: string | null; icons?: Record<string, string> };
 
 const b64 = (s: string) => { const b = new TextEncoder().encode(s); let bin = ''; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(bin); };
 const unb64 = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));

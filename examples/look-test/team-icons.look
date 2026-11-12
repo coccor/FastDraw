@@ -1,0 +1,13 @@
+// A look that brings its own colour icons from a folder next to it.
+canvas paper=paper
+color paper #ffffff
+color ink #1c1f2a
+color muted #5b6172
+color accent #0078d4
+font sans "Geist"
+font mono "Geist Mono"
+icondir "./icons"
+style node shape=rect radius=6 size=176x64 fill=#ffffff stroke=ink/0.35 sw=1.2 sub.font=sans sub.size=10 use="a resource"
+style focal extends node stroke=accent sw=1.6 fill=accent/0.06 use="the resource the diagram is about"
+style arrow line stroke=ink sw=1.3 route=ortho radius=6 label.font=sans label.size=10 label.caps=0 label.spacing=0 label.color=muted
+style h1 text font=sans size=20 weight=600 color=ink

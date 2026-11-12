@@ -4,6 +4,7 @@ import type { Look, Props } from './look.ts';
 import { textWidth } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
+import { isIconUri } from './iconfiles.ts';
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -184,6 +185,9 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
 }
 
 function drawIcon(look: Look, name: string, x: number, y: number, size: number, colour: string): string {
+  const img = look.images.get(name);
+  // an icon file is shown as an image, in its own colours; it is never inlined
+  if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
   const k = r2(size / 24);
   const paths = (look.icons.get(name) ?? []).map((d) => `<path d="${esc(d)}"/>`).join('');
   return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="none" stroke="${colour}" stroke-width="${r2(Math.max(1.5, 1.2 / k))}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;

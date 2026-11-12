@@ -96,7 +96,7 @@ export function pickUpload(accept: string, multiple: boolean): Promise<File[]> {
 }
 
 // The TTF and OTF files in a folder inside the opened folder, e.g. the look's `fontdir`.
-export async function readFontDir(root: FileSystemDirectoryHandle, path: string): Promise<{ name: string; bytes: Uint8Array }[]> {
+export async function readFontDir(root: FileSystemDirectoryHandle, path: string, ext = /\.(ttf|otf)$/i, maxBytes = Infinity, maxFiles = Infinity): Promise<{ name: string; bytes: Uint8Array }[]> {
   const parts: string[] = [];
   for (const seg of path.split('/')) {
     if (!seg || seg === '.') continue;
@@ -108,7 +108,9 @@ export async function readFontDir(root: FileSystemDirectoryHandle, path: string)
     for (const seg of parts) dir = await dir.getDirectoryHandle(seg);
     // @ts-expect-error: entries() is not in the bundled DOM types
     for await (const [name, h] of dir.entries()) {
-      if (h.kind === 'file' && /\.(ttf|otf)$/i.test(name)) out.push({ name, bytes: new Uint8Array(await (await h.getFile()).arrayBuffer()) });
+      if (h.kind !== 'file' || !ext.test(name) || out.length >= maxFiles) continue;
+      const f = await h.getFile();
+      if (f.size <= maxBytes) out.push({ name, bytes: new Uint8Array(await f.arrayBuffer()) });
     }
   } catch { /* folder missing */ }
   return out;

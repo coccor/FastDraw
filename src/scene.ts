@@ -418,7 +418,13 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
-    if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon)) err(st.line, `there is no icon called "${p.icon}"; the look has: ${[...look.icons.keys()].join(', ')}`);
+    if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon) && !look.images.has(p.icon)) {
+      const all = [...look.images.keys(), ...look.icons.keys()];
+      // name the closest ones first: a team's folder can hold hundreds
+      const near = all.filter((n) => n.includes(p.icon) || p.icon.includes(n)), list = [...new Set([...near, ...all])].slice(0, 40);
+      const folder = look.iconDirs.length && !look.images.size ? ` (the look's icon folder ${look.iconDirs.join(', ')} could not be read here)` : '';
+      err(st.line, `there is no icon called "${p.icon}"${folder}; the look has: ${list.join(', ')}${all.length > list.length ? `, and ${all.length - list.length} more (run "fastdraw icons" to see them all)` : ''}`);
+    }
     if (p['icon.pos'] && !['left', 'top'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)`);
     for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {

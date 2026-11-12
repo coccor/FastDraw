@@ -232,7 +232,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <h4>Icon</h4>
           <select aria-label="Icon" value={p.icon ?? 'none'} onChange={(e) => act.setProp('icon', e.target.value === 'none' ? null : e.target.value)}>
             <option value="none">None</option>
-            {[...sc.look.icons.keys()].map((n) => <option key={n} value={n}>{n}</option>)}
+            {sc.look.images.size > 0 && <optgroup label="From the look's folder">{[...sc.look.images.keys()].map((n) => <option key={n} value={n}>{n}</option>)}</optgroup>}
+            <optgroup label="Built in">{[...sc.look.icons.keys()].filter((n) => !sc.look.images.has(n)).map((n) => <option key={n} value={n}>{n}</option>)}</optgroup>
           </select>
           {p.icon && p.icon !== 'none' && (
             <div className="seg" style={{ marginTop: 6 }}>
