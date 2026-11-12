@@ -24,6 +24,7 @@ export type Conn = {
 };
 export type Scene = {
   file: string; w: number; h: number; look: Look; canvasLine?: number;
+  fontFiles?: string[]; // extra font files the look brings (command line only)
   shapes: Shape[]; texts: TextEl[]; conns: Conn[]; issues: Issue[];
 };
 

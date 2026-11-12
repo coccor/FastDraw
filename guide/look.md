@@ -42,7 +42,19 @@ A colour value is `#hex`, a name defined with `color`, or either followed by `/o
 
 ### Fonts
 
-`font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`. Only three families are bundled today: **Geist**, **Geist Mono** and **Instrument Serif**. Another family name is accepted but will be drawn with a fallback font, so stay with these three.
+`font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`.
+
+Three families are bundled and always available: **Geist**, **Geist Mono** and **Instrument Serif**. To use any other font, put its files in a folder next to the look and name the folder:
+
+```
+fontdir "./fonts"            // relative to the look file
+font sans "Fira Sans"
+```
+
+- Files must be **TTF or OTF**, one file per weight and style you use (for example Regular and SemiBold; add Italic if a style sets `italic=1`). Box titles use weight 600 by default. Use static files, not a single variable font.
+- The family name is read from inside the files, so `font sans "..."` must match it exactly. `fastdraw sizes team.look` lists the fonts and flags any family it found no file for; `fastdraw check` warns about it too.
+- Commit the font folder with the look, and keep the font's licence file beside it. Use fonts whose licence allows redistribution (for example the SIL Open Font License).
+- In the browser editor the look's fonts load when a folder is open. A diagram opened as a single file, pasted, or restored from an exported image is drawn with fallback fonts until its folder is opened.
 
 ### Styles
 
@@ -106,4 +118,4 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 - Shapes cannot contain icons or extra drawn details beyond the outline, the tag and the ghost number. The tag's position is fixed.
 - The background can have dots but not grid lines. Arrowheads have one shape.
 - `path` outlines have no arcs (`A`); use curves (`C`, `Q`). Arrows attach to the outline's bounding box.
-- Only the three bundled font families render correctly.
+- Exported images carry the diagram and look but not the font files, so someone reopening an image without the repo sees fallback fonts for any font that is not bundled.

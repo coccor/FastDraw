@@ -1,0 +1,13 @@
+// The built-in look with one change: the sans role uses Fira Sans, loaded from ./fonts.
+fontdir "./fonts"
+font sans  "Fira Sans"
+font mono  "Geist Mono"
+font serif "Instrument Serif"
+color paper  #ffffff
+color ink    #1c1f2a
+color muted  #5b6172
+color accent #b4441b
+style node shape=rect radius=4 size=144x64 fill=#ffffff stroke=ink sw=1.2 sub.font=sans sub.size=10
+style focal extends node fill=accent stroke=accent title.color=#ffffff sub.color=#ffffff/0.85
+style arrow line stroke=ink sw=1.3 route=ortho radius=6 label.font=sans label.size=10 label.caps=0 label.spacing=0 label.color=muted
+style h1 text font=sans size=22 weight=600 color=ink

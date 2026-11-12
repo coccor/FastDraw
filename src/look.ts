@@ -8,6 +8,7 @@ export type Issue = { line: number; level: 'error' | 'warn' | 'hint'; msg: strin
 export type Look = {
   colors: Map<string, string>;
   fonts: Map<string, string>;
+  fontDirs: string[]; // folders of TTF/OTF files, relative to the look file
   canvas: Props;
   styles: Map<string, Style>;
   guidance: string[];
@@ -36,6 +37,7 @@ export function emptyLook(): Look {
   const look: Look = {
     colors: new Map([['ink', '#222222'], ['muted', '#666666'], ['paper', '#ffffff']]),
     fonts: new Map([['sans', 'Helvetica'], ['mono', 'monospace'], ['serif', 'serif']]),
+    fontDirs: [],
     canvas: {},
     styles: new Map(),
     guidance: [],
@@ -50,7 +52,11 @@ export function parseLook(src: string, path = 'look'): Look {
   for (const st of parseStatements(src)) {
     const [head, ...rest] = st.toks;
     const err = (msg: string) => look.issues.push({ line: st.line, level: 'error', msg, file: path });
-    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, style or guidance'); continue; }
+    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style or guidance'); continue; }
+    if (head.v === 'fontdir') {
+      if (!rest[0]) err('fontdir needs a folder, e.g. fontdir "./fonts"'); else look.fontDirs.push(rest[0].v);
+      continue;
+    }
     if (head.v === 'canvas') {
       for (const t of rest) if (t.t === 'prop') look.canvas[t.k!] = t.v;
     } else if (head.v === 'color' || head.v === 'font') {

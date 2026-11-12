@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources } from './node.ts';
+import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf } from './node.ts';
 import { buildScene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
@@ -59,8 +59,7 @@ if (cmd === 'check') {
   if (out.endsWith('.svg')) writeFileSync(out, embedSvg(svg, payload));
   else {
     const { Resvg } = await import('@resvg/resvg-js');
-    const fontDir = join(root, 'fonts');
-    const fontFiles = existsSync(fontDir) ? readdirSync(fontDir).filter((f) => /\.(ttf|otf)$/.test(f)).map((f) => join(fontDir, f)) : [];
+    const fontFiles = [...bundledFonts(), ...(sc.fontFiles ?? [])];
     const png = new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng();
     writeFileSync(out, embedPng(new Uint8Array(png), payload));
   }
@@ -81,6 +80,9 @@ if (cmd === 'check') {
       console.log(`  ${s.name.padEnd(12)} ${bits.filter(Boolean).join(' · ')}`);
     }
   }
+  const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);
+  console.log('\nfonts');
+  for (const [role, fam] of look.fonts) console.log(`  ${role.padEnd(12)} ${fam}${lf.missing.includes(fam) ? '   (no font file found: will fall back)' : ''}`);
   if (look.guidance.length) { console.log('\nguidance from this look'); for (const g of look.guidance) console.log(`  - ${g}`); }
 } else if (cmd === 'init-look') {
   const out = args[0] ?? 'team.look';
@@ -137,8 +139,9 @@ if (cmd === 'check') {
   if (out.endsWith('.svg')) writeFileSync(out, svg);
   else {
     const { Resvg } = await import('@resvg/resvg-js');
-    const fontDir = join(root, 'fonts');
-    const fontFiles = existsSync(fontDir) ? readdirSync(fontDir).filter((f) => /\.(ttf|otf)$/.test(f)).map((f) => join(fontDir, f)) : [];
+    const lf = lookFonts(file, look);
+    for (const fam of lf.missing) console.log(`warning: no font file found for "${fam}"; it will be drawn in a fallback font`);
+    const fontFiles = [...bundledFonts(), ...lf.files];
     writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
   }
   console.log(`wrote ${out}: ${all.length} styles`);

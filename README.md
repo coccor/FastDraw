@@ -22,7 +22,7 @@ Status: proof of concept. The design document lives outside this repo, in the pl
 | `editor/` | The browser editor (Vite + React), built as a static site |
 | `examples/test/` | Three diagrams written by agents from the guide alone |
 | `compare/` | Those three next to the diagram-design originals, plus editor screenshots |
-| `fonts/` | Geist, Geist Mono and Instrument Serif (SIL Open Font License, texts included) |
+| `fonts/` | Geist, Geist Mono and Instrument Serif (SIL Open Font License, texts included). A look can bring more with `fontdir` |
 | `test/` | Core tests |
 
 ## Commands

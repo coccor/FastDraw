@@ -16,7 +16,7 @@ import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
-import { fontCss } from './fonts.ts';
+import { fontCss, setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
 import { embedSvg, embedPng, extractSvg, extractPng } from '../../src/embed.ts';
 
 type Drag =
@@ -79,6 +79,25 @@ export function App() {
   srcRef.current = src;
 
   const look = useMemo(() => (lookSrc != null ? parseLook(lookSrc) : null), [lookSrc]);
+  // Load the fonts the look brings (possible when a folder is open), and say so when it can't be done.
+  const [fontNote, setFontNote] = useState('');
+  useEffect(() => {
+    let stale = false;
+    (async () => {
+      const s = io.current;
+      const dirs = look?.fontDirs ?? [];
+      const lp = srcRef.current ? lookPath(srcRef.current) : undefined;
+      const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
+      const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d)))).flat() : [];
+      if (stale) return;
+      const have = [...BUNDLED_FAMILIES, ...setLookFonts(found)].map((f) => f.toLowerCase());
+      const missing = look ? [...new Set(look.fonts.values())].filter((f) => !have.includes(f.toLowerCase()) && !['helvetica', 'serif', 'monospace', 'sans-serif'].includes(f.toLowerCase())) : [];
+      setFontNote(!missing.length ? '' : s.folder
+        ? `No font file found for ${missing.join(', ')}; text is drawn in a fallback font.`
+        : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in a fallback font.`);
+    })();
+    return () => { stale = true; };
+  }, [look, name]);
   const cur = draft ?? src ?? '';
   const scene = useMemo(() => buildScene(cur, look), [cur, look]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
@@ -517,7 +536,7 @@ export function App() {
 
   const exportAs = async (kind: 'png' | 'svg') => {
     const payload = { v: 1 as const, diagram: cur, look: lookSrc };
-    const svg = renderSvg(scene, await fontCss());
+    const svg = renderSvg(scene, await fontCss(renderSvg(scene)));
     const base = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
     if (kind === 'svg') { files.download(base + '.svg', embedSvg(svg, payload), 'image/svg+xml'); return; }
     const img = new Image();
@@ -662,6 +681,7 @@ export function App() {
         </div>
         {galleryOpen && <div className="island gallerywrap"><Gallery look={scene.look} current={tool} onPick={(t) => { setTool(t); setGalleryOpen(false); }} /></div>}
         {armed && !galleryOpen && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
+        {fontNote && <div className="banner">{fontNote}</div>}
         {missingLook && (
           <div className="banner">
             This diagram uses the look “{lookPath(cur)}”, which is not loaded, so it is drawn with plain styles.

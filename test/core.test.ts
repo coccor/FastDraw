@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { embedSvg, extractSvg, embedPng, extractPng } from '../src/embed.ts';
 import { defaultLook } from '../src/look.ts';
+import { fontMeta } from '../src/fontmeta.ts';
+import { lookFonts } from '../src/node.ts';
 
 const look = parseLook(readFileSync(new URL('../looks/reference.look', import.meta.url), 'utf8'));
 const scene = (body: string) => buildScene(`look "x.look"\ncanvas 800x400\n${body}`, look);
@@ -170,4 +172,28 @@ test('a diagram cannot make the tool read or embed a file that is not a look', (
   assert.equal(/hunter2/.test(issues), false);
   assert.equal(readSources(mk('./broken.look')).look, null); // does not parse cleanly: not embedded
   assert.equal(readSources(mk('./ok.look')).look, 'color ink #111111\n');
+});
+
+test('font files report their family, weight and italic flag', () => {
+  const read = (p: string) => new Uint8Array(readFileSync(new URL(p, import.meta.url)));
+  assert.deepEqual(fontMeta(read('../fonts/Geist-SemiBold.ttf')), { family: 'Geist', weight: 600, italic: false });
+  assert.deepEqual(fontMeta(read('../fonts/GeistMono-Regular.ttf')), { family: 'Geist Mono', weight: 400, italic: false });
+  assert.deepEqual(fontMeta(read('../fonts/InstrumentSerif-Italic.ttf')), { family: 'Instrument Serif', weight: 400, italic: true });
+  assert.deepEqual(fontMeta(read('../examples/look-test/fonts/FiraSans-SemiBold.ttf')), { family: 'Fira Sans', weight: 600, italic: false });
+  assert.equal(fontMeta(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])), null);
+  assert.equal(fontMeta(new Uint8Array(0)), null);
+});
+
+test('a look brings its own fonts with fontdir, and a named font with no file is reported', () => {
+  const lookFile = new URL('../examples/look-test/fira.look', import.meta.url).pathname;
+  const withDir = parseLook(readFileSync(lookFile, 'utf8'));
+  assert.deepEqual(withDir.fontDirs, ['./fonts']);
+  const a = lookFonts(lookFile, withDir);
+  assert.equal(a.files.length, 2);
+  assert.deepEqual(a.missing, []);
+  const without = parseLook('font sans "Fira Sans"\nfont mono "Geist Mono"\n');
+  assert.deepEqual(lookFonts(lookFile, without).missing, ['Fira Sans']);
+  const sc = loadScene(new URL('../examples/look-test/fira.fdraw', import.meta.url).pathname);
+  assert.equal(sc.fontFiles!.length, 2);
+  assert.deepEqual(sc.issues, []);
 });

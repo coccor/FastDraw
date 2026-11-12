@@ -1,5 +1,6 @@
 // The fonts the reference look uses, bundled with the editor so the canvas and exports match
 // the command-line renderer.
+import { fontMeta } from '../../src/fontmeta.ts';
 import geist400 from '../../fonts/Geist-Regular.ttf?url';
 import geist500 from '../../fonts/Geist-Medium.ttf?url';
 import geist600 from '../../fonts/Geist-SemiBold.ttf?url';
@@ -24,14 +25,41 @@ export function installFonts(): void {
   document.head.appendChild(el);
 }
 
-let cached: Promise<string> | undefined;
-// The same fonts as data URLs, for SVG and PNG exports that must stand alone.
-export function fontCss(): Promise<string> {
-  cached ??= Promise.all(FACES.map(async (f) => {
-    const buf = new Uint8Array(await (await fetch(f[3])).arrayBuffer());
+// Fonts a look brings itself (its `fontdir` folders), registered with the page for as long as
+// that look is in use.
+let lookFaces: { face: FontFace; family: string; css: string }[] = [];
+export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
+  for (const f of lookFaces) document.fonts.delete(f.face);
+  lookFaces = [];
+  const families: string[] = [];
+  for (const f of files) {
+    const m = fontMeta(f.bytes);
+    if (!m) continue;
+    const face = new FontFace(m.family, f.bytes.buffer as ArrayBuffer, { weight: String(m.weight), style: m.italic ? 'italic' : 'normal' });
+    document.fonts.add(face);
+    face.load().catch(() => undefined);
     let bin = '';
-    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-    return face(f, `data:font/ttf;base64,${btoa(bin)}`);
-  })).then((rules) => rules.join(''));
-  return cached;
+    for (let i = 0; i < f.bytes.length; i += 0x8000) bin += String.fromCharCode(...f.bytes.subarray(i, i + 0x8000));
+    lookFaces.push({ face, family: m.family, css: `@font-face{font-family:'${m.family.replace(/'/g, '')}';font-weight:${m.weight};font-style:${m.italic ? 'italic' : 'normal'};src:url(data:font/ttf;base64,${btoa(bin)}) format('truetype');}` });
+    if (!families.includes(m.family)) families.push(m.family);
+  }
+  return families;
+}
+export const BUNDLED_FAMILIES = ['Geist', 'Geist Mono', 'Instrument Serif'];
+
+const bundled = new Map<string, Promise<string>>();
+// @font-face rules, as data URLs, for the families an SVG actually uses, so exports stand alone
+// without carrying every font.
+export async function fontCss(svg: string): Promise<string> {
+  const used = (family: string) => svg.includes(`'${family}'`);
+  const rules = await Promise.all(FACES.filter((f) => used(f[0])).map((f) => {
+    if (!bundled.has(f[3])) bundled.set(f[3], (async () => {
+      const buf = new Uint8Array(await (await fetch(f[3])).arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      return face(f, `data:font/ttf;base64,${btoa(bin)}`);
+    })());
+    return bundled.get(f[3])!;
+  }));
+  return rules.join('') + lookFaces.filter((f) => used(f.family)).map((f) => f.css).join('');
 }
