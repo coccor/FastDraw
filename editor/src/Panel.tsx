@@ -1,4 +1,8 @@
 import React from 'react';
+import {
+  AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
+  BringToFront, Copy, SendToBack, Trash2,
+} from 'lucide-react';
 import { color } from '../../src/look.ts';
 import type { Scene } from '../../src/scene.ts';
 import { find, stmtToks } from './ops.ts';
@@ -21,15 +25,15 @@ function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]
       {values.map((v) => {
         const c = color(sc.look, v);
         return (
-          <button key={v} title={v} className={'swatch' + (current === v ? ' on' : '')} onClick={() => onPick(v)}
-            style={{ background: c === 'none' ? 'transparent' : c }}>{c === 'none' ? '∅' : ''}</button>
+          <button key={v} title={v === 'none' ? 'None' : v} aria-label={v} className={'swatch' + (current === v ? ' on' : '') + (c === 'none' ? ' none' : '')}
+            onClick={() => onPick(v)} style={{ background: c === 'none' ? undefined : c }} />
         );
       })}
     </div>
   );
 }
 
-function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (v: string) => void }) {
+export function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (v: string) => void }) {
   const [v, setV] = React.useState(value);
   React.useEffect(() => setV(value), [value]);
   return (
@@ -41,20 +45,21 @@ function TextField({ label, value, onCommit }: { label: string; value: string; o
   );
 }
 
+// Small drawn glyphs for the line options, where a picture says more than a word.
+const Stroke = ({ dash, w = 1.6 }: { dash?: string; w?: number }) => (
+  <svg width="26" height="14" viewBox="0 0 26 14"><line x1="3" y1="7" x2="23" y2="7" stroke="currentColor" strokeWidth={w} strokeDasharray={dash} strokeLinecap="round" /></svg>
+);
+const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
+  <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="4" y1="7" x2="22" y2="7" />
+    {b && <path d="M18 3 L22 7 L18 11" />}
+    {a && <path d="M8 3 L4 7 L8 11" />}
+  </svg>
+);
+
 export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: string[]; act: PanelActions }) {
   const els = sel.map((id) => find(sc, id)).filter((e) => !!e);
-  if (!els.length) {
-    return (
-      <div className="panel">
-        <h4>Canvas</h4>
-        <div className="row2">
-          <TextField label="Width" value={String(sc.w)} onCommit={(v) => +v > 0 && act.setCanvas(+v, sc.h)} />
-          <TextField label="Height" value={String(sc.h)} onCommit={(v) => +v > 0 && act.setCanvas(sc.w, +v)} />
-        </div>
-        <p className="hint">Select something to change it. Double-click to edit its text.</p>
-      </div>
-    );
-  }
+  if (!els.length) return null;
   const first = els[0]!;
   const kind = first.kind;
   const same = els.every((e) => e!.kind === kind);
@@ -67,98 +72,106 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const sizeKey = kind === 'shape' ? 'title.size' : kind === 'text' ? 'size' : 'label.size';
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
   const op = kind === 'conn' ? stmtToks(src, first.el.line)?.find((t) => t.t === 'word' && ['->', '--', '<->'].includes(t.v))?.v : undefined;
-  const multiBoxes = els.filter((e) => e!.kind !== 'conn').length;
+  const boxes = els.filter((e) => e!.kind !== 'conn').length;
+  const aligns: [AlignMode, string, React.ReactNode][] = [
+    ['left', 'Align left edges', <AlignStartVertical size={16} />], ['hcenter', 'Centre horizontally', <AlignCenterVertical size={16} />], ['right', 'Align right edges', <AlignEndVertical size={16} />],
+    ['top', 'Align top edges', <AlignStartHorizontal size={16} />], ['vcenter', 'Centre vertically', <AlignCenterHorizontal size={16} />], ['bottom', 'Align bottom edges', <AlignEndHorizontal size={16} />],
+  ];
 
   return (
-    <div className="panel">
+    <aside className="panel" onPointerDown={(e) => e.stopPropagation()}>
       {same && (
-        <>
+        <section>
           <h4>Style</h4>
           <select value={first.el.style} onChange={(e) => act.setStyle(e.target.value)}>
             {styles.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
           </select>
-        </>
+        </section>
       )}
       {same && kind === 'shape' && (
-        <>
-          <h4>Fill</h4>
-          <Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} />
-        </>
+        <section><h4>Background</h4><Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} /></section>
       )}
       {same && kind !== 'text' && (
         <>
-          <h4>Stroke</h4>
-          <Swatches sc={sc} values={strokes} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} />
-          <h4>Line</h4>
-          <div className="seg">
-            {(['solid', 'dashed', 'dotted'] as const).map((d) => (
-              <button key={d} className={dashOf(p.dash) === d ? 'on' : ''}
-                onClick={() => act.setProp('dash', d === 'solid' ? 'none' : d === 'dashed' ? '5,4' : '1,4')}>{d}</button>
-            ))}
-          </div>
-          <div className="seg">
-            {[['thin', '1'], ['medium', '1.6'], ['bold', '2.4']].map(([l, v]) => (
-              <button key={l} className={(p.sw ?? '1') === v ? 'on' : ''} onClick={() => act.setProp('sw', v)}>{l}</button>
-            ))}
-          </div>
+          <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} /></section>
+          <section>
+            <h4>Stroke style</h4>
+            <div className="seg">
+              <button title="Solid" className={dashOf(p.dash) === 'solid' ? 'on' : ''} onClick={() => act.setProp('dash', 'none')}><Stroke /></button>
+              <button title="Dashed" className={dashOf(p.dash) === 'dashed' ? 'on' : ''} onClick={() => act.setProp('dash', '5,4')}><Stroke dash="5 4" /></button>
+              <button title="Dotted" className={dashOf(p.dash) === 'dotted' ? 'on' : ''} onClick={() => act.setProp('dash', '1,4')}><Stroke dash="0.5 4" /></button>
+            </div>
+          </section>
+          <section>
+            <h4>Stroke width</h4>
+            <div className="seg">
+              {[['Thin', '1', 1.2], ['Medium', '1.6', 2.2], ['Bold', '2.4', 3.4]].map(([l, v, w]) => (
+                <button key={l as string} title={l as string} className={(p.sw ?? '1') === v ? 'on' : ''} onClick={() => act.setProp('sw', v as string)}><Stroke w={w as number} /></button>
+              ))}
+            </div>
+          </section>
         </>
       )}
       {same && kind === 'text' && (
-        <>
-          <h4>Colour</h4>
-          <Swatches sc={sc} values={names} current={p.color} onPick={(v) => act.setProp('color', v)} />
-        </>
+        <section><h4>Colour</h4><Swatches sc={sc} values={names} current={p.color} onPick={(v) => act.setProp('color', v)} /></section>
       )}
       {same && kind === 'conn' && (
         <>
-          <h4>Ends</h4>
-          <div className="seg">
-            {[['->', 'arrow'], ['<->', 'both'], ['--', 'none']].map(([o, l]) => (
-              <button key={o} className={op === o ? 'on' : ''} onClick={() => act.setOp(o)}>{l}</button>
-            ))}
-          </div>
-          <h4>Label side</h4>
-          <div className="seg">
-            {[['', 'above / right'], ['below', 'below'], ['left', 'left']].map(([v, l]) => (
-              <button key={l} className={(p.lside ?? '') === v ? 'on' : ''} onClick={() => act.setProp('lside', v || null)}>{l}</button>
-            ))}
-          </div>
+          <section>
+            <h4>Arrowheads</h4>
+            <div className="seg">
+              <button title="No arrowhead" className={op === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
+              <button title="Arrowhead at the end" className={op === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
+              <button title="Arrowheads at both ends" className={op === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
+            </div>
+          </section>
+          <section>
+            <h4>Label position</h4>
+            <div className="seg">
+              {[['', 'Above'], ['below', 'Below'], ['left', 'Left']].map(([v, l]) => (
+                <button key={l} className={(p.lside ?? '') === v ? 'on' : ''} onClick={() => act.setProp('lside', v || null)}>{l}</button>
+              ))}
+            </div>
+          </section>
         </>
       )}
       {same && (
-        <>
+        <section>
           <h4>Text size</h4>
           <div className="seg">
             {sizes.map(([l, v]) => <button key={l} className={p[sizeKey] === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v)}>{l}</button>)}
           </div>
-        </>
+        </section>
       )}
       {els.length === 1 && kind === 'shape' && (
-        <>
-          <h4>Details</h4>
+        <section>
+          <h4>Extra text</h4>
           <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />
           <TextField label="Corner tag" value={p.tag ?? ''} onCommit={(v) => act.setProp('tag', v || null)} />
-        </>
+        </section>
       )}
-      {multiBoxes >= 2 && (
-        <>
+      {boxes >= 2 && (
+        <section>
           <h4>Align</h4>
-          <div className="seg">
-            {([['left', '⇤'], ['hcenter', '↔'], ['right', '⇥'], ['top', '⤒'], ['vcenter', '↕'], ['bottom', '⤓']] as [AlignMode, string][]).map(([m, l]) => (
-              <button key={m} title={m} onClick={() => act.align(m)}>{l}</button>
-            ))}
+          <div className="seg wrap">
+            {aligns.map(([m, label, icon]) => <button key={m} title={label} aria-label={label} onClick={() => act.align(m)}>{icon}</button>)}
           </div>
-        </>
+        </section>
       )}
-      <h4>Arrange</h4>
-      <div className="seg">
-        <button onClick={() => act.reorder('front')}>to front</button>
-        <button onClick={() => act.reorder('back')}>to back</button>
-      </div>
-      <div className="seg">
-        <button onClick={act.duplicate}>duplicate</button>
-        <button className="danger" onClick={act.remove}>delete</button>
-      </div>
-    </div>
+      <section>
+        <h4>Layers</h4>
+        <div className="seg">
+          <button title="Bring to front" aria-label="Bring to front" onClick={() => act.reorder('front')}><BringToFront size={16} /></button>
+          <button title="Send to back" aria-label="Send to back" onClick={() => act.reorder('back')}><SendToBack size={16} /></button>
+        </div>
+      </section>
+      <section>
+        <h4>Actions</h4>
+        <div className="seg">
+          <button title="Duplicate (Ctrl+D)" aria-label="Duplicate" onClick={act.duplicate}><Copy size={16} /></button>
+          <button title="Delete (Del)" aria-label="Delete" className="danger" onClick={act.remove}><Trash2 size={16} /></button>
+        </div>
+      </section>
+    </aside>
   );
 }

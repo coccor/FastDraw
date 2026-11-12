@@ -38,7 +38,7 @@ style terminal shape=rect radius=24 size=160x48 fill=ink/0.03 stroke=ink/0.30 sw
 style terminal-focal extends terminal fill=accent/0.08 stroke=accent
     use="the flowchart outcome that matters most"
 style decision shape=diamond size=200x96 fill=#ffffff stroke=ink sw=1
-    use="flowchart yes/no question; break the text over two lines with \\n"
+    use="flowchart yes/no question; put the text on two short lines"
 
 // ---- other shapes ---------------------------------------------------------
 style zone shape=rect radius=8 fill=ink/0.02 stroke=ink/0.10 sw=0.8 layer=back
