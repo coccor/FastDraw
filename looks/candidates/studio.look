@@ -1,0 +1,56 @@
+// "Studio". Product-grade precision: white cards with hairline borders lifted off a cool grey
+// canvas by soft shadows, Geist throughout, one near-black card for the subject and one electric
+// blue for the path that matters. (Soft shadows are mocked by post-processing for now.)
+canvas paper=ground
+
+color ground  #f4f5f7
+color ink     #0f1729
+color muted   #687082
+color soft    #a7adb8
+color hair    #dde0e6
+color wash    #eaecf0
+color accent  #2f6bff
+color link    #2f6bff
+color sky     #eef3ff
+
+font sans  "Geist"
+font mono  "Geist Mono"
+font serif "Geist"
+
+style node shape=rect radius=10 size=144x64 fill=#ffffff stroke=hair sw=1
+    title.weight=500 title.size=13 title.color=ink sub.font=sans sub.size=11 sub.color=muted
+    tag.font=mono tag.size=8 tag.color=muted tag.border=hair
+    use="default box: a service, component or step"
+style focal extends node fill=ink stroke=ink title.color=#ffffff sub.color=#ffffff/0.65
+    tag.color=#ffffff/0.7 tag.border=#ffffff/0.25 ghost.color=#ffffff/0.12
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=#ffffff use="something that holds data or state"
+style cloud extends node fill=sky stroke=#d3e0ff title.color=#1d3fae sub.color=#1d3fae/0.7 use="a hosted or third-party platform"
+style external extends node fill=ground stroke=#b9bfc9 dash=4,3 use="a person or system outside what you own"
+style optional extends node fill=ground stroke=#c9ced6 dash=2,3 use="optional or asynchronous participant"
+style chart shape=chart fill=none stroke=ink/0.3 sw=1 mask=0 bar.radius=4 grid.color=ink/0.06
+    use="axes with your numbers drawn for you: chart at x,y WxH x=\"Q1,Q2,Q3\" y=0..100, then a line per series: | bars \"Revenue\" 42 61 75"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=ink stroke=ink sw=1 title.weight=500 title.color=#ffffff sub.color=#ffffff/0.65 sub.size=11 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent stroke=accent use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=#ffffff stroke=hair sw=1 title.weight=500 use="flowchart yes/no question"
+style zone shape=rect radius=14 fill=wash stroke=none sw=0 dash=none layer=back
+    title.pos=top title.align=left title.font=sans title.size=11 title.weight=500 title.color=muted
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=#ffffff stroke=hair sw=1 use="sequence activation bar"
+style table shape=table radius=10 fill=#ffffff stroke=hair sw=1 head.fill=wash rule=hair cell.font=mono cell.size=10 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 cell.font=sans use="a grid of values"
+style arrow line stroke=soft sw=1.25 route=ortho radius=10 label.font=sans label.size=11 label.weight=500 label.caps=0 label.spacing=0 label.color=muted use="default arrow"
+style primary extends arrow stroke=accent sw=1.75 label.color=accent use="the main path"
+style link extends arrow stroke=accent dash=5,4 label.color=accent use="a request crossing a boundary"
+style return extends arrow stroke=soft dash=4,4 use="a response"
+style relation extends relation stroke=soft label.font=sans label.size=11 label.color=muted
+style lifeline line head=none stroke=hair sw=1 dash=3,4 route=straight use="lifeline"
+style rule line head=none stroke=hair sw=1 route=straight use="thin separator"
+style h1 text font=sans size=24 weight=600 color=ink use="diagram title"
+style eyebrow text font=mono size=10 color=soft use="small heading"
+style caption text font=sans size=11 color=muted use="small explanatory text"
+style note text font=sans size=14 color=muted use="a short aside"
+style small text font=mono size=10 color=muted use="technical detail"
