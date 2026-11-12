@@ -6,3 +6,4 @@ dist-editor/
 .playwright-mcp/
 test-results/
 playwright-report/
+!assets/*.png

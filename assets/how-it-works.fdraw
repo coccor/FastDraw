@@ -1,0 +1,24 @@
+canvas 1000x444
+
+text "One text file, written by an agent and edited by a person" at 40,60 style=h1
+
+// row 1: y=120, centre line y=152
+agent:  external "AI agent" sub="writes the text" icon=robot at 40,120 152x64
+file:   focal "diagram.fdraw" sub="every element placed" icon=file at 304,120 176x64
+editor: node "Browser editor" sub="free canvas" icon=desktop at 592,120 152x64
+person: external "Person" sub="moves, restyles, adds" icon=user at 808,120 152x64
+
+// row 2: y=264
+cli:    node "fastdraw CLI" sub="check · render · guide" icon=terminal at 40,264 152x64
+looks:  store "team.look" sub="named styles" at 320,260
+export: node "PNG or SVG" sub="carries its own source" icon=file at 592,264 152x64
+
+agent -> file "writes" style=primary
+file <-> editor "small text edits" style=primary
+person -> editor style=link
+agent <-> cli "checks" style=return
+looks -> file "styles"
+editor -> export "exports"
+export.right -> editor.right@0.75 "reopens" style=return via=784,296;784,168 lpos=820,236
+
+legend at 40,368 focal="The diagram file" external="Who works on it" store="How it is drawn" primary="Edits to the text" link="Hands-on changes" return="Round trips"
