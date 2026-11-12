@@ -300,3 +300,20 @@ test('editing a table keeps one row per line and leaves its cells alone', () => 
   const fewer = patchSource(src, new Map([[3, (t) => setRows(t, [{ kind: 'head', cells: ['a', 'b'] }, { id: 'r1', kind: 'row', cells: ['x', ''] }])]]));
   assert.equal(fewer.split('\n').slice(2, 5).join('\n'), 'users: table "users" at 40,100\n  |= "a" "b"\n  | r1 "x" ""');
 });
+
+test('route=curve draws a smooth line: bend bows it, via points are passed through, labels stay off it', () => {
+  const two = 'a: node "A" at 40,100\nb: node "B" at 400,100\n';
+  const c = (line: string) => scene(two + line + '\n').conns[0];
+  const plain = c('a -> b route=curve');
+  assert.ok(plain.curve && !plain.ortho && plain.pts.length > 20);
+  assert.ok(plain.pts.every((p) => p.y === plain.pts[0].y)); // two facing sides in line: the curve is flat
+  const up = c('a -> b route=curve bend=40'), mid = up.pts[Math.floor(up.pts.length / 2)];
+  assert.ok(Math.abs(mid.y - (up.pts[0].y - 40)) < 1.5);
+  const down = c('a -> b route=curve bend=-40');
+  assert.ok(down.pts[12].y > down.pts[0].y);
+  const through = c('a.bottom -> b.bottom route=curve via=292,260');
+  assert.ok(through.pts.some((p) => p.x === 292 && p.y === 260));
+  const sc = scene(two + 'a -> b "carries" route=curve bend=40\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  assert.match(check(scene(two + 'a -> b route=wavy\n')).map((i) => i.msg).join(), /route=wavy is not a route; use ortho, straight or curve/);
+});

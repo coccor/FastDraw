@@ -329,6 +329,24 @@ export function setLabelPos(src: string, c: Conn, p: Pt): string {
   return patchSource(src, new Map([[c.line, (t) => setProp(t, 'lpos', `${Math.round(p.x / 2) * 2},${Math.round(p.y / 2) * 2}`)]]));
 }
 
+// Change how lines run (right angles, straight, curved); a hand-set route belongs to the old shape, so it goes.
+export function setRoute(src: string, sc: Scene, ids: string[], route: string): string {
+  const patches = new Map<number, Patch>();
+  for (const id of ids) {
+    const e = find(sc, id);
+    if (e?.kind === 'conn') patches.set(e.el.line, (t) => ['via', 'lpos', 'bend'].reduce((acc, k) => setProp(acc, k, null), setProp(t, 'route', route)));
+  }
+  return patchSource(src, patches);
+}
+
+// Bow a curved line so that its middle passes under the pointer.
+export function setBend(src: string, c: Conn, p: Pt): string {
+  const A = c.pts[0], B = c.pts[c.pts.length - 1];
+  const dx = B.x - A.x, dy = B.y - A.y, dist = Math.hypot(dx, dy) || 1;
+  const bend = Math.round((((p.x - (A.x + B.x) / 2) * dy - (p.y - (A.y + B.y) / 2) * dx) / dist) / 4) * 4;
+  return patchSource(src, new Map([[c.line, (t) => setProp(setProp(setProp(t, 'via', null), 'lpos', null), 'bend', bend ? String(bend) : null)]]));
+}
+
 // Forget hand-set waypoints and label position so the connector is routed automatically again.
 export function resetRoute(src: string, sc: Scene, ids: string[]): string {
   const patches = new Map<number, Patch>();

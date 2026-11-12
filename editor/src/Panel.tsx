@@ -21,6 +21,7 @@ export type PanelActions = {
   setCanvas: (w: number, h: number) => void;
   resetRoute: () => void;
   setRows: (rows: RowSpec[]) => void;
+  setRoute: (route: string) => void;
 };
 
 function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
@@ -162,6 +163,16 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               <button title="No arrowhead" className={op === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
               <button title="Arrowhead at the end" className={op === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
               <button title="Arrowheads at both ends" className={op === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
+            </div>
+          </section>
+          <section>
+            <h4>Line shape</h4>
+            <div className="seg">
+              {[['ortho', 'Right angles', 'M3 11 H12 Q14 11 14 9 V5 Q14 3 16 3 H23'], ['straight', 'Straight', 'M3 11 L23 3'], ['curve', 'Curved', 'M3 11 C12 11 14 3 23 3']].map(([v, l, d]) => (
+                <button key={v} title={l} aria-label={l} className={(p.route ?? 'ortho') === v ? 'on' : ''} onClick={() => act.setRoute(v)}>
+                  <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d={d} /></svg>
+                </button>
+              ))}
             </div>
           </section>
           <section>

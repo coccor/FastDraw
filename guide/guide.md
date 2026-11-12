@@ -122,6 +122,7 @@ Routing: arrows turn at right angles with rounded corners, and go around a box t
 
 - name the sides: `a.bottom -> b.left`
 - add waypoints: `via=300,200` or `via=300,200;300,360`
+- draw it as a smooth curve: `route=curve`. It leaves and arrives square to the sides it is attached to. `bend=40` instead bows it 40px to the left of its direction of travel (negative: to the right), which is how to draw the arcs of a cycle. `via=x,y;x,y` makes the curve pass through those points. Curves do not avoid boxes; you place them. `route=straight` gives one straight line
 - for a loop back to the same side (`x.right@190 -> x.right@220`), `loop=36` sets how far it sticks out
 
 Labels are drawn in small caps on a paper-coloured patch, above a horizontal line or to the right of a vertical one, at the middle of the longest segment. Keep them to about 14 characters. To move one: `lside=below` (or `left` for vertical lines), or `lpos=x,y` (centre x, text baseline y; the default baseline is 10px above a horizontal line, or 18px below it with `lside=below`). `label.caps=0` keeps the label's own letter case, for paths and header names.

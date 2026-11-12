@@ -283,3 +283,17 @@ test('a table can be placed from the look styles gallery', async ({ page }) => {
   expect(await source(page)).toMatch(/table: table "Name" at \d+,\d+\n  \| r1 "first" "value"\n  \| r2 "second" "value"\n$/);
   await expect(page.getByLabel('Row 1', { exact: true })).toHaveValue('first | value');
 });
+
+test('line shape: switch an arrow to curved and bend it by dragging its middle', async ({ page }) => {
+  await paste(page, 'canvas 880x420\na: node "Client" at 40,160\nb: focal "Target" at 560,160\nr1: a -> b style=primary\n');
+  const line = (await page.locator('polyline[data-id="r1"]').boundingBox())!;
+  await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2);
+  await page.getByRole('button', { name: 'Curved' }).click();
+  expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=curve');
+  const k = await zoom(page);
+  const h = (await page.locator('[data-seg="-1"]').boundingBox())!;
+  await drag(page, { x: h.x + h.width / 2, y: h.y + h.height / 2 }, 0, -60 * k);
+  expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=curve bend=60');
+  await page.getByRole('button', { name: 'Right angles' }).click();
+  expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=ortho');
+});

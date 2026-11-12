@@ -27,6 +27,7 @@ export type Label = Box & { text: string; cx: number; baseline: number; size: nu
 export type Conn = {
   id: string; line: number; style: string; p: Props;
   a: End; b: End; pts: Pt[]; head: boolean; tail: boolean; headM: string; tailM: string; ortho: boolean; ushape: boolean;
+  curve: boolean; // route=curve: pts holds the smooth line as many short steps
   text?: string; label?: Label;
 };
 export type Scene = {
@@ -120,6 +121,38 @@ function route(c: Conn, via: Pt[]): Pt[] {
   return out;
 }
 
+// A smooth line from P0 to P1, returned as short straight steps so everything else can treat it as a polyline.
+// With via points it passes through each of them. With bend it bows that many px to the left of its direction
+// of travel (negative: to the right). Otherwise it leaves and arrives along the sides it is attached to.
+function curvePts(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, via: Pt[], bend: number): Pt[] {
+  const segs: [Pt, Pt, Pt, Pt][] = [];
+  const dx = P1.x - P0.x, dy = P1.y - P0.y, dist = Math.hypot(dx, dy) || 1;
+  if (via.length) {
+    const P = [P0, ...via, P1];
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[i - 1] ?? P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] ?? P[i + 1];
+      segs.push([p1, { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }, { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }, p2]);
+    }
+  } else if (!isNaN(bend)) {
+    const ox = (dy / dist) * bend * (4 / 3), oy = (-dx / dist) * bend * (4 / 3);
+    segs.push([P0, { x: P0.x + dx / 3 + ox, y: P0.y + dy / 3 + oy }, { x: P0.x + (2 * dx) / 3 + ox, y: P0.y + (2 * dy) / 3 + oy }, P1]);
+  } else {
+    const k = Math.min(Math.max(dist * 0.4, 24), 160);
+    const flat = Math.abs(dx) >= Math.abs(dy);
+    const u0 = d0 ?? (flat ? { x: Math.sign(dx) || 1, y: 0 } : { x: 0, y: Math.sign(dy) || 1 });
+    const u1 = d1 ?? (flat ? { x: -(Math.sign(dx) || 1), y: 0 } : { x: 0, y: -(Math.sign(dy) || 1) });
+    segs.push([P0, { x: P0.x + u0.x * k, y: P0.y + u0.y * k }, { x: P1.x + u1.x * k, y: P1.y + u1.y * k }, P1]);
+  }
+  const out: Pt[] = [P0];
+  const N = 24;
+  for (const [a, b, c, d] of segs) for (let i = 1; i <= N; i++) {
+    const t = i / N, m = 1 - t;
+    const f = (p: 'x' | 'y') => m * m * m * a[p] + 3 * m * m * t * b[p] + 3 * m * t * t * c[p] + t * t * t * d[p];
+    out.push(i === N ? d : { x: Math.round(f('x') * 10) / 10, y: Math.round(f('y') * 10) / 10 });
+  }
+  return out;
+}
+
 function pointAlong(c: Conn, v: number): Pt {
   const first = c.pts[0], last = c.pts[c.pts.length - 1];
   if (v > 1) {
@@ -140,7 +173,8 @@ function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
     return { text, cx: lx, baseline: ly, x: lx - w / 2, y: ly - h + 2, w, h, size, spacing, font };
   }
   let best = 0;
-  if (c.ushape && c.pts.length === 4) best = 1;
+  if (c.curve) best = Math.floor((c.pts.length - 1) / 2); // the middle of the curve
+  else if (c.ushape && c.pts.length === 4) best = 1;
   else {
     let len = -1;
     for (let i = 0; i < c.pts.length - 1; i++) {
@@ -152,6 +186,17 @@ function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
   const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
   // with no side asked for, a label that would land on a box goes to the other side of its line
   const at = (side: string | undefined): Label => {
+    if (c.curve) {
+      // beside the middle of the curve, pushed out square to it far enough to clear the line
+      const P = c.pts[best], Q = c.pts[Math.min(best + 1, c.pts.length - 1)], O = c.pts[Math.max(best - 1, 0)];
+      const tx = Q.x - O.x, ty = Q.y - O.y, tl = Math.hypot(tx, ty) || 1;
+      let nx = ty / tl, ny = -tx / tl;
+      if (ny > 0 || (ny === 0 && nx < 0)) { nx = -nx; ny = -ny; } // up, or right of a vertical stretch
+      if (side === 'below' || side === 'left') { nx = -nx; ny = -ny; }
+      const off = 6 + (Math.abs(nx) * w + Math.abs(ny) * h) / 2;
+      const lx = Math.round(P.x + nx * off), ly = Math.round(P.y + ny * off);
+      return { text, cx: lx, baseline: ly + h / 2 - 3, x: lx - w / 2, y: ly - h / 2, w, h, size, spacing, font };
+    }
     if (A.x === B.x && A.y !== B.y) {
       const x = side === 'left' ? A.x - 8 - w : A.x + 8;
       return { text, cx: x + w / 2, baseline: Math.round(my) + 3, x, y: Math.round(my) - h + 5, w, h, size, spacing, font };
@@ -281,6 +326,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         continue;
       }
       const p = { ...style.props, ...over };
+      if (p.route && !['ortho', 'straight', 'curve'].includes(p.route)) err(st.line, `route=${p.route} is not a route; use ortho, straight or curve`);
       // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
       const styleHead = style.props.head && style.props.head !== 'none' ? style.props.head : 'arrow';
       const headM = over.head ?? (op === '--' ? 'none' : styleHead);
@@ -290,7 +336,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       conns.push({
         id: register('conn', 'c'), line: st.line, style: styleName, p, a, b, pts: [],
         head: headM !== 'none', tail: tailM !== 'none', headM: ok(headM), tailM: ok(tailM),
-        ortho: (p.route ?? 'ortho') !== 'straight', ushape: false, text,
+        ortho: (p.route ?? 'ortho') === 'ortho', curve: p.route === 'curve', ushape: false, text,
       });
       continue;
     }
@@ -525,7 +571,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         via = c.p.via.split(';').map((s) => { const [x, y] = s.split(',').map(Number); return { x, y }; });
         if (via.some((v) => isNaN(v.x) || isNaN(v.y))) { err(c.line, 'via must look like via=x,y or via=x,y;x,y'); via = []; }
       }
-      c.pts = route(c, via);
+      c.pts = c.curve ? curvePts(a.pt, a.dir, b.pt, b.dir, via, num(c.p.bend, NaN)) : route(c, via);
       // the simple route cuts through a box: find a way around (hand-set via points are left alone)
       if (c.ortho && !via.length && !c.ushape) {
         const strictlyIn = (o: Box, p: Pt) => p.x > o.x + 1 && p.x < o.x + o.w - 1 && p.y > o.y + 1 && p.y < o.y + o.h - 1;

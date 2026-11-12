@@ -436,7 +436,7 @@ export function App() {
     if (d.type === 'seg' || d.type === 'label') {
       const e0 = ops.find(d.scene, d.id);
       if (e0?.kind !== 'conn') return;
-      setDraft(d.type === 'seg' ? ops.dragSegment(d.base, d.scene, e0.el, d.index, p) : ops.setLabelPos(d.base, e0.el, { x: p.x + d.dx, y: p.y + d.dy }));
+      setDraft(d.type === 'seg' ? (d.index < 0 ? ops.setBend(d.base, e0.el, p) : ops.dragSegment(d.base, d.scene, e0.el, d.index, p)) : ops.setLabelPos(d.base, e0.el, { x: p.x + d.dx, y: p.y + d.dy }));
       return;
     }
     if (d.type === 'marquee' || d.type === 'draw') {
@@ -525,6 +525,7 @@ export function App() {
     group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
     ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
+    setRoute: (r: string) => src !== null && commit(ops.setRoute(src, scene, sel, r)),
     setRows: (rows: RowSpec[]) => { const e = ops.find(scene, sel[0]); if (src !== null && e?.kind === 'shape') commit(ops.setRows(src, scene, e.el, rows)); },
     legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no look styles yet'); },
   };
@@ -663,6 +664,7 @@ export function App() {
                 const w = (h ? 14 : 5) / view.k, ht = (h ? 5 : 14) / view.k;
                 return <rect key={'s' + i} data-seg={i} x={(a.x + b.x) / 2 - w / 2} y={(a.y + b.y) / 2 - ht / 2} width={w} height={ht} rx={2.5 / view.k} style={{ cursor: h ? 'ns-resize' : 'ew-resize' }} />;
               })}
+              {single.el.curve && !single.el.p.via && (() => { const m = single.el.pts[Math.floor((single.el.pts.length - 1) / 2)]; return <circle data-seg={-1} cx={m.x} cy={m.y} r={hs * 0.6} style={{ cursor: 'move' }}><title>Drag to bend the line</title></circle>; })()}
               {(['a', 'b'] as const).filter((w) => single.el[w].kind !== 'rel').map((w) => { const p = w === 'a' ? single.el.pts[0] : single.el.pts[single.el.pts.length - 1]; return <circle key={w} data-end={w} cx={p.x} cy={p.y} r={hs * 0.65} style={{ cursor: 'crosshair' }} />; })}
             </g>
           )}
