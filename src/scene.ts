@@ -121,7 +121,7 @@ function pointAlong(c: Conn, v: number): Pt {
   return { x: Math.round(first.x + (last.x - first.x) * f), y: Math.round(first.y + (last.y - first.y) * f) };
 }
 
-function makeLabel(c: Conn): Label | undefined {
+function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
   if (!c.text) return undefined;
   const size = num(c.p['label.size'], 8), spacing = num(c.p['label.spacing'], 0.08), font = c.p['label.font'] ?? 'mono';
   const text = c.p['label.caps'] === '0' ? c.text : c.text.toUpperCase();
@@ -141,15 +141,20 @@ function makeLabel(c: Conn): Label | undefined {
   }
   const A = c.pts[best], B = c.pts[best + 1];
   const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
-  const side = c.p.lside;
-  if (A.x === B.x && A.y !== B.y) {
-    const left = side === 'left';
-    const x = left ? A.x - 8 - w : A.x + 8;
-    return { text, cx: x + w / 2, baseline: Math.round(my) + 3, x, y: Math.round(my) - h + 5, w, h, size, spacing, font };
-  }
-  const below = side === 'below';
-  const baseline = below ? Math.round(my) + 18 : Math.round(my) - 10;
-  return { text, cx: Math.round(mx), baseline, x: Math.round(mx) - w / 2, y: baseline - h + 2, w, h, size, spacing, font };
+  // with no side asked for, a label that would land on a box goes to the other side of its line
+  const at = (side: string | undefined): Label => {
+    if (A.x === B.x && A.y !== B.y) {
+      const x = side === 'left' ? A.x - 8 - w : A.x + 8;
+      return { text, cx: x + w / 2, baseline: Math.round(my) + 3, x, y: Math.round(my) - h + 5, w, h, size, spacing, font };
+    }
+    const baseline = side === 'below' ? Math.round(my) + 18 : Math.round(my) - 10;
+    return { text, cx: Math.round(mx), baseline, x: Math.round(mx) - w / 2, y: baseline - h + 2, w, h, size, spacing, font };
+  };
+  const hits = (l: Label) => avoid.some((o) => l.x < o.x + o.w && l.x + l.w > o.x && l.y < o.y + o.h && l.y + l.h > o.y);
+  const first = at(c.p.lside);
+  if (c.p.lside || !hits(first)) return first;
+  const other = at(A.x === B.x && A.y !== B.y ? 'left' : 'below');
+  return hits(other) ? first : other;
 }
 
 function parseEnd(raw: string): End | null {
@@ -448,7 +453,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         if (crosses(c.pts, obs)) { const alt = routeAround(a.pt, a.dir, b.pt, b.dir, obs, taken); if (alt) c.pts = alt; }
       }
       if (c.ortho) for (let i = 0; i < c.pts.length - 1; i++) taken.push([c.pts[i], c.pts[i + 1]]);
-      c.label = makeLabel(c);
+      c.label = makeLabel(c, shapes.filter((o) => !o.back && o.shape !== 'legend'));
       done.add(c);
     }
   };

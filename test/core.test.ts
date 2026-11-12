@@ -237,3 +237,13 @@ test('a damaged or hostile font file is rejected quickly, not parsed at length',
   assert.ok(performance.now() - t < 50);
   assert.match(renderSvg(scene('a: node at 0,0'), "x{}</style><script>alert(1)</script>"), /&lt;\/style>&lt;script>/);
 });
+
+test('a label that would land on a box moves to the other side of its line, unless a side was asked for', () => {
+  const src = (extra: string) => `canvas 880x420\na: node "Client" at 40,160\nm: node "In the way" at 280,160\nb: focal "Target" at 560,160\nr1: a -> b "detour"${extra}\n`;
+  const auto = scene(src(''));
+  assert.deepEqual(check(auto).filter((i) => i.level !== 'hint'), []);
+  const m = auto.shapes.find((s) => s.id === 'm')!, l = auto.conns[0].label!;
+  assert.ok(l.y >= m.y + m.h || l.y + l.h <= m.y);
+  // an explicit side is the author's call, even when it collides
+  assert.ok(check(scene(src(' lside=above'))).some((i) => i.msg.includes('collides with m')));
+});

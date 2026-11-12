@@ -22,7 +22,7 @@ import { embedSvg, embedPng, extractSvg, extractPng } from '../../src/embed.ts';
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
   | { type: 'move'; start: Pt; ids: string[]; base: string; scene: Scene; moved: boolean }
-  | { type: 'resize'; id: string; corner: string; base: string; scene: Scene }
+  | { type: 'resize'; id: string; corner: string; base: string; scene: Scene; dx: number; dy: number }
   | { type: 'marquee'; start: Pt; add: boolean }
   | { type: 'draw'; style: string; start: Pt }
   | { type: 'conn'; op: string; from: string; start: Pt; style?: string }
@@ -79,6 +79,8 @@ export function App() {
   const lastClick = useRef<{ id: string; t: number }>({ id: '', t: 0 });
   const pendingEdit = useRef<string | null>(null);
   srcRef.current = src;
+  // read by the browser tests
+  useEffect(() => { (window as unknown as { __fastdraw: unknown }).__fastdraw = { source: () => srcRef.current }; }, []);
 
   const look = useMemo(() => (lookSrc != null ? parseLook(lookSrc) : null), [lookSrc]);
   // Load the fonts the look brings (possible when a folder is open), and say so when it can't be done.
@@ -327,12 +329,19 @@ export function App() {
     }
     if (tool !== 'select') { drag.current = { type: 'draw', style: tool.replace(/^style:/, ''), start: p }; return; }
     const handle = t.getAttribute('data-handle'), end = t.getAttribute('data-end');
-    if (handle && sel.length === 1) { drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene }; return; }
+    if (handle || end || t.hasAttribute('data-seg')) lastClick.current = { id: '', t: 0 }; // a press on a handle never counts towards a double-click
+    if (handle && sel.length === 1) {
+      // remember where on the handle the press landed, so the corner does not jump to the pointer
+      const s0 = ops.find(scene, sel[0]);
+      const cx = s0 && s0.kind === 'shape' ? s0.el.x + (handle.includes('w') ? 0 : s0.el.w) : p.x, cy = s0 && s0.kind === 'shape' ? s0.el.y + (handle.includes('n') ? 0 : s0.el.h) : p.y;
+      drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene, dx: cx - p.x, dy: cy - p.y }; return;
+    }
     if (end && sel.length === 1) { drag.current = { type: 'end', id: sel[0], which: end as 'a' | 'b', base: src, scene }; return; }
     const seg = t.getAttribute('data-seg');
     if (seg !== null && sel.length === 1) { drag.current = { type: 'seg', id: sel[0], index: +seg, base: src, scene }; return; }
     const lab = t.getAttribute('data-label');
-    if (lab && sel.length === 1 && sel[0] === lab) {
+    const again = (id: string) => lastClick.current.id === id && performance.now() - lastClick.current.t < 450 && !e.shiftKey;
+    if (lab && sel.length === 1 && sel[0] === lab && !again(lab)) {
       const c = scene.conns.find((x) => x.id === lab);
       if (c?.label) { drag.current = { type: 'label', id: lab, base: src, scene, dx: c.label.cx - p.x, dy: c.label.baseline - p.y }; return; }
     }
@@ -408,7 +417,7 @@ export function App() {
       if (!e0 || e0.kind !== 'shape') return;
       const s = e0.el;
       let x1 = s.x, y1 = s.y, x2 = s.x + s.w, y2 = s.y + s.h;
-      const q = e.altKey ? p : { x: snap(p.x), y: snap(p.y) };
+      const q = e.altKey ? { x: p.x + d.dx, y: p.y + d.dy } : { x: snap(p.x + d.dx), y: snap(p.y + d.dy) };
       if (d.corner.includes('w')) x1 = Math.min(q.x, x2 - 8); else x2 = Math.max(q.x, x1 + 8);
       if (d.corner.includes('n')) y1 = Math.min(q.y, y2 - 8); else y2 = Math.max(q.y, y1 + 8);
       setDraft(ops.resizeShape(d.base, s, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }));
