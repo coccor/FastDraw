@@ -17,6 +17,7 @@ One statement per line; an indented line continues the one above; `//` starts a 
 
 ```
 canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional
+                                                 // sketch=1 draws every outline and line by hand (2 is rougher); see looks/sketch.look
 
 color paper  #ffffff                             // a named colour
 color ink    #1c1f2a
@@ -73,6 +74,8 @@ font sans "Fira Sans"
 | `radius=` | corner radius of a `rect`; half the height or more makes a pill |
 | `size=WxH` | default size when a diagram gives none |
 | `fill=`, `stroke=`, `sw=`, `dash=5,4` | fill colour, stroke colour, stroke width, dash pattern |
+| `hatch=colour` | fill with diagonal pencil lines on top of `fill=`; `hatch.gap=` spaces them, `hatch.sw=` weighs them |
+| `sketch=0` | with `canvas sketch=` on: draw this style with clean lines (works on line styles too) |
 | `layer=back` | draw behind everything (for regions like `zone`) |
 | `title.*` | the main text: `title.font`, `title.size`, `title.weight`, `title.color`, `title.italic=1`, `title.spacing` (in em), `title.caps=1`; `title.pos=top` puts it as a small caption at the top edge |
 | `sub.*` | the second line (`sub=` on an element): `sub.font`, `sub.size`, `sub.color` |

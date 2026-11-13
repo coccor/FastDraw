@@ -1,0 +1,56 @@
+look "../../../looks/sketch.look"
+canvas 1112x760
+
+text "Marketing analytics pipeline" at 40,52 style=h1
+
+rect "01" at 276,88 40x20 radius=10 fill=ink/0.08 stroke=none
+text "Track" at 296,124 style=eyebrow anchor=middle
+rect "02" at 448,88 40x20 radius=10 fill=ink/0.08 stroke=none
+text "Collect" at 468,124 style=eyebrow anchor=middle
+rect "03" at 620,88 40x20 radius=10 fill=ink/0.08 stroke=none
+text "Model" at 640,124 style=eyebrow anchor=middle
+rect "04" at 792,88 40x20 radius=10 fill=accent/0.18 stroke=none
+text "Report" at 812,124 style=eyebrow anchor=middle color=accent
+rect "05" at 964,88 40x20 radius=10 fill=ink/0.08 stroke=none
+text "Review" at 984,124 style=eyebrow anchor=middle
+
+zone at 40,136 1032x120 radius=0 fill=ink/0.03 stroke=none
+text "Web\ndeveloper" at 124,194 style=eyebrow anchor=middle
+zone at 40,256 1032x120 radius=0 fill=ink/0.015 stroke=none
+text "Data\nengineer" at 124,314 style=eyebrow anchor=middle
+zone at 40,376 1032x120 radius=0 fill=ink/0.03 stroke=none
+text "Analyst" at 124,434 style=eyebrow anchor=middle
+zone at 40,496 1032x120 radius=0 fill=ink/0.015 stroke=none
+text "Marketing\nmanager" at 124,554 style=eyebrow anchor=middle
+208,136 -- 208,616 style=rule
+
+track: node "Add tracking" sub="GTM · JS tag" tag="DEV" at 224,152 144x88
+rect "EV" at 332,220 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7 overlap=ok
+collect: node "Collect events" sub="Segment → BigQuery" tag="DEN" at 396,272 144x88
+rect "EV" at 404,340 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7 overlap=ok
+rect "RW" at 504,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
+model: node "Clean & model" sub="dbt" tag="DEN" at 568,272 144x88
+rect "RW" at 576,340 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7 overlap=ok
+rect "TB" at 676,340 28x12 radius=3 fill=#6f8f72 stroke=none title.color=#ffffff title.size=7 overlap=ok
+report: focal "Build report" sub="Looker Studio" tag="ANA" at 740,392 144x88
+rect "TB" at 748,460 28x12 radius=3 fill=#6f8f72 stroke=none title.color=#ffffff title.size=7 overlap=ok
+rect "RP" at 848,460 28x12 radius=3 fill=#8a6f9e stroke=none title.color=#ffffff title.size=7 overlap=ok
+review: node "Review KPIs" sub="Weekly email" tag="MKT" at 912,512 144x88
+rect "RP" at 920,580 28x12 radius=3 fill=#8a6f9e stroke=none title.color=#ffffff title.size=7 overlap=ok
+
+track.right -> collect.top
+collect -> model
+model.right -> report.top "clean tables" style=primary
+report.right -> review.top style=link
+
+legend at 40,640 node="A step done by a role" focal="Receives the hand-off" primary="Hand-off between roles" link="Output for consumers"
+text "Data type" at 40,718 style=eyebrow
+rect "EV" at 130,708 28x12 radius=3 fill=#5e7a9b stroke=none title.color=#ffffff title.size=7
+text "Events" at 166,718 style=caption
+rect "RW" at 260,708 28x12 radius=3 fill=#b8915a stroke=none title.color=#ffffff title.size=7
+text "Raw table" at 296,718 style=caption
+rect "TB" at 390,708 28x12 radius=3 fill=#6f8f72 stroke=none title.color=#ffffff title.size=7
+text "Model table" at 426,718 style=caption
+rect "RP" at 520,708 28x12 radius=3 fill=#8a6f9e stroke=none title.color=#ffffff title.size=7
+text "Report" at 556,718 style=caption
+text "left chip = what comes in · right chip = what goes out" at 660,718 style=caption

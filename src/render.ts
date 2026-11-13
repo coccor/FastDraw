@@ -5,6 +5,29 @@ import { textWidth } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
+import { canSketch, sketchSvg, rectD, ellipseD } from './sketch.ts';
+
+// Per render: how rough the look draws (canvas sketch=, 0 for clean lines) and the fill patterns it needs.
+let R = { amt: 0, defs: new Map<string, string>() };
+const roughOf = (p: Props) => (p.sketch === '0' ? 0 : R.amt);
+
+// hatch=colour fills a shape with diagonal pencil lines; hatch.gap and hatch.sw space and weigh them.
+function hatchFill(look: Look, p: Props): string | null {
+  if (!p.hatch || p.hatch === 'none') return null;
+  const c = col(look, p.hatch), gap = num(p['hatch.gap'], 6), sw = num(p['hatch.sw'], 1), key = `${c}|${gap}|${sw}`;
+  let id = R.defs.get(key);
+  if (!id) {
+    id = `fd-hatch-${R.defs.size}`;
+    R.defs.set(key, id);
+  }
+  return `url(#${id})`;
+}
+function hatchDefs(): string {
+  return [...R.defs].map(([key, id]) => {
+    const [c, gap, sw] = key.split('|');
+    return `<pattern id="${id}" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="${gap}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"/></pattern>`;
+  }).join('');
+}
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -33,7 +56,53 @@ function strokeAttrs(look: Look, p: Props): string {
   return a;
 }
 
-function outline(s: Shape, attrs: string): string {
+// The outline as path data, so it can be drawn by hand. Arcs keep their clean outline.
+function shapeD(s: Shape): string | null {
+  const { x, y, w, h } = s;
+  if (s.shape === 'ellipse') return ellipseD(x, y, w, h);
+  if (s.shape === 'diamond') return `M ${x + w / 2},${y} L ${x + w},${y + h / 2} L ${x + w / 2},${y + h} L ${x},${y + h / 2} Z`;
+  if (s.shape === 'polygon') return s.poly ? polyD(s) : null;
+  if (s.shape === 'path') return s.p.path ? scaledPath(s) : null;
+  if (s.shape === 'arc') return null;
+  return rectD(x, y, w, h, Math.min(num(s.p.radius, 0), w / 2, h / 2));
+}
+
+// path is written in a 0..1 box and scaled to the element (M, L, C, Q, Z only)
+function scaledPath(s: Shape): string {
+  let isX = true;
+  return s.p.path.replace(/-?\d*\.?\d+/g, (n) => { const v = isX ? s.x + +n * s.w : s.y + +n * s.h; isX = !isX; return String(r2(v)); });
+}
+
+function polyD(s: Shape): string {
+  const P = s.poly!, open = s.p.open === '1';
+  if (s.p.smooth === '1' && P.length > 2) {
+    // a smooth line through every corner
+    const at = (i: number) => (open ? P[Math.min(Math.max(i, 0), P.length - 1)] : P[(i + P.length) % P.length]);
+    let d = `M ${P[0].x},${P[0].y}`;
+    for (let i = 0; i < (open ? P.length - 1 : P.length); i++) {
+      const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
+      d += ` C ${r2(p1.x + (p2.x - p0.x) / 6)},${r2(p1.y + (p2.y - p0.y) / 6)} ${r2(p2.x - (p3.x - p1.x) / 6)},${r2(p2.y - (p3.y - p1.y) / 6)} ${p2.x},${p2.y}`;
+    }
+    return d + (open ? '' : ' Z');
+  }
+  return `M ${P.map((q) => `${q.x},${q.y}`).join(' L ')}${open ? '' : ' Z'}`;
+}
+
+// under: a fill painted between the shape's own fill and its stroke (a hatch)
+function outline(s: Shape, attrs: string, under?: string): string {
+  const amt = roughOf(s.p);
+  if (amt) {
+    const d = shapeD(s);
+    if (d && canSketch(d)) {
+      const a = s.shape === 'polygon' && s.p.open === '1' ? attrs.replace(/fill="[^"]*"/, 'fill="none"') : attrs;
+      return sketchSvg(d, a, amt, under ? `<path d="{d}" fill="${under}" stroke="none"/>` : '');
+    }
+  }
+  if (!under) return outlinePlain(s, attrs);
+  return [outlinePlain(s, attrs.replace(/stroke="[^"]*"/, 'stroke="none"')), outlinePlain(s, `fill="${under}" stroke="none"`), outlinePlain(s, attrs.replace(/fill="[^"]*"/, 'fill="none"'))].join('\n');
+}
+
+function outlinePlain(s: Shape, attrs: string): string {
   const { x, y, w, h } = s;
   if (s.shape === 'ellipse') return `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" ${attrs}/>`;
   if (s.shape === 'diamond') return `<polygon points="${x + w / 2},${y} ${x + w},${y + h / 2} ${x + w / 2},${y + h} ${x},${y + h / 2}" ${attrs}/>`;
@@ -95,7 +164,8 @@ function drawLegend(look: Look, s: Shape): string {
       const mk = sp.head === 'none' || sp.route === 'straight' ? 'none' : sp.head ?? 'arrow', head = mk !== 'none';
       const hm = marker(mk, { x: e.x + 28, y: y - 3 }, { x: e.x, y: y - 3 }, sw, stroke, col(look, look.canvas.paper ?? 'paper'));
       const dash = sp.dash && sp.dash !== 'none' ? ` stroke-dasharray="${esc(sp.dash)}"` : '';
-      out.push(`<line x1="${e.x}" y1="${y - 3}" x2="${r2(e.x + 28 - hm.trim)}" y2="${y - 3}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`);
+      out.push(R.amt ? sketchSvg(`M ${e.x},${y - 3} L ${r2(e.x + 28 - hm.trim)},${y - 3}`, `fill="none" stroke="${stroke}" stroke-width="${sw}"${dash}`, R.amt * 0.6)
+        : `<line x1="${e.x}" y1="${y - 3}" x2="${r2(e.x + 28 - hm.trim)}" y2="${y - 3}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`);
       if (head) out.push(hm.svg);
     } else if (e.kind === 'text') {
       const t = textAttrs(look, { ...sp, size: String(Math.min(num(sp.size, 12), 11)) }, '', { font: 'sans', size: 11, weight: 400, color: 'ink' });
@@ -162,7 +232,7 @@ function drawTable(look: Look, s: Shape): string {
   let border = `fill="none" stroke="${stroke}"`;
   if (p.stroke && p.stroke !== 'none') border += ` stroke-width="${sw}"`;
   if (p.dash && p.dash !== 'none') border += ` stroke-dasharray="${esc(p.dash)}"`;
-  out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} ${border}/>`);
+  out.push(roughOf(p) ? sketchSvg(rectD(s.x, s.y, s.w, s.h, r), border, roughOf(p)) : `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} ${border}/>`);
   return out.join('\n');
 }
 
@@ -200,7 +270,7 @@ function drawShape(look: Look, s: Shape): string {
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));
-  out.push(outline(s, strokeAttrs(look, p)));
+  out.push(outline(s, strokeAttrs(look, p), hatchFill(look, p) ?? undefined));
   let cxm = s.x + s.w / 2, cym = s.y + s.h / 2;
   if (s.shape === 'polygon' && s.poly && s.p.open !== '1') {
     // text sits at the centre of the outline's area, so it lands in the wide part of a triangle
@@ -282,6 +352,11 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   const bar = (b: number) => `<path d="M ${at(b, 6)} L ${at(b, -6)}" ${line}/>`;
   const ring = (b: number, r: number, a: string) => `<circle cx="${r2(tip.x - ux * b)}" cy="${r2(tip.y - uy * b)}" r="${r}" ${a}/>`;
   const crow = `<path d="M ${at(0, 6)} L ${at(12, 0)} L ${at(0, -6)}" ${line}/>`;
+  if (R.amt && (kind === 'arrow' || kind === 'open')) {
+    // drawn by hand an arrowhead is two quick strokes, a little larger than the clean one
+    const b = 9 + 2.5 * k, w = 4.5 + 1.2 * k;
+    return { svg: sketchSvg(`M ${at(b, w)} L ${at(0, 0)} L ${at(b, -w)}`, `fill="none" stroke="${stroke}" stroke-width="${sw}"`, R.amt * 0.6), trim: 0 };
+  }
   switch (kind) {
     case 'none': return { svg: '', trim: 0 };
     case 'open': return { svg: `<path d="M ${at(8 * k, 4 * k)} L ${at(0, 0)} L ${at(8 * k, -4 * k)}" ${line}/>`, trim: 0 };
@@ -304,7 +379,9 @@ function drawConn(look: Look, c: Conn): string {
   const p = c.p, sw = num(p.sw, 1.2), stroke = col(look, p.stroke ?? 'muted');
   const n = c.pts.length, paper = col(look, look.canvas.paper ?? 'paper');
   const head = marker(c.headM, c.pts[n - 1], c.pts[n - 2], sw, stroke, paper), tail = marker(c.tailM, c.pts[0], c.pts[1], sw, stroke, paper);
-  let s = `<path d="${pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim)}" fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}/>`;
+  const d = pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
+  const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}`;
+  let s = roughOf(p) ? sketchSvg(d, a, roughOf(p)) : `<path d="${d}" ${a}/>`;
   if (head.svg) s += '\n' + head.svg;
   if (tail.svg) s += '\n' + tail.svg;
   return s;
@@ -329,6 +406,7 @@ function drawText(look: Look, t: TextEl): string {
 export function renderBody(sc: Scene): string {
   const look = sc.look, cv = look.canvas;
   const out: string[] = [];
+  R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
   out.push(`<rect width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
   if (cv.dots) {
     const gap = num(cv.dotgap, 22);
@@ -344,6 +422,7 @@ export function renderBody(sc: Scene): string {
   for (const c of over) out.push(drawConn(look, c));
   for (const c of over) if (c.label) out.push(drawLabel(look, c));
   for (const t of sc.texts) out.push(drawText(look, t));
+  if (R.defs.size) out.splice(1, 0, `<defs>${hatchDefs()}</defs>`);
   return out.join('\n');
 }
 

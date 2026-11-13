@@ -20,6 +20,20 @@ const look = parseLook(readFileSync(new URL('../looks/reference.look', import.me
 const scene = (body: string) => buildScene(`look "x.look"\ncanvas 800x400\n${body}`, look);
 const warns = (body: string) => check(scene(body)).filter((i) => i.level !== 'hint').map((i) => i.msg);
 
+test('sketch look: hand-drawn strokes, steady from one render to the next, off unless the look asks', () => {
+  const body = 'canvas 800x400\na: node "A" at 40,40\nb: decision "B?" at 300,40\nc: ellipse "C" at 40,200 120x60 hatch=ink/0.4\na -> b\n';
+  const sk = parseLook(readFileSync(new URL('../looks/sketch.look', import.meta.url), 'utf8'), 'sketch.look');
+  assert.deepEqual(sk.issues, []);
+  const svg = renderSvg(buildScene(body, sk));
+  assert.doesNotMatch(svg, /<rect x="40" y="40"/); // the box is a drawn path, not a crisp rectangle
+  assert.match(svg, /<pattern id="fd-hatch-0"/);
+  assert.equal(svg, renderSvg(buildScene(body, sk))); // the wobble is seeded, so a re-render is identical
+  const plain = renderSvg(buildScene(body, look));
+  assert.match(plain, /<rect x="40" y="40"/);
+  assert.match(plain, /fd-hatch-0/); // hatch works without sketch too
+  assert.match(renderSvg(buildScene(body.replace('"A" at', '"A" sketch=0 at'), sk)), /<rect x="40" y="40"/); // sketch=0 opts one element out
+});
+
 test('tokenizer: strings, props, comments, continuation lines', () => {
   const st = parseStatements('a: node "Hi \\"x\\"\\nthere" at 4,8 sub="p q" // note\n   tag=API\n# whole-line comment\nb: node fill=#fff');
   assert.equal(st.length, 2);

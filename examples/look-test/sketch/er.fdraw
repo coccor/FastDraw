@@ -1,0 +1,48 @@
+look "../../../looks/sketch.look"
+canvas 984x600
+
+text "Library: lending model" at 40,56 style=h1
+
+member: table "Member" at 40,152 216x0
+  | id    "# id"   "uuid"
+  |       "name"   "text"
+  |       "email"  "text"
+
+loan: table "Loan" at 376,128 232x0 stroke=accent fill=accent/0.08
+  |      "# id"          "uuid"
+  | member "→ member_id" "uuid"
+  | copy   "→ copy_id"   "uuid"
+  |      "due_on"        "date"
+  |      "returned_on"   "date"
+
+copy: table "Copy" at 728,176 216x0
+  | id   "# id"      "uuid"
+  | book "→ book_id" "uuid"
+  |      "barcode"   "text"
+  |      "shelf"     "text"
+
+book: table "Book" at 728,376 216x0
+  | id "# id"   "uuid"
+  |    "title"  "text"
+  |    "author" "text"
+  |    "isbn"   "text"
+
+resv: table "Reservation" at 376,328 232x0
+  |      "# id"         "uuid"
+  | member "→ member_id" "uuid"
+  | book "→ book_id"   "uuid"
+  |      "placed_on"    "date"
+
+member.id -- loan.member "borrows" style=arrow tail=only-one head=many
+loan.copy -- copy.id "of" style=arrow tail=many head=only-one
+copy.bottom -- book.top "is a" style=arrow tail=many head=only-one
+member.bottom -- resv.member "places" style=arrow tail=only-one head=many
+resv.book -- book.id "for" style=arrow tail=many head=only-one
+
+legend at 40,528 focal="Central entity" node="Entity"
+text "#" at 420,568 style=small color=ink
+text "Primary key" at 432,568 style=caption
+text "→" at 540,568 style=small color=ink
+text "Foreign key" at 556,568 style=caption
+680,565 -- 728,565 style=arrow tail=only-one head=many
+text "Exactly one to many" at 740,568 style=caption
