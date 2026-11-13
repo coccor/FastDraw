@@ -1,0 +1,49 @@
+look "./harbor.look"
+
+text "Order process" at 40,48 style=kicker
+text "Who does what when you tap Buy" at 40,82 style=h1
+text "Five teams, two events on the bus, and one question that can send you back to the start." at 40,108 style=dek
+
+// ---- timing along the top ------------------------------------------------------------
+t0: chip "0 s" at 116,132 96x20
+t1: chip "1.2 s" at 788,132 96x20
+t2: chip "next day" at 1236,132 96x20
+
+// ---- lanes: middles at y=228, 364, 500, 636, 772; columns 224 apart --------------------
+l1: band "Customer" at 40,168 1384x120
+l2: band "Storefront" at 40,304 1384x120
+l3: band "Orders service" at 40,440 1384x120
+l4: band "Payments" at 40,576 1384x120
+l5: band "Fulfilment" at 40,712 1384x120
+
+// ---- the process -----------------------------------------------------------------------
+buy:     terminal "Taps Buy" icon=cart at 72,204 184x48
+basket:  step "Sends basket" icon=browser at 72,340 184x48
+create:  step "Creates order" icon=document at 296,476 184x48
+created: event "order.created" icon=broadcast at 520,464 points=24,0;160,0;184,36;160,72;24,72;0,36
+charge:  step "Charges card" icon=payment at 520,612 184x48
+ok:      decision "Card\napproved?" at 744,588 184x96
+retry:   step "Asks for\nanother card" icon=alert at 744,336 184x56
+paidevt: event "payment.captured" icon=broadcast at 968,600 points=24,0;160,0;184,36;160,72;24,72;0,36
+paid:    focal "Marks it paid" sub="the order is final" icon=check at 1192,468 192x64
+confirm: step "Confirms to you" icon=mail at 1192,340 192x48
+ship:    step "Packs and ships" icon=truck at 1192,748 192x48
+arrives: terminal-focal "Parcel arrives" icon=home at 1192,204 192x48
+
+note: sticky-violet "Every retry reuses the\norder's key, so a card is\nnever charged twice." at 296,732 184x80
+
+// ---- flow ----------------------------------------------------------------------------------
+buy -> basket style=primary
+basket.right -> create.top style=primary via=388,364
+create -> created style=primary
+created -> charge style=primary
+charge -> ok style=primary
+ok.top -> retry.bottom "no" style=return
+retry.top -> buy.right via=836,228 style=return
+ok.right -> paidevt.left "yes" style=primary
+paidevt.right -> paid.bottom@1240 via=1240,636 style=primary
+paid -> confirm style=return
+paid.bottom@1336 -> ship.top@1336 style=primary
+ship.right -> arrives.right via=1408,772;1408,228 style=primary
+
+legend at 40,860 terminal="Start or end" step="A step a team takes" decision="A question" event="An event on the bus" primary="The happy path" return="A reply or a way back"

@@ -1,0 +1,87 @@
+// Harbor night: the Harbor look on a deep navy page. A cool light page, white cards with a coloured
+// two-tone icon, tinted zones that nest (region, network, subnet), numbered step badges and one
+// indigo for the path that matters.
+
+canvas paper=paper dots=ink/0.08 dotgap=24
+
+color paper  #0b1226
+color ink    #e2e8f0
+color muted  #94a3b8
+color soft   #64748b
+color accent #8b8cff
+color link   #38bdf8
+color teal   #2dd4bf
+color amber  #fbbf24
+color rose   #e11d48
+color green  #059669
+color violet #7c3aed
+
+font sans  "Geist"
+font mono  "Geist Mono"
+font serif "Newsreader"
+
+// ---- boxes ----------------------------------------------------------------
+style node shape=rect radius=10 size=176x64 fill=#131c38 stroke=ink/0.12 sw=1
+    title.font=sans title.size=13.5 title.weight=600 title.color=ink sub.font=sans sub.size=11 sub.color=muted
+    tag.color=muted tag.border=ink/0.18 tag.font=mono icon.color=accent icon.fill=accent/0.14 icon.size=22
+    use="a service or component"
+style focal extends node fill=#131c38 stroke=accent sw=2 title.color=accent tag.color=accent tag.border=accent/0.4
+    use="the one or two elements the diagram is about"
+style store shape=path size=176x80 fill=#131c38 stroke=ink/0.16 sw=1
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    title.font=sans title.size=13.5 title.weight=600 title.color=ink sub.font=sans sub.size=11 sub.color=muted
+    tag.color=teal tag.border=teal/0.4 icon.color=teal icon.fill=teal/0.14 icon.size=22
+    use="something that holds data"
+style cloud extends node fill=#131c38 stroke=link/0.45 icon.color=link icon.fill=link/0.14 tag.color=link tag.border=link/0.4
+    use="a managed or hosted service"
+style external extends node fill=#131c38 stroke=ink/0.25 dash=5,4 icon.color=muted icon.fill=ink/0.06
+    use="a person or system outside what you run"
+style optional extends node fill=#111a33/0.7 stroke=ink/0.2 dash=3,3 use="optional or asynchronous"
+style event extends polygon fill=amber/0.12 stroke=amber sw=1.5 title.font=mono title.size=11 title.color=ink
+    icon.color=amber icon.fill=amber/0.2 icon.pos=top icon.size=22 use="an event; a hexagon from points"
+style badge shape=ellipse size=22x22 fill=accent stroke=#0b1226 sw=2 title.font=mono title.size=11 title.weight=600 title.color=#0b1226
+    use="a numbered step marker"
+style chip shape=rect radius=11 size=96x22 fill=#131c38 stroke=ink/0.14 sw=1 title.font=mono title.size=10 title.color=muted
+    use="a small fact: a port, a number"
+style sticky shape=rect radius=4 size=150x84 fill=#fff7d6 stroke=amber/0.35 sw=1 title.font=sans title.size=11.5 title.color=ink
+    use="a note or open question"
+style sticky-orange extends sticky fill=#ffe4e6 stroke=rose/0.35 use="a risk"
+style sticky-violet extends sticky fill=#ede9fe stroke=violet/0.35 use="a decision"
+
+// zones nest: region, network, subnet, plus a lane for swimlanes
+style zone shape=rect radius=16 fill=ink/0.025 stroke=ink/0.12 sw=1 layer=back
+    title.pos=top title.align=left title.font=sans title.size=11 title.weight=600 title.color=muted
+    use="a region drawn behind a group; always give WxH"
+style network extends zone fill=accent/0.035 stroke=accent/0.45 dash=6,4 title.color=accent use="a private network"
+style subnet extends zone radius=12 fill=#111a33/0.7 stroke=teal/0.45 title.color=teal use="a subnet or tier inside a network"
+style band extends zone radius=12 fill=#131c38 stroke=ink/0.10 use="a horizontal layer"
+
+style step extends node size=168x48 use="flowchart action"
+style terminal extends node radius=24 size=168x48 use="flowchart start or end"
+style terminal-focal extends terminal stroke=accent sw=2 title.color=accent use="the outcome that matters"
+style decision shape=diamond size=200x96 fill=#131c38 stroke=ink/0.25 title.font=sans title.size=12 title.color=ink use="a yes or no question"
+style bar shape=rect size=8x80 fill=#131c38 stroke=ink/0.3 use="activation bar"
+style table shape=table radius=10 fill=#131c38 stroke=ink/0.14 sw=1 head.fill=accent/0.08 rule=ink/0.08
+    title.font=sans title.size=12 title.weight=600 title.color=ink cell.font=mono cell.size=10.5 cell.color=ink detail.color=muted
+    use="an entity or table"
+style matrix extends table align=center grid=1 cell.font=sans use="a grid of values"
+
+// ---- lines ----------------------------------------------------------------
+style arrow line stroke=ink/0.45 sw=1.4 route=ortho radius=8 label.font=sans label.size=10.5 label.color=muted label.caps=0 use="default arrow"
+style primary line stroke=accent sw=2.2 route=ortho radius=8 label.font=sans label.size=10.5 label.color=accent label.caps=0 use="the main path; at most two"
+style link line stroke=link sw=1.6 route=ortho radius=8 label.font=sans label.size=10.5 label.color=link label.caps=0 use="a request crossing a boundary"
+style return line stroke=ink/0.40 sw=1.4 dash=5,4 route=ortho radius=8 label.font=sans label.size=10.5 label.color=muted label.caps=0 use="asynchronous, or a reply"
+style replicate line stroke=teal sw=1.4 dash=2,3 route=ortho radius=8 label.font=sans label.size=10.5 label.color=teal label.caps=0 use="replication"
+style lifeline line head=none stroke=ink/0.2 sw=1.2 dash=4,4 route=straight use="sequence lifeline"
+style rule line head=none stroke=ink/0.10 sw=1 route=straight use="thin separator"
+style relation line stroke=ink/0.5 sw=1.2 use="a relationship between tables"
+
+// ---- text -----------------------------------------------------------------
+style h1 text font=sans size=26 weight=600 color=ink use="title"
+style kicker text font=mono size=10.5 color=accent caps=1 spacing=0.12 use="a category above the title"
+style dek text font=sans size=14 color=muted use="one line under the title"
+style eyebrow text font=mono size=9 color=muted caps=1 spacing=0.12 use="small caps label"
+style caption text font=sans size=10.5 color=muted use="small explanatory text"
+style note text font=sans size=12 color=muted use="a short aside"
+style small text font=mono size=10 color=muted use="technical detail"
+style legend extends legend rule=ink/0.1 title.font=mono title.size=9 item.font=sans item.size=10.5
