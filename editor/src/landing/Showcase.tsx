@@ -9,7 +9,7 @@ const LOOKS: { id: string; name: string; about: string }[] = [
   { id: 'whiteboard', name: 'Whiteboard', about: 'Sticky-note colours, rounded boxes, curved lines' },
   { id: 'sketch', name: 'Sketch', about: 'Drawn by hand, for early ideas' },
   { id: 'headline', name: 'Headline', about: 'Flat blocks and one strong colour, for print' },
-  { id: '', name: 'Built-in', about: 'Quiet outlines and one green, the default' },
+  { id: '', name: 'Built-in', about: 'Quiet outlines and one indigo, the default' },
 ];
 
 const withLook = (look: string) => source.replace(/^look .*\n/, look ? `look ${look}\n` : '');

@@ -2,7 +2,7 @@
 // writes out for a team to change. Its style names match the guides.
 export const DEFAULT_LOOK = `// FastDraw default look. Copy it with "fastdraw init-look" and change anything.
 // White outlined boxes on a grey dotted page, Geist for names and details, a Newsreader serif title,
-// graphite greys for everything else and one green for the subject and the main path.
+// graphite greys for everything else and one indigo for the subject and the main path.
 
 canvas paper=paper dots=ink/0.09 dotgap=22
 
@@ -10,7 +10,7 @@ color paper  #f5f5f5
 color ink    #1f2328
 color muted  #5f6670
 color soft   #8b929c
-color accent #2e8540
+color accent #4f46e5
 color link   #45607e
 
 font sans  "Geist"
