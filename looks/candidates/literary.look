@@ -1,0 +1,57 @@
+// "Literary". A literary-magazine style with serif editorial charts: Newsreader serif
+// for titles and names, Schibsted Grotesk for details and tracked caps labels, crisp square
+// outlined boxes, dotted zone boundaries, a deep teal subject and a warm ochre second voice.
+fontdir "./fonts"
+canvas paper=ground
+
+color ground  #ffffff
+color ink     #1d1f22
+color muted   #646a72
+color soft    #a7acb3
+color rule    #cdd1d6
+color tint    #f1f3f4
+color accent  #1f6f78
+color link    #a8742a
+color ochre   #a8742a
+
+font sans  "Schibsted Grotesk"
+font mono  "IBM Plex Mono"
+font serif "Newsreader 16pt 16pt"
+
+style node shape=rect radius=0 size=144x64 fill=ground stroke=ink sw=1
+    title.font=serif title.weight=500 title.size=15 title.color=ink sub.font=sans sub.size=10 sub.color=muted
+    tag.font=sans tag.size=8 tag.weight=600 tag.color=muted tag.border=rule
+    use="default box: a service, component or step"
+style focal extends node fill=accent stroke=accent title.color=#ffffff sub.color=#ffffff/0.8 tag.color=#ffffff/0.85 tag.border=#ffffff/0.4 ghost.color=#ffffff/0.15
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=ground use="something that holds data or state"
+style cloud extends node fill=#f6efe3 stroke=ochre title.color=#6e4b17 sub.color=#6e4b17/0.75 use="a hosted or third-party platform"
+style external extends node fill=tint stroke=soft dash=1,2 use="a person or system outside what you own"
+style optional extends node fill=ground stroke=soft dash=1,3 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=ground stroke=ink sw=1 title.font=serif title.size=15 title.color=ink sub.color=muted sub.size=10 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent stroke=accent title.color=#ffffff sub.color=#ffffff/0.8 use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=ground stroke=ink sw=1 title.font=serif title.size=15 use="flowchart yes/no question"
+style zone shape=rect radius=0 fill=none stroke=soft sw=1 dash=1,3 layer=back
+    title.pos=top title.align=left title.font=sans title.size=9 title.weight=600 title.caps=1 title.spacing=0.14 title.color=muted
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=ground stroke=ink sw=1 use="sequence activation bar"
+style table shape=table radius=0 fill=ground stroke=ink sw=1 head.fill=tint rule=rule cell.font=sans cell.size=11 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 use="a grid of values"
+style chart shape=chart fill=none stroke=ink/0.6 sw=1 mask=0 bar.radius=0 grid.color=ink/0.07
+    use="axes with your numbers drawn for you: chart at x,y WxH x=\"Q1,Q2,Q3\" y=0..100, then a line per series: | bars \"Revenue\" 42 61 75"
+style arrow line stroke=ink/0.7 sw=1 route=ortho radius=0 label.font=sans label.size=9 label.weight=600 label.caps=1 label.spacing=0.12 label.color=muted use="default arrow"
+style primary extends arrow stroke=accent sw=2 label.color=accent use="the main path"
+style link extends arrow stroke=ochre label.color=ochre use="a request crossing a boundary"
+style return extends arrow stroke=muted dash=2,3 use="a response"
+style relation extends relation stroke=ink/0.7 sw=1 label.font=sans label.size=9 label.caps=1 label.spacing=0.12 label.color=muted
+style lifeline line head=none stroke=soft sw=1 dash=1,3 route=straight use="lifeline"
+style rule line head=none stroke=rule sw=1 route=straight use="thin separator"
+style h1 text font=serif size=34 weight=400 color=ink use="diagram title"
+style dek text font=sans size=14 color=muted use="one-line takeaway under the title"
+style eyebrow text font=sans size=9 weight=600 color=muted caps=1 spacing=0.16 use="small kicker above the title"
+style caption text font=sans size=10 color=muted use="small explanatory text"
+style note text font=serif italic=1 size=16 color=muted use="a short aside"
+style small text font=serif italic=1 size=11 color=muted use="source line"

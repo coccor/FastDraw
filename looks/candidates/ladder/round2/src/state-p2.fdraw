@@ -1,0 +1,26 @@
+look "../p2.look"
+canvas 1252x520
+
+text "Life of a support ticket" at 60,56 style=h1
+
+start: ellipse at 60,232 16x16 fill=ink stroke=none
+new:      node "New" sub="Just received" at 136,200 160x80 radius=8
+assigned: node "Assigned" sub="An agent owns it" at 360,200 160x80 radius=8
+waiting:  node "Waiting on customer" sub="Clock paused" at 584,200 160x80 radius=8
+resolved: focal "Resolved" sub="Fix confirmed" at 808,200 160x80 radius=8
+closed:   cloud "Closed" sub="Read only" at 1032,200 160x80 radius=8
+reopened: node "Reopened" sub="Customer is back" at 808,344 160x80 radius=8
+end:     ellipse at 1104,336 16x16 fill=none stroke=ink
+end_dot: ellipse at 1107,339 10x10 fill=ink stroke=none overlap=ok
+
+start -> new "created"
+new -> assigned "assign"
+assigned -> waiting "ask"
+waiting -> resolved "confirm" style=primary
+resolved -> closed "7 days"
+closed -> end
+waiting.top -> assigned.top "customer replies" style=return route=curve
+resolved.bottom -> reopened.top "customer replies"
+reopened.left -> assigned.bottom "reassign"
+
+legend at 60,456 node="State" focal="Successful outcome" cloud="Resting place" primary="Main path" return="Back to earlier state"

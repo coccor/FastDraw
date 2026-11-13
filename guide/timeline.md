@@ -36,7 +36,7 @@ text "Design v1" at 240,164 anchor=middle weight=600 color=ink
 
 ## Text
 
-- The date is the `eyebrow` style (it does not upper-case: type the capitals), the name is plain text with `weight=600 color=ink`, the detail is `small` (mono). Keep names to two or three words.
+- The date is the `eyebrow` style (it does not upper-case: type the capitals), the name is plain text with `weight=600 color=ink`, the detail is `small`. Keep names to two or three words.
 - A major milestone's stem and date take `stroke=accent` and `color=accent`; its name stays ink and may be `size=14`.
 
 ## Legend

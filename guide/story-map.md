@@ -6,7 +6,7 @@ Shows a whole product story and where the first release stops. Columns are activ
 
 - Title: `text "..." at 40,52 style=h1`. The backbone starts at y=96.
 - Columns: 200px wide, 24px apart. Leave an 88px margin on the left for the release names, so the first column starts at x=128 and the next ones at 352, 576, 800 (128 + 224 * i). Canvas width = 144 + columns * 224 (four columns: 1040).
-- Row 1, the backbone: one `node` box per activity, `200x64 fill=ink/0.08`, with the activity name as text and `sub="ACTIVITY 1"`. Write them in story order, never by priority. Not `store`: that is a cylinder.
+- Row 1, the backbone: one `node` box per activity, `200x64 fill=ink/0.08`, with the activity name as text and `sub="ACTIVITY 1"`. Write them in story order, never by priority. Not `store`: that means data, and many looks draw it as a cylinder.
 - Row 2, the steps: under each activity, one or two `node` boxes 176x32 with `title.weight=400` (lighter than the stories), 12px in from the column edge, y=176 and 216. Keep room for two even where an activity has one, so the bands start level.
 - Rows 3 to 5, the releases: one band per release, 80px high, the full width from x=40 to the last column's right edge, the first at y=272 (24px under the steps), the next at 352, 432. Tint the first, third, ... band: `zone at 40,272 960x80 radius=0 stroke=none` with no text; leave the others empty. Name each band with `text "MVP" at 56,<band middle + 4> style=eyebrow`.
 - Stories: `node` boxes 176x48 with `sub="RPT-101 · 3pt"` (ticket, size), 16px under the top of their band, in the column of their activity. A story with no card in a band leaves the cell empty.
@@ -15,7 +15,7 @@ Shows a whole product story and where the first release stops. Columns are activ
 
 ## Emphasis
 
-The accent is used twice: the cut line, and the one story most likely to go wrong. Draw that story as `focal` with `dash=4,3` (white text on the accent is the default), and put a small chip on its top edge: `rect "RISK" at x,y 44x12 radius=2 fill=paper stroke=accent sw=0.8 overlap=ok title.font=mono title.size=8 title.weight=400 title.color=accent`, x = card right - 56, y = card top - 6. Do not use `tag=` here: on a 48px card it lands on the title.
+The accent is used twice: the cut line, and the one story most likely to go wrong. Draw that story as `focal` with `dash=4,3`, and put a small chip on its top edge: `rect "RISK" at x,y 44x12 radius=2 fill=paper stroke=accent sw=0.8 overlap=ok title.font=mono title.size=8 title.weight=400 title.color=accent`, x = card right - 56, y = card top - 6. Do not use `tag=` here: on a 48px card it lands on the title.
 
 ## Limits
 

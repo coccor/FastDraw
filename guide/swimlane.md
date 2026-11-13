@@ -25,7 +25,7 @@ text "Reviewer" at 60,268 style=eyebrow  // baseline 60px under the lane's top l
 - When work moves to another lane, put the next step straight below (or above) the step that hands over, with the same centre x, so the handoff is a vertical arrow 64px long. If the lanes are not neighbours, or the step would collide, put it one column to the right instead and let the arrow turn once: `pr.right -> review.top`.
 - Give each step at most one arrow in at its top. When a second arrow has to arrive, take it to the left side (`x.left`) or the bottom. Two arrows that leave the same side of one step also run on top of each other for a stretch: send one from the bottom.
 - Lanes need not have the same number of steps. A lane with one step is fine.
-- The step the process exists to reach gets `focal` (white text by default).
+- The step the process exists to reach gets `focal`.
 
 ## Arrows
 

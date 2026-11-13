@@ -8,7 +8,7 @@ FastDraw has no quadrant element. You build one from two lines, small circles an
 
 ```
 // tint behind the one quadrant that matters; a zone is drawn behind the axes
-// (stroke=none: the built-in zone has a dashed outline)
+// (stroke=none: no outline)
 zone at 120,96 380x172 fill=accent/0.03 stroke=none radius=0
 
 // axes cross in the middle; the arrowhead is at the high end
@@ -41,4 +41,4 @@ The dots are not styles of the look, but `legend` takes dot entries: `legend at 
 
 ## Variant: four named scenarios
 
-When the four cells are futures or options rather than a cloud of items, draw four equal boxes instead of dots: `node` boxes written `280x160` (never `store`: in the built-in look it is a cylinder) with 24px between a box and each axis, one of them `focal`. Each holds a name (main text) and one line of description (`sub=`). Put heads on both ends of both axes (`<->`) because each axis is then a range between two named poles.
+When the four cells are futures or options rather than a cloud of items, draw four equal boxes instead of dots: `node` boxes written `280x160` (never `store`: that means data, and many looks draw it as a cylinder) with 24px between a box and each axis, one of them `focal`. Each holds a name (main text) and one line of description (`sub=`). Put heads on both ends of both axes (`<->`) because each axis is then a range between two named poles.

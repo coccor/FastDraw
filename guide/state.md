@@ -16,7 +16,7 @@ end:     ellipse at 960,472 16x16 fill=none stroke=ink             // 48px under
 end_dot: ellipse at 963,475 10x10 fill=ink stroke=none overlap=ok // 3px inside the ring
 ```
 
-- One state gets `focal`: the one the reader should notice, usually the successful outcome or the error state (white text by default). A state where the thing merely rests (archived, closed) may use `cloud`. All others use `node`. Do not use `store` for a state: in the built-in look it is a cylinder.
+- One state gets `focal`: the one the reader should notice, usually the successful outcome or the error state. A state where the thing merely rests (archived, closed) may use `cloud`. All others use `node`. Do not use `store` for a state: in the built-in look it is a cylinder.
 - Centre the whole drawing in the canvas.
 
 ## Transitions

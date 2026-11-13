@@ -1,0 +1,34 @@
+look "../studio-dd.look"
+canvas 1240x520
+
+text "Hiring a new engineer" at 40,56 style=h1
+
+40,96  -- 1200,96  stroke=ink/0.22
+40,176 -- 1200,176 style=rule
+40,256 -- 1200,256 style=rule
+40,336 -- 1200,336 style=rule
+40,416 -- 1200,416 stroke=ink/0.22
+160,96 -- 160,416 stroke=ink/0.22
+text "Recruiter" at 60,140 style=eyebrow
+text "Hiring manager" at 60,220 style=eyebrow
+text "Candidate" at 60,300 style=eyebrow
+text "IT" at 60,380 style=eyebrow
+
+open:   node "Open role" sub="Job board" at 184,112 120x48
+short:  node "Shortlist" sub="Review CVs" at 184,192 120x48
+inter:  node "Interview" sub="Two rounds" at 344,272 120x48
+offer:  node "Make offer" sub="Pay and start" at 544,192 120x48
+accept: node "Accept" sub="Sign letter" at 544,272 120x48
+paper:  node "Contract" sub="HR system" at 704,112 120x48
+laptop: node "Laptop, access" sub="Ticket" at 864,352 120x48
+day1:   focal "Day one" sub="Starts work" at 1024,272 120x48
+
+open -> short "brief" lpos=269,171
+short.right -> inter.top "invite"
+inter.right -> offer.left "feedback" lpos=474,251
+offer.bottom -> accept.top "offer" style=primary lpos=629,251
+accept.right -> paper.bottom "signed"
+paper.right -> laptop.top "request"
+laptop.right -> day1.bottom "ready"
+
+legend at 40,448 node="Step" focal="Goal" primary="Costliest handoff" arrow="Handoff"

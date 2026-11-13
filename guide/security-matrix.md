@@ -4,13 +4,13 @@ Shows who may do what: one row per component, one column per role or group, and 
 
 ## Building blocks
 
-Title at 40,52 (`style=h1`); the header row starts at y=96. A `table`/`matrix` with `fill.N=` per cell is the short way to a plain matrix, but its cells cannot be bold, carry a second line or have a dark header band, and its grid is flat: the picture is weaker. Where the level and the one special cell are the message, build the matrix from `rect`s on a fixed grid:
+Title at 40,52 (`style=h1`); the header row starts at y=96. A `table`/`matrix` with `fill.N=` per cell is the short way to a plain matrix, but its cells cannot be bold, carry a second line or have a shaded header band, and its grid is flat: the picture is weaker. Where the level and the one special cell are the message, build the matrix from `rect`s on a fixed grid:
 
 ```
 // columns: labels at x=40 (200 wide), then one per role: x = 248 + 144*j, 136 wide
 // rows: header at y=96 (52 high), then y = 160 + 40*k, 36 high
 corner: rect "Component" sub="vs. AD group" at 40,96 200x52 radius=6 fill=#ffffff stroke=ink/0.12 title.size=11
-r1: rect "Data Engineer" sub="GRP-DATA-ENG" at 248,96 136x52 radius=6 fill=ink stroke=none title.color=#ffffff sub.color=#ffffff/0.8 title.size=11
+r1: rect "Data Engineer" sub="GRP-DATA-ENG" at 248,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
 
 c1: rect "Object storage" at 40,160 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
 text "S3" at 228,181 style=small anchor=end

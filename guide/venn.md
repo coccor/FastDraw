@@ -13,7 +13,7 @@ build: ellipse at 288,236 280x280 fill=muted/0.05 stroke=muted sw=1 overlap=ok m
 pay:   ellipse at 432,236 280x280 fill=soft/0.05  stroke=soft  sw=1 overlap=ok mask=0
 
 // the region all three share
-core: polygon at 432,256 fill=ink stroke=none overlap=ok
+core: polygon at 432,256 fill=accent stroke=none overlap=ok
     points=68,0;57,7;47,15;38,24;30,33;23,44;16,55;11,66;6,78;3,90;1,103;14,109;27,114;40,117;54,119;68,120;82,119;96,117;109,114;122,109;135,103;133,90;130,78;125,66;120,55;113,44;106,33;98,24;89,15;79,7
 text "Shippable" at 500,324 anchor=middle size=14 weight=600 color=#ffffff
 ```
@@ -33,7 +33,7 @@ text "Shippable" at 500,324 anchor=middle size=14 weight=600 color=#ffffff
 
 ## Focus
 
-- One region is what the diagram is about, usually the one all sets share. Draw it as a polygon over the circles, with `stroke=none` (an outline would show the polygon's corners). Fill it with `ink` and write on it in white (`color=#ffffff` on every line: free text is not recoloured for you), or fill it with `accent/0.12` and write in ink.
+- One region is what the diagram is about, usually the one all sets share. Draw it as a polygon over the circles, with `stroke=none` (an outline would show the polygon's corners). Fill it with `accent` (never `ink`) and write on it in white (`color=#ffffff` on every line: free text is not recoloured for you), or fill it with `accent/0.12` and write in ink.
 - Never mark two regions. The other overlaps stay as the plain darker tint the circles make by themselves.
 
 ## Text

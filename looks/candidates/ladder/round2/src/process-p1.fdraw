@@ -1,0 +1,63 @@
+look "../p1.look"
+canvas 1112x620
+
+text "Handling an insurance claim" at 40,52 style=h1
+
+ellipse "1" at 236,84 24x24 fill=ink/0.08 stroke=none title.size=9
+text "Report" at 248,124 style=eyebrow anchor=middle
+ellipse "2" at 388,84 24x24 fill=ink/0.08 stroke=none title.size=9
+text "Register" at 400,124 style=eyebrow anchor=middle
+ellipse "3" at 540,84 24x24 fill=accent/0.16 title.color=accent stroke=none title.size=9
+text "Assess" at 552,124 style=eyebrow anchor=middle color=accent
+ellipse "4" at 692,84 24x24 fill=ink/0.08 stroke=none title.size=9
+text "Approve" at 704,124 style=eyebrow anchor=middle
+ellipse "5" at 844,84 24x24 fill=ink/0.08 stroke=none title.size=9
+text "Pay" at 856,124 style=eyebrow anchor=middle
+ellipse "6" at 996,84 24x24 fill=ink/0.08 stroke=none title.size=9
+text "Receive" at 1008,124 style=eyebrow anchor=middle
+
+zone at 40,232 1032x96 radius=0 stroke=none
+zone at 40,424 1032x96 radius=0 stroke=none
+40,136 -- 1072,136 style=rule
+40,232 -- 1072,232 style=rule
+40,328 -- 1072,328 style=rule
+40,424 -- 1072,424 style=rule
+40,520 -- 1072,520 style=rule
+168,136 -- 168,520 stroke=ink/0.2 sw=1
+text "Customer" at 104,187 style=eyebrow anchor=middle
+text "Call centre" at 104,283 style=eyebrow anchor=middle
+text "Assessor" at 104,379 style=eyebrow anchor=middle
+text "Finance" at 104,475 style=eyebrow anchor=middle
+
+report: node tag="CUS" at 184,148 128x72
+text "Report claim" at 248,184 weight=600 anchor=middle
+text "incident → claim form" at 248,199 style=small anchor=middle
+text "web form" at 248,211 style=small anchor=middle color=soft
+register: node tag="CCT" at 336,244 128x72
+text "Register claim" at 400,280 weight=600 anchor=middle
+text "claim form → case" at 400,295 style=small anchor=middle
+text "CRM" at 400,307 style=small anchor=middle color=soft
+assess: focal tag="ASR" at 488,340 128x72
+text "Assess damage" at 552,376 weight=600 anchor=middle color=ink
+text "case → report" at 552,391 style=small anchor=middle color=ink
+text "mobile app" at 552,403 style=small anchor=middle color=ink
+approve: node tag="FIN" at 640,436 128x72
+text "Approve payout" at 704,472 weight=600 anchor=middle
+text "report → decision" at 704,487 style=small anchor=middle
+text "ERP" at 704,499 style=small anchor=middle color=soft
+pay: node tag="FIN" at 792,436 128x72
+text "Pay out" at 856,472 weight=600 anchor=middle
+text "decision → transfer" at 856,487 style=small anchor=middle
+text "bank portal" at 856,499 style=small anchor=middle color=soft
+receive: node tag="CUS" at 944,148 128x72
+text "Receive payout" at 1008,184 weight=600 anchor=middle
+text "transfer → receipt" at 1008,199 style=small anchor=middle
+text "bank app" at 1008,211 style=small anchor=middle color=soft
+
+report.right -> register.top
+register.right -> assess.top style=primary
+assess.right -> approve.top style=primary
+approve -> pay
+pay.right -> receive.bottom
+
+legend at 40,544 node="A step, in the lane of who does it" focal="The step the process turns on" primary="Critical handoff" arrow="Handoff"

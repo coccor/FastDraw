@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 688" width="1200" height="688">
+<metadata id="fastdraw-source">eyJ2IjoxLCJkaWFncmFtIjoibG9vayBcIi4uL2IubG9va1wiXG5jYW52YXMgMTIwMHg2ODhcblxudGV4dCBcIkhvc3BpdGFsIGludGVncmF0aW9uIGh1YlwiIGF0IDQwLDU2IHN0eWxlPWgxXG5cbnBsYXQ6IHpvbmUgXCJJbnRlZ3JhdGlvbiBodWJcIiBhdCAyODAsMTM2IDY0MHgzNjBcblxubGFiOiAgIGV4dGVybmFsIFwiTGFib3JhdG9yeSAoTElTKVwiIGF0IDQwLDIzMiAxNjB4NjRcbnBoYXJtOiBleHRlcm5hbCBcIlBoYXJtYWN5XCIgYXQgNDAsMzIwIDE2MHg2NFxucmVnOiAgIGV4dGVybmFsIFwiUmVnaXN0cmF0aW9uIChBRFQpXCIgYXQgNDAsNDA4IDE2MHg2NFxuXG5laHI6ICAgZXh0ZXJuYWwgXCJQYXRpZW50IHJlY29yZFwiIGF0IDEwMDAsMjMyIDE2MHg2NFxuYmlsbDogIGV4dGVybmFsIFwiQmlsbGluZ1wiIGF0IDEwMDAsMzIwIDE2MHg2NFxucmVwOiAgIGV4dGVybmFsIFwiUmVwb3J0aW5nXCIgYXQgMTAwMCw0MDggMTYweDY0XG5cbm9yY2g6IGNsb3VkIFwiV29ya2Zsb3cgb3JjaGVzdHJhdG9yXCIgYXQgMjk2LDE2OCA2MDh4NTZcbmVuZzogIGZvY2FsIFwiSW50ZXJmYWNlIGVuZ2luZVwiIGF0IDM0NCwzMTYgMTYweDcyXG5hcGk6ICBmb2NhbCBcIkZISVIgQVBJXCIgYXQgNjk2LDMxNiAxNjB4NzJcblxuaWRwOiAgY2xvdWQgXCJJZGVudGl0eVwiIGF0IDQwLDU0NCAyNjJ4NDhcbmF1ZDogIGNsb3VkIFwiQXVkaXQgbG9nXCIgYXQgMzI2LDU0NCAyNjJ4NDhcbnNlYzogIGNsb3VkIFwiU2VjcmV0c1wiIGF0IDYxMiw1NDQgMjYyeDQ4XG5tb246ICBjbG91ZCBcIk1vbml0b3JpbmdcIiBhdCA4OTgsNTQ0IDI2Mng0OFxuXG5sYWIucmlnaHQgLT4gZW5nLmxlZnRAMzM2IFwiSEw3IHYyXCIgdmlhPTMxMiwyNjQ7MzEyLDMzNiBscG9zPTI0MCwyNTRcbnBoYXJtLnJpZ2h0IC0+IGVuZy5sZWZ0QDM1MiBcIkhMNyB2MlwiIGxwb3M9MjQwLDM0MlxucmVnLnJpZ2h0IC0+IGVuZy5sZWZ0QDM2OCBcIkFEVFwiIHZpYT0zMTIsNDQwOzMxMiwzNjggbHBvcz0yNDAsNDMwXG5cbmVuZy5yaWdodCAtPiBhcGkubGVmdCBcIkZISVJcIiBzdHlsZT1wcmltYXJ5XG5cbmFwaS5yaWdodEAzMzYgLT4gZWhyLmxlZnQgXCJGSElSIFI0XCIgc3R5bGU9bGluayB2aWE9ODg4LDMzNjs4ODgsMjY0IGxwb3M9OTYwLDI1NFxuYXBpLnJpZ2h0QDM1MiAtPiBiaWxsLmxlZnQgXCJFREkgODM3XCIgc3R5bGU9bGluayBscG9zPTk2MCwzNDJcbmFwaS5yaWdodEAzNjggLT4gcmVwLmxlZnQgXCJTUUxcIiBzdHlsZT1saW5rIHZpYT04ODgsMzY4Ozg4OCw0NDAgbHBvcz05NjAsNDMwXG5cbm9yY2guYm90dG9tQDQyNCAtPiBlbmcudG9wQDQyNCBzdHlsZT1yZXR1cm5cbm9yY2guYm90dG9tQDc3NiAtPiBhcGkudG9wQDc3NiBzdHlsZT1yZXR1cm5cblxuaWRwLnRvcEAyOTAgLT4gcGxhdC5ib3R0b21AMjkwIFwiYXV0aFwiIHN0eWxlPXJldHVyblxuYXVkLnRvcEA0NDAgLT4gcGxhdC5ib3R0b21ANDQwIFwiZXZlbnRzXCIgc3R5bGU9cmV0dXJuXG5cbmxlZ2VuZCBhdCA0MCw2MTYgZXh0ZXJuYWw9XCJTb3VyY2Ugb3IgY29uc3VtZXJcIiBmb2NhbD1cIkh1YiBzdXJmYWNlXCIgY2xvdWQ9XCJTaGFyZWQgc2VydmljZVwiIGFycm93PVwiSW5ib3VuZCB3aXJlXCIgcHJpbWFyeT1cIkJldHdlZW4gc3VyZmFjZXNcIiBsaW5rPVwiT3V0Ym91bmQgd2lyZVwiIHJldHVybj1cIkNvbnRyb2wgb3Igc2VydmljZVwiXG4iLCJsb29rIjoiLy8gUm91bmQgMyBiOiB6b25lczogZ3JleSB3YXNoIC0+IG5vIGZpbGwsIGRvdHRlZCBvdXRsaW5lXG5cbmNhbnZhcyBwYXBlcj1wYXBlclxuXG5jb2xvciBwYXBlciAgI2Y1ZjVmNVxuY29sb3IgaW5rICAgICMxZjIzMjhcbmNvbG9yIG11dGVkICAjNWY2NjcwXG5jb2xvciBzb2Z0ICAgIzhiOTI5Y1xuY29sb3IgYWNjZW50ICMyZTg1NDBcbmNvbG9yIGxpbmsgICAjNDU2MDdlXG5cbmZvbnQgc2FucyAgXCJHZWlzdFwiXG5mb250IG1vbm8gIFwiR2Vpc3QgTW9ub1wiXG5mb250IHNlcmlmIFwiTmV3c3JlYWRlclwiXG5cbi8vIC0tLS0gYm94ZXMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuc3R5bGUgbm9kZSBzaGFwZT1yZWN0IHJhZGl1cz0yIHNpemU9MTQ0eDY0IGZpbGw9I2ZmZmZmZiBzdHJva2U9aW5rIHN3PTFcbiAgICB0YWcuY29sb3I9aW5rIHRhZy5ib3JkZXI9aW5rLzAuNFxuICAgIHVzZT1cImRlZmF1bHQgYm94OiBhIGJhY2tlbmQsIHNlcnZpY2UsIGNvbXBvbmVudCBvciBzdGVwXCJcbnN0eWxlIGZvY2FsIGV4dGVuZHMgbm9kZSBmaWxsPWFjY2VudC8wLjA4IHN0cm9rZT1hY2NlbnRcbiAgICB0YWcuY29sb3I9YWNjZW50IHRhZy5ib3JkZXI9YWNjZW50LzAuNSBnaG9zdC5jb2xvcj1hY2NlbnQvMC4xMFxuICAgIHVzZT1cInRoZSBvbmUgb3IgdHdvIGVsZW1lbnRzIHRoZSBkaWFncmFtIGlzIGFib3V0XCJcbnN0eWxlIHN0b3JlIGV4dGVuZHMgbm9kZSBmaWxsPWluay8wLjA1IHN0cm9rZT1tdXRlZCB0YWcuY29sb3I9bXV0ZWQgdGFnLmJvcmRlcj1tdXRlZC8wLjVcbiAgICB1c2U9XCJzb21ldGhpbmcgdGhhdCBob2xkcyBkYXRhIG9yIHN0YXRlXCJcbnN0eWxlIGNsb3VkIGV4dGVuZHMgbm9kZSBmaWxsPWluay8wLjAzIHN0cm9rZT1pbmsvMC4zMCB0YWcuY29sb3I9c29mdCB0YWcuYm9yZGVyPWluay8wLjIyXG4gICAgdXNlPVwiYSBob3N0ZWQgb3IgdGhpcmQtcGFydHkgcGxhdGZvcm1cIlxuc3R5bGUgZXh0ZXJuYWwgZXh0ZW5kcyBub2RlIGZpbGw9bXV0ZWQvMC4xMCBzdHJva2U9c29mdCB0YWcuY29sb3I9c29mdCB0YWcuYm9yZGVyPXNvZnQvMC40XG4gICAgdXNlPVwiYSBwZXJzb24gb3Igc3lzdGVtIG91dHNpZGUgd2hhdCB5b3Ugb3duXCJcbnN0eWxlIG9wdGlvbmFsIGV4dGVuZHMgbm9kZSBmaWxsPWluay8wLjAyIHN0cm9rZT1pbmsvMC4yMiBkYXNoPTQsMyB0YWcuY29sb3I9c29mdCB0YWcuYm9yZGVyPWluay8wLjIyXG4gICAgdXNlPVwib3B0aW9uYWwgb3IgYXN5bmNocm9ub3VzIHBhcnRpY2lwYW50XCJcblxuLy8gLS0tLSBmbG93Y2hhcnQgc2hhcGVzIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5zdHlsZSBzdGVwIGV4dGVuZHMgbm9kZSBzaXplPTE2MHg0OCB1c2U9XCJmbG93Y2hhcnQgYWN0aW9uXCJcbnN0eWxlIHRlcm1pbmFsIHNoYXBlPXJlY3QgcmFkaXVzPTI0IHNpemU9MTYweDQ4IGZpbGw9aW5rLzAuMDMgc3Ryb2tlPWluay8wLjMwIHN3PTFcbiAgICB1c2U9XCJmbG93Y2hhcnQgc3RhcnQgb3IgZW5kXCJcbnN0eWxlIHRlcm1pbmFsLWZvY2FsIGV4dGVuZHMgdGVybWluYWwgZmlsbD1hY2NlbnQvMC4wOCBzdHJva2U9YWNjZW50XG4gICAgdXNlPVwidGhlIGZsb3djaGFydCBvdXRjb21lIHRoYXQgbWF0dGVycyBtb3N0XCJcbnN0eWxlIGRlY2lzaW9uIHNoYXBlPWRpYW1vbmQgc2l6ZT0yMDB4OTYgZmlsbD0jZmZmZmZmIHN0cm9rZT1pbmsgc3c9MVxuICAgIHVzZT1cImZsb3djaGFydCB5ZXMvbm8gcXVlc3Rpb247IHB1dCB0aGUgdGV4dCBvbiB0d28gc2hvcnQgbGluZXNcIlxuXG4vLyAtLS0tIG90aGVyIHNoYXBlcyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbnN0eWxlIHpvbmUgc2hhcGU9cmVjdCByYWRpdXM9MCBmaWxsPW5vbmUgc3Ryb2tlPWluay8wLjMwIHN3PTEgZGFzaD0xLDMgbGF5ZXI9YmFja1xuICAgIHRpdGxlLnBvcz10b3AgdGl0bGUuZm9udD1tb25vIHRpdGxlLnNpemU9OCB0aXRsZS53ZWlnaHQ9NDAwIHRpdGxlLmNvbG9yPWluay8wLjQwIHRpdGxlLnNwYWNpbmc9MC4xNCB0aXRsZS5jYXBzPTFcbiAgICB1c2U9XCJhIGxhYmVsbGVkIHJlZ2lvbiBkcmF3biBiZWhpbmQgYSBncm91cCBvZiBib3hlczsgYWx3YXlzIGdpdmUgV3hIXCJcbnN0eWxlIGJhciBzaGFwZT1yZWN0IHNpemU9OHg4MCBmaWxsPWluay8wLjA2IHN0cm9rZT1tdXRlZCBzdz0wLjhcbiAgICB1c2U9XCJzZXF1ZW5jZSBkaWFncmFtIGFjdGl2YXRpb24gYmFyLCBjZW50cmVkIG9uIGEgbGlmZWxpbmU7IGFsd2F5cyBnaXZlIFd4SFwiXG5cbi8vIC0tLS0gbGluZXMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuc3R5bGUgYXJyb3cgbGluZSBzdHJva2U9bXV0ZWQgc3c9MS4yIHJvdXRlPW9ydGhvIHJhZGl1cz04IGxhYmVsLmZvbnQ9bW9ubyBsYWJlbC5zaXplPTkgbGFiZWwuc3BhY2luZz0wLjA4XG4gICAgdXNlPVwiZGVmYXVsdCBhcnJvd1wiXG5zdHlsZSBwcmltYXJ5IGV4dGVuZHMgYXJyb3cgc3Ryb2tlPWFjY2VudCBzdz0xLjQgdXNlPVwidGhlIG1haW4gcGF0aDsgYXQgbW9zdCB0d28gcGVyIGRpYWdyYW1cIlxuc3R5bGUgbGluayBleHRlbmRzIGFycm93IHN0cm9rZT1saW5rIHVzZT1cImFuIEhUVFAgb3IgQVBJIHJlcXVlc3QgY3Jvc3NpbmcgYSBib3VuZGFyeVwiXG5zdHlsZSByZXR1cm4gZXh0ZW5kcyBhcnJvdyBkYXNoPTUsNCB1c2U9XCJhIHJlc3BvbnNlLCBvciBzb21ldGhpbmcgb3B0aW9uYWwgb3IgYXN5bmNocm9ub3VzXCJcbnN0eWxlIGxpZmVsaW5lIGxpbmUgaGVhZD1ub25lIHN0cm9rZT1pbmsvMC4yMiBzdz0xIGRhc2g9MywzIHJvdXRlPXN0cmFpZ2h0IHVzZT1cInNlcXVlbmNlIGRpYWdyYW0gbGlmZWxpbmVcIlxuc3R5bGUgcnVsZSBsaW5lIGhlYWQ9bm9uZSBzdHJva2U9aW5rLzAuMTAgc3c9MC44IHJvdXRlPXN0cmFpZ2h0IHVzZT1cInRoaW4gc2VwYXJhdG9yLCBlLmcuIGFib3ZlIGEgbGVnZW5kXCJcblxuLy8gLS0tLSB0ZXh0IC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5zdHlsZSBoMSB0ZXh0IGZvbnQ9c2VyaWYgc2l6ZT0yOCB3ZWlnaHQ9NTAwIGNvbG9yPWluayB1c2U9XCJkaWFncmFtIHRpdGxlXCJcbnN0eWxlIGV5ZWJyb3cgdGV4dCBmb250PW1vbm8gc2l6ZT04IGNvbG9yPW11dGVkIHNwYWNpbmc9MC4xOCBjYXBzPTEgdXNlPVwic21hbGwgY2FwcyBsYWJlbCwgZS5nLiBMRUdFTkRcIlxuc3R5bGUgY2FwdGlvbiB0ZXh0IGZvbnQ9c2FucyBzaXplPTkuNSBjb2xvcj1tdXRlZCB1c2U9XCJsZWdlbmQgZW50cnlcIlxuc3R5bGUgbm90ZSB0ZXh0IGZvbnQ9c2VyaWYgaXRhbGljPTEgc2l6ZT0xNCBjb2xvcj1tdXRlZCB1c2U9XCJhIHNob3J0IGVkaXRvcmlhbCBhc2lkZTsgYXQgbW9zdCB0d29cIlxuc3R5bGUgc21hbGwgdGV4dCBmb250PW1vbm8gc2l6ZT05IGNvbG9yPW11dGVkIHVzZT1cInRlY2huaWNhbCBkZXRhaWw6IGEgcG9ydCwgcGF0aCBvciBjb21tYW5kXCJcblxuZ3VpZGFuY2UgXCJmb2NhbCwgdGVybWluYWwtZm9jYWwgYW5kIHByaW1hcnkgYXJlIHRoZSBhY2NlbnQuIFVzZSB0aGUgYWNjZW50IG9uIGF0IG1vc3QgdHdvIHRoaW5ncyBpbiBvbmUgZGlhZ3JhbS5cIlxuZ3VpZGFuY2UgXCJ0YWc9IGlzIGEgMyBvciA0IGxldHRlciB0eXBlIG1hcmtlciBpbiB0aGUgY29ybmVyIG9mIGEgYm94IChFWFQsIEVER0UsIEFQSSwgREIpLiBVc2UgaXQgb24gYXJjaGl0ZWN0dXJlIGJveGVzLCBub3QgZmxvd2NoYXJ0IHNoYXBlcy5cIlxuZ3VpZGFuY2UgXCJzdWI9IGlzIGZvciB0ZWNobmljYWwgZGV0YWlsIGluIG1vbm8gdHlwZTogYSBwcm9kdWN0IG5hbWUsIHBhdGgsIHBvcnQgb3IgcHJvdG9jb2wuIE5hbWVzIG9mIHRoaW5ncyBnbyBpbiB0aGUgbWFpbiB0ZXh0LlwiXG5ndWlkYW5jZSBcIkZpbmlzaCB3aXRoIGEgbGVnZW5kOiBvbmUgc3RhdGVtZW50LCAnbGVnZW5kIGF0IHgseScgZm9sbG93ZWQgYnkgc3R5bGU9XFxcIndoYXQgaXQgbWVhbnNcXFwiIGZvciBlYWNoIHN0eWxlIHlvdSB1c2VkLlwiXG4ifQ==</metadata>
+<rect width="1200" height="688" fill="#f5f5f5"/>
+<rect x="280" y="136" width="640" height="360" fill="none" stroke="rgba(31,35,40,0.3)" stroke-width="1" stroke-dasharray="1,3"/>
+<rect x="548" y="140" width="104" height="12" rx="2" fill="#f5f5f5"/>
+<text x="600" y="149" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="8" fill="rgba(31,35,40,0.4)" letter-spacing="1.12">INTEGRATION HUB</text>
+<path d="M 200,264 L 304,264 Q 312,264 312,272 L 312,328 Q 312,336 320,336 L 336.8,336" fill="none" stroke="#5f6670" stroke-width="1.2"/>
+<polygon points="344,336 334.4,339.6 334.4,332.4" fill="#5f6670"/>
+<path d="M 200,352 L 336.8,352" fill="none" stroke="#5f6670" stroke-width="1.2"/>
+<polygon points="344,352 334.4,355.6 334.4,348.4" fill="#5f6670"/>
+<path d="M 200,440 L 304,440 Q 312,440 312,432 L 312,376 Q 312,368 320,368 L 336.8,368" fill="none" stroke="#5f6670" stroke-width="1.2"/>
+<polygon points="344,368 334.4,371.6 334.4,364.4" fill="#5f6670"/>
+<path d="M 504,352 L 687.6,352" fill="none" stroke="#2e8540" stroke-width="1.4"/>
+<polygon points="696,352 684.8,356.2 684.8,347.8" fill="#2e8540"/>
+<path d="M 856,336 L 880,336 Q 888,336 888,328 L 888,272 Q 888,264 896,264 L 992.8,264" fill="none" stroke="#45607e" stroke-width="1.2"/>
+<polygon points="1000,264 990.4,267.6 990.4,260.4" fill="#45607e"/>
+<path d="M 856,352 L 992.8,352" fill="none" stroke="#45607e" stroke-width="1.2"/>
+<polygon points="1000,352 990.4,355.6 990.4,348.4" fill="#45607e"/>
+<path d="M 856,368 L 880,368 Q 888,368 888,376 L 888,432 Q 888,440 896,440 L 992.8,440" fill="none" stroke="#45607e" stroke-width="1.2"/>
+<polygon points="1000,440 990.4,443.6 990.4,436.4" fill="#45607e"/>
+<path d="M 424,224 L 424,308.8" fill="none" stroke="#5f6670" stroke-width="1.2" stroke-dasharray="5,4"/>
+<polygon points="424,316 420.4,306.4 427.6,306.4" fill="#5f6670"/>
+<path d="M 776,224 L 776,308.8" fill="none" stroke="#5f6670" stroke-width="1.2" stroke-dasharray="5,4"/>
+<polygon points="776,316 772.4,306.4 779.6,306.4" fill="#5f6670"/>
+<path d="M 290,544 L 290,503.2" fill="none" stroke="#5f6670" stroke-width="1.2" stroke-dasharray="5,4"/>
+<polygon points="290,496 293.6,505.6 286.4,505.6" fill="#5f6670"/>
+<path d="M 440,544 L 440,503.2" fill="none" stroke="#5f6670" stroke-width="1.2" stroke-dasharray="5,4"/>
+<polygon points="440,496 443.6,505.6 436.4,505.6" fill="#5f6670"/>
+<rect x="214" y="243" width="52" height="13" rx="2" fill="#f5f5f5"/>
+<text x="240" y="254" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#5f6670" letter-spacing="0.72">HL7 V2</text>
+<rect x="214" y="331" width="52" height="13" rx="2" fill="#f5f5f5"/>
+<text x="240" y="342" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#5f6670" letter-spacing="0.72">HL7 V2</text>
+<rect x="224" y="419" width="32" height="13" rx="2" fill="#f5f5f5"/>
+<text x="240" y="430" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#5f6670" letter-spacing="0.72">ADT</text>
+<rect x="580" y="331" width="40" height="13" rx="2" fill="#f5f5f5"/>
+<text x="600" y="342" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#2e8540" letter-spacing="0.72">FHIR</text>
+<rect x="932" y="243" width="56" height="13" rx="2" fill="#f5f5f5"/>
+<text x="960" y="254" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#45607e" letter-spacing="0.72">FHIR R4</text>
+<rect x="932" y="331" width="56" height="13" rx="2" fill="#f5f5f5"/>
+<text x="960" y="342" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#45607e" letter-spacing="0.72">EDI 837</text>
+<rect x="944" y="419" width="32" height="13" rx="2" fill="#f5f5f5"/>
+<text x="960" y="430" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#45607e" letter-spacing="0.72">SQL</text>
+<rect x="298" y="512" width="40" height="13" rx="2" fill="#f5f5f5"/>
+<text x="318" y="523" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#5f6670" letter-spacing="0.72">AUTH</text>
+<rect x="448" y="512" width="52" height="13" rx="2" fill="#f5f5f5"/>
+<text x="474" y="523" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="9" fill="#5f6670" letter-spacing="0.72">EVENTS</text>
+<rect x="40" y="232" width="160" height="64" rx="2" fill="#f5f5f5"/>
+<rect x="40" y="232" width="160" height="64" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="120" y="267.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Laboratory (LIS)</text>
+<rect x="40" y="320" width="160" height="64" rx="2" fill="#f5f5f5"/>
+<rect x="40" y="320" width="160" height="64" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="120" y="355.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Pharmacy</text>
+<rect x="40" y="408" width="160" height="64" rx="2" fill="#f5f5f5"/>
+<rect x="40" y="408" width="160" height="64" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="120" y="443.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Registration (ADT)</text>
+<rect x="1000" y="232" width="160" height="64" rx="2" fill="#f5f5f5"/>
+<rect x="1000" y="232" width="160" height="64" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="1080" y="267.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Patient record</text>
+<rect x="1000" y="320" width="160" height="64" rx="2" fill="#f5f5f5"/>
+<rect x="1000" y="320" width="160" height="64" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="1080" y="355.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Billing</text>
+<rect x="1000" y="408" width="160" height="64" rx="2" fill="#f5f5f5"/>
+<rect x="1000" y="408" width="160" height="64" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="1080" y="443.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Reporting</text>
+<rect x="296" y="168" width="608" height="56" rx="2" fill="#f5f5f5"/>
+<rect x="296" y="168" width="608" height="56" rx="2" fill="rgba(31,35,40,0.03)" stroke="rgba(31,35,40,0.3)" stroke-width="1"/>
+<text x="600" y="199.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Workflow orchestrator</text>
+<rect x="344" y="316" width="160" height="72" rx="2" fill="#f5f5f5"/>
+<rect x="344" y="316" width="160" height="72" rx="2" fill="rgba(46,133,64,0.08)" stroke="#2e8540" stroke-width="1"/>
+<text x="424" y="355.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Interface engine</text>
+<rect x="696" y="316" width="160" height="72" rx="2" fill="#f5f5f5"/>
+<rect x="696" y="316" width="160" height="72" rx="2" fill="rgba(46,133,64,0.08)" stroke="#2e8540" stroke-width="1"/>
+<text x="776" y="355.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">FHIR API</text>
+<rect x="40" y="544" width="262" height="48" rx="2" fill="#f5f5f5"/>
+<rect x="40" y="544" width="262" height="48" rx="2" fill="rgba(31,35,40,0.03)" stroke="rgba(31,35,40,0.3)" stroke-width="1"/>
+<text x="171" y="571.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Identity</text>
+<rect x="326" y="544" width="262" height="48" rx="2" fill="#f5f5f5"/>
+<rect x="326" y="544" width="262" height="48" rx="2" fill="rgba(31,35,40,0.03)" stroke="rgba(31,35,40,0.3)" stroke-width="1"/>
+<text x="457" y="571.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Audit log</text>
+<rect x="612" y="544" width="262" height="48" rx="2" fill="#f5f5f5"/>
+<rect x="612" y="544" width="262" height="48" rx="2" fill="rgba(31,35,40,0.03)" stroke="rgba(31,35,40,0.3)" stroke-width="1"/>
+<text x="743" y="571.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Secrets</text>
+<rect x="898" y="544" width="262" height="48" rx="2" fill="#f5f5f5"/>
+<rect x="898" y="544" width="262" height="48" rx="2" fill="rgba(31,35,40,0.03)" stroke="rgba(31,35,40,0.3)" stroke-width="1"/>
+<text x="1029" y="571.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#1f2328" font-weight="600">Monitoring</text>
+<line x1="40" y1="616" x2="1160" y2="616" stroke="rgba(31,35,40,0.12)" stroke-width="0.8"/>
+<text x="40" y="632" font-family="'Geist Mono', monospace" font-size="8" fill="#5f6670" letter-spacing="1.44">LEGEND</text>
+<rect x="40" y="648" width="14" height="10" rx="2" fill="rgba(95,102,112,0.1)" stroke="#8b929c" stroke-width="1"/>
+<text x="60" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Source or consumer</text>
+<rect x="210" y="648" width="14" height="10" rx="2" fill="rgba(46,133,64,0.08)" stroke="#2e8540" stroke-width="1"/>
+<text x="230" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Hub surface</text>
+<rect x="346" y="648" width="14" height="10" rx="2" fill="rgba(31,35,40,0.03)" stroke="rgba(31,35,40,0.3)" stroke-width="1"/>
+<text x="366" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Shared service</text>
+<line x1="497" y1="653" x2="517.8" y2="653" stroke="#5f6670" stroke-width="1.2"/>
+<polygon points="525,653 515.4,656.6 515.4,649.4" fill="#5f6670"/>
+<text x="531" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Inbound wire</text>
+<line x1="652" y1="653" x2="671.6" y2="653" stroke="#2e8540" stroke-width="1.4"/>
+<polygon points="680,653 668.8,657.2 668.8,648.8" fill="#2e8540"/>
+<text x="686" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Between surfaces</text>
+<line x1="826" y1="653" x2="846.8" y2="653" stroke="#45607e" stroke-width="1.2"/>
+<polygon points="854,653 844.4,656.6 844.4,649.4" fill="#45607e"/>
+<text x="860" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Outbound wire</text>
+<line x1="986" y1="653" x2="1006.8" y2="653" stroke="#5f6670" stroke-width="1.2" stroke-dasharray="5,4"/>
+<polygon points="1014,653 1004.4,656.6 1004.4,649.4" fill="#5f6670"/>
+<text x="1020" y="656" font-family="'Geist', sans-serif" font-size="8.5" fill="#5f6670">Control or service</text>
+<text x="40" y="56" font-family="'Newsreader', serif" font-size="28" fill="#1f2328" font-weight="500">Hospital integration hub</text>
+</svg>

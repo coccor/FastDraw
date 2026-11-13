@@ -1,0 +1,52 @@
+// Round 2, "Source". The diagram shows its own code: every box wears its id as a mono handle,
+// lines leave from port dots, zones are marked by bracket corners. Space Grotesk + IBM Plex Mono,
+// graphite ink, magenta as the one accent. (Ports and brackets are mocked by post-processing.)
+fontdir "./fonts"
+canvas paper=ground
+
+color ground #ffffff
+color ink    #16181d
+color muted  #60646f
+color soft   #b9bdc6
+color accent #e0157a
+color link   #3a49d6
+color zonefill #f6f7f9
+
+font sans  "Space Grotesk"
+font mono  "IBM Plex Mono"
+font serif "Space Grotesk"
+
+style node shape=rect radius=3 size=144x64 fill=#ffffff stroke=ink sw=1.25
+    title.weight=600 title.size=13 sub.font=mono sub.size=9 sub.color=muted
+    tag.font=mono tag.size=8 tag.color=soft tag.border=none
+    use="default box: a service, component or step"
+style focal extends node fill=accent/0.07 stroke=accent sw=1.75 title.color=accent sub.color=accent/0.8 tag.color=accent/0.7
+    use="the one or two elements the diagram is about"
+style store extends node size=144x72
+    path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
+    shape=path fill=#ffffff use="something that holds data or state"
+style cloud extends node fill=link/0.06 stroke=link use="a hosted or third-party platform"
+style external extends node fill=#ffffff stroke=ink dash=3,3 use="a person or system outside what you own"
+style optional extends node stroke=soft dash=2,3 use="optional or asynchronous participant"
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=ink stroke=ink sw=1.25 title.weight=600 title.color=#ffffff sub.color=#ffffff/0.75 sub.font=mono sub.size=9 use="flowchart start or end"
+style terminal-focal extends terminal fill=accent stroke=accent use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=#ffffff stroke=ink sw=1.25 title.weight=600 use="flowchart yes/no question"
+style zone shape=rect radius=0 fill=zonefill stroke=none dash=none layer=back
+    title.pos=top title.align=left title.font=mono title.size=9 title.weight=500 title.color=muted
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=#ffffff stroke=ink sw=1.25 use="sequence activation bar"
+style table shape=table radius=3 fill=#ffffff stroke=ink sw=1.25 head.fill=ink/0.05 rule=ink/0.1 cell.font=mono cell.size=10 detail.color=muted use="a table"
+style matrix extends table align=center grid=1 cell.font=sans use="a grid of values"
+style arrow line stroke=ink sw=1.25 route=ortho radius=6 head=open label.font=mono label.size=9 label.caps=0 label.spacing=0 label.color=muted use="default arrow"
+style primary extends arrow stroke=accent sw=2 label.color=accent use="the main path"
+style link extends arrow stroke=link label.color=link use="a request crossing a boundary"
+style return extends arrow stroke=muted dash=3,3 use="a response"
+style relation extends relation label.font=mono label.size=9 label.color=muted
+style lifeline line head=none stroke=soft sw=1 dash=2,3 route=straight use="lifeline"
+style rule line head=none stroke=ink/0.12 sw=1 route=straight use="thin separator"
+style h1 text font=sans size=26 weight=700 color=ink use="diagram title"
+style eyebrow text font=mono size=9 color=muted use="small heading"
+style caption text font=sans size=10 color=muted use="small explanatory text"
+style note text font=sans size=14 color=muted use="a short aside"
+style small text font=mono size=9 color=muted use="technical detail"

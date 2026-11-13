@@ -141,10 +141,11 @@ All of these were written by agents from the guides alone. Sources are in
 | `src/defaultLook.ts` | The built-in look, used when a diagram names none |
 | `agents/` | Thin instruction files that point coding agents at `fastdraw guide` |
 | `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison |
+| `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
 | `editor/` | The browser editor (Vite + React) |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
-| `fonts/` | Geist, Geist Mono and Instrument Serif (SIL Open Font License, texts included) |
+| `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
 | `assets/` | The icon, and the diagrams shown on this page with their sources |
 | `test/`, `e2e/` | Core tests and editor tests |
 

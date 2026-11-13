@@ -1,0 +1,67 @@
+// Ladder step 0: diagram-design's default style, unchanged (no dot pattern, as in its default).
+
+canvas paper=paper
+
+color paper  #f5f5f5
+color ink    #2d3142
+color muted  #4f5d75
+color soft   #7a8399
+color accent #eb6c36
+color link   #2e5aa8
+
+font sans  "Geist"
+font mono  "Geist Mono"
+font serif "Instrument Serif"
+
+// ---- boxes ----------------------------------------------------------------
+style node shape=rect radius=6 size=144x64 fill=#ffffff stroke=ink sw=1
+    tag.color=ink tag.border=ink/0.4
+    use="default box: a backend, service, component or step"
+style focal extends node fill=accent/0.08 stroke=accent
+    tag.color=accent tag.border=accent/0.5 ghost.color=accent/0.10
+    use="the one or two elements the diagram is about"
+style store extends node fill=ink/0.05 stroke=muted tag.color=muted tag.border=muted/0.5
+    use="something that holds data or state"
+style cloud extends node fill=ink/0.03 stroke=ink/0.30 tag.color=soft tag.border=ink/0.22
+    use="a hosted or third-party platform"
+style external extends node fill=muted/0.10 stroke=soft tag.color=soft tag.border=soft/0.4
+    use="a person or system outside what you own"
+style optional extends node fill=ink/0.02 stroke=ink/0.22 dash=4,3 tag.color=soft tag.border=ink/0.22
+    use="optional or asynchronous participant"
+
+// ---- flowchart shapes -----------------------------------------------------
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=ink/0.03 stroke=ink/0.30 sw=1
+    use="flowchart start or end"
+style terminal-focal extends terminal fill=accent/0.08 stroke=accent
+    use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=#ffffff stroke=ink sw=1
+    use="flowchart yes/no question; put the text on two short lines"
+
+// ---- other shapes ---------------------------------------------------------
+style zone shape=rect radius=8 fill=ink/0.02 stroke=ink/0.10 sw=0.8 layer=back
+    title.pos=top title.font=mono title.size=7 title.weight=400 title.color=ink/0.40 title.spacing=0.14 title.caps=1
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect size=8x80 fill=ink/0.06 stroke=muted sw=0.8
+    use="sequence diagram activation bar, centred on a lifeline; always give WxH"
+
+// ---- lines ----------------------------------------------------------------
+style arrow line stroke=muted sw=1.2 route=ortho radius=8 label.font=mono label.size=8 label.spacing=0.08
+    use="default arrow"
+style primary extends arrow stroke=accent sw=1.4 use="the main path; at most two per diagram"
+style link extends arrow stroke=link use="an HTTP or API request crossing a boundary"
+style return extends arrow dash=5,4 use="a response, or something optional or asynchronous"
+style lifeline line head=none stroke=ink/0.22 sw=1 dash=3,3 route=straight use="sequence diagram lifeline"
+style rule line head=none stroke=ink/0.10 sw=0.8 route=straight use="thin separator, e.g. above a legend"
+
+// ---- text -----------------------------------------------------------------
+style h1 text font=serif size=28 color=ink use="diagram title"
+style eyebrow text font=mono size=8 color=muted spacing=0.18 caps=1 use="small caps label, e.g. LEGEND"
+style caption text font=sans size=8.5 color=muted use="legend entry"
+style note text font=serif italic=1 size=14 color=muted use="a short editorial aside; at most two"
+style small text font=mono size=9 color=muted use="technical detail: a port, path or command"
+
+guidance "focal, terminal-focal and primary are the accent. Use the accent on at most two things in one diagram."
+guidance "tag= is a 3 or 4 letter type marker in the corner of a box (EXT, EDGE, API, DB). Use it on architecture boxes, not flowchart shapes."
+guidance "sub= is for technical detail in mono type: a product name, path, port or protocol. Names of things go in the main text."
+guidance "Finish with a legend: one statement, 'legend at x,y' followed by style=\"what it means\" for each style you used."

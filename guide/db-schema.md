@@ -5,7 +5,7 @@ Shows real tables: column names, SQL types, constraints, the indexes that matter
 ## Building blocks
 
 ```
-billing: zone "billing" at 40,96 256x148 title.align=left     // a schema other than the default (dashed in the built-in look; dash=none for solid)
+billing: zone "billing" at 40,96 256x148 title.align=left     // a schema other than the default
 
 orders: table "public.orders" at 392,152 296x0
   | id          "id"          "PK"    "uuid"
