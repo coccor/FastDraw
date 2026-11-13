@@ -137,20 +137,21 @@ export function Landing() {
       </header>
 
       <main>
-        <section className="intro">
-          <h1>Your coding agent draws the diagram. You finish it by hand.</h1>
-          <p className="lede">
-            FastDraw is a diagram format made for agents like Claude Code, Codex and Copilot. The agent writes a small
-            text file, places every box and checks its own work. You open the same file in the browser, drag things where
-            you want them, and your change goes back into the text.
-          </p>
-          <div className="ctas">
-            <a className="btn focal" href="#setup">Set up your agent</a>
-            <a className="btn" href="edit/">Open the editor</a>
+        <section className="hero">
+          <div className="intro">
+            <h1>Your coding agent draws the diagram. You finish it by hand.</h1>
+            <p className="lede">
+              FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file and
+              checks its own work. You open it on a canvas, drag things into place, and your change goes back into the text.
+            </p>
+            <div className="ctas">
+              <a className="btn focal" href="#setup">Set up your agent</a>
+              <a className="btn" href="edit/">Open the editor</a>
+            </div>
+            <p className="small muted">Free and open source. Your files never leave your machine.</p>
           </div>
+          <Hero />
         </section>
-
-        <Hero />
 
         <section id="setup" className="block">
           <h2>Set up your agent</h2>
