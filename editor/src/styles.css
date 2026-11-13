@@ -129,6 +129,24 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button.primary:hover { background: var(--accent-ink); }
 
+/* export dialog */
+.exportcard { display: flex; flex-direction: column; gap: 12px; }
+.exportcard h3 { margin: 0; }
+.exportpreview { height: 200px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--hover); }
+.exportpreview.checker { background: repeating-conic-gradient(#e9eaf0 0 25%, #fff 0 50%) 0 0 / 16px 16px; }
+.exportpreview img { max-width: 100%; max-height: 100%; box-shadow: 0 1px 4px rgba(22, 24, 40, .12); }
+.exportpreview.checker img { box-shadow: none; }
+.exportopts { display: grid; grid-template-columns: 110px 1fr; gap: 10px 12px; align-items: center; }
+.exportopts > span { color: var(--mute); font-size: 12px; }
+.exportopts .seg button:disabled { opacity: .45; cursor: default; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.check input { accent-color: var(--accent); margin: 0; }
+.exportsize { font: 12px 'Geist Mono', monospace; }
+.exporterr { color: #c0392b; margin: 0; font-size: 13px; }
+.exportcard .startbtns { margin-top: 0; }
+.exportcard .startbtns button { gap: 6px; }
+@media (max-width: 480px) { .exportopts { grid-template-columns: 1fr; gap: 4px; } }
+
 @media (max-width: 900px) {
   .topcenter { max-width: calc(100% - 120px); }
   .tool.wide span { display: none; }

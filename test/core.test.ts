@@ -555,3 +555,33 @@ test('an edit keeps the quotes a property was written with, and adds them only w
   const again = patchSource(out, new Map([[1, (t) => setProp(t, 'external', 'Buyer')]]));
   assert.equal(again, 'key: legend at 40,300 title="Key" external="Buyer" focal="The service"\n');
 });
+
+test('export without a background leaves out the page and its dots, and keeps everything drawn on it', () => {
+  const sc = scene('a: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n');
+  const full = renderSvg(sc), bare = renderSvg(sc, undefined, { background: false });
+  assert.match(full, /<rect width="800" height="400" fill=/);
+  assert.match(full, /fd-dots/);
+  assert.doesNotMatch(bare, /<rect width="800" height="400"/);
+  assert.doesNotMatch(bare, /fd-dots/);
+  assert.match(bare, /<rect x="40" y="40"/);
+  assert.match(bare, /viewBox="0 0 800 400"/);
+});
+
+test('fastdraw render: --transparent and --no-embed', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'fd-export-'));
+  const f = join(dir, 'd.fdraw'), body = 'canvas 300x160\na: node "A" at 40,40\n';
+  writeFileSync(f, body);
+  const cli = (...a: string[]) => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', new URL('../src/cli.ts', import.meta.url).pathname, 'render', f, ...a], { encoding: 'utf8' });
+  assert.match(cli('-o', join(dir, 'a.svg'), '--transparent', '--no-embed'), /no background, no diagram inside/);
+  const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
+  assert.equal(extractSvg(svg), null);
+  assert.doesNotMatch(svg, /<rect width="300" height="160"/);
+  cli('-o', join(dir, 'b.png'), '--scale', '1', '--transparent');
+  const png = new Uint8Array(readFileSync(join(dir, 'b.png')));
+  assert.equal(new DataView(png.buffer, png.byteOffset).getUint32(16), 300); // IHDR width, at 1x
+  assert.equal(png[25], 6); // RGBA: the page is see-through
+  assert.equal(extractPng(png)?.diagram, body);
+  cli('-o', join(dir, 'c.png'), '--no-embed');
+  assert.equal(extractPng(new Uint8Array(readFileSync(join(dir, 'c.png')))), null);
+});
