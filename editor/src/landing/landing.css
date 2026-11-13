@@ -103,9 +103,23 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 .replay { position: absolute; right: 0; bottom: 0; background: none; border: 0; color: var(--link); font-size: 14px; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
 .replay:hover { color: var(--ink); }
 
+/* the illustration: a full-width band that is the Atlas look's own page, the diagram drawn onto it */
+.art {
+  margin: 48px calc(50% - 50vw) 0; padding: 88px max(24px, calc(50vw - 660px)) 64px;
+  background-color: #f3f2fb;
+  background-image: radial-gradient(circle at 1px 1px, rgba(109, 74, 255, .10) 0.9px, transparent 1.2px);
+  background-size: 20px 20px;
+  border-top: 1px solid rgba(109, 74, 255, .10);
+}
+.arthead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 56px; align-items: end; padding: 0 20px; }
+.arthead .lede { margin: 0; }
+.artframe { margin-top: 8px; }
+.artframe svg { display: block; width: 100%; height: auto; }
+.art .showfoot, .art .showsrc { margin-left: 20px; margin-right: 20px; }
+
 /* the showcase: a full-width band with one large diagram, redrawn in each look */
 .showcase {
-  margin: 48px calc(50% - 50vw) 0; padding: 80px max(24px, calc(50vw - 620px)) 72px;
+  margin: 0 calc(50% - 50vw) 0; padding: 80px max(24px, calc(50vw - 620px)) 72px;
   background: linear-gradient(180deg, #e9ebef 0%, #eef0f3 60%, var(--page) 100%);
   border-top: 1px solid var(--hair);
 }
@@ -207,4 +221,14 @@ footer p { margin: 0 0 6px; }
   .showframe { border-radius: 6px; overflow-x: auto; }
   .showframe svg { width: 780px; max-width: none; }
   .looks button { padding: 6px 12px; font-size: 13.5px; }
+}
+@media (max-width: 860px) {
+  .arthead { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .art { padding-top: 56px; padding-bottom: 40px; }
+  .art .showfoot, .art .showsrc { margin-left: 0; margin-right: 0; }
+}
+@media (max-width: 600px) {
+  .art { padding-left: 16px; padding-right: 16px; }
+  .artframe { overflow-x: auto; margin: 8px -16px 0; padding: 0 8px; }
+  .artframe svg { width: 820px; max-width: none; }
 }

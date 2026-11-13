@@ -1,0 +1,80 @@
+// Atlas: an illustrated look. A cool lavender page, white rounded cards with a colour picture
+// on top, soft colour blobs behind groups, one electric violet for the path that matters.
+// Its pictures are colour SVG files in ./icons.
+
+canvas paper=paper dots=#6d4aff/0.10 dotgap=20
+icondir "./icons"
+
+color paper  #f3f2fb
+color ink    #24214a
+color muted  #5f5c80
+color soft   #9a97b8
+color accent #6d4aff
+color link   #14b8a6
+color coral  #ff7a59
+color sun    #ffc23d
+color sky    #3ba7ff
+color lilac  #e3dcff
+color mint   #c9f3e8
+color peach  #ffe0d4
+color ice    #d9ecff
+
+font sans  "Geist"
+font mono  "Geist Mono"
+font serif "Instrument Serif"
+
+// ---- shapes ---------------------------------------------------------------
+style node shape=rect radius=18 size=184x120 fill=#ffffff stroke=ink/0.08 sw=1
+    title.font=sans title.size=15 title.weight=600 title.color=ink sub.font=sans sub.size=11.5 sub.color=muted
+    tag.color=accent tag.border=accent/0.35 icon.pos=top icon.size=44
+    use="a card: a system or step, with its picture on top"
+style card extends node use="a card: a system or step, with its picture on top"
+style focal shape=ellipse size=232x232 fill=#ffffff stroke=accent sw=2.5
+    title.font=serif title.size=30 title.color=ink sub.font=sans sub.size=12 sub.color=muted
+    tag.color=accent tag.border=accent/0.4 icon.pos=top icon.size=56
+    use="the hub: the one system the picture is about"
+style store shape=path size=176x136 fill=#ffffff stroke=ink/0.10 sw=1
+    path="M0,0.12 C0,-0.04 1,-0.04 1,0.12 L1,0.88 C1,1.04 0,1.04 0,0.88 Z M0,0.12 C0,0.28 1,0.28 1,0.12 C1,0.28 0,0.28 0,0.12"
+    title.font=sans title.size=15 title.weight=600 title.color=ink sub.font=sans sub.size=11.5 sub.color=muted icon.pos=top icon.size=36
+    use="something that holds data"
+style external extends node fill=#ffffff stroke=sky/0.55 dash=5,4 use="a partner outside what we run"
+style cloud extends external use="a hosted platform"
+style optional extends node fill=#ffffff/0.6 stroke=ink/0.18 dash=4,3 use="optional or later"
+style event extends polygon fill=sun/0.22 stroke=sun sw=2
+    title.font=mono title.size=11 title.color=ink icon.pos=top icon.size=30
+    use="an event: draw it as a hexagon with points"
+style chip shape=rect radius=14 size=120x28 fill=#ffffff stroke=accent/0.30 sw=1
+    title.font=mono title.size=10.5 title.color=accent
+    use="a small fact pinned to something: a time, a count"
+style blob extends polygon fill=lilac stroke=none layer=back use="a soft colour shape behind a group; points plus smooth=1"
+style zone shape=rect radius=24 fill=#ffffff/0.35 stroke=ink/0.06 sw=1 layer=back
+    title.pos=top title.font=sans title.size=11 title.color=muted use="a region behind a group"
+style sticky shape=rect radius=6 size=140x96 fill=sun/0.35 stroke=none title.font=sans title.size=12 title.color=ink use="a note"
+style sticky-orange extends sticky fill=coral/0.25 use="a risk"
+style sticky-violet extends sticky fill=lilac use="a decision"
+style step extends node size=160x48 icon.pos=left use="flowchart action"
+style terminal extends node radius=24 size=160x48 use="flowchart start or end"
+style terminal-focal extends terminal stroke=accent sw=2 use="the outcome that matters"
+style decision shape=diamond size=200x96 fill=#ffffff stroke=ink/0.2 title.font=sans title.size=12 title.color=ink use="a yes or no question"
+style bar shape=rect size=8x80 fill=#ffffff stroke=ink/0.3 use="activation bar"
+style matrix extends table use="a grid of values"
+
+// ---- lines ----------------------------------------------------------------
+style arrow line stroke=ink/0.45 sw=1.6 route=curve label.font=sans label.size=11 label.color=muted label.caps=0 label.spacing=0 use="default arrow"
+style primary line stroke=accent sw=3 route=curve label.font=sans label.size=11.5 label.color=accent label.caps=0 label.spacing=0 use="the main path"
+style link line stroke=link sw=2 route=curve label.font=sans label.size=11 label.color=link label.caps=0 label.spacing=0 use="a request from outside"
+style return line stroke=ink/0.40 sw=1.6 dash=6,5 route=curve label.font=sans label.size=11 label.color=muted label.caps=0 label.spacing=0 use="asynchronous, or a reply"
+style bus line stroke=sun sw=6 route=straight head=none use="a shared channel things hang off"
+style relation line stroke=ink/0.6 sw=1.2 use="a relationship between tables"
+style lifeline line head=none stroke=ink/0.2 sw=1.2 dash=4,4 route=straight use="sequence lifeline"
+style rule line head=none stroke=ink/0.10 sw=1 route=straight use="thin separator"
+
+// ---- text -----------------------------------------------------------------
+style h1 text font=serif size=50 color=ink use="title"
+style kicker text font=mono size=11 color=accent spacing=0.14 caps=1 use="a short category above the title"
+style dek text font=sans size=16 color=muted use="one line under the title"
+style eyebrow text font=mono size=9 color=muted caps=1 spacing=0.12 use="small caps label"
+style caption text font=sans size=11 color=muted use="small explanatory text"
+style note text font=serif size=20 color=ink italic=1 use="a short aside"
+style small text font=mono size=10 color=muted use="technical detail"
+

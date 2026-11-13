@@ -24,10 +24,18 @@ test('the showcase redraws the same file in each look, and the page does not scr
   await page.getByRole('radio', { name: 'Sketch' }).click();
   await expect(svg).toHaveAttribute('aria-label', /Sketch look/);
   expect(await svg.innerHTML()).not.toBe(before);
-  await page.getByRole('button', { name: /Show the file/ }).click();
+  await page.locator('.showcase').getByRole('button', { name: /Show the file/ }).click();
   await expect(page.locator('.showsrc')).toContainText('look sketch');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('the illustration draws with its own look and its colour pictures', async ({ page }) => {
+  await page.goto('/');
+  const svg = page.locator('.artframe svg');
+  await expect(svg).toBeVisible();
+  expect(await svg.locator('image').count()).toBeGreaterThanOrEqual(10);
+  await expect(svg).toContainText('The life of an order');
 });
 
 test('the guide is served for agents: llms.txt and each kind', async ({ request }) => {
