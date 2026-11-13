@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x480
 // scale: Feb 2025 at x=100, 57px per month
 text "How the blog design evolved" at 40,52 style=h1
 text "Spacing follows real elapsed time." at 40,74 style=caption

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1284x624
 text "Role-scoped analytics pipeline" at 40,52 style=h1
 rect "01" at 276,88 40x20 radius=10 stroke=none fill=ink/0.08
 text "Ingest" at 296,124 style=eyebrow anchor=middle

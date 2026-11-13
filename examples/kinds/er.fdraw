@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x480
 
 text "Blog content model" at 40,52 style=h1
 

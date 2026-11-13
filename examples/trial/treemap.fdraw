@@ -1,4 +1,3 @@
-canvas 1000x520
 // whole = 916x380 at 40,40, laid out largest first; area = share of the $48.2k monthly bill
 compute: rect at 40,40 327x380 radius=2 fill=ink/0.16 stroke=ink/0.3
 text "Compute" at 56,68 size=14 weight=600 color=ink

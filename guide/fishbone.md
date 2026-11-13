@@ -7,7 +7,7 @@ FastDraw has no fishbone elements. You draw the spine, the slanted bones and the
 ## Composition
 
 - Title: `text "..." at 40,52 style=h1`. The spine is at CY=300 (the bones' category boxes then start at y=104).
-- With n bones (five at most), the effect box's x is `EX = 160*n + 240`; canvas width = EX + 240 (four bones: EX=880, canvas 1120). This keeps the leftmost cause text clear of the left margin and the left side from standing empty.
+- With n bones (five at most), the effect box's x is `EX = 160*n + 240` (four bones: EX=880). This keeps the leftmost cause text clear of the left margin and the left side from standing empty.
 - The effect is a `focal` box at the right end, 200x88, vertically centred on the spine (`at EX,256`), with `tag="EFFECT"` and the observation on two lines. It says what was seen ("Checkout p99 latency\n4x for 90 minutes"), never the fix.
 - Bones join the spine every 160px, the first 80px left of the effect box: join k (from 0) is at x = EX − 80 − 160k. They alternate: first above, second below, and so on.
 - The spine starts 80px left of the leftmost join and runs into the effect: `SX,CY -> effect.left stroke=ink`, with SX = EX − 160n (240 for four bones).
@@ -41,4 +41,4 @@ The accent is used on two things: the effect box, and the one bone that is the c
 
 ## Legend
 
-One `legend` statement at y=524 (24px under the lower category boxes; canvas height 590), because the lines here are not styles of the look: `legend at 40,524 line.ink="Category of cause" line.accent="Confirmed root cause" line.muted="Cause looked into" focal="What was observed"`.
+One `legend` statement at y=524 (24px under the lower category boxes), because the lines here are not styles of the look: `legend at 40,524 line.ink="Category of cause" line.accent="Confirmed root cause" line.muted="Cause looked into" focal="What was observed"`.

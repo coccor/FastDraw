@@ -362,15 +362,26 @@ export function align(src: string, sc: Scene, ids: string[], mode: AlignMode): s
   return cur;
 }
 
-// Rewrite the diagram's canvas line with a new size and background keys (paper=, dots=, dotgap=).
+// There is no page size any more: an old `canvas WxH` loses its size, and the line goes if nothing else is on it.
+export function dropCanvasSize(src: string): string {
+  const st = parseStatements(src).find((x) => x.toks[0]?.t === 'word' && x.toks[0].v === 'canvas' && x.toks.some((t) => /^\d+x\d+$/.test(t.v ?? '')));
+  if (!st) return src;
+  return patchSource(src, new Map([[st.line, (toks: Tok[]) => {
+    const rest = toks.filter((t, i) => i > 0 && !/^\d+x\d+$/.test(t.v ?? ''));
+    return rest.length ? [toks[0], ...rest] : null;
+  }]]));
+}
+
+// Rewrite the diagram's canvas line with background keys (paper=, dots=, dotgap=).
 // `bg` maps a key to its new value, or to null to drop it so the look's own value applies;
-// keys it does not mention keep what the line had.
-export function setCanvas(src: string, sc: Scene, w: number, h: number, bg: Record<string, string | null> = {}): string {
+// keys it does not mention keep what the line had. A line left with nothing on it goes.
+export function setCanvas(src: string, sc: Scene, bg: Record<string, string | null> = {}): string {
   const old = sc.canvasLine ? stmtToks(src, sc.canvasLine) ?? [] : [];
   const keep = new Map(old.filter((t) => t.t === 'prop').map((t) => [t.k!, t.v]));
   for (const [k, v] of Object.entries(bg)) if (v === null) keep.delete(k); else keep.set(k, v);
-  const toks: Tok[] = [{ t: 'word', v: 'canvas' }, { t: 'word', v: `${Math.round(w)}x${Math.round(h)}` }, ...[...keep].map(([k, v]) => ({ t: 'prop', k, v }) as Tok)];
+  const toks: Tok[] | null = keep.size ? [{ t: 'word', v: 'canvas' }, ...[...keep].map(([k, v]) => ({ t: 'prop', k, v }) as Tok)] : null;
   if (sc.canvasLine) return patchSource(src, new Map([[sc.canvasLine, () => toks]]));
+  if (!toks) return src;
   const lines = src.split('\n');
   const li = lines.findIndex((l) => /^look\b/.test(l));
   lines.splice(li + 1, 0, fmtStmt(toks));
@@ -406,9 +417,7 @@ export function addLegend(src: string, sc: Scene): { src: string; id: string } |
   const y = Math.ceil((bottom + 28) / 4) * 4;
   const id = freshId(src, 'legend');
   const line = `${id}: legend at 40,${y} ` + used.map((n) => `${n}=${JSON.stringify(label(n))}`).join(' ');
-  let next = appendStatements(src, [line]);
-  if (sc.h < y + 72) next = setCanvas(next, sc, sc.w, y + 72);
-  return { src: next, id };
+  return { src: appendStatements(src, [line]), id };
 }
 
 // Drag one segment of a right-angle connector sideways. Inner segments move freely; a segment

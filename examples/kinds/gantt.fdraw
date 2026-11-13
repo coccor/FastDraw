@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1080x560
 // time: week 1 starts at x=232, 64px per week, 12 weeks (ends at 1000)
 text "Product launch plan" at 40,52 style=h1
 zone "Discovery" at 40,136 1000x96 title.align=left dash=none stroke=ink/0.1

@@ -6,7 +6,7 @@ Shows the states one thing can be in and the events that move it from one to the
 
 - Title at `40,52` (`style=h1`). The main row's top edge is y=200: the arc over the row needs 90px of free space above it, below the title.
 - Every state is a box of the same size, written `160x80` with `radius=8` so it reads as a state and not a component. Main text is the state's name; `sub=` says what is true while in it (small sans).
-- Lay the main sequence out on one row, left to right, all with the same top edge. The gap between states carries a label: 64px holds a label of up to 8 characters, 96px up to 14. Pick one gap for the whole row. State k (from 0) has `x = 120 + k * (160 + gap)`. The canvas is `x_last + 160 + 40` wide.
+- Lay the main sequence out on one row, left to right, all with the same top edge. The gap between states carries a label: 64px holds a label of up to 8 characters, 96px up to 14. Pick one gap for the whole row. State k (from 0) has `x = 120 + k * (160 + gap)`.
 - When the row is full, or a state is a side track or a resting place, put it on a second row: top edge y=344 (64px under the first row), under the state it hangs from.
 - The start is a filled dot and the end a ringed dot. Neither is in the look, so build them from `ellipse`:
 
@@ -17,7 +17,7 @@ end_dot: ellipse at 963,475 10x10 fill=ink stroke=none overlap=ok // 3px inside 
 ```
 
 - One state gets `focal`: the one the reader should notice, usually the successful outcome or the error state. A state where the thing merely rests (archived, closed) may use `cloud`. All others use `node`. Do not use `store` for a state: in the built-in look it is a cylinder.
-- Centre the whole drawing in the canvas.
+- Keep the drawing balanced: the second row and the end dot stay within the width of the main row.
 
 ## Transitions
 
@@ -35,4 +35,4 @@ end_dot: ellipse at 963,475 10x10 fill=ink stroke=none overlap=ok // 3px inside 
 
 ## Legend
 
-One `legend at 40,Y` statement, 24px under the lowest element (the end dot included), with an entry for each box style and arrow style used. The canvas is Y + 70 tall.
+One `legend at 40,Y` statement, 24px under the lowest element (the end dot included), with an entry for each box style and arrow style used.

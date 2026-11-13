@@ -15,7 +15,7 @@ text "Reviewer" at 60,268 style=eyebrow  // baseline 60px under the lane's top l
 ```
 
 - All lanes have the same height. The name column is 120px wide (x 40 to 160). Every lane has a name; keep it to about 14 characters.
-- Three to five lanes. With more, merge actors that never act separately. The lines run to the canvas width minus 40.
+- Three to five lanes. With more, merge actors that never act separately. The lines run as far right as the steps need (x=960 above), all to the same x.
 
 ## Steps
 
@@ -37,4 +37,4 @@ text "Reviewer" at 60,268 style=eyebrow  // baseline 60px under the lane's top l
 
 ## Legend
 
-One `legend at 40,Y` statement, 32px under the last lane line, with entries for the step, the focal step and each arrow style used. The canvas is Y + 70 tall.
+One `legend at 40,Y` statement, 32px under the last lane line, with entries for the step, the focal step and each arrow style used.

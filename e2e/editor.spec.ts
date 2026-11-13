@@ -260,15 +260,15 @@ test('export options: scale, see-through background, leaving the diagram out, SV
   await paste(page, SMALL);
   await page.keyboard.press('Control+Shift+E');
   const dlg = page.getByRole('dialog', { name: 'Export image' });
-  await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 1800 × 840 px');
+  await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 1488 × 296 px');
   await dlg.getByRole('button', { name: '3×' }).click();
   await dlg.getByLabel(/Page colour and dots/).uncheck();
   await dlg.getByLabel(/Carry the diagram/).uncheck();
-  await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 2700 × 1260 px');
+  await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 2232 × 444 px');
   await expect(dlg.locator('.exportpreview')).toHaveClass(/checker/);
   const [png] = await Promise.all([page.waitForEvent('download'), dlg.getByRole('button', { name: 'Download' }).click()]);
   const b = fs.readFileSync(await png.path());
-  expect([b.readUInt32BE(16), b.readUInt32BE(20)]).toEqual([2700, 1260]);
+  expect([b.readUInt32BE(16), b.readUInt32BE(20)]).toEqual([2232, 444]);
   expect(b.includes('fastdraw-source')).toBe(false);
   // the corner of the page is see-through, not the paper colour
   const alpha = await page.evaluate(async (b64) => {
@@ -289,7 +289,7 @@ test('export options: scale, see-through background, leaving the diagram out, SV
   expect(svg.suggestedFilename()).toBe('pasted-diagram.svg');
   const text = fs.readFileSync(await svg.path(), 'utf8');
   expect(text).toContain('<metadata id="fastdraw-source">');
-  expect(text).not.toContain('<rect width="900" height="420"');
+  expect(text).not.toContain('fd-page');
   await expect(dlg).toHaveCount(0);
 });
 
@@ -305,7 +305,13 @@ test('routing by hand: drag a run, slide an end, drag the label, reset, and stal
   const onRun = await at(page, 400, runY);
   await page.mouse.click(onRun.x, onRun.y);
   const handles = () => page.locator('[data-seg]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { i: +e.getAttribute('data-seg')!, x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, horiz: r.width > r.height }; }));
-  const longest = async () => (await handles()).filter((h) => h.horiz).sort((p, q) => q.w - p.w)[0];
+  // the handle on the longest flat run of the line (handles are all one size, so it is found from the points)
+  const longest = async () => {
+    const ps = (await page.locator('polyline[data-id="r1"]').getAttribute('points'))!.split(' ').map((p) => p.split(',').map(Number));
+    let best = -1, len = -1;
+    ps.slice(0, -1).forEach((p, i) => { const l = Math.abs(ps[i + 1][0] - p[0]); if (p[1] === ps[i + 1][1] && l > len) { len = l; best = i; } });
+    return (await handles()).find((h) => h.i === best)!;
+  };
   await drag(page, await longest(), 0, away * 32 * k);
   expect(lineOf(await source(page), 'r1')).toMatch(new RegExp(`via=.*,${runY + away * 32};.*,${runY + away * 32}`));
   const first = (await handles()).find((h) => h.i === 0)!;
@@ -557,13 +563,13 @@ test('a new diagram starts blank in the built-in look, from the start screen and
   await page.goto('/');
   await page.getByRole('button', { name: /New diagram/ }).click();
   await page.waitForSelector('svg.canvas');
-  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(await source(page)).toBe('\n');
   await page.keyboard.press('r');
   await drag(page, await at(page, 200, 200), 140, 80);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^rect: rect at 200,200 \d+x\d+$/);
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('menuitem', { name: 'New diagram' }).click();
-  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(await source(page)).toBe('\n');
   await expect(page.getByRole('tab')).toHaveText(['untitled', 'untitled 2']); // the first one is still open beside it
   expect(errors).toEqual([]);
 });
@@ -589,7 +595,7 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   await page.keyboard.press('Control+z');
   expect(await source(page)).toBe(SMALL);
   await page.getByRole('tab', { name: 'untitled' }).click();
-  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(await source(page)).toBe('\n');
   expect(errors).toEqual([]);
 });
 
@@ -603,7 +609,7 @@ test('each tab keeps its own diagram and history; closing one asks first and sta
   await page.keyboard.press('Delete'); // nothing selected: no change
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Delete');
-  expect(await source(page)).toBe('canvas 600x400\n');
+  expect(await source(page)).toBe('');
   await page.getByRole('tab', { name: 'pasted diagram', exact: true }).click();
   expect(await source(page)).toBe(SMALL);
   await page.keyboard.press('Control+z'); // nothing to undo in this tab
@@ -741,18 +747,32 @@ test('`fastdraw open` lends a folder: the diagram opens with its look and icons,
   } finally { await s.close(); }
 });
 
-test('the menu changes the background for this diagram, keeps it on resize, and resets to the look', async ({ page }) => {
+test('no page: no border or size fields, a shape goes past 0,0, and an old canvas size goes with the first edit', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const OLD = 'canvas 600x300\na: node "A" at 40,40\nb: node "B" at 320,200\n';
+  await openFolder(page, { 'old.fdraw': OLD });
+  expect(await diskText(page, 'old.fdraw')).toBe(OLD); // opening never writes
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await expect(page.getByText('Canvas size')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  const k = await zoom(page);
+  await drag(page, await corner(page, 'a'), -160 * k, -120 * k);
+  await saved(page);
+  const text = await diskText(page, 'old.fdraw');
+  expect(text).not.toMatch(/canvas/);
+  expect(lineOf(text, 'a')).toMatch(/at -1[12]\d,-8\d/);
+  await expect(page.locator('rect[data-id="a"]')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the menu changes the background for this diagram and resets to the look', async ({ page }) => {
   await paste(page, SMALL);
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.locator('.canvasbg [aria-label="#ffffff"]').click();
-  expect(lineOf(await source(page), 'canvas')).toBe('canvas 900x420 paper=#ffffff');
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff'); // the old size went with the edit
   await page.locator('.canvasbg').getByLabel('Dot grid').click();
-  expect(lineOf(await source(page), 'canvas')).toBe('canvas 900x420 paper=#ffffff dots=none');
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none');
   await expect(page.locator('svg.canvas rect[fill="url(#fd-dots)"]')).toHaveCount(0);
-  const width = page.locator('.canvassize input').first();
-  await width.fill('1000');
-  await width.press('Enter');
-  expect(lineOf(await source(page), 'canvas')).toBe('canvas 1000x420 paper=#ffffff dots=none');
   await page.getByRole('button', { name: "Use the look's background" }).click();
-  expect(lineOf(await source(page), 'canvas')).toBe('canvas 1000x420');
+  expect(lineOf(await source(page), 'canvas')).toBe('');
 });

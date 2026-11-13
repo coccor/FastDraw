@@ -45,4 +45,4 @@ Two such strips at most.
 
 ## Legend
 
-One `legend at 40,Y` statement 32px under the last strip (Y=568), with an entry for each box style used. Say what dashed means. The canvas is Y + 70 tall.
+One `legend at 40,Y` statement 32px under the last strip (Y=568), with an entry for each box style used. Say what dashed means.

@@ -50,8 +50,6 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .dropdown button { justify-content: flex-start; padding: 7px 10px; text-align: left; }
 .dropdown button kbd { margin-left: auto; padding-left: 16px; }
 .dropdown.ctx { position: fixed; top: auto; left: auto; min-width: 200px; }
-.canvassize { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 10px 4px; }
-.canvassize > span { grid-column: 1 / -1; color: var(--mute); font-size: 12px; }
 .canvasbg { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 6px; }
 .canvasbg > span { color: var(--mute); font-size: 12px; }
 .canvasbg .row { display: flex; gap: 5px; align-items: center; }

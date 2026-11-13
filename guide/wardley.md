@@ -32,4 +32,4 @@ The accent marks what is moving: the dot (`stroke=accent sw=1.5`) and a short da
 
 ## Legend
 
-One statement, 24px under the band names (y=468 for the plot above; canvas height = 548): `legend at 40,468 dot.ink="Component" line.muted="Needs" dot.accent="Moving to the next stage"`. The legend dot is filled while the map's dots are hollow; that is fine, the meaning is clear from the names.
+One statement, 24px under the band names (y=468 for the plot above): `legend at 40,468 dot.ink="Component" line.muted="Needs" dot.accent="Moving to the next stage"`. The legend dot is filled while the map's dots are hollow; that is fine, the meaning is clear from the names.

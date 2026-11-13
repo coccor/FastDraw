@@ -24,8 +24,8 @@ text "Shippable" at 500,324 anchor=middle size=14 weight=600 color=#ffffff
 ## Composition
 
 - Two or three circles. With four or more the regions cannot be read; use a table with `align=center grid=1` instead.
-- Three sets: the layout above, on a canvas 1000x536 (the lowest circles end at y=516). The centres form a triangle; each circle is 280x280. To move it, shift every `at` by the same amount.
-- Two sets: circles of 280x280 side by side with centres 176px apart, for example `at 272,96` and `at 448,96` on a canvas 1000x416. The shared lens is then 104 wide and 218 high, at the second circle's `x` and the circles' `y + 31` (`at 448,127`). Names go at 360,236 and 640,236, the lens label at 500,236:
+- Three sets: the layout above (the lowest circles end at y=516). The centres form a triangle; each circle is 280x280. To move it, shift every `at` by the same amount.
+- Two sets: circles of 280x280 side by side with centres 176px apart, for example `at 272,96` and `at 448,96`. The shared lens is then 104 wide and 218 high, at the second circle's `x` and the circles' `y + 31` (`at 448,127`). Names go at 360,236 and 640,236, the lens label at 500,236:
   `points=52,0;74,22;90,49;101,78;104,109;101,140;90,169;74,196;52,218;30,196;14,169;3,140;0,109;3,78;14,49;30,22`
 - For another radius, keep the proportions and stretch the polygon by giving it a size (`WxH`) scaled by the same factor as the circles.
 - Equal circles say the sets are comparable. If one set is clearly larger, make its circle larger; then trace the shared region yourself: take points every 10 degrees along each circle edge that bounds it.

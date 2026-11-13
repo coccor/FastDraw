@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x544
 
 text "Cloud spend, FY25 to FY26" at 40,52 style=h1
 

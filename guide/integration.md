@@ -4,7 +4,7 @@ Shows what plugs into a data platform and what it serves, and over which protoco
 
 ## Composition
 
-- Title at 40,52 (`style=h1`). Three columns on a 1200px canvas: sources at x=40, consumers at x=1000 (`external`, 160x64), and between them one zone, `zone "Data platform" at 280,136 640xH dash=none` (`dash=none` makes it solid).
+- Title at 40,52 (`style=h1`). Three columns: sources at x=40, consumers at x=1000 (`external`, 160x64), and between them one zone, `zone "Data platform" at 280,136 640xH dash=none` (`dash=none` makes it solid).
 - Side boxes are 88 apart (24 between), centred on the surfaces' centre y, call it Y: box i of n (from 0) has its top at `Y - 32 - 44*(n-1) + 88*i`. Three boxes with Y=320: tops 200, 288, 376. The zone ends 16px below the lowest side box.
 - Inside the zone, on one row: the two or three surfaces the outside connects to (storage, query engine), 160x72 (write the size: the default is 144x64), at least 176px apart. Exactly two of them are `focal`: the ones that make this a platform and not a pile of tools.
 - Put that row level with the middle box of the side columns. Then the middle wire on each side is straight and the others fan out evenly above and below it.

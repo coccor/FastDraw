@@ -31,9 +31,8 @@ inv.order_id -> orders.id "restrict"
 - A row's centre is at `table y + 44 + 24 * n`. Set each neighbour's y so that the foreign-key row and the row it references are level; the key is then a straight line. Do this for as many keys as you can.
 - Widths: the three columns need about 224px for short names. A one-cell row (an index name, the "more columns" line) widens the first column for the whole table, so a table with a 22-character index name needs 296. `check` tells you when a width is too small; fix the width, then re-place the neighbours.
 - A key between two tables in the same column loops out on one side: name the side on both ends, `items.order_id.right -> orders.id.right`. Send it to the side with fewer lines, and leave 64px between the two tables.
-- Plan the sides so no two keys cross. A key that leaves a row lower in its table should go to a table lower on the canvas.
+- Plan the sides so no two keys cross. A key that leaves a row lower in its table should go to a table lower in the drawing.
 - Tables of another schema sit inside a `zone` named after the schema: 16px of padding, 32px at the top. Height = the table's height + 44; the table is at zone x + 16, zone y + 32.
-- Canvas height: the lowest table's bottom + 24 for the legend line + about 80.
 
 ## Arrows
 

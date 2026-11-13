@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1040x592
 
 text "Legacy retail reporting landscape" at 40,52 style=h1
 text "File exports, desktop spreadsheets and manual publication, before a shared data platform." at 40,88

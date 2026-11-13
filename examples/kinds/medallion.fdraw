@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1216x560
 
 text "Five-tier e-commerce analytics storage" at 40,52 style=h1
 

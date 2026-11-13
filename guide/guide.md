@@ -7,7 +7,7 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
 2. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
 3. Run `fastdraw guide list` to see which kinds of diagram have their own guide. If yours is there, run `fastdraw guide <kind>` and follow it.
-4. Plan the composition on paper first: canvas size, rows and columns, where the main thing sits.
+4. Plan the composition on paper first: rows and columns, where the main thing sits.
 5. Write the file.
 6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
 7. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 6 until it is clean and looks good.
@@ -21,7 +21,7 @@ One statement per line. An indented line continues the statement above it. `//` 
 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
-canvas 1000x480             // width x height in px; add paper=#ffffff dots=none dotgap=24 to change the look's background for this diagram only
+canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
 
 // shape:   id: style "text" at x,y WxH key=value ...
 api: node "Orders API" sub="REST · :8080" tag="API" at 200,120
@@ -209,8 +209,8 @@ An end can be:
 | `api.right` | a side: `top`, `bottom`, `left`, `right` |
 | `api.right@0.25` | a point along that side, as a fraction (0 = top or left end) |
 | `api.right@172` | a point along that side at absolute coordinate 172 (y for left/right, x for top/bottom) |
-| `400,300` | a free point |
-| `+0,260` | a point relative to the other end (only one end may be relative) |
+| `400,300` | a free point; either number may be negative (`-40,-20`) |
+| `+0,260` | a point relative to the other end: one of the numbers carries a `+` (`+40,-20`, `-40,+0`); only one end may be relative |
 | `users.email` | a row of a table: the edge of the table level with that row. `users.email.left` picks the side |
 | `life1@176` | a point on another line: where line `life1` has coordinate 176 (y on a vertical line, x on a horizontal one); a value ≤ 1 is a fraction along it |
 
@@ -238,10 +238,10 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 ```
 
 - Each `style="what it means"` pair is an entry, in the order written. Use only the styles the diagram uses.
-- It spans the canvas width minus the left margin on both sides; give `WxH` to set another width (the height is always worked out).
+- It is as wide as the rest of the drawing: from its x to the right edge of everything else. Give `WxH` to set another width (the height is always worked out).
 - `title="Key"` changes the heading; `title=none` removes it.
 - For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look or a hex colour, optionally with a tint (`swatch.muted/0.2="Flow"`, `swatch.#4a7c59="Stream"`): `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
-- Put it 24px under the lowest element and leave about 70px of canvas for it.
+- Put it 24px under the lowest element.
 
 ### Groups
 
@@ -267,9 +267,9 @@ These are what make a diagram look designed. `check` enforces the mechanical one
 - **One focus.** Use the look's accent style on one or two things only.
 - **A grid you can name.** Pick column x-positions and row y-positions and reuse them. Boxes in a row share a top edge and height; boxes in a column share a left edge or centre.
 - **Even gaps.** Use the same gap between neighbours along a row (48–56px between boxes that an arrow with a label connects; at least 40px otherwise).
-- **Margins.** Keep 40px clear on the left and right of the canvas and above the first row.
+- **Margins.** There is no page: the picture is everything drawn plus a 40px margin on every side, added for you. By convention start the drawing at 40,40 (the title's baseline at 40,52).
 - **Straight arrows where possible.** Line things up so the main path is straight lines. Use elbows for branches.
 - **No arrow through a box, no arrow on top of another, no label touching a box or another line.** `check` reports these.
 - **Labels fit their line.** A horizontal arrow needs to be longer than its label. Make the gap wider or the label shorter.
-- **Centre the composition.** The drawing should sit balanced in the canvas, not hug one corner. Size the canvas to the content.
+- **Centre the composition.** The drawing should sit balanced, not lean to one side: centre rows, titles and branches over the width of the drawing (left edge of the leftmost element to right edge of the rightmost).
 - **Legend.** End with a `legend` statement listing only the styles you used.

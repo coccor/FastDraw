@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x500
 
 // rows: y = 104, 224, 344 (48px boxes, 72px between rows; the bus runs half-way between rows)
 // leaves: 144 wide, 24 apart, centres x = 164, 332, 500, 668, 836; each parent is centred over its children

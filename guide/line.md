@@ -5,7 +5,7 @@ Shows how a number changes over time or along an ordered scale: signups per week
 ## Building blocks
 
 ```
-// canvas 1000x540. Title at y=52, plot 96,96 to 960,412. The series the chart is about is written last, so it is drawn on top
+// Title at y=52, plot 96,96 to 960,412. The series the chart is about is written last, so it is drawn on top
 title: text "Signups grew every week" at 40,52 style=h1
 sig: chart at 96,96 864x316 x="W1,W2,W3,W4" y=0..240 step=40 key=0 ytitle="Signups per week"
   | line "Referral" 45 52 48 60 stroke=soft sw=1.5
@@ -19,7 +19,7 @@ legend at 40,464 line.accent="Organic" line.muted="Direct" line.soft="Referral"
 
 ## Composition
 
-- Canvas 1000x540: title at y=52, plot `at 96,96 864x316` (tick labels end near y=440), legend at y=464. Add 20px of canvas if there is an `xtitle=`.
+- Title at y=52, plot `at 96,96 864x316` (tick labels end near y=440), legend at y=464. Move the legend 20px lower if there is an `xtitle=`.
 - Four to twelve points per line. With more, sum them into longer periods.
 - Five lines at most. One is the subject: `stroke=accent`, default width, `dots=1`. The others are `stroke=muted`, `soft` or `ink/0.5` with `sw=1.5` and no dots.
 - Use `area` instead of `line` for the subject only when the amount under the line means something (a volume, a count). Give it `fill=accent/0.08`; the default tint is heavy and dulls the lines under it.
@@ -84,7 +84,7 @@ text "static-cdn" at 304,220 anchor=end size=11 color=ink
 ```
 
 - Three to eight rows. The subject row takes `stroke=accent sw=2 fill=accent/0.15`.
-- Canvas height = last row's y + 120 + 64 (its tick labels and the scale name), then the legend 24px lower and 70px of canvas under it. Five rows fit in 540; eight need about 700.
+- The rows end at the last row's y + 120 + 64 (its tick labels and the scale name); the legend goes 24px lower.
 - Only the last chart has `x="0,,,120,,,240"`: one entry per bin, empty where no tick label is wanted. Name the scale in a `small` text under it.
 - Order the rows by something you can state (median, peak position) and say it in the legend heading.
 

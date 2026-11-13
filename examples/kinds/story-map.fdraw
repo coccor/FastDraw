@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1040x608
 text "Reporting, first release" at 40,52 style=h1
 
 mvp:   zone at 40,272 960x80 radius=0 stroke=none

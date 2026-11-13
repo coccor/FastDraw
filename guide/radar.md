@@ -7,8 +7,8 @@ FastDraw has no radar element. Rings and options are `polygon`s, spokes are plai
 ## Building blocks
 
 ```
-// canvas 1000x552. Title y=52. Centre 500,288, radius 160 = score 10, so 16px per point. Five axes, the first straight up, then clockwise.
-// every polygon is written "at 0,0", so its points are canvas coordinates
+// Title y=52. Centre 500,288, radius 160 = score 10, so 16px per point. Five axes, the first straight up, then clockwise.
+// every polygon is written "at 0,0", so its points are absolute coordinates
 title: text "Why we picked MinIO" at 40,52 style=h1
 text "Scores 0 to 10, higher is better · rings every 2" at 40,74 style=caption
 polygon at 0,0 points=500,224;561,268;538,340;462,340;439,268 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0     // ring at 4
@@ -37,7 +37,7 @@ Example: score 8 on the second of five axes, 16px per point: `500 + 8*16*0.951, 
 
 ## Composition
 
-- Canvas 1000x552, centre 500,288, radius 160, legend at y=476. The title leaves the top label (baseline 108) clear.
+- Centre 500,288, radius 160, legend at y=476. The title leaves the top label (baseline 108) clear.
 - Three to five axes and three to five options. With more of either, use a table (`align=center grid=1`). With two options, use grouped bars.
 - All axes share one scale that starts at 0 in the centre (0 to 10, 0 to 5). Convert raw measurements to that scale first. Do not start the rings at a higher value to make differences look bigger.
 - Five rings at equal steps: the inner four `stroke=ink/0.1`, the outer one `ink/0.25`. Spokes `ink/0.2`, written with `--`.

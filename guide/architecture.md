@@ -25,4 +25,4 @@ Shows the parts of one system and how a request or data moves between them.
 
 ## Legend
 
-One `legend at 40,Y` statement, 24px below the lowest element, with an entry for each box style and arrow style you used. Leave about 70px of canvas below Y.
+One `legend at 40,Y` statement, 24px below the lowest element, with an entry for each box style and arrow style you used.

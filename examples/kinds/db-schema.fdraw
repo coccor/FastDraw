@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1100x764
 
 text "Order tables and their foreign keys" at 40,52 style=h1
 

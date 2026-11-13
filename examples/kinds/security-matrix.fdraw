@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x452
 
 text "Who can do what on the data platform" at 40,52 style=h1
 

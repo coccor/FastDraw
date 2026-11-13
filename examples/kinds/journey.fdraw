@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1240x600
 text "Trial to paid: the first week" at 40,52 style=h1
 
 text "Stage 1" at 228,100 style=eyebrow anchor=middle

@@ -131,7 +131,6 @@ export function check(sc: Scene): Issue[] {
       }
     }
     const first = c.pts[0], last = c.pts[c.pts.length - 1];
-    for (const p of [first, last]) if (p.x < 0 || p.y < 0 || p.x > sc.w || p.y > sc.h) { warn(c.line, `${name(c)} ends outside the canvas (${sc.w}x${sc.h})`); break; }
     const l = c.label;
     if (!l) continue;
     for (const s of front) if (!tiny(s) && !isLine(s) && inter(l, s, 1)) warn(c.line, `label "${l.text}" of ${name(c)} collides with ${s.id}; shorten it, move things apart, or place it with lpos=x,y or lside=below|left`);
@@ -173,11 +172,11 @@ export function check(sc: Scene): Issue[] {
   }
 
   for (const t of sc.texts) {
-    if (t.x < 0 || t.y < 0 || t.x + t.w > sc.w || t.y + t.h > sc.h) warn(t.line, `text ${t.id} runs outside the canvas (${sc.w}x${sc.h})`);
     for (const s of front) if (!tiny(s) && s.shape !== 'chart' && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
     for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1) && t.p.overlap !== 'ok' && o.p.overlap !== 'ok') warn(o.line, `text ${o.id} overlaps text ${t.id}`);
   }
-  for (const s of sc.shapes) if (s.x < 0 || s.y < 0 || s.x + s.w > sc.w || s.y + s.h > sc.h) warn(s.line, `${s.id} is outside the canvas (${sc.w}x${sc.h})`);
+
+  if (sc.canvasSize && sc.canvasLine) hint(sc.canvasLine, 'the canvas has no size any more: the picture is as big as what is drawn, plus a margin; remove WxH from this line');
 
   // an element with no id of its own is named by its line, not by the id made up for it
   for (const i of out) i.msg = i.msg.replace(/(^|[\s("])_[stc](\d+)\b/g, '$1the unnamed element on line $2');

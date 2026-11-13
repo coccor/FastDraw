@@ -1,5 +1,4 @@
 look "./blueprint.look"
-canvas 1000x464
 
 text "Content site in production" at 40,60 style=h1
 

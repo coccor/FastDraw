@@ -7,7 +7,7 @@ FastDraw has no 3D. A plate is four `rect`s with the same `at` and size, each wi
 ## Building blocks
 
 ```
-// canvas 1000x612, title at y=52. One plate: a square slab with rounded corners, 384 wide and 208 high on screen (16 of that is its thickness).
+// title at y=52. One plate: a square slab with rounded corners, 384 wide and 208 high on screen (16 of that is its thickness).
 // This is the bottom one of three: y = 96 + 116 * 2
 title: text "What the thermostat is made of" at 40,52 style=h1
 data: rect at 208,328 384x208 fill=#ffffff stroke=ink sw=1.2 overlap=ok shape=path
@@ -30,8 +30,8 @@ Copy the four paths as they are. They are fractions of the box, so the same four
 ## Composition
 
 - Two to five parts. Write them bottom part first: shapes are drawn in file order and each plate must cover the one below it.
-- All plates share one x and one size, and sit one above the other with the same step of 116px (with 384x208 plates the gap shows about half of each lower plate's top). Never shrink one gap to fit; make the canvas taller or drop a part. The top plate is at y=96 (under the title); the plate `k` from the top (0 is the top) is at `y = 96 + 116 * k`. Three parts: 96, 212, 328; four: 96, 212, 328, 444.
-- Canvas height = `bottom plate y + 284`: 496 for two parts, 612 for three, 728 for four, 844 for five. Plates at x=208 so that plates plus labels (which end near x=800) sit centred on a 1000px canvas.
+- All plates share one x and one size, and sit one above the other with the same step of 116px (with 384x208 plates the gap shows about half of each lower plate's top). Never shrink one gap to fit; let the stack grow taller or drop a part. The top plate is at y=96 (under the title); the plate `k` from the top (0 is the top) is at `y = 96 + 116 * k`. Three parts: 96, 212, 328; four: 96, 212, 328, 444.
+- Plates at x=208 so that plates plus labels (which end near x=800) sit centred on x=500.
 - For a smaller or larger plate give another size with the same proportions (288x156) and scale the 116 step and the offsets below with it. A size with other proportions distorts the angle and the thickness.
 - Always keep the two face tints. A plate with only an outline can be read two ways.
 - One part at most is the focus: `stroke=accent` on its silhouette, a second silhouette rect over it with `fill=accent/0.1 stroke=none mask=0`, faces `accent/0.1` and `accent/0.22`, rim `stroke=accent/0.7`. Do not fade the other parts.

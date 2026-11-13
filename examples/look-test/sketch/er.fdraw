@@ -1,5 +1,4 @@
 look "../../../looks/sketch.look"
-canvas 984x600
 
 text "Library: lending model" at 40,56 style=h1
 

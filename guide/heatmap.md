@@ -7,7 +7,7 @@ FastDraw has no heatmap element. Each cell is a plain `rect` with its value as t
 ## Building blocks
 
 ```
-// canvas 1000x536 (5 rows). Title y=52. Grid: 6 columns from x=184, 120px apart; rows from y=136, 60px apart; cells 116x56 with a 4px gap
+// 5 rows. Title y=52. Grid: 6 columns from x=184, 120px apart; rows from y=136, 60px apart; cells 116x56 with a 4px gap
 // fill = ink at (value / 9 * 0.65), at least 0.07: 9 is the largest value outside the focal cell
 title: text "CI failures peaked on payments in sprint 4" at 40,52 style=h1
 text "SPRINT" at 542,100 style=eyebrow anchor=middle                 // list name, centred over the grid
@@ -22,11 +22,11 @@ p4: rect "47%" sub="REGRESSION" at 544,196 116x56 fill=accent/0.85 stroke=accent
 ## Composition
 
 - Three to seven rows and three to eight columns. Fewer is a table; more makes the cells too small to read.
-- Cells are 116x56 with a 4px gap (pitch 120 across, 60 down) for up to six columns on a 1000px canvas. For seven or eight columns narrow them to 88px (pitch 92); never below 80px.
+- Cells are 116x56 with a 4px gap (pitch 120 across, 60 down) for up to six columns. For seven or eight columns narrow them to 88px (pitch 92); never below 80px.
 - Centre the grid: `x0 = 40 + (1000 - grid width) / 2`, rounded to 4 (six columns: grid width 716, x0 = 184). The 40 makes room for the row names. Column `c` is at `x0 + pitch * c`, row `r` at `136 + 60 * r`.
 - Row names are right-aligned at `x0 - 12`, baseline 32px below the cell top. Column names are centred over each column, baseline at 124 (12px above the grid).
 - Name both lists with `eyebrow` text, **typed in capitals** (`eyebrow` does not change case): one centred over the grid at y=100, one turned with `rotate=-90` at `x0 - 110` (clear of the longest row name), level with the middle of the grid.
-- Grid bottom = `136 + 60 * rows - 4`. Legend rule at grid bottom + 24; canvas height = grid bottom + 104.
+- Grid bottom = `136 + 60 * rows - 4`. Legend rule at grid bottom + 24.
 - Keep the order the reader expects (time left to right; rows alphabetical or by size) and show every row and column. If you leave any out, say so under the legend.
 
 ## Colour
