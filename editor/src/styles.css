@@ -102,6 +102,9 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .pct { min-width: 52px; padding: 0 6px; font-variant-numeric: tabular-nums; }
 
 .textedit { position: absolute; z-index: 5; border: 1.5px solid var(--accent); border-radius: 5px; padding: 3px 6px; resize: none; background: #fff; text-align: center; font-family: 'Geist', sans-serif; outline: none; }
+.textedit.inplace { border: 0; border-radius: 3px; padding: 0; background: transparent; overflow: hidden; white-space: pre-wrap; caret-color: var(--accent); cursor: text; outline: 1.5px dashed var(--accent); outline-offset: 4px; box-shadow: 0 0 0 4px rgba(84, 72, 214, .08); }
+.textedit.inplace[wrap="off"] { white-space: pre; }
+.textedit.inplace::selection { background: rgba(84, 72, 214, .3); }
 
 /* welcome and dialogs */
 .start, .modal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
