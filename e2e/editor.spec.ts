@@ -665,6 +665,17 @@ test('a legend entry is edited in place: double-click its label, type, Enter; em
   expect(errors).toEqual([]);
 });
 
+test('a legend moved sideways keeps its width', async ({ page }) => {
+  await paste(page, SMALL + 'key: legend at 40,300 external="Shopper" focal="The service"\n');
+  const width = async () => (await page.locator('rect[data-id="key"]').first().boundingBox())!.width;
+  const before = await width();
+  const k = await zoom(page);
+  const b = (await page.locator('rect[data-id="key"]').first().boundingBox())!;
+  await drag(page, { x: b.x + 4, y: b.y + 4 }, 120 * k, 0);
+  expect(lineOf(await source(page), 'key')).toMatch(/^key: legend at 160,300 \d+x\d+ /);
+  expect(await width()).toBeCloseTo(before, 1);
+});
+
 test('`fastdraw open` lends a folder: the diagram opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
   const dir = mkdtempSync(join(tmpdir(), 'fdopen-'));
   cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
