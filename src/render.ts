@@ -345,7 +345,9 @@ function pathD(pts: Pt[], radius: number, trimEnd: number, trimStart: number): s
 // does not show through the marker.
 function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, paper: string): { svg: string; trim: number } {
   const dx = tip.x - from.x, dy = tip.y - from.y, len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len, k = Math.max(sw, 1);
+  const ux = dx / len, uy = dy / len;
+  // heads are one size whatever the line's weight, so a bold line and a thin one in the same diagram
+  // carry the same arrow
   // a point `back` along the line from the tip and `side` across it
   const at = (back: number, side: number) => `${r2(tip.x - ux * back - uy * side)},${r2(tip.y - uy * back + ux * side)}`;
   const line = `fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -355,12 +357,12 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   const crow = `<path d="M ${at(0, 6)} L ${at(12, 0)} L ${at(0, -6)}" ${line}/>`;
   if (R.amt && (kind === 'arrow' || kind === 'open')) {
     // drawn by hand an arrowhead is two quick strokes, a little larger than the clean one
-    const b = 9 + 2.5 * k, w = 4.5 + 1.2 * k;
+    const b = 13, w = 6;
     return { svg: sketchSvg(`M ${at(b, w)} L ${at(0, 0)} L ${at(b, -w)}`, `fill="none" stroke="${stroke}" stroke-width="${sw}"`, R.amt * 0.6), trim: 0 };
   }
   switch (kind) {
     case 'none': return { svg: '', trim: 0 };
-    case 'open': return { svg: `<path d="M ${at(8 * k, 4 * k)} L ${at(0, 0)} L ${at(8 * k, -4 * k)}" ${line}/>`, trim: 0 };
+    case 'open': return { svg: `<path d="M ${at(10, 5)} L ${at(0, 0)} L ${at(10, -5)}" ${line}/>`, trim: 0 };
     case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11, 6)} ${at(11, -6)}" ${hollow}/>`, trim: 11 };
     case 'diamond': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" ${hollow}/>`, trim: 16 };
     case 'diamond-solid': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" fill="${stroke}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`, trim: 16 };
@@ -372,7 +374,7 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
     case 'one-many': return { svg: crow + bar(16), trim: 0 };
     case 'zero-one': return { svg: bar(8) + ring(16, 4, hollow), trim: 0 };
     case 'zero-many': return { svg: crow + ring(17, 4, hollow), trim: 0 };
-    default: return { svg: `<polygon points="${at(0, 0)} ${at(8 * k, 3 * k)} ${at(8 * k, -3 * k)}" fill="${stroke}"/>`, trim: 6 * k };
+    default: return { svg: `<polygon points="${at(0, 0)} ${at(10, 4)} ${at(10, -4)}" fill="${stroke}"/>`, trim: 7 };
   }
 }
 

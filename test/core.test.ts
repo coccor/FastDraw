@@ -345,6 +345,15 @@ test('route=curve draws a smooth line: bend bows it, via points are passed throu
   assert.ok(back.conns[0].pts.every((p) => p.x >= 80 && p.x <= 480)); // no swinging wide of the via points
   const drawn = /<path d="M [^"]* L ([\d.]+),([\d.]+)" fill="none"/.exec(renderSvg(back))!.slice(1).map(Number);
   assert.ok(drawn[1] - tri[0][1] >= 10, `line ends at ${drawn}`);
+  // a bold line and a thin one carry the same arrowhead, in every look
+  for (const name of ['headline', 'reference', 'whiteboard']) {
+    const lk = loadLook(`looks/${name}.look`);
+    const svg = renderSvg(buildScene(`look "${name}.look"\na: node "A" at 40,40\nb: node "B" at 400,40\nc: node "C" at 40,200\nd: node "D" at 400,200\na -> b\nc -> d style=primary\n`, lk));
+    const heads = [...svg.matchAll(/<polygon points="([^"]+)" fill=/g)].map((m) => m[1].split(' ').map((p) => p.split(',').map(Number)))
+      .map(([t, p, q]) => Math.hypot(t[0] - (p[0] + q[0]) / 2, t[1] - (p[1] + q[1]) / 2).toFixed(1) + 'x' + Math.hypot(p[0] - q[0], p[1] - q[1]).toFixed(1));
+    assert.equal(heads.length, 2, name);
+    assert.equal(heads[0], heads[1], `${name}: ${heads.join(' vs ')}`);
+  }
   const sc = scene(two + 'a -> b "carries" route=curve bend=40\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   assert.match(check(scene(two + 'a -> b route=wavy\n')).map((i) => i.msg).join(), /route=wavy is not a route; use ortho, straight or curve/);
