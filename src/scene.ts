@@ -105,9 +105,19 @@ function route(c: Conn, via: Pt[]): Pt[] {
       return [P0, { x: P0.x, y: my }, { x: P1.x, y: my }, P1];
     }
     if (aligned) return [P0, P1];
-    if (d0) return [P0, corner(P0, P1, d0.x !== 0), P1];
-    if (d1) return [P0, corner(P0, P1, d1.x === 0), P1];
-    return [P0, corner(P0, P1, true), P1];
+    // An end on a free point has no side to arrive from: it is met along the main direction of travel,
+    // with the step in the middle, so its arrowhead does not turn up or down in the last few pixels.
+    const dx = P1.x - P0.x, dy = P1.y - P0.y, horiz = Math.abs(dx) >= Math.abs(dy);
+    const zig = (): Pt[] => {
+      if (horiz) { const mx = Math.round((P0.x + P1.x) / 2); return [P0, { x: mx, y: P0.y }, { x: mx, y: P1.y }, P1]; }
+      const my = Math.round((P0.y + P1.y) / 2);
+      return [P0, { x: P0.x, y: my }, { x: P1.x, y: my }, P1];
+    };
+    // a shape side that already faces the main direction leads into the same step
+    const faces = (d: Pt, s: number) => (horiz ? d.x * dx * s > 0 : d.y * dy * s > 0);
+    if (d0) return faces(d0, 1) ? zig() : [P0, corner(P0, P1, d0.x !== 0), P1];
+    if (d1) return faces(d1, -1) ? zig() : [P0, corner(P0, P1, d1.x === 0), P1];
+    return zig();
   }
   const pts = [P0, ...via, P1];
   const out: Pt[] = [P0];

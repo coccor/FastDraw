@@ -86,6 +86,14 @@ test('aligned boxes get a straight arrow; unaligned ones get one elbow', () => {
   assert.deepEqual(sc.conns[1].pts[1], { x: 552, y: 72 });
 });
 
+test('an arrow ending on a free point arrives along its main direction, not with a turn at the head', () => {
+  const sc = scene('a: node at 40,40 144x64\n100,360 -> 400,372\na -> 500,120\n300,200 -> 310,400');
+  const last = (i: number) => sc.conns[i].pts.slice(-2);
+  assert.deepEqual(sc.conns[0].pts, [{ x: 100, y: 360 }, { x: 250, y: 360 }, { x: 250, y: 372 }, { x: 400, y: 372 }]);
+  for (const i of [0, 1]) assert.equal(last(i)[0].y, last(i)[1].y, `line ${i} ends level`);
+  assert.equal(last(2)[0].x, last(2)[1].x, 'a mostly-downward line ends going down');
+});
+
 test('a request and its response between two boxes are spread apart and stay straight', () => {
   const sc = scene('a: node at 40,40 144x64\nb: node at 240,40 144x96\na -> b\nb -> a style=return');
   for (const c of sc.conns) assert.equal(c.pts.length, 2);
