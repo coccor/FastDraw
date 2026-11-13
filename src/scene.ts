@@ -2,6 +2,7 @@
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
 import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
+import { iconMatches } from './icons.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
 import { crosses, routeAround } from './router.ts';
@@ -455,10 +456,11 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon) && !look.images.has(p.icon)) {
       const all = [...look.images.keys(), ...look.icons.keys()];
       // name the closest ones first: a team's folder can hold hundreds
-      const near = all.filter((n) => n.includes(p.icon) || p.icon.includes(n)), list = [...new Set([...near, ...all])].slice(0, 40);
+      const near = all.filter((n) => iconMatches(n, p.icon) || (n.length > 2 && p.icon.includes(n))), list = [...new Set([...near, ...all])].slice(0, 40);
       const folder = look.iconDirs.length && !look.images.size ? ` (the look's icon folder ${look.iconDirs.join(', ')} could not be read here)` : '';
       err(st.line, `there is no icon called "${p.icon}"${folder}; the look has: ${list.join(', ')}${all.length > list.length ? `, and ${all.length - list.length} more (run "fastdraw icons" to see them all)` : ''}`);
     }
+    if (p['icon.width'] !== undefined && !(Number(p['icon.width']) > 0 && Number(p['icon.width']) <= 8)) err(st.line, `icon.width=${p['icon.width']}: the icon's line thickness in pixels, a number from 0.5 to 8 (e.g. icon.width=2)`);
     if (p['icon.pos'] && !['left', 'top'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)`);
     for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {
@@ -680,7 +682,12 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (c.ortho && !via.length && !c.ushape) {
         const strictlyIn = (o: Box, p: Pt) => p.x > o.x + 1 && p.x < o.x + o.w - 1 && p.y > o.y + 1 && p.y < o.y + o.h - 1;
         // (an open outline is a line, not a box: nothing goes around it)
-        const obs = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        const obs: Box[] = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        // an icon's caption hangs below it: other lines go around it too
+        for (const o of shapes) {
+          const cb = o.id !== c.a.id && o.id !== c.b.id ? captionBox(o) : null;
+          if (cb) obs.push({ x: cb.x - 4, y: cb.y - 2, w: cb.w + 8, h: cb.h + 4 });
+        }
         if (crosses(c.pts, obs)) { const alt = routeAround(a.pt, a.dir, b.pt, b.dir, obs, taken); if (alt) c.pts = alt; }
       }
       if (c.ortho) for (let i = 0; i < c.pts.length - 1; i++) taken.push([c.pts[i], c.pts[i + 1]]);
@@ -702,8 +709,19 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   resolvePass(second.filter((c) => !bad.has(c)));
   const finalConns = conns.filter((c) => done.has(c));
 
-  const ext = extent(shapes, texts, finalConns);
+  const ext = extent([...shapes, ...shapes.map(captionBox).filter((b): b is Box => !!b)], texts, finalConns);
   return { file, ...ext, look, canvasLine, canvasSize, baseCanvas, shapes, texts, conns: finalConns, issues };
+}
+
+// The caption under an icon shape: its text and second line, centred below the icon. Null for any other shape.
+export const ICON_CAPTION_GAP = 6;
+export function captionBox(s: Shape): Box | null {
+  if (s.shape !== 'icon' || (!s.text && !s.p.sub)) return null;
+  const p = s.p, size = +(p['title.size'] ?? 11) || 11, sub = +(p['sub.size'] ?? 9) || 9;
+  const lines = s.text ? s.text.split('\n') : [], subs = p.sub ? p.sub.split('\n') : [];
+  const w = Math.max(0, ...lines.map((l) => textWidth(l, size, p['title.font'] ?? 'sans', +(p['title.weight'] ?? 600) || 600, 0)), ...subs.map((l) => textWidth(l, sub, p['sub.font'] ?? 'mono', 400, 0)));
+  const h = lines.length * Math.round(size * 1.17) + (subs.length ? 2 + subs.length * Math.round(sub * 1.3) : 0);
+  return { x: s.x + s.w / 2 - w / 2, y: s.y + s.h + ICON_CAPTION_GAP, w, h };
 }
 
 // The picture's extent: the box around every shape, text, line and line label, 40px clear on all sides,

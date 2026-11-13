@@ -498,19 +498,83 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const errors = noPageErrors(page);
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
-  await page.getByLabel('Icon', { exact: true }).selectOption('database');
+  // the tall panel scrolls; it never squashes the menu button above it
+  expect((await page.getByRole('button', { name: 'Menu' }).boundingBox())!.height).toBe(38);
+  const tiles = page.getByRole('radiogroup', { name: 'Icons' });
+  await tiles.getByRole('radio', { name: 'database', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
+  await expect(tiles.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
   await expect(page.locator('svg.canvas g[stroke-linecap="round"] path').first()).toBeVisible();
   await page.getByRole('button', { name: 'Above the text' }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.pos=top$/);
-  await page.getByLabel('Icon', { exact: true }).selectOption('none');
-  expect(lineOf(await source(page), 'db')).not.toContain('icon=database');
+  // the search narrows the tiles, and Enter takes the first match
+  await page.getByLabel('Search icons').fill('lambda');
+  await expect(tiles.getByRole('radio', { name: 'function', exact: true })).toBeVisible();
+  await page.getByLabel('Search icons').fill('zzqx');
+  await expect(tiles.getByRole('radio')).toHaveCount(0);
+  await expect(tiles).toContainText('No icon is called anything like');
+  await page.getByLabel('Search icons').fill('balanc');
+  await expect(tiles.getByRole('radio')).toHaveCount(1);
+  await page.getByLabel('Search icons').press('Enter');
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=load-balancer icon\.pos=top$/);
+  // size and colour
+  await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'L', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toContain('icon.size=32');
+  await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'Auto' }).click();
+  expect(lineOf(await source(page), 'db')).not.toContain('icon.size');
+  const strokes = page.getByRole('group', { name: 'Icon stroke colours' });
+  const ink = await strokes.locator('.swatch').last().getAttribute('aria-label');
+  await strokes.locator('.swatch').last().click();
+  expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
+  // any colour, from the system colour picker
+  await page.getByLabel('Custom icon colour').fill('#e0457b');
+  expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
+  await expect(page.locator('svg.canvas g[stroke="#e0457b"]')).toHaveCount(1);
+  await expect(strokes.locator('.custom.on')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Text colour' }).click();
+  expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
+  // a fill inside the icon's closed parts: a tint, any colour, or none
+  const fills = page.getByRole('group', { name: 'Icon fill colours' });
+  const tint = await fills.locator('.swatch').nth(1).getAttribute('aria-label');
+  await fills.locator('.swatch').nth(1).click();
+  expect(lineOf(await source(page), 'db')).toContain(`icon.fill=${tint}`);
+  await page.getByLabel('Custom icon fill').fill('#ffd400');
+  expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
+  await expect(page.locator('svg.canvas g[fill="#ffd400"]')).toHaveCount(1);
+  await fills.getByRole('button', { name: 'none', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).not.toContain('icon.fill');
+  // the stroke width, in pixels on screen
+  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Bold' }).click();
+  expect(lineOf(await source(page), 'db')).toContain('icon.width=2');
+  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Regular' }).click();
+  expect(lineOf(await source(page), 'db')).not.toContain('icon.width');
+  await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
+  expect(lineOf(await source(page), 'db')).not.toContain('icon=');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=server$/);
+  // an icon on its own is the shape: no box to style, its fill, stroke and stroke width are the icon's
+  await page.keyboard.press('Escape');
+  await page.mouse.click(...Object.values(await corner(page, 'icon')) as [number, number]);
+  await expect(page.locator('.panel h4', { hasText: 'Background' })).toHaveCount(0);
+  await expect(page.locator('.panel h4', { hasText: 'Stroke style' })).toHaveCount(0);
+  const ifills = page.getByRole('group', { name: 'Icon fill colours' });
+  const itint = await ifills.locator('.swatch').nth(1).getAttribute('aria-label');
+  await ifills.locator('.swatch').nth(1).click();
+  await page.getByLabel('Custom icon colour').fill('#0369a1');
+  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Heavy' }).click();
+  expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2\\.75$`));
+  await expect(page.locator('svg.canvas g[stroke="#0369a1"]')).toHaveCount(1);
+  // double-click puts a caption under it
+  await page.waitForTimeout(500);
+  const c = await corner(page, 'icon');
+  await page.mouse.dblclick(c.x, c.y);
+  await page.keyboard.type('Web server');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'icon')).toMatch(/^icon: icon "Web server" at /);
   expect(errors).toEqual([]);
 });
 
@@ -529,7 +593,8 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   await expect(page.locator('.banner')).toHaveCount(0);
   // the picker offers the folder's icons by their file-derived names
   await page.mouse.click(...Object.values(await corner(page, 'st')) as [number, number]);
-  await page.getByLabel('Icon', { exact: true }).selectOption('sample-screen');
+  await expect(page.getByRole('radiogroup', { name: 'Icons' })).toContainText("From the look's folder");
+  await page.getByRole('radiogroup', { name: 'Icons' }).getByRole('radio', { name: 'sample-screen', exact: true }).click();
   await saved(page);
   expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=sample-screen');
   // an exported image carries the icons it uses, so it still shows them when opened with no folder

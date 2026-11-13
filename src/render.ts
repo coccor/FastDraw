@@ -1,7 +1,7 @@
 // Draws a resolved scene as SVG. The same output feeds PNG export.
 import { color, fontFamily } from './look.ts';
 import type { Look, Props } from './look.ts';
-import { textWidth } from './scene.ts';
+import { textWidth, ICON_CAPTION_GAP } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
@@ -255,19 +255,44 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
   return { x, y: s.y + (s.h - size) / 2, size, dx: (size + 8) / 2, dy: 0 };
 }
 
-function drawIcon(look: Look, name: string, x: number, y: number, size: number, colour: string): string {
-  const img = look.images.get(name);
+// An outline icon is drawn with icon.color as its line, icon.fill inside its closed parts (none by default),
+// and icon.width as the line's thickness in pixels at the size it is drawn.
+function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
+  const name = p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
   if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
   const k = r2(size / 24);
+  const stroke = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink'), fill = col(look, p['icon.fill'] ?? 'none');
+  const px = num(p['icon.width'], 0), sw = px > 0 ? Math.min(px, 8) / k : Math.max(1.5, 1.2 / k);
   const paths = (look.icons.get(name) ?? []).map((d) => `<path d="${esc(d)}"/>`).join('');
-  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="none" stroke="${colour}" stroke-width="${r2(Math.max(1.5, 1.2 / k))}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
+  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="${fill}" stroke="${stroke}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
+}
+
+// An icon that is the shape itself, with no box around it: fill=, stroke= and sw= style the icon,
+// and its text is a caption centred underneath (captionBox in scene.ts measures it the same way).
+function drawIconShape(look: Look, s: Shape): string {
+  const p = s.p, size = Math.min(s.w, s.h), out: string[] = [];
+  const ip: Props = { ...p, 'icon.fill': p.fill ?? p['icon.fill'] ?? 'none', 'icon.color': p.stroke ?? p['icon.color'] ?? 'ink', 'icon.width': p.sw ?? p['icon.width'] ?? '' };
+  if (p.icon && p.icon !== 'none') out.push(drawIcon(look, ip, s.x + (s.w - size) / 2, s.y + (s.h - size) / 2, size));
+  const cx = s.x + s.w / 2;
+  let y = s.y + s.h + ICON_CAPTION_GAP;
+  if (s.text) {
+    const t = textAttrs(look, p, 'title.', { font: 'sans', size: 11, weight: 600, color: 'ink' }), lh = Math.round(t.size * 1.17);
+    (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n').forEach((l) => { out.push(`<text x="${cx}" y="${r2(y + t.size * 0.86)}" text-anchor="middle" ${t.a}>${esc(l)}</text>`); y += lh; });
+  }
+  if (p.sub) {
+    const t = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' }), lh = Math.round(t.size * 1.3);
+    y += 2;
+    p.sub.split('\n').forEach((l) => { out.push(`<text x="${cx}" y="${r2(y + t.size * 0.86)}" text-anchor="middle" ${t.a}>${esc(l)}</text>`); y += lh; });
+  }
+  return out.join('\n');
 }
 
 function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'legend') return drawLegend(look, s);
   if (s.shape === 'table') return drawTable(look, s);
   if (s.shape === 'chart') return drawChart(look, s);
+  if (s.shape === 'icon') return drawIconShape(look, s);
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));
@@ -296,9 +321,9 @@ function drawShape(look: Look, s: Shape): string {
     out.push(`<rect x="${s.x + tb.x}" y="${s.y + tb.y}" width="${tw}" height="${tb.h}" rx="2" fill="none" stroke="${col(look, p['tag.border'] ?? 'muted/0.4')}" stroke-width="0.8"/>`);
     out.push(`<text x="${s.x + tb.x + tw / 2}" y="${r2(s.y + tb.y + tb.h / 2 + t.size * 0.36)}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
   }
-  const ib = iconBox(s), iconCol = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
+  const ib = iconBox(s);
   if (ib) { cxm += ib.dx; cym += ib.dy; }
-  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p.icon, ib.x, ib.y, ib.size, iconCol));
+  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x, ib.y, ib.size));
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
     const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
@@ -312,9 +337,9 @@ function drawShape(look: Look, s: Shape): string {
     const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
     const subs = p.sub ? p.sub.split('\n') : [], slh = Math.round(sub.size * 1.3);
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
-    // centred a little low under a corner tag, and never closer than 4px below it
+    // centred a little low under a corner tag, and never closer than 3px below it
     const top = tb ? tb.top : cym - block / 2;
-    if (ib && ib.dy > 0) out.push(drawIcon(look, p.icon, ib.x, top - ib.size - 6, ib.size, iconCol));
+    if (ib && ib.dy > 0) out.push(drawIcon(look, p, ib.x, top - ib.size - 6, ib.size));
     const al = p['title.align'], tx = al === 'left' ? s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
     subs.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3 + i * slh)}" text-anchor="${anchor}" ${sub.a}>${esc(l)}</text>`));

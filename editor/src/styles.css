@@ -27,6 +27,8 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .topleft, .topcenter, .topright, .bottomleft { position: absolute; display: flex; pointer-events: none; }
 .topleft > *, .topcenter > *, .topright > *, .bottomleft > * { pointer-events: auto; }
 .topleft { top: 12px; left: 12px; bottom: 64px; flex-direction: column; align-items: flex-start; gap: 10px; }
+/* only the panel gives way (it scrolls) when the column is short; the menu button keeps its size */
+.topleft > :not(.panel) { flex-shrink: 0; }
 .topcenter { top: 12px; left: 50%; transform: translateX(-50%); flex-direction: column; align-items: center; gap: 8px; max-width: calc(100% - 560px); }
 .topright { top: 12px; right: 12px; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 340px; }
 .bottomleft { bottom: 12px; left: 12px; gap: 8px; }
@@ -53,13 +55,14 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .canvasbg { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 6px; }
 .canvasbg > span { color: var(--mute); font-size: 12px; }
 .canvasbg .row { display: flex; gap: 5px; align-items: center; }
-.canvasbg .custom { position: relative; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
-.canvasbg .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.canvasbg .custom, .swatches .custom { position: relative; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
+.swatches .custom.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.canvasbg .custom input, .swatches .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .canvasbg .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
 .dropdown .canvasbg button.link { padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 
 /* properties */
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 202px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 250px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .panel h4, .gallery h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--mute); }
 .panel select { width: 100%; }
 .swatches { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -75,6 +78,17 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .field:last-child { margin-bottom: 0; }
 .field span { display: block; font-size: 11px; color: var(--mute); margin-bottom: 2px; }
 .field input { width: 100%; }
+/* icon picker: a search box over a grid of tiles */
+.iconpicker { display: flex; flex-direction: column; gap: 6px; }
+.iconsearch { display: flex; gap: 4px; }
+.iconsearch input { flex: 1; min-width: 0; }
+.icongrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 2px; max-height: 172px; overflow-y: auto; padding: 3px; border: 1px solid var(--line); border-radius: 7px; }
+.icongrid .iconhead { grid-column: 1 / -1; font-size: 11px; color: var(--mute); padding: 4px 2px 0; }
+.icongrid .muted { grid-column: 1 / -1; padding: 6px 4px; }
+.icontile { width: 100%; aspect-ratio: 1; padding: 0; border-radius: 6px; color: var(--ink); }
+.icontile img { object-fit: contain; }
+.icontile.on { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.panel .sublabel { font-size: 11px; color: var(--mute); margin: 10px 0 4px; }
 
 /* components gallery */
 .gallerywrap { width: min(640px, calc(100vw - 48px)); max-height: calc(100vh - 150px); overflow-y: auto; }

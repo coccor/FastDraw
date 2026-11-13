@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf } from './node.ts';
 import { buildScene } from './scene.ts';
 import { defaultLook } from './look.ts';
+import { iconMatches } from './icons.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
@@ -180,11 +181,11 @@ if (cmd === 'check') {
   }
   console.log(`wrote ${out}: ${all.length} styles`);
 } else if (cmd === 'icons') {
-  // icons [file.look] [word]: every icon a look offers, optionally only those whose name contains the word
+  // icons [file.look] [word]: every icon a look offers, optionally only those that answer to the word (by name or meaning)
   const file = args[0]?.endsWith('.look') ? args[0] : undefined, word = (file ? args[1] : args[0])?.toLowerCase();
   const look = file ? loadLook(file) : defaultLook();
-  const names = [...look.images.keys(), ...look.icons.keys()].filter((n) => !word || n.includes(word));
-  console.log(names.length ? names.join('\n') : `no icon${word ? ` with "${word}" in its name` : ''}`);
+  const names = [...new Set([...look.images.keys(), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
+  console.log(names.length ? names.join('\n') : `no icon${word ? ` for "${word}"` : ''}`);
 } else if (cmd === 'guide') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');

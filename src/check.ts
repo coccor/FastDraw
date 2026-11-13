@@ -49,7 +49,8 @@ export function check(sc: Scene): Issue[] {
   }
 
   const paperRgb = over(rgba(sc.look, sc.look.canvas.paper ?? 'paper'), [255, 255, 255]);
-  const fillOf = (s: Shape): RGB | null => (s.p.fill && s.p.fill !== 'none' && rgba(sc.look, s.p.fill) ? over(rgba(sc.look, s.p.fill), paperRgb) : null);
+  // an icon shape's fill is inside the icon's own outline, not a background behind anything
+  const fillOf = (s: Shape): RGB | null => (s.shape !== 'icon' && s.p.fill && s.p.fill !== 'none' && rgba(sc.look, s.p.fill) ? over(rgba(sc.look, s.p.fill), paperRgb) : null);
   for (const s of front) {
     if (s.rows || s.shape === 'legend' || s.shape === 'chart' || s.p['title.pos'] === 'top') continue;
     // a box with no fill of its own shows whatever filled shape lies under its middle
@@ -74,6 +75,7 @@ export function check(sc: Scene): Issue[] {
     if (tiny(s)) continue;
     const off = s.shape !== 'polygon' && [s.x, s.y, s.w, s.h].some((v) => v % 4 !== 0);
     if (off) hint(s.line, `${s.id} is off the 4px grid (${s.x},${s.y} ${s.w}x${s.h}); use multiples of 4`);
+    if (s.shape === 'icon') continue; // its text is a caption under it, not inside: nothing has to fit
     const p = s.p;
     if (s.text && p['title.pos'] !== 'top') {
       const size = num(p['title.size'], 12), ib = iconBox(s), room = (s.shape === 'diamond' || s.shape === 'ellipse' ? s.w * 0.72 : s.w - 16) - (ib && ib.dx ? ib.size + 8 + 8 : 0);

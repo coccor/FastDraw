@@ -79,7 +79,7 @@ npm run dev                                  # the editor, at http://localhost:5
 | `fastdraw guide [topic]` | Print the language guide, or the guide for one kind of diagram |
 | `fastdraw guide list` | List the kinds of diagram that have a guide |
 | `fastdraw sizes [file]` | List a look's styles and their sizes (the built-in look when no file is given) |
-| `fastdraw icons [file.look] [word]` | List the icons a look offers, or search them |
+| `fastdraw icons [file.look] [word]` | List the icons a look offers, or search them by name or meaning (`email` finds `mail`) |
 | `fastdraw init-look [path]` | Write the built-in look to a file, to start your own |
 | `fastdraw preview-look [file.look]` | Draw every style of a look on one sheet |
 | `fastdraw open <file.fdraw> [--editor URL]` | Open the diagram in the web editor with its look, fonts and icons; edits there save back to the file. Runs until Ctrl-C |
