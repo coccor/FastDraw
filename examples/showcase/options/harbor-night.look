@@ -14,7 +14,7 @@ color teal   #2dd4bf
 color amber  #fbbf24
 color rose   #e11d48
 color green  #059669
-color violet #7c3aed
+color violet #a78bfa
 
 font sans  "Geist"
 font mono  "Geist Mono"
@@ -30,7 +30,7 @@ style focal extends node fill=#131c38 stroke=accent sw=2 title.color=accent tag.
 style store shape=path size=176x80 fill=#131c38 stroke=ink/0.16 sw=1
     path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
     title.font=sans title.size=13.5 title.weight=600 title.color=ink sub.font=sans sub.size=11 sub.color=muted
-    tag.color=teal tag.border=teal/0.4 icon.color=teal icon.fill=teal/0.14 icon.size=22
+    tag.color=violet tag.border=violet/0.4 icon.color=violet icon.fill=violet/0.14 icon.size=22
     use="something that holds data"
 style cloud extends node fill=#131c38 stroke=link/0.45 icon.color=link icon.fill=link/0.14 tag.color=link tag.border=link/0.4
     use="a managed or hosted service"
@@ -53,7 +53,7 @@ style zone shape=rect radius=16 fill=ink/0.025 stroke=ink/0.12 sw=1 layer=back
     title.pos=top title.align=left title.font=sans title.size=11 title.weight=600 title.color=muted
     use="a region drawn behind a group; always give WxH"
 style network extends zone fill=accent/0.035 stroke=accent/0.45 dash=6,4 title.color=accent use="a private network"
-style subnet extends zone radius=12 fill=#111a33/0.7 stroke=teal/0.45 title.color=teal use="a subnet or tier inside a network"
+style subnet extends zone radius=12 fill=#111a33/0.7 stroke=violet/0.45 title.color=violet use="a subnet or tier inside a network"
 style band extends zone radius=12 fill=#131c38 stroke=ink/0.10 use="a horizontal layer"
 
 style step extends node size=168x48 use="flowchart action"
@@ -71,7 +71,7 @@ style arrow line stroke=ink/0.45 sw=1.4 route=ortho radius=8 label.font=sans lab
 style primary line stroke=accent sw=2.2 route=ortho radius=8 label.font=sans label.size=10.5 label.color=accent label.caps=0 use="the main path; at most two"
 style link line stroke=link sw=1.6 route=ortho radius=8 label.font=sans label.size=10.5 label.color=link label.caps=0 use="a request crossing a boundary"
 style return line stroke=ink/0.40 sw=1.4 dash=5,4 route=ortho radius=8 label.font=sans label.size=10.5 label.color=muted label.caps=0 use="asynchronous, or a reply"
-style replicate line stroke=teal sw=1.4 dash=2,3 route=ortho radius=8 label.font=sans label.size=10.5 label.color=teal label.caps=0 use="replication"
+style replicate line stroke=violet sw=1.4 dash=2,3 route=ortho radius=8 label.font=sans label.size=10.5 label.color=violet label.caps=0 use="replication"
 style lifeline line head=none stroke=ink/0.2 sw=1.2 dash=4,4 route=straight use="sequence lifeline"
 style rule line head=none stroke=ink/0.10 sw=1 route=straight use="thin separator"
 style relation line stroke=ink/0.5 sw=1.2 use="a relationship between tables"

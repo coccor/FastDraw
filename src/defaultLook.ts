@@ -28,7 +28,7 @@ style node shape=rect radius=10 size=144x64 fill=#ffffff stroke=ink/0.14 sw=1 su
 style focal extends node fill=#ffffff stroke=accent sw=2 title.color=accent
     tag.color=accent tag.border=accent/0.4 ghost.color=accent/0.10
     use="the one or two elements the diagram is about"
-style store extends node shape=path stroke=ink/0.18 icon.color=teal icon.fill=teal/0.14 tag.color=teal tag.border=teal/0.4
+style store extends node shape=path stroke=ink/0.18 icon.color=violet icon.fill=violet/0.14 tag.color=violet tag.border=violet/0.4
     path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
     use="something that holds data or state"
 style cloud extends node stroke=link/0.45 icon.color=link icon.fill=link/0.14 tag.color=link tag.border=link/0.4
