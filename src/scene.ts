@@ -1,7 +1,7 @@
 // Turns a diagram file into a resolved scene: shapes, texts and routed connectors.
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
-import { emptyLook, defaultLook } from './look.ts';
+import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
 import { iconMatches } from './icons.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
@@ -148,10 +148,17 @@ function curvePts(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, via: Pt[], bend:
   const segs: [Pt, Pt, Pt, Pt][] = [];
   const dx = P1.x - P0.x, dy = P1.y - P0.y, dist = Math.hypot(dx, dy) || 1;
   if (via.length) {
+    // through each point along the line joining its neighbours; the ends leave and arrive along the sides
+    // they are attached to. Each handle is a third of its own segment, so a short hop next to a long one
+    // rounds the corner instead of swinging wide.
     const P = [P0, ...via, P1];
+    const unit = (x: number, y: number) => { const l = Math.hypot(x, y) || 1; return { x: x / l, y: y / l }; };
+    const T = P.map((p, i) => i === 0 ? (d0 ?? unit(P[1].x - p.x, P[1].y - p.y))
+      : i === P.length - 1 ? (d1 ? { x: -d1.x, y: -d1.y } : unit(p.x - P[i - 1].x, p.y - P[i - 1].y))
+      : unit(P[i + 1].x - P[i - 1].x, P[i + 1].y - P[i - 1].y));
     for (let i = 0; i < P.length - 1; i++) {
-      const p0 = P[i - 1] ?? P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] ?? P[i + 1];
-      segs.push([p1, { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }, { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }, p2]);
+      const p1 = P[i], p2 = P[i + 1], L = Math.hypot(p2.x - p1.x, p2.y - p1.y) / 3;
+      segs.push([p1, { x: p1.x + T[i].x * L, y: p1.y + T[i].y * L }, { x: p2.x - T[i + 1].x * L, y: p2.y - T[i + 1].y * L }, p2]);
     }
   } else if (!isNaN(bend)) {
     const ox = (dy / dist) * bend * (4 / 3), oy = (-dx / dist) * bend * (4 / 3);
@@ -295,14 +302,15 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const warn = (line: number, msg: string) => issues.push({ line, level: 'warn', msg });
   const stmts: Stmt[] = parseStatements(src);
 
-  const hasLookStmt = stmts.some((s) => s.toks[0]?.t === 'word' && s.toks[0].v === 'look');
-  let look: Look = lookIn ?? (hasLookStmt ? emptyLook() : defaultLook());
-  const baseCanvas = look.canvas;
   const lookStmt = stmts.find((s) => s.toks[0]?.v === 'look' && s.toks[0].t === 'word');
+  // a bare name is one of the looks that ship with FastDraw, whatever file a caller may have read
+  const named = bundledLook(lookStmt?.toks[1]?.v ?? '');
+  let look: Look = named ?? lookIn ?? (lookStmt ? emptyLook() : defaultLook());
+  const baseCanvas = look.canvas;
   if (lookStmt) {
     const p = lookStmt.toks[1]?.v;
-    if (!p) err(lookStmt.line, 'look needs a path, e.g. look "./team.look"');
-    else if (!lookIn) err(lookStmt.line, `look file not found: ${p}`);
+    if (!p) err(lookStmt.line, `look needs a name or a path, e.g. look sketch or look "./team.look" (named looks: ${BUNDLED_LOOK_NAMES.join(', ')})`);
+    else if (!named && !lookIn) err(lookStmt.line, /[\\/]|\.look$/i.test(p) ? `look file not found: ${p}` : `no look named ${p}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file`);
     else for (const i of look.issues) issues.push({ ...i, line: lookStmt.line, msg: `${i.msg} (in look, line ${i.line})` });
   }
 

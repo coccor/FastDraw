@@ -166,7 +166,7 @@ test('resize from an edge, and Shift keeps the proportions', async ({ page }) =>
   expect(lineOf(await source(page), 'user')).toContain('at 20,160 240x120');
 });
 
-test('panel: restyle, switch style, and the look styles gallery places shapes and lines', async ({ page }) => {
+test('panel: restyle, switch style, and the components gallery places shapes and lines', async ({ page }) => {
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
   await page.locator('.panel .swatch[title="accent/0.08"]').click();
@@ -175,14 +175,14 @@ test('panel: restyle, switch style, and the look styles gallery places shapes an
   await page.locator('.panel select').first().selectOption('cloud');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.getByRole('button', { name: 'Components' }).click();
   await expect(page.locator('.thumbcard').first()).toBeVisible();
   await page.locator('.thumbcard', { hasText: 'optional' }).first().click();
   await expect(page.locator('.hintbar')).toContainText('Click or drag');
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^optional: optional at \d+,\d+$/);
-  await page.locator('.toolbar .wide').click();
+  await page.locator('.toolbar .wide.lookstyles').click();
   await page.locator('.thumbcard', { hasText: 'return' }).first().click();
   const from = await corner(page, 'optional'), to = await corner(page, 'db');
   await drag(page, from, to.x - from.x, to.y - from.y);
@@ -398,9 +398,9 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   expect(errors).toEqual([]);
 });
 
-test('a table can be placed from the look styles gallery', async ({ page }) => {
+test('a table can be placed from the components gallery', async ({ page }) => {
   await paste(page, SMALL);
-  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.getByRole('button', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'table' }).first().click();
   const spot = await at(page, 700, 320);
   await page.mouse.click(spot.x, spot.y);
@@ -478,7 +478,7 @@ test('polygon: drag a corner, move and resize it', async ({ page }) => {
 test('chart: place one from the gallery, change its numbers and add a series', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, 'canvas 900x500\nt: h1 "Numbers" at 40,52\n');
-  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.getByRole('button', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'chart' }).first().click();
   const spot = await at(page, 400, 260);
   await page.mouse.click(spot.x, spot.y);
@@ -551,7 +551,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
   expect(lineOf(await source(page), 'db')).not.toContain('icon=');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Look styles' }).click();
+  await page.getByRole('button', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
@@ -869,4 +869,70 @@ test('the menu changes the background for this diagram and resets to the look', 
   await expect(page.locator('svg.canvas rect[fill="url(#fd-dots)"]')).toHaveCount(0);
   await page.getByRole('button', { name: "Use the look's background" }).click();
   expect(lineOf(await source(page), 'canvas')).toBe('');
+});
+
+test('the look picker: hover shows the diagram in a look, a click uses it at once, undo goes back', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const PLAIN = SMALL.replace('canvas 900x420\n', '');
+  await paste(page, PLAIN);
+  const canvas = page.locator('svg.canvas');
+  const title = canvas.locator('text', { hasText: 'Orders API' }).first();
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  const cards = page.locator('.lookcard');
+  const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
+  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Headline', 'Reference', 'Sketch', 'Whiteboard']);
+  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(5); // every card shows this diagram
+  await expect(page.getByRole('button', { name: 'Apply' })).toHaveCount(0);
+  // hovering tries a look on the canvas without touching the source
+  await card('Sketch').hover();
+  await expect(title).toHaveAttribute('font-family', /Sketch Hand/);
+  expect(await source(page)).toBe(PLAIN);
+  // leaving the strip goes back to the look in use
+  await page.mouse.move(5, 880);
+  await expect(title).not.toHaveAttribute('font-family', /Sketch Hand/);
+  // a click writes the look line straight away, and the picker stays open to try another
+  await card('Whiteboard').click();
+  expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
+  await expect(card('Whiteboard')).toContainText('in use');
+  await page.mouse.move(5, 880);
+  await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.lookpicker')).toHaveCount(0);
+  await page.locator('.problems').click();
+  await expect(page.locator('.issuelist')).not.toContainText(/style|look/);
+  await page.locator('.problems').click();
+  // hovering then Esc leaves the look in use as it was
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await card('Headline').hover();
+  await page.keyboard.press('Escape');
+  await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
+  expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
+  // back to the built-in look removes the line; undo brings it back
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await card('Built-in').click();
+  expect(await source(page)).toBe(PLAIN);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+z');
+  expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
+  expect(errors).toEqual([]);
+});
+
+test("the look picker keeps a diagram's own look file as a choice, and a bundled look saves as its name", async ({ page }) => {
+  await openFolder(page, folder());
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  const cards = page.locator('.lookcard');
+  const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
+  await expect(cards).toHaveCount(6);
+  await expect(page.locator('.lookcard > span').last()).toHaveText('This diagram’s look file · in use');
+  await card('Sketch').click();
+  await saved(page);
+  const text = await diskText(page, SEQ);
+  expect(text.split('\n')[0]).toBe('look sketch');
+  expect(text.split('\n').slice(1)).toEqual(repoText(SEQ).split('\n').slice(1));
+  await expect(page.locator('.banner')).toHaveCount(0); // a bundled look needs no file, fonts or folder
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // the picker stayed open, and the look file is still there to go back to
+  await expect(cards).toHaveCount(6);
+  await card('This diagram').click();
+  await expect.poll(async () => (await diskText(page, SEQ)).split('\n')[0]).toBe(repoText(SEQ).split('\n')[0]);
 });

@@ -2,6 +2,8 @@
 
 A look is one text file (`.look`) that decides how every style is drawn: colours, fonts, shapes, lines and text. Diagrams point to it with `look "./team.look"`. Change the look and every diagram that uses it changes.
 
+Four looks ship with FastDraw and need no file: `look headline`, `look reference`, `look sketch` and `look whiteboard` (a bare name, no quotes or `.look`). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
+
 ## How to work
 
 1. Start from the built-in look: `fastdraw init-look team.look`. It has every style the guides rely on, so you change values instead of inventing structure.
@@ -10,6 +12,8 @@ A look is one text file (`.look`) that decides how every style is drawn: colours
 4. Render a real diagram with it (`fastdraw render some.fdraw`) before calling it done. A look that is fine on the sheet can still be too heavy or too faint in a real composition.
 
 Keep the style names from the built-in look (`node`, `focal`, `store`, `cloud`, `external`, `optional`, `step`, `terminal`, `terminal-focal`, `decision`, `zone`, `bar`, `arrow`, `primary`, `link`, `return`, `lifeline`, `rule`, `h1`, `eyebrow`, `caption`, `note`, `small`). The diagram guides and existing diagrams use those names. You may add more styles of your own.
+
+The looks that ship with FastDraw all define the same styles (the ones above plus `kicker`, `dek`, `legend`, `table`, `matrix`, `chart`, `relation`, `sticky`, `sticky-orange` and `sticky-violet`), so a diagram can move between them without a style going plain. A test holds them to that: after editing one in `looks/`, run `node tools/bundle-looks.mjs`.
 
 ## The file
 

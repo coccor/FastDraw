@@ -313,13 +313,14 @@ function drawShape(look: Look, s: Shape): string {
     const t = textAttrs(look, p, 'ghost.', { font: 'mono', size: 32, weight: 600, color: 'ink/0.06' });
     out.push(`<text x="${s.x + s.w - 8}" y="${s.y + s.h - 4}" text-anchor="end" ${t.a}>${esc(p.ghost)}</text>`);
   }
-  if (p.tag) {
-    const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
-    const tw = Math.ceil((textWidth(p.tag, t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
-    out.push(`<rect x="${s.x + 8}" y="${s.y + 8}" width="${tw}" height="12" rx="2" fill="none" stroke="${col(look, p['tag.border'] ?? 'muted/0.4')}" stroke-width="0.8"/>`);
-    out.push(`<text x="${s.x + 8 + tw / 2}" y="${s.y + 17}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
-  }
   const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
+  const tb = p.tag ? tagLayout(s, look, textBlock(s, title.size), title.size, cym + (iconBox(s)?.dy ?? 0)) : null;
+  if (tb) {
+    const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
+    const tw = tagWidth(look, p);
+    out.push(`<rect x="${s.x + tb.x}" y="${s.y + tb.y}" width="${tw}" height="${tb.h}" rx="2" fill="none" stroke="${col(look, p['tag.border'] ?? 'muted/0.4')}" stroke-width="0.8"/>`);
+    out.push(`<text x="${s.x + tb.x + tw / 2}" y="${r2(s.y + tb.y + tb.h / 2 + t.size * 0.36)}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
+  }
   const ib = iconBox(s);
   if (ib) { cxm += ib.dx; cym += ib.dy; }
   if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x, ib.y, ib.size));
@@ -336,7 +337,8 @@ function drawShape(look: Look, s: Shape): string {
     const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
     const subs = p.sub ? p.sub.split('\n') : [], slh = Math.round(sub.size * 1.3);
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
-    const top = cym - block / 2 + (p.tag ? 8 : 0);
+    // centred a little low under a corner tag, and never closer than 3px below it
+    const top = tb ? tb.top : cym - block / 2;
     if (ib && ib.dy > 0) out.push(drawIcon(look, p, ib.x, top - ib.size - 6, ib.size));
     const al = p['title.align'], tx = al === 'left' ? s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
@@ -366,11 +368,103 @@ function pathD(pts: Pt[], radius: number, trimEnd: number, trimStart: number): s
   return d;
 }
 
+// How tall a shape's title and sub lines are together.
+export function textBlock(s: Shape, titleSize: number): number {
+  const p = s.p, subSize = num(p['sub.size'], 9), subs = p.sub ? p.sub.split('\n').length : 0;
+  const lines = s.text ? s.text.split('\n').length : 0;
+  return lines * Math.round(titleSize * 1.17) + (subs ? subSize + 7 + (subs - 1) * Math.round(subSize * 1.3) : 0);
+}
+
+// Where a corner tag and the text under it sit on a shape. The tag keeps clear of the outline (further
+// from a hand-drawn one, whose wobble would touch it) and is as tall as its text needs; the text block
+// sits a little below centre, moved down to start 3px under the tag. A box short of room first gives up
+// some margin (the tag 2px higher, the text 2px nearer the bottom); fits says whether that was enough.
+export function tagLayout(s: Shape, look: Look, block: number, titleSize: number, cym: number) {
+  const p = s.p, rough = p.sketch === '0' ? 0 : Math.max(0, Math.min(num(look.canvas.sketch, 0), 4));
+  const x = 8 + (rough ? 2 : 0), h = Math.max(12, Math.ceil(num(p['tag.size'], 7) + 4)), glyph = titleSize * 0.14;
+  // on a shape that is not a box (a cylinder's cap, an ellipse, a diamond) the tag moves down off the outline
+  const below = outlineClear(s, x, tagWidth(look, p), h, 6, 3 + rough);
+  const at = (y: number, pad: number) => {
+    const clear = s.y + y + h + 3 - glyph, floor = s.y + s.h - pad - block;
+    return { y, top: Math.min(Math.max(cym - block / 2 + 8, clear), Math.max(floor, cym - block / 2)), fits: clear <= floor + 0.5 };
+  };
+  const roomy = at(Math.max(8, below), 4), tight = roomy.fits ? roomy : at(Math.max(6, below), 2);
+  if (!roomy.fits && !tight.fits) {
+    // the centred lines level with the tag start right of it: the two never touch, so the text keeps its place
+    const y = Math.max(8, below), top = Math.min(cym - block / 2 + 8, Math.max(s.y + s.h - 4 - block, cym - block / 2));
+    if (besideTag(s, look, x + tagWidth(look, p), s.y + y - 2, s.y + y + h + 2, top)) return { x, h, y, top, fits: true };
+  }
+  return { x, h, ...(tight.fits ? tight : roomy) };
+}
+
+// Whether every line of a shape's centred text that is level with y0..y1 starts at least 2px right of
+// `right` (measured from the shape's left), with the text block starting at `top`.
+function besideTag(s: Shape, look: Look, right: number, y0: number, y1: number, top: number): boolean {
+  const p = s.p;
+  if (p['title.align'] || p.icon) return false;
+  const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
+  const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
+  const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
+  const lh = Math.round(title.size * 1.17), slh = Math.round(sub.size * 1.3), subs = p.sub ? p.sub.split('\n') : [];
+  // each line's ink, from its cap top to just under its baseline
+  const rows = [
+    ...lines.map((l, i) => ({ w: textWidth(l, title.size, title.font, title.weight, title.spacing), a: top + i * lh + title.size * 0.14, b: top + i * lh + title.size * 1.05 })),
+    ...subs.map((l, i) => { const base = top + lines.length * lh + sub.size + 3 + i * slh; return { w: textWidth(l, sub.size, sub.font, 400, sub.spacing), a: base - sub.size * 0.75, b: base + sub.size * 0.2 }; }),
+  ];
+  return rows.every((r) => r.b < y0 || r.a > y1 || s.w / 2 - r.w / 2 >= right + 2);
+}
+
+// How wide a shape's corner tag is.
+export function tagWidth(look: Look, p: Props): number {
+  const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
+  return Math.ceil((textWidth(p.tag ?? '', t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
+}
+
+// Points along a shape's outline, relative to its top-left corner; null for a plain box.
+function outlinePts(s: Shape): Pt[] | null {
+  const { w, h } = s, out: Pt[] = [];
+  const line = (a: Pt, b: Pt) => { const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2)); for (let i = 0; i <= n; i++) out.push({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }); };
+  if (s.shape === 'ellipse') { for (let i = 0; i < 180; i++) { const t = (i / 180) * 2 * Math.PI; out.push({ x: w / 2 + (w / 2) * Math.cos(t), y: h / 2 + (h / 2) * Math.sin(t) }); } return out; }
+  if (s.shape === 'diamond') { const c = [{ x: w / 2, y: 0 }, { x: w, y: h / 2 }, { x: w / 2, y: h }, { x: 0, y: h / 2 }]; c.forEach((a, i) => line(a, c[(i + 1) % 4])); return out; }
+  if (s.shape === 'polygon' && s.poly) { const c = s.poly.map((q) => ({ x: q.x - s.x, y: q.y - s.y })); c.forEach((a, i) => line(a, c[(i + 1) % c.length])); return out; }
+  if (s.shape === 'path' && s.p.path) {
+    // path data in 0..1 of the box, absolute M L C Z, as looks write it
+    const tok = s.p.path.match(/[MLCZ]|-?\d*\.?\d+/gi) ?? [];
+    let cmd = 'M', cur: Pt = { x: 0, y: 0 }, start = cur, i = 0;
+    const pt = () => ({ x: +tok[i++] * w, y: +tok[i++] * h });
+    while (i < tok.length) {
+      if (/[a-z]/i.test(tok[i])) { cmd = tok[i++].toUpperCase(); if (cmd === 'Z') { line(cur, start); cur = start; } continue; }
+      if (cmd === 'M') { cur = start = pt(); cmd = 'L'; }
+      else if (cmd === 'L') { const b = pt(); line(cur, b); cur = b; }
+      else if (cmd === 'C') {
+        const c1 = pt(), c2 = pt(), b = pt();
+        for (let k = 1; k <= 24; k++) { const t = k / 24, m = 1 - t; const q = { x: m * m * m * cur.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x, y: m * m * m * cur.y + 3 * m * m * t * c1.y + 3 * m * t * t * c2.y + t * t * t * b.y }; line(out.length ? out[out.length - 1] : cur, q); }
+        cur = b;
+      } else i++;
+    }
+    return out;
+  }
+  return null;
+}
+
+// The smallest top offset, from `from`, at which a tag of w x h at left offset x keeps `gap` clear of
+// the shape's outline (0 for a plain box, which has nothing inside to avoid).
+function outlineClear(s: Shape, x: number, w: number, h: number, from: number, gap: number): number {
+  const pts = outlinePts(s);
+  if (!pts) return 0;
+  for (let y = from; y < s.h / 2; y++) {
+    if (!pts.some((q) => q.x > x - gap && q.x < x + w + gap && q.y > y - gap && q.y < y + h + gap)) return y;
+  }
+  return 0;
+}
+
 // An end marker drawn at tip, pointing away from `from`. trim is how much of the line to cut back so it
 // does not show through the marker.
 function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, paper: string): { svg: string; trim: number } {
   const dx = tip.x - from.x, dy = tip.y - from.y, len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len, k = Math.max(sw, 1);
+  const ux = dx / len, uy = dy / len;
+  // heads are one size whatever the line's weight, so a bold line and a thin one in the same diagram
+  // carry the same arrow
   // a point `back` along the line from the tip and `side` across it
   const at = (back: number, side: number) => `${r2(tip.x - ux * back - uy * side)},${r2(tip.y - uy * back + ux * side)}`;
   const line = `fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -380,12 +474,12 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   const crow = `<path d="M ${at(0, 6)} L ${at(12, 0)} L ${at(0, -6)}" ${line}/>`;
   if (R.amt && (kind === 'arrow' || kind === 'open')) {
     // drawn by hand an arrowhead is two quick strokes, a little larger than the clean one
-    const b = 9 + 2.5 * k, w = 4.5 + 1.2 * k;
+    const b = 13, w = 6;
     return { svg: sketchSvg(`M ${at(b, w)} L ${at(0, 0)} L ${at(b, -w)}`, `fill="none" stroke="${stroke}" stroke-width="${sw}"`, R.amt * 0.6), trim: 0 };
   }
   switch (kind) {
     case 'none': return { svg: '', trim: 0 };
-    case 'open': return { svg: `<path d="M ${at(8 * k, 4 * k)} L ${at(0, 0)} L ${at(8 * k, -4 * k)}" ${line}/>`, trim: 0 };
+    case 'open': return { svg: `<path d="M ${at(10, 5)} L ${at(0, 0)} L ${at(10, -5)}" ${line}/>`, trim: 0 };
     case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11, 6)} ${at(11, -6)}" ${hollow}/>`, trim: 11 };
     case 'diamond': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" ${hollow}/>`, trim: 16 };
     case 'diamond-solid': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" fill="${stroke}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`, trim: 16 };
@@ -397,15 +491,42 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
     case 'one-many': return { svg: crow + bar(16), trim: 0 };
     case 'zero-one': return { svg: bar(8) + ring(16, 4, hollow), trim: 0 };
     case 'zero-many': return { svg: crow + ring(17, 4, hollow), trim: 0 };
-    default: return { svg: `<polygon points="${at(0, 0)} ${at(8 * k, 3 * k)} ${at(8 * k, -3 * k)}" fill="${stroke}"/>`, trim: 6 * k };
+    default: return { svg: `<polygon points="${at(0, 0)} ${at(10, 4)} ${at(10, -4)}" fill="${stroke}"/>`, trim: 7 };
   }
+}
+
+// The point `dist` back along a polyline from its last point (or the first one, if it is the farthest).
+function backAlong(pts: Pt[], dist: number): Pt {
+  let left = dist;
+  for (let i = pts.length - 1; i > 0; i--) {
+    const a = pts[i], b = pts[i - 1], l = Math.hypot(a.x - b.x, a.y - b.y);
+    if (l >= left) return { x: a.x + ((b.x - a.x) / l) * left, y: a.y + ((b.y - a.y) / l) * left };
+    left -= l;
+  }
+  return pts[0];
+}
+
+// A polyline cut back by `dist` at its end, across as many steps as that takes.
+function cutEnd(pts: Pt[], dist: number): Pt[] {
+  if (!dist) return pts;
+  let left = dist;
+  for (let i = pts.length - 1; i > 0; i--) {
+    const a = pts[i], b = pts[i - 1], l = Math.hypot(a.x - b.x, a.y - b.y);
+    if (l > left) return [...pts.slice(0, i), { x: a.x + ((b.x - a.x) / l) * left, y: a.y + ((b.y - a.y) / l) * left }];
+    left -= l;
+  }
+  return pts.slice(0, 2);
 }
 
 function drawConn(look: Look, c: Conn): string {
   const p = c.p, sw = num(p.sw, 1.2), stroke = col(look, p.stroke ?? 'muted');
   const n = c.pts.length, paper = col(look, look.canvas.paper ?? 'paper');
-  const head = marker(c.headM, c.pts[n - 1], c.pts[n - 2], sw, stroke, paper), tail = marker(c.tailM, c.pts[0], c.pts[1], sw, stroke, paper);
-  const d = pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
+  // a curve is many short steps: aim its ends along the last stretch of it, not the last step alone
+  const hFrom = c.curve ? backAlong(c.pts, 10) : c.pts[n - 2], tFrom = c.curve ? backAlong([...c.pts].reverse(), 10) : c.pts[1];
+  const head = marker(c.headM, c.pts[n - 1], hFrom, sw, stroke, paper), tail = marker(c.tailM, c.pts[0], tFrom, sw, stroke, paper);
+  const d = c.curve
+    ? pathD(cutEnd(cutEnd(c.pts, head.trim).reverse(), tail.trim).reverse(), 0, 0, 0)
+    : pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
   const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}`;
   let s = roughOf(p) ? sketchSvg(d, a, roughOf(p)) : `<path d="${d}" ${a}/>`;
   if (head.svg) s += '\n' + head.svg;

@@ -336,6 +336,24 @@ test('route=curve draws a smooth line: bend bows it, via points are passed throu
   assert.ok(down.pts[12].y > down.pts[0].y);
   const through = c('a.bottom -> b.bottom route=curve via=292,260');
   assert.ok(through.pts.some((p) => p.x === 292 && p.y === 260));
+  // through via points the curve arrives along the side it ends on: the head points straight up into b,
+  // and the line stops at the head's base instead of showing through a hollow one
+  const back = scene(two + 'a.bottom -> b.bottom head=triangle route=curve via=100,260;460,260\n');
+  const tri = /<polygon points="([^"]+)"/.exec(renderSvg(back))![1].split(' ').map((s) => s.split(',').map(Number));
+  const base = [(tri[1][0] + tri[2][0]) / 2, (tri[1][1] + tri[2][1]) / 2], len = Math.hypot(tri[0][0] - base[0], tri[0][1] - base[1]);
+  assert.ok(Math.abs(tri[0][0] - base[0]) / len < 0.1 && (base[1] - tri[0][1]) / len > 0.99, `head ${tri.join(' ')}`);
+  assert.ok(back.conns[0].pts.every((p) => p.x >= 80 && p.x <= 480)); // no swinging wide of the via points
+  const drawn = /<path d="M [^"]* L ([\d.]+),([\d.]+)" fill="none"/.exec(renderSvg(back))!.slice(1).map(Number);
+  assert.ok(drawn[1] - tri[0][1] >= 10, `line ends at ${drawn}`);
+  // a bold line and a thin one carry the same arrowhead, in every look
+  for (const name of ['headline', 'reference', 'whiteboard']) {
+    const lk = loadLook(`looks/${name}.look`);
+    const svg = renderSvg(buildScene(`look "${name}.look"\na: node "A" at 40,40\nb: node "B" at 400,40\nc: node "C" at 40,200\nd: node "D" at 400,200\na -> b\nc -> d style=primary\n`, lk));
+    const heads = [...svg.matchAll(/<polygon points="([^"]+)" fill=/g)].map((m) => m[1].split(' ').map((p) => p.split(',').map(Number)))
+      .map(([t, p, q]) => Math.hypot(t[0] - (p[0] + q[0]) / 2, t[1] - (p[1] + q[1]) / 2).toFixed(1) + 'x' + Math.hypot(p[0] - q[0], p[1] - q[1]).toFixed(1));
+    assert.equal(heads.length, 2, name);
+    assert.equal(heads[0], heads[1], `${name}: ${heads.join(' vs ')}`);
+  }
   const sc = scene(two + 'a -> b "carries" route=curve bend=40\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   assert.match(check(scene(two + 'a -> b route=wavy\n')).map((i) => i.msg).join(), /route=wavy is not a route; use ortho, straight or curve/);
@@ -423,6 +441,26 @@ test('sub text can run over several lines, and a tag on a short box is reported'
   const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
   assert.match(msgs('r: focal "Row-level permissions" sub="RPT-114" tag="RISK" at 40,40 176x48\n'), /the tag "RISK" sits on the text of r; make it at least 52px tall/);
   assert.doesNotMatch(msgs('r: focal "Orders API" sub="REST" tag="API" at 40,40\n'), /sits on the text/);
+  // on a cylinder the tag sits under the top cap, not on its rim
+  for (const name of ['headline', 'sketch']) {
+    const sc = buildScene(`look "${name}.look"\nm: store "MDX Bundle" sub="src/content/*.mdx" tag="MDX" at 788,136 160x64\n`, loadLook(`looks/${name}.look`));
+    const tag = /<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" rx="2" fill="none"/.exec(renderSvg(sc))!.slice(1).map(Number);
+    assert.ok(tag[1] - 136 >= 64 * 0.2 + 2, `${name}: tag top ${tag[1] - 136}px into a 64px cylinder`);
+    assert.ok(!check(sc).some((i) => /sits on the text/.test(i.msg)), name);
+  }
+  // in every look a corner tag stays clear of the outline and of the title under it, even on a short box
+  for (const name of ['headline', 'reference', 'sketch', 'whiteboard']) {
+    const lk = loadLook(`looks/${name}.look`);
+    const sc = buildScene(`look "${name}.look"\nd: external "DB Connection" sub="CDC · SQL · API" tag="EXT" at 72,316 160x56\n`, lk);
+    assert.ok(!check(sc).some((i) => /sits on the text/.test(i.msg)), name);
+    const svg = renderSvg(sc);
+    const tag = /<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" rx="2" fill="none"/.exec(svg)!.slice(1).map(Number);
+    const size = Number(sc.shapes[0].p['title.size'] ?? 12);
+    const titleY = Number(new RegExp(`<text x="[\\d.]+" y="([\\d.]+)"[^>]*>DB Connection<`).exec(svg)![1]);
+    assert.ok(tag[0] - 72 >= 8 && tag[1] - 316 >= 6, `${name}: tag inset ${tag[0] - 72},${tag[1] - 316}`);
+    assert.ok(titleY - size * 0.72 >= tag[1] + tag[2] + 2, `${name}: title top ${titleY - size * 0.72} vs tag bottom ${tag[1] + tag[2]}`);
+    assert.ok(/CDC · SQL · API/.test(svg) && Number(/<text x="[\d.]+" y="([\d.]+)"[^>]*>CDC · SQL · API</.exec(svg)![1]) <= 316 + 56 - 2, name);
+  }
 });
 
 test('tinted legend swatches, lines in front of shapes, and no alignment hints between free-form shapes', () => {
