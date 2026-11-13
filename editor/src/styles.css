@@ -62,7 +62,7 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .dropdown .canvasbg button.link { padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 
 /* properties */
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 202px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 250px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .panel h4, .gallery h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--mute); }
 .panel select { width: 100%; }
 .swatches { display: flex; flex-wrap: wrap; gap: 5px; }
