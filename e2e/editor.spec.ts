@@ -411,3 +411,24 @@ test('a new diagram starts blank in the built-in look, from the start screen and
   expect(await source(page)).toBe('canvas 1000x700\n');
   expect(errors).toEqual([]);
 });
+
+test('a new diagram from a template: search the kinds, open one in the built-in look, then pick another from the menu', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: /New from a template/ }).click();
+  await expect(page.locator('.tpl')).toHaveCount(44);
+  await page.getByPlaceholder(/Search/).fill('swimlane');
+  await expect(page.locator('.tpl')).toHaveCount(1);
+  await page.locator('.tpl').first().click();
+  await page.waitForSelector('svg.canvas');
+  expect(await source(page)).toBe(repoText('examples/trial/swimlane.fdraw'));
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'New from a template' }).click();
+  await page.getByPlaceholder(/Search/).fill('sequence');
+  await page.keyboard.press('Enter');
+  const seq = await source(page);
+  expect(seq).toBe(repoText('examples/test/sequence.fdraw').replace(/^look .*\n/, ''));
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
