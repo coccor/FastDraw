@@ -24,9 +24,9 @@ text "v2.4.1" at 240,336 style=small anchor=end
 
 - Host: 200 wide. Height 84 with one chip, plus 32 for each further chip. `tag=` is the kind of host (POD, VM, CDN, MANAGED). Leave the host's own text empty, or it is centred on top of the chips.
 - Icon: `icon=` names from `fastdraw sizes` (container, server, vm, database, bucket, gateway, cdn), a 20x20 `icon` shape at host x+12, top+28, one per host or none. The name starts at host x+40, baseline top+43. On a `focal` host the name is `color=#ffffff`.
-- Chip: a `rect`, never `store` (a cylinder). 8px in from the host's sides, 24 high; the first starts 52px below the host's top, the next 32px lower. Name at chip x+8, version right-aligned at chip right−8, both with baseline 16px below the chip's top. Every chip has a version: the version is why it is drawn. `fill=paper` also reads on a `focal` host.
+- Chip: a `rect`, never `store` (that means data, and many looks draw it as a cylinder). 8px in from the host's sides, 24 high; the first starts 52px below the host's top, the next 32px lower. Name at chip x+8, version right-aligned at chip right−8, both with baseline 16px below the chip's top. Every chip has a version: the version is why it is drawn. `fill=paper` also reads on a `focal` host.
 - Copies: one host with a badge in its top-right corner, not one box per copy: the `rect "x3"` above, at hostright−36,hosttop+8. It needs `overlap=ok`.
-- Host styles: `node` for your own hosts, `cloud` for a hosted platform (managed databases and buckets too), `focal` for the one that matters (the single point of failure, or the new piece). Do not use `store` for a host: its tag is half hidden by the cylinder top.
+- Host styles: `node` for your own hosts, `cloud` for a hosted platform (managed databases and buckets too), `focal` for the one that matters (the single point of failure, or the new piece). Do not use `store` for a host: it means data, and in looks that draw it as a cylinder its tag is half hidden by the top.
 
 ## Composition
 

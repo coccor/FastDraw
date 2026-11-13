@@ -17,12 +17,12 @@ Shows a business process that passes between several teams: who does each step, 
 
 ```
 alloc: focal tag="WHS" at 488,352 128x72
-text "Allocate stock" at 552,388 weight=600 anchor=middle color=#ffffff                // what is done: box top + 36
-text "order → pick list" at 552,403 style=small anchor=middle color=#ffffff           // in → out: box top + 51
-text "inventory system" at 552,415 style=small anchor=middle color=#ffffff/0.8        // tool: box top + 63
+text "Allocate stock" at 552,388 weight=600 anchor=middle                              // what is done: box top + 36
+text "order → pick list" at 552,403 style=caption anchor=middle                       // in → out: box top + 51
+text "inventory system" at 552,415 style=caption anchor=middle color=soft              // tool: box top + 63
 ```
 
-`tag=` is a three or four letter code for the actor (CUS, SUP, WHS): its first letters, or the usual short name; a lane called "Platform team" is PLAT. It lets a box say whose it is when quoted alone. Text on a `focal` box is white (`color=#ffffff`; the tool line `#ffffff/0.8`), as above: dark text on the accent fill cannot be read. Keep the name under 17 characters and the other lines under 20.
+`tag=` is a three or four letter code for the actor (CUS, SUP, WHS): its first letters, or the usual short name; a lane called "Platform team" is PLAT. It lets a box say whose it is when quoted alone. The second and third lines are `style=caption`, the same sans as a box's own `sub=`, with the tool line in `color=soft`. Text on a `focal` box keeps the default ink on a pale fill, as above; only on a solid accent fill (a look that draws `focal` that way) does it need `color=#ffffff`. `fastdraw check` warns when text cannot be read. Keep the name under 17 characters and the other lines under 20.
 
 ## Arrows
 

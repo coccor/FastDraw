@@ -15,9 +15,9 @@ text "phone, biometrics, keystore" at 940,141 style=small size=10 anchor=end
 text "L5" at 156,204 style=eyebrow
 text "Mobile app" at 224,206 size=16 weight=600
 text "screens, local cache" at 940,205 style=small size=10 anchor=end
-text "L4" at 156,268 style=eyebrow color=#ffffff
-text "API gateway" at 224,270 size=16 weight=600 color=#ffffff
-text "auth, rate limits, TLS" at 940,269 style=small size=10 anchor=end color=#ffffff
+text "L4" at 156,268 style=eyebrow
+text "API gateway" at 224,270 size=16 weight=600
+text "auth, rate limits, TLS" at 940,269 style=small size=10 anchor=end
 text "L3" at 156,332 style=eyebrow
 text "Banking services" at 224,334 size=16 weight=600
 text "accounts, payments, cards" at 940,333 style=small size=10 anchor=end

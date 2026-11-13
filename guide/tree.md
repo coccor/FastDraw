@@ -11,7 +11,7 @@ Shows a hierarchy of things: a taxonomy, a dependency tree, a breakdown of one i
 - When the order of branches means nothing, order them so the tree is symmetrical (for children counts 2, 1, 2 rather than 2, 2, 1).
 - Limits: four levels including the root, and five children under one parent. A bigger tree is split into an overview and one diagram per branch.
 - Never skip a level: a box connects only to the row directly above it.
-- Styles: `focal` for one box, either the root or the one leaf the diagram is about, never both. `node` for branches. `cloud` for leaves, so the bottom row reads as quieter. (Not `store`: in the built-in look it is a cylinder.)
+- Styles: `focal` for one box, either the root or the one leaf the diagram is about, never both. `node` for branches. `cloud` for leaves, so the bottom row reads as quieter. (Not `store`: that means data, and many looks draw it as a cylinder.)
 - Main text is the name; `sub=` (small sans) is two or three words of detail. Leave `tag=` out: a 48px box has no room for it. Leave icons out too: a tree of text needs none.
 
 ## Connectors

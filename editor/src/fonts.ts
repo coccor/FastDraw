@@ -58,7 +58,7 @@ export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
   }
   return families;
 }
-export const BUNDLED_FAMILIES = ['Libre Franklin', 'Newsreader', 'Geist', 'Geist Mono', 'Instrument Serif'];
+export const BUNDLED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif'];
 
 const bundled = new Map<string, Promise<string>>();
 // @font-face rules, as data URLs, for the families an SVG actually uses, so exports stand alone

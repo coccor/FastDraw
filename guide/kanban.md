@@ -37,7 +37,7 @@ rect at 328,144 4x56 fill=accent stroke=none overlap=ok        // strip on the b
 | open | `node` |
 | blocked | `focal dash=4,4 fill=accent/0.08 title.color=ink sub.color=muted` (white text would vanish on the pale fill), plus a 4px-wide accent `rect` on its left edge (`overlap=ok`) |
 | waiting on someone outside the team | `optional` |
-| done | `node fill=ink/0.05 stroke=ink/0.3 title.color=muted` (not `store`: that is a cylinder) |
+| done | `node fill=ink/0.05 stroke=ink/0.3 title.color=muted` (not `store`: that means data, and many looks draw it as a cylinder) |
 
 Every card has `title.align=left`, a short title and a `sub=` of ticket id and owner.
 

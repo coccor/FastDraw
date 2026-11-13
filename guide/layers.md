@@ -28,7 +28,7 @@ text "Application" at 224,134 size=16 weight=600                     // name, 88
 text "HTTP, JSON, cookies" at 940,133 style=small size=10 anchor=end // detail, ending 20px before the right edge
 ```
 
-- On the focal row all three texts are free text over an accent fill: give each `color=#ffffff` (the index and name `weight=600`). Never the accent colour: it vanishes.
+- On the focal row all three texts are free text over the focal fill (the index and name `weight=600`). Keep the default colours on a pale fill, as in the built-in look; give each `color=#ffffff` only when the look fills `focal` with solid accent. Never the accent colour: it vanishes on a solid accent. `fastdraw check` warns when text cannot be read.
 - Keep the detail to a few words; it must end well clear of the name.
 
 ## Direction

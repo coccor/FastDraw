@@ -22,16 +22,16 @@ color paper  #ffffff                             // a named colour
 color ink    #1c1f2a
 color accent #0e7c66
 
-font sans  "Libre Franklin"                      // the three font roles
+font sans  "Geist"                               // the three font roles
 font mono  "Geist Mono"
 font serif "Newsreader"
 
 style node shape=rect radius=4 size=144x64 fill=#ffffff stroke=ink sw=1.2
     use="default box: a service, component or step"
-style focal extends node fill=accent stroke=accent title.color=#ffffff
+style focal extends node fill=accent/0.08 stroke=accent
 
 style arrow line stroke=ink sw=1.3 route=ortho radius=6
-style h1 text font=serif size=28 weight=500 color=ink
+style h1 text font=serif size=28 weight=400 color=ink
 
 guidance "Use focal on at most two things in one diagram."
 ```
@@ -44,7 +44,7 @@ A colour value is `#hex`, a name defined with `color`, or either followed by `/o
 
 `font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`.
 
-Five families are bundled and always available: **Libre Franklin** and **Newsreader** (the built-in look), **Geist**, **Geist Mono** and **Instrument Serif**. To use any other font, put its files in a folder next to the look and name the folder:
+Five families are bundled and always available: **Geist**, **Geist Mono** and **Newsreader** (the built-in look), **Libre Franklin** and **Instrument Serif**. To use any other font, put its files in a folder next to the look and name the folder:
 
 ```
 fontdir "./fonts"            // relative to the look file

@@ -19,11 +19,11 @@ Status: proof of concept. The design document lives outside this repo, in the pl
 | `src/defaultLook.ts` | The built-in look, used when a diagram names none; `fastdraw init-look` writes it out as a starting point |
 | `agents/` | Thin instruction files that point Claude Code, Codex, OpenCode and Copilot at `fastdraw guide` |
 | `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison. Not the look FastDraw will ship with |
-| `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. Kept as a named look; currently also the built-in one |
+| `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
 | `editor/` | The browser editor (Vite + React), built as a static site |
 | `examples/test/` | Three diagrams written by agents from the guide alone |
 | `compare/` | Those three next to the diagram-design originals, plus editor screenshots |
-| `fonts/` | Libre Franklin and Newsreader (the built-in look), Geist, Geist Mono and Instrument Serif (SIL Open Font License, texts included). A look can bring more with `fontdir` |
+| `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included). A look can bring more with `fontdir` |
 | `test/` | Core tests |
 
 ## Commands
