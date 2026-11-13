@@ -175,14 +175,13 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await page.locator('.panel select').first().selectOption('cloud');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Components' }).click();
+  await page.getByRole('tab', { name: 'Components' }).click();
   await expect(page.locator('.thumbcard').first()).toBeVisible();
   await page.locator('.thumbcard', { hasText: 'optional' }).first().click();
   await expect(page.locator('.hintbar')).toContainText('Click or drag');
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^optional: optional at \d+,\d+$/);
-  await page.locator('.toolbar .wide.lookstyles').click();
   await page.locator('.thumbcard', { hasText: 'return' }).first().click();
   const from = await corner(page, 'optional'), to = await corner(page, 'db');
   await drag(page, from, to.x - from.x, to.y - from.y);
@@ -400,7 +399,7 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
 
 test('a table can be placed from the components gallery', async ({ page }) => {
   await paste(page, SMALL);
-  await page.getByRole('button', { name: 'Components' }).click();
+  await page.getByRole('tab', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'table' }).first().click();
   const spot = await at(page, 700, 320);
   await page.mouse.click(spot.x, spot.y);
@@ -478,7 +477,7 @@ test('polygon: drag a corner, move and resize it', async ({ page }) => {
 test('chart: place one from the gallery, change its numbers and add a series', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, 'canvas 900x500\nt: h1 "Numbers" at 40,52\n');
-  await page.getByRole('button', { name: 'Components' }).click();
+  await page.getByRole('tab', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'chart' }).first().click();
   const spot = await at(page, 400, 260);
   await page.mouse.click(spot.x, spot.y);
@@ -551,7 +550,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
   expect(lineOf(await source(page), 'db')).not.toContain('icon=');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Components' }).click();
+  await page.getByRole('tab', { name: 'Components' }).click();
   await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
@@ -635,7 +634,7 @@ test('a new diagram starts blank in the built-in look, from the start screen and
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('menuitem', { name: 'New diagram' }).click();
   expect(await source(page)).toBe('\n');
-  await expect(page.getByRole('tab')).toHaveText(['untitled', 'untitled 2']); // the first one is still open beside it
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['untitled', 'untitled 2']); // the first one is still open beside it
   expect(errors).toEqual([]);
 });
 
@@ -647,14 +646,14 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   const drawn = await source(page);
   expect(drawn).toMatch(/rect: rect at 300,300/);
   await page.getByRole('button', { name: 'New diagram in a new tab' }).click();
-  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'untitled']);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram', 'untitled']);
   await page.getByRole('tab', { name: 'pasted diagram' }).click();
   expect(await source(page)).toBe(drawn);
   await expect(page.locator('.status')).toHaveText('saved in this browser');
 
   await page.reload();
   await page.waitForSelector('svg.canvas');
-  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'untitled']);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram', 'untitled']);
   await expect(page.getByRole('tab', { name: 'pasted diagram' })).toHaveAttribute('aria-selected', 'true');
   expect(await source(page)).toBe(drawn);
   await page.keyboard.press('Control+z');
@@ -670,7 +669,7 @@ test('each tab keeps its own diagram and history; closing one asks first and sta
   await page.getByRole('menuitem', { name: 'Paste diagram text' }).click();
   await page.locator('.modal textarea').fill('canvas 600x400\nx: node "Second" at 80,80\n');
   await page.getByRole('button', { name: 'Open', exact: true }).click();
-  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'pasted diagram 2']);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram', 'pasted diagram 2']);
   await page.keyboard.press('Delete'); // nothing selected: no change
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Delete');
@@ -684,19 +683,19 @@ test('each tab keeps its own diagram and history; closing one asks first and sta
   await page.getByRole('tab', { name: 'pasted diagram 2' }).dblclick();
   await page.getByRole('textbox', { name: 'Diagram name' }).fill('second');
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'second']);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram', 'second']);
 
   let asked = '';
   page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
   await page.getByRole('button', { name: 'Close second' }).click();
   expect(asked).toContain('kept only in this browser');
-  await expect(page.getByRole('tab')).toHaveCount(2);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveCount(2);
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Close second' }).click();
-  await expect(page.getByRole('tab')).toHaveText(['pasted diagram']);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram']);
   await page.reload();
   await page.waitForSelector('svg.canvas');
-  await expect(page.getByRole('tab')).toHaveText(['pasted diagram']);
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram']);
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Close pasted diagram' }).click();
   await page.waitForSelector('.welcome');
@@ -877,7 +876,7 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await paste(page, PLAIN);
   const canvas = page.locator('svg.canvas');
   const title = canvas.locator('text', { hasText: 'Orders API' }).first();
-  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await page.getByRole('tab', { name: 'Look' }).click();
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
   await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Headline', 'Night', 'Reference', 'Sketch', 'Whiteboard']);
@@ -896,19 +895,22 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await expect(card('Whiteboard')).toContainText('in use');
   await page.mouse.move(5, 880);
   await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
+  // Esc leaves the sidebar where it is; collapsing it hides the picker and is remembered
   await page.keyboard.press('Escape');
+  await expect(page.locator('.lookpicker')).toBeVisible();
+  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
   await expect(page.locator('.lookpicker')).toHaveCount(0);
   await page.locator('.problems').click();
   await expect(page.locator('.issuelist')).not.toContainText(/style|look/);
   await page.locator('.problems').click();
-  // hovering then Esc leaves the look in use as it was
-  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  // hovering then Esc leaves the look in use as it was; the rail opens the sidebar on the Look tab
+  await page.locator('.siderail').getByRole('button', { name: 'Look' }).click();
   await card('Headline').hover();
   await page.keyboard.press('Escape');
   await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
   expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
   // back to the built-in look removes the line; undo brings it back
-  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await page.getByRole('tab', { name: 'Look' }).click();
   await card('Built-in').click();
   expect(await source(page)).toBe(PLAIN);
   await page.keyboard.press('Escape');
@@ -917,9 +919,22 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   expect(errors).toEqual([]);
 });
 
+test('the right sidebar collapses to a rail, remembers it, and opens again on the tab picked', async ({ page }) => {
+  await paste(page, SMALL);
+  await expect(page.getByRole('tab', { name: 'Components' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.thumbcard').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+  await expect(page.locator('.sidebar')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
+  await page.locator('.siderail').getByRole('button', { name: 'Look' }).click();
+  await expect(page.getByRole('tab', { name: 'Look' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.lookcard').first()).toBeVisible();
+});
+
 test("the look picker keeps a diagram's own look file as a choice, and a bundled look saves as its name", async ({ page }) => {
   await openFolder(page, folder());
-  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await page.getByRole('tab', { name: 'Look' }).click();
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
   await expect(cards).toHaveCount(7);
