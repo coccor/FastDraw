@@ -36,6 +36,39 @@ test('double-click edits the text of a box and of an arrow label', async ({ page
   expect(await diskText(page, SEQ)).toContain('"fetch page"');
 });
 
+test('text is edited in place: the field takes the label\'s type and position, and the drawn label hides', async ({ page }) => {
+  await paste(page, SMALL);
+  const label = page.locator('svg.canvas text', { hasText: 'Orders API' }).first();
+  const drawn = await label.evaluate((t) => { const cs = getComputedStyle(t); return { weight: cs.fontWeight, colour: cs.fill }; });
+  const before = (await label.boundingBox())!;
+  await doubleClick(page, { x: before.x + before.width / 2, y: before.y + before.height / 2 });
+  const field = page.locator('.textedit.inplace');
+  await expect(field).toBeVisible();
+  const look = await field.evaluate((t) => { const cs = getComputedStyle(t); return { weight: cs.fontWeight, colour: cs.color, bg: cs.backgroundColor, border: cs.borderTopWidth }; });
+  expect(look).toEqual({ weight: drawn.weight, colour: drawn.colour, bg: 'rgba(0, 0, 0, 0)', border: '0px' });
+  await expect(label).toHaveCSS('visibility', 'hidden');
+  const box = (await field.boundingBox())!;
+  expect(Math.abs(box.y + box.height / 2 - (before.y + before.height / 2))).toBeLessThan(4);
+  await page.keyboard.press('Escape');
+  await expect(label).toHaveCSS('visibility', 'visible');
+});
+
+test('a line label grows around its text while typing, and Escape puts the old one back', async ({ page }) => {
+  await paste(page, SMALL);
+  const hit = page.locator('rect[data-label]').last();
+  const before = (await hit.boundingBox())!;
+  await doubleClick(page, { x: before.x + before.width / 2, y: before.y + before.height / 2 });
+  await page.keyboard.press('End');
+  await page.keyboard.type(' every order to the database');
+  const grown = (await hit.boundingBox())!;
+  expect(grown.width).toBeGreaterThan(before.width * 2);
+  const field = (await page.locator('.textedit.inplace').boundingBox())!;
+  expect(field.x).toBeGreaterThanOrEqual(grown.x - 1);
+  expect(field.x + field.width).toBeLessThanOrEqual(grown.x + grown.width + 4);
+  await page.keyboard.press('Escape');
+  expect((await hit.boundingBox())!.width).toBeCloseTo(before.width, 0);
+});
+
 test('an outside change to the file appears on the canvas, and undo brings the old text back', async ({ page }) => {
   await openFolder(page, folder());
   const text = await diskText(page, SEQ);
