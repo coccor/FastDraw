@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom } from './helpers.ts';
+import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh } from './helpers.ts';
 
 const SEQ = 'examples/test/sequence.fdraw';
 const folder = () => ({ [SEQ]: repoText(SEQ), 'looks/reference.look': repoText('looks/reference.look') });
@@ -197,8 +197,7 @@ test('an exported PNG reopens as the same diagram; a foreign image is refused wi
     dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], name, { type: 'image/png' }));
     window.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
   }, { name, b64 });
-  await page.goto('/');
-  await page.waitForSelector('.welcome');
+  await fresh(page);
   await drop('from-wiki.png', bytes);
   await page.waitForSelector('svg.canvas');
   expect(await source(page)).toBe(SMALL);
@@ -246,8 +245,7 @@ test("a look's own fonts load in folder mode; loose files get a notice instead",
   });
   await expect.poll(() => page.evaluate(() => document.fonts.check('600 12px "Fira Sans"'))).toBe(true);
   await expect(page.locator('.banner')).toHaveCount(0);
-  await page.goto('/');
-  await page.waitForSelector('.welcome');
+  await fresh(page);
   for (const n of ['fira.fdraw', 'fira.look']) {
     await page.evaluate(({ n, text }) => {
       const dt = new DataTransfer(); dt.items.add(new File([text], n));
@@ -405,8 +403,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   await page.getByRole('button', { name: 'Menu' }).click();
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: 'Export as PNG' }).click()]);
   const bytes = (await import('node:fs')).readFileSync(await dl.path()).toString('base64');
-  await page.goto('/');
-  await page.waitForSelector('.welcome');
+  await fresh(page);
   await page.evaluate((b64) => {
     const dt = new DataTransfer();
     dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'from-wiki.png', { type: 'image/png' }));
@@ -416,8 +413,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   await expect(images).toHaveCount(4);
   await expect(page.locator('.banner')).toHaveCount(0);
   // the loose diagram and look, with no folder: the icons cannot be read, and the editor says why
-  await page.goto('/');
-  await page.waitForSelector('.welcome');
+  await fresh(page);
   for (const n of ['team-icons.fdraw', 'team-icons.look']) {
     await page.evaluate(({ n, text }) => {
       const dt = new DataTransfer(); dt.items.add(new File([text], n));
@@ -438,11 +434,100 @@ test('a new diagram starts blank in the built-in look, from the start screen and
   await page.keyboard.press('r');
   await drag(page, await at(page, 200, 200), 140, 80);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^rect: rect at 200,200 \d+x\d+$/);
-  page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('menuitem', { name: 'New diagram' }).click();
   expect(await source(page)).toBe('canvas 1000x700\n');
+  await expect(page.getByRole('tab')).toHaveText(['untitled', 'untitled 2']); // the first one is still open beside it
   expect(errors).toEqual([]);
+});
+
+test('a reload brings back every open diagram, the active one, and its undo history', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.keyboard.press('r');
+  await drag(page, await at(page, 300, 300), 140, 80);
+  const drawn = await source(page);
+  expect(drawn).toMatch(/rect: rect at 300,300/);
+  await page.getByRole('button', { name: 'New diagram in a new tab' }).click();
+  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'untitled']);
+  await page.getByRole('tab', { name: 'pasted diagram' }).click();
+  expect(await source(page)).toBe(drawn);
+  await expect(page.locator('.status')).toHaveText('saved in this browser');
+
+  await page.reload();
+  await page.waitForSelector('svg.canvas');
+  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'untitled']);
+  await expect(page.getByRole('tab', { name: 'pasted diagram' })).toHaveAttribute('aria-selected', 'true');
+  expect(await source(page)).toBe(drawn);
+  await page.keyboard.press('Control+z');
+  expect(await source(page)).toBe(SMALL);
+  await page.getByRole('tab', { name: 'untitled' }).click();
+  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(errors).toEqual([]);
+});
+
+test('each tab keeps its own diagram and history; closing one asks first and stays closed after a reload', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Paste diagram text' }).click();
+  await page.locator('.modal textarea').fill('canvas 600x400\nx: node "Second" at 80,80\n');
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'pasted diagram 2']);
+  await page.keyboard.press('Delete'); // nothing selected: no change
+  await page.keyboard.press('Control+a');
+  await page.keyboard.press('Delete');
+  expect(await source(page)).toBe('canvas 600x400\n');
+  await page.getByRole('tab', { name: 'pasted diagram', exact: true }).click();
+  expect(await source(page)).toBe(SMALL);
+  await page.keyboard.press('Control+z'); // nothing to undo in this tab
+  expect(await source(page)).toBe(SMALL);
+
+  // rename by double-click
+  await page.getByRole('tab', { name: 'pasted diagram 2' }).dblclick();
+  await page.getByRole('textbox', { name: 'Diagram name' }).fill('second');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('tab')).toHaveText(['pasted diagram', 'second']);
+
+  let asked = '';
+  page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
+  await page.getByRole('button', { name: 'Close second' }).click();
+  expect(asked).toContain('kept only in this browser');
+  await expect(page.getByRole('tab')).toHaveCount(2);
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Close second' }).click();
+  await expect(page.getByRole('tab')).toHaveText(['pasted diagram']);
+  await page.reload();
+  await page.waitForSelector('svg.canvas');
+  await expect(page.getByRole('tab')).toHaveText(['pasted diagram']);
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Close pasted diagram' }).click();
+  await page.waitForSelector('.welcome');
+  await page.reload();
+  await page.waitForSelector('.welcome');
+});
+
+test('after a reload a diagram from a folder reconnects to its file and keeps saving there', async ({ page }) => {
+  await openFolder(page, folder());
+  await doubleClick(page, await corner(page, 'reader'));
+  await page.keyboard.type('Visitor');
+  await page.keyboard.press('Enter');
+  await saved(page);
+  await page.reload();
+  await page.waitForSelector('svg.canvas');
+  await expect(page.locator('.status')).toHaveText('saved');
+  expect(await source(page)).toBe(await diskText(page, SEQ));
+  await expect(page.locator('.problems')).toHaveText('No problems'); // the look came back too
+  await page.keyboard.press('Control+z');
+  await saved(page);
+  expect(lineOf(await diskText(page, SEQ), 'reader')).not.toContain('"Visitor"');
+  // changed on disk while the page was away: the file wins, and the old text is one undo away
+  const before = await source(page);
+  await writeDisk(page, SEQ, before + 'agentbox: node "Added by agent" at 780,560\n');
+  await page.reload();
+  await page.waitForSelector('svg.canvas');
+  await expect(page.locator('rect[data-id="agentbox"]')).toHaveCount(1);
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('rect[data-id="agentbox"]')).toHaveCount(0);
 });
 
 test('a new diagram from a template: search the kinds, open one in the built-in look, then pick another from the menu', async ({ page }) => {

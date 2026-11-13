@@ -50,6 +50,13 @@ export async function writeDisk(page: Page, path: string, edit: string) {
   }, { p: path, text: edit });
 }
 
+// Reload to an empty start screen: forget the diagrams the editor keeps in the browser.
+export async function fresh(page: Page) {
+  await page.evaluate(() => { indexedDB.deleteDatabase('fastdraw'); }); // finishes once this page's connection closes
+  await page.goto('/');
+  await page.waitForSelector('.welcome');
+}
+
 // Open pasted text in memory (drawn with the built-in look unless it names one).
 export async function paste(page: Page, text: string) {
   await page.goto('/');
