@@ -156,7 +156,7 @@ export function Landing() {
           <a href="#kinds">Kinds</a>
           <a href={REPO}>GitHub</a>
           <ThemeToggle className="themetoggle" />
-          <a className="btn" href="edit/">Open the editor</a>
+          <a className="btn focal" href="edit/">Open the editor</a>
         </nav>
       </header>
 
