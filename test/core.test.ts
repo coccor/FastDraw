@@ -484,6 +484,23 @@ test('icons: on a box, on their own, from the look, and with clear errors', () =
   assert.ok(renderSvg(buildScene('look "x.look"\nh: hot "Fast" at 40,40 120x48\n', look)).includes('M13 3 L4 14'));
 });
 
+test('an icon on its own is the shape: no box, fill/stroke/sw style the icon, its text is a caption underneath', async () => {
+  const { captionBox } = await import('../src/scene.ts');
+  const sc = scene('db: icon "Orders DB" sub="Postgres" at 40,40 40x40 icon=database fill=#2e8540/0.2 stroke=#2e8540 sw=2\nu: icon at 200,40 icon=user\n');
+  const svg = renderSvg(sc);
+  assert.ok(!/<rect x="40" y="40" width="40"/.test(svg), 'no box is drawn around the icon');
+  // 40px icon: scale 1.67, so a 2px stroke is 1.2 in the icon's own units
+  assert.match(svg, /translate\(40 40\) scale\(1\.67\)" fill="rgba\(46, ?133, ?64, ?0\.2\)" stroke="#2e8540" stroke-width="1\.2"/);
+  const caption = /<text x="60" y="([\d.]+)" text-anchor="middle"[^>]*>Orders DB</.exec(svg);
+  assert.ok(caption && +caption[1] > 80 + 6, 'the caption sits under the icon, centred');
+  assert.ok(svg.includes('>Postgres<'));
+  assert.match(svg, /translate\(200 40\) scale\(1\)" fill="none" stroke="[^"]+"/);
+  // a caption wider than its icon needs no room inside it, and the picture's extent takes it in
+  assert.deepEqual(check(sc).filter((i) => i.level === 'warn').map((i) => i.msg), []);
+  const cb = captionBox(sc.shapes[0])!;
+  assert.ok(cb.w > 40 && cb.y === 86 && sc.y + sc.h >= cb.y + cb.h + 40 && sc.x <= cb.x - 40);
+});
+
 test('built-in icons: every one would pass the look rules, and a search finds them by meaning as well as name', async () => {
   const { ICONS, ICON_WORDS, iconMatches } = await import('../src/icons.ts');
   assert.ok(Object.keys(ICONS).length >= 120);

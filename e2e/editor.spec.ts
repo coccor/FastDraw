@@ -556,6 +556,25 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=server$/);
+  // an icon on its own is the shape: no box to style, its fill, stroke and stroke width are the icon's
+  await page.keyboard.press('Escape');
+  await page.mouse.click(...Object.values(await corner(page, 'icon')) as [number, number]);
+  await expect(page.locator('.panel h4', { hasText: 'Background' })).toHaveCount(0);
+  await expect(page.locator('.panel h4', { hasText: 'Stroke style' })).toHaveCount(0);
+  const ifills = page.getByRole('group', { name: 'Icon fill colours' });
+  const itint = await ifills.locator('.swatch').nth(1).getAttribute('aria-label');
+  await ifills.locator('.swatch').nth(1).click();
+  await page.getByLabel('Custom icon colour').fill('#0369a1');
+  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Heavy' }).click();
+  expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2\\.75$`));
+  await expect(page.locator('svg.canvas g[stroke="#0369a1"]')).toHaveCount(1);
+  // double-click puts a caption under it
+  await page.waitForTimeout(500);
+  const c = await corner(page, 'icon');
+  await page.mouse.dblclick(c.x, c.y);
+  await page.keyboard.type('Web server');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'icon')).toMatch(/^icon: icon "Web server" at /);
   expect(errors).toEqual([]);
 });
 

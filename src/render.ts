@@ -1,7 +1,7 @@
 // Draws a resolved scene as SVG. The same output feeds PNG export.
 import { color, fontFamily } from './look.ts';
 import type { Look, Props } from './look.ts';
-import { textWidth } from './scene.ts';
+import { textWidth, ICON_CAPTION_GAP } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
@@ -268,10 +268,31 @@ function drawIcon(look: Look, p: Props, x: number, y: number, size: number): str
   return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="${fill}" stroke="${stroke}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
 }
 
+// An icon that is the shape itself, with no box around it: fill=, stroke= and sw= style the icon,
+// and its text is a caption centred underneath (captionBox in scene.ts measures it the same way).
+function drawIconShape(look: Look, s: Shape): string {
+  const p = s.p, size = Math.min(s.w, s.h), out: string[] = [];
+  const ip: Props = { ...p, 'icon.fill': p.fill ?? p['icon.fill'] ?? 'none', 'icon.color': p.stroke ?? p['icon.color'] ?? 'ink', 'icon.width': p.sw ?? p['icon.width'] ?? '' };
+  if (p.icon && p.icon !== 'none') out.push(drawIcon(look, ip, s.x + (s.w - size) / 2, s.y + (s.h - size) / 2, size));
+  const cx = s.x + s.w / 2;
+  let y = s.y + s.h + ICON_CAPTION_GAP;
+  if (s.text) {
+    const t = textAttrs(look, p, 'title.', { font: 'sans', size: 11, weight: 600, color: 'ink' }), lh = Math.round(t.size * 1.17);
+    (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n').forEach((l) => { out.push(`<text x="${cx}" y="${r2(y + t.size * 0.86)}" text-anchor="middle" ${t.a}>${esc(l)}</text>`); y += lh; });
+  }
+  if (p.sub) {
+    const t = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' }), lh = Math.round(t.size * 1.3);
+    y += 2;
+    p.sub.split('\n').forEach((l) => { out.push(`<text x="${cx}" y="${r2(y + t.size * 0.86)}" text-anchor="middle" ${t.a}>${esc(l)}</text>`); y += lh; });
+  }
+  return out.join('\n');
+}
+
 function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'legend') return drawLegend(look, s);
   if (s.shape === 'table') return drawTable(look, s);
   if (s.shape === 'chart') return drawChart(look, s);
+  if (s.shape === 'icon') return drawIconShape(look, s);
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));

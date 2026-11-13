@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { parseLook, color } from '../../src/look.ts';
-import { buildScene, lookPath, textWidth as measure } from '../../src/scene.ts';
+import { buildScene, lookPath, captionBox, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
@@ -576,6 +576,11 @@ export function App() {
       return l ? { x: l.x - 20, y: l.y - 6, w: l.w + 40, h: Math.max(24, l.h + 12) } : { x: (mid.x + nx.x) / 2 - 70, y: (mid.y + nx.y) / 2 - 26, w: 140, h: 24 };
     }
     const box = ops.boxOf(e);
+    if (e.kind === 'shape' && e.el.shape === 'icon') {
+      // an icon's text is its caption, edited where it is drawn
+      const c = captionBox(e.el), w = Math.max((c?.w ?? 0) + 40, 140), cx = box.x + box.w / 2;
+      return { x: cx - w / 2, y: box.y + box.h + 2, w, h: Math.max(24, (c?.h ?? 0) + 10) };
+    }
     return e.kind === 'text' ? { x: box.x - 4, y: box.y - 4, w: Math.max(box.w + 40, 160), h: box.h + 10 } : box;
   };
   // A legend's editable texts: its heading and each entry's label, with the box each is drawn in.
@@ -1073,6 +1078,8 @@ export function App() {
             {scene.shapes.filter((s) => !s.back).map((s) => isStroke(s)
               ? <polyline key={s.id} data-id={s.id} points={polyPoints(s.poly!)} fill="none" strokeWidth={Math.max(12, +s.p.sw || 0)} strokeLinecap="round" strokeLinejoin="round" pointerEvents="stroke" />
               : <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} />)}
+            {/* an icon's caption hangs under it and picks the icon */}
+            {scene.shapes.map((s) => { const c = captionBox(s); return c && <rect key={s.id + '-cap'} data-id={s.id} x={c.x - 4} y={c.y - 2} width={c.w + 8} height={c.h + 4} />; })}
             {scene.texts.map((t) => <rect key={t.id} data-id={t.id} x={t.x - 2} y={t.y - 2} width={t.w + 4} height={t.h + 4} />)}
           </g>
           <g fill="none" stroke="var(--accent)" strokeWidth={1.5 / view.k} pointerEvents="none">

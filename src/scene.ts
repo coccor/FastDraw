@@ -674,7 +674,12 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (c.ortho && !via.length && !c.ushape) {
         const strictlyIn = (o: Box, p: Pt) => p.x > o.x + 1 && p.x < o.x + o.w - 1 && p.y > o.y + 1 && p.y < o.y + o.h - 1;
         // (an open outline is a line, not a box: nothing goes around it)
-        const obs = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        const obs: Box[] = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        // an icon's caption hangs below it: other lines go around it too
+        for (const o of shapes) {
+          const cb = o.id !== c.a.id && o.id !== c.b.id ? captionBox(o) : null;
+          if (cb) obs.push({ x: cb.x - 4, y: cb.y - 2, w: cb.w + 8, h: cb.h + 4 });
+        }
         if (crosses(c.pts, obs)) { const alt = routeAround(a.pt, a.dir, b.pt, b.dir, obs, taken); if (alt) c.pts = alt; }
       }
       if (c.ortho) for (let i = 0; i < c.pts.length - 1; i++) taken.push([c.pts[i], c.pts[i + 1]]);
@@ -696,8 +701,19 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   resolvePass(second.filter((c) => !bad.has(c)));
   const finalConns = conns.filter((c) => done.has(c));
 
-  const ext = extent(shapes, texts, finalConns);
+  const ext = extent([...shapes, ...shapes.map(captionBox).filter((b): b is Box => !!b)], texts, finalConns);
   return { file, ...ext, look, canvasLine, canvasSize, baseCanvas, shapes, texts, conns: finalConns, issues };
+}
+
+// The caption under an icon shape: its text and second line, centred below the icon. Null for any other shape.
+export const ICON_CAPTION_GAP = 6;
+export function captionBox(s: Shape): Box | null {
+  if (s.shape !== 'icon' || (!s.text && !s.p.sub)) return null;
+  const p = s.p, size = +(p['title.size'] ?? 11) || 11, sub = +(p['sub.size'] ?? 9) || 9;
+  const lines = s.text ? s.text.split('\n') : [], subs = p.sub ? p.sub.split('\n') : [];
+  const w = Math.max(0, ...lines.map((l) => textWidth(l, size, p['title.font'] ?? 'sans', +(p['title.weight'] ?? 600) || 600, 0)), ...subs.map((l) => textWidth(l, sub, p['sub.font'] ?? 'mono', 400, 0)));
+  const h = lines.length * Math.round(size * 1.17) + (subs.length ? 2 + subs.length * Math.round(sub * 1.3) : 0);
+  return { x: s.x + s.w / 2 - w / 2, y: s.y + s.h + ICON_CAPTION_GAP, w, h };
 }
 
 // The picture's extent: the box around every shape, text, line and line label, 40px clear on all sides,

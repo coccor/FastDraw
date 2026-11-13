@@ -164,7 +164,8 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 `icon=name` puts a small outline icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, mail, function, ai and about 120 more). `fastdraw icons email` searches them by name or meaning: it finds `mail`, and `k8s` finds `pod`.
 
 - The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height.
-- With no text, the icon fills the box. A box of style `icon` has no outline, so it is an icon on its own: `icon at 60,220 icon=server` (24x24; give `WxH` for another size).
+- With no text, the icon fills the box.
+- An icon on its own, with no box, is the `icon` style: `api: icon "Orders API" at 60,220 40x40 icon=server` (24x24 unless you give `WxH`). The icon is the shape, so `fill=`, `stroke=` and `sw=` style the icon itself (`fill=accent/0.2 stroke=accent sw=2`), and its text is a caption centred underneath. Lines attach to the icon and go around other icons' captions.
 - `icon.size=20` and `icon.color=link` change it; by default it takes the colour of the box's text.
 - `icon.fill=accent/0.2` fills the icon's closed parts for a two-tone look (none by default), and `icon.width=2` sets its stroke width in pixels. Both take look colours, tints or hex (`icon.fill=#ffd400`), and both work in a look's `style` lines so every box of a style gets the same icon treatment. Icons from a look's folder keep their own colours.
 - A look can bring its own colour icons (a cloud vendor's set, product logos). `fastdraw sizes <look>` lists them first; use them the same way: `icon=virtual-machine`. They keep their own colours. Run `fastdraw icons <look> word` to search a large set.
