@@ -51,7 +51,7 @@ function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k:
   const k = view.k, size = l.size * k, font = `${l.style} ${l.weight} ${size}px ${l.family}`;
   const caps = l.transform === 'uppercase';
   const longest = Math.max(...value.split('\n').map((s) => textWidth(caps ? s.toUpperCase() : s, font)));
-  const w = l.wrap ? l.wrap * k : longest + size * 1.2;
+  const w = l.wrap ? l.wrap * k : longest + 3; // the diagram redraws as you type, so only the caret needs room
   const left = l.anchor === 'middle' ? l.ax * k - w / 2 : l.anchor === 'end' ? l.ax * k - w : l.ax * k;
   return {
     left: view.x + left, top: view.y + l.top * k, width: w,
@@ -340,21 +340,35 @@ export function App() {
     return `${snap(p.x)},${snap(p.y)}`;
   };
 
+  // the area an edit covers: the element, a line's label (or where a new one would go), a free text
+  const editBox = (sc: Scene, id: string): Box | null => {
+    const e = ops.find(sc, id);
+    if (!e) return null;
+    if (e.kind === 'conn') {
+      const l = (e.el as Conn).label;
+      const mid = e.el.pts[Math.floor((e.el.pts.length - 1) / 2)], nx = e.el.pts[Math.floor((e.el.pts.length - 1) / 2) + 1];
+      return l ? { x: l.x - 20, y: l.y - 6, w: l.w + 40, h: Math.max(24, l.h + 12) } : { x: (mid.x + nx.x) / 2 - 70, y: (mid.y + nx.y) / 2 - 26, w: 140, h: 24 };
+    }
+    const box = ops.boxOf(e);
+    return e.kind === 'text' ? { x: box.x - 4, y: box.y - 4, w: Math.max(box.w + 40, 160), h: box.h + 10 } : box;
+  };
   const startEdit = (id: string) => {
     const e = ops.find(scene, id);
     if (!e || src === null) return;
     if (e.kind === 'shape' && e.el.shape === 'legend') return; // its entries are edited in the panel
-    let box: Box = ops.boxOf(e);
-    if (e.kind === 'conn') {
-      const l = (e.el as Conn).label;
-      const mid = e.el.pts[Math.floor((e.el.pts.length - 1) / 2)], nx = e.el.pts[Math.floor((e.el.pts.length - 1) / 2) + 1];
-      box = l ? { x: l.x - 20, y: l.y - 6, w: l.w + 40, h: 24 } : { x: (mid.x + nx.x) / 2 - 70, y: (mid.y + nx.y) / 2 - 26, w: 140, h: 24 };
-    } else if (e.kind === 'text') box = { x: box.x - 4, y: box.y - 4, w: Math.max(box.w + 40, 160), h: box.h + 10 };
-    setEditing({ id, value: ops.rawText(src, e), box });
+    setEditing({ id, value: ops.rawText(src, e), box: editBox(scene, id)! });
+  };
+  // while typing, the diagram is redrawn with the new text, so the element grows around it
+  const typeEdit = (value: string) => {
+    if (!editing || src === null) return;
+    setEditing({ ...editing, value });
+    const e = ops.find(scene, editing.id);
+    if (e) setDraft(ops.editText(src, e, value));
   };
   const finishEdit = (ok: boolean) => {
     const ed = editing;
     setEditing(null);
+    setDraft(null);
     if (!ed || !ok || src === null) return;
     const e = ops.find(scene, ed.id);
     if (!e) return;
@@ -590,13 +604,16 @@ export function App() {
 
   // Edit text in place: find the label as the look drew it, hide it, and lay the text field over
   // it in the same font, size, weight, colour and alignment, so the element keeps its look.
+  // It runs again after every redraw while typing, so the field follows the label as it wraps or moves.
   const editKey = editing ? editing.id + '|' + editing.box.x + ',' + editing.box.y : '';
+  const lastEditKey = useRef('');
   useLayoutEffect(() => {
-    setEdLook(null);
+    if (lastEditKey.current !== editKey) setEdLook(null);
+    lastEditKey.current = editKey;
     const g = bodyRef.current, ed = stateRef.current.editing;
     if (!g || !ed) return;
     const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
-    const want = norm(ed.value), b = ed.box;
+    const want = norm(ed.value), b = editBox(stateRef.current.scene, ed.id) ?? ed.box;
     const hits: SVGTextElement[] = [];
     if (want) for (const t of Array.from(g.querySelectorAll('text'))) {
       const s = norm(t.textContent ?? '');
@@ -622,7 +639,7 @@ export function App() {
     });
     for (const t of hits) t.style.visibility = 'hidden';
     return () => { for (const t of hits) t.style.visibility = ''; };
-  }, [editKey]);
+  }, [editKey, body]);
   // the in-place field grows with its text, a line at a time
   useLayoutEffect(() => {
     const ta = edRef.current;
@@ -779,7 +796,7 @@ export function App() {
       {editing && (
         <textarea className={edLook ? 'textedit inplace' : 'textedit'} autoFocus value={editing.value} spellCheck={false} wrap={edLook && !edLook.wrap ? 'off' : 'soft'}
           ref={edRef} style={edLook ? inplaceStyle(edLook, editing.value, view) : { left: view.x + editing.box.x * view.k, top: view.y + editing.box.y * view.k, width: Math.max(120, editing.box.w * view.k), height: Math.max(28, editing.box.h * view.k), fontSize: Math.max(11, 12 * view.k) }}
-          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+          onChange={(e) => typeEdit(e.target.value)}
           onFocus={(e) => e.target.select()}
           onBlur={() => finishEdit(true)}
           onPointerDown={(e) => e.stopPropagation()}

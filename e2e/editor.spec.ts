@@ -53,6 +53,22 @@ test('text is edited in place: the field takes the label\'s type and position, a
   await expect(label).toHaveCSS('visibility', 'visible');
 });
 
+test('a line label grows around its text while typing, and Escape puts the old one back', async ({ page }) => {
+  await paste(page, SMALL);
+  const hit = page.locator('rect[data-label]').last();
+  const before = (await hit.boundingBox())!;
+  await doubleClick(page, { x: before.x + before.width / 2, y: before.y + before.height / 2 });
+  await page.keyboard.press('End');
+  await page.keyboard.type(' every order to the database');
+  const grown = (await hit.boundingBox())!;
+  expect(grown.width).toBeGreaterThan(before.width * 2);
+  const field = (await page.locator('.textedit.inplace').boundingBox())!;
+  expect(field.x).toBeGreaterThanOrEqual(grown.x - 1);
+  expect(field.x + field.width).toBeLessThanOrEqual(grown.x + grown.width + 4);
+  await page.keyboard.press('Escape');
+  expect((await hit.boundingBox())!.width).toBeCloseTo(before.width, 0);
+});
+
 test('an outside change to the file appears on the canvas, and undo brings the old text back', async ({ page }) => {
   await openFolder(page, folder());
   const text = await diskText(page, SEQ);
