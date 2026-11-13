@@ -11,6 +11,8 @@ import { renderSvg } from './render.ts';
 import { check } from './check.ts';
 import { serveFolder, DEFAULT_EDITOR } from './serve.ts';
 import { spawn } from 'node:child_process';
+import { sizesReport } from './sizes.ts';
+import { setup, detect, TARGETS, type Target } from './setup.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const [cmd, ...args] = process.argv.slice(2);
@@ -31,7 +33,12 @@ function usage(): never {
                                           look, fonts and icons; edits there save back to the file.
                                           Keeps running while you edit; Ctrl-C stops it
   guide  [topic]                          print the language guide, or the guide for one kind of diagram
-  guide  list                             list the kinds of diagram that have a guide`);
+  guide  list                             list the kinds of diagram that have a guide
+  setup  [claude|agents|copilot ...] [--global]
+                                          tell this repo's coding agents about FastDraw: a Claude Code
+                                          skill, a section in AGENTS.md, or in Copilot's instructions.
+                                          With no name, sets up the agents the repo already uses.
+                                          --global puts the Claude Code skill in ~/.claude for every repo`);
   process.exit(2);
 }
 
@@ -77,27 +84,8 @@ if (cmd === 'check') {
   console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
 } else if (cmd === 'sizes') {
   const look = !args[0] ? defaultLook() : args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
-  for (const i of look.issues) console.log(`look:${i.line}  ${i.level}  ${i.msg}`);
-  const rows = [...look.styles.values()];
-  for (const kind of ['shape', 'line', 'text'] as const) {
-    console.log(`\n${kind} styles`);
-    for (const s of rows.filter((r) => r.kind === kind)) {
-      const p = s.props;
-      const bits: string[] = [];
-      if (kind === 'shape') bits.push(`shape=${p.shape ?? 'rect'}`, p.shape === 'table' ? 'sizes itself from its rows' : p.shape === 'polygon' ? 'sized by its points' : p.shape === 'chart' ? 'always give WxH: the plot area' : p.size ? `default size ${p.size}` : 'no default size: always give WxH', p.layer === 'back' ? 'drawn behind everything' : '');
-      if (kind === 'line') bits.push(`route=${p.route ?? 'ortho'}`, p.dash ? `dash=${p.dash}` : 'solid', `stroke=${p.stroke ?? 'muted'}`);
-      if (kind === 'text') bits.push(`font=${p.font ?? 'sans'}`, `size=${p.size ?? 12}`, p.caps === '1' ? 'caps' : '');
-      if (p.use) bits.push(`use: ${p.use}`);
-      console.log(`  ${s.name.padEnd(12)} ${bits.filter(Boolean).join(' · ')}`);
-    }
-  }
   const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);
-  console.log('\nfonts');
-  for (const [role, fam] of look.fonts) console.log(`  ${role.padEnd(12)} ${fam}${lf.missing.includes(fam) ? '   (no font file found: will fall back)' : ''}`);
-  const own = [...look.images.keys()];
-  if (own.length) console.log(`\nicons from the look's folders (${own.length}; "fastdraw icons <look> [word]" lists or searches them)\n  ${own.slice(0, 60).join(', ')}${own.length > 60 ? ', ...' : ''}`);
-  console.log(`\n${own.length ? 'built-in outline icons' : 'icons'} (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
-  if (look.guidance.length) { console.log('\nguidance from this look'); for (const g of look.guidance) console.log(`  - ${g}`); }
+  console.log(sizesReport(look, lf.missing));
 } else if (cmd === 'init-look') {
   const out = args[0] ?? 'team.look';
   if (existsSync(out)) { console.log(`${out} already exists; choose another path or remove it first`); process.exit(1); }
@@ -206,4 +194,12 @@ if (cmd === 'check') {
   }
   const stop = () => { s.close().then(() => process.exit(0)); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop);
+} else if (cmd === 'setup') {
+  const global = args.includes('--global');
+  const named = args.filter((a) => !a.startsWith('--'));
+  const wrong = named.filter((a) => !TARGETS.includes(a as Target));
+  if (wrong.length) { console.log(`unknown agent: ${wrong.join(', ')}. Choose from: ${TARGETS.join(', ')}`); process.exit(1); }
+  const targets = named.length ? (named as Target[]) : global ? ['claude' as Target] : detect(process.cwd());
+  for (const l of setup(root, process.cwd(), targets, global)) console.log(l);
+  console.log('\nAsk your agent for a diagram, for example: "Draw this repo\'s architecture as docs/architecture.fdraw".');
 } else usage();

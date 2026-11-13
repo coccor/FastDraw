@@ -11,4 +11,4 @@ FastDraw diagrams are small text files (`.fdraw`). You place every element yours
 2. Always finish with `fastdraw check <file>` clean and a look at the PNG from `fastdraw render <file>`.
 3. When changing an existing diagram, do not move, resize or restyle what is already there unless asked. A person may have arranged it by hand.
 
-If the `fastdraw` command is not on the PATH, run it from the FastDraw checkout as `bin/fastdraw`.
+If the `fastdraw` command is not on the PATH, run it as `npx fastdraw` (for example `npx fastdraw guide`).

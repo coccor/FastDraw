@@ -1,4 +1,4 @@
-// Cloudflare deploy for fastdraw.dev: the editor is a static site.
+// Cloudflare deploy for fastdraw.dev: a static site (landing page at /, editor at /edit/, llms.txt).
 // Build: npm run build:editor   Deploy: npx wrangler deploy
 {
   "name": "fastdraw",
