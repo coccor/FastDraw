@@ -16,7 +16,7 @@ Keep the style names from the built-in look (`node`, `focal`, `store`, `cloud`, 
 One statement per line; an indented line continues the one above; `//` starts a comment.
 
 ```
-canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional
+canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional; a diagram's own canvas line can override any of the three
                                                  // sketch=1 draws every outline and line by hand (2 is rougher); see looks/sketch.look
 
 color paper  #ffffff                             // a named colour

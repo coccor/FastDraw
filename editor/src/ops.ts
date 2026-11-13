@@ -362,12 +362,18 @@ export function align(src: string, sc: Scene, ids: string[], mode: AlignMode): s
   return cur;
 }
 
-export function setCanvas(src: string, sc: Scene, w: number, h: number): string {
-  const line = `canvas ${Math.round(w)}x${Math.round(h)}`;
-  if (sc.canvasLine) return patchSource(src, new Map([[sc.canvasLine, () => [{ t: 'word', v: 'canvas' }, { t: 'word', v: `${Math.round(w)}x${Math.round(h)}` }] as Tok[]]]));
+// Rewrite the diagram's canvas line with a new size and background keys (paper=, dots=, dotgap=).
+// `bg` maps a key to its new value, or to null to drop it so the look's own value applies;
+// keys it does not mention keep what the line had.
+export function setCanvas(src: string, sc: Scene, w: number, h: number, bg: Record<string, string | null> = {}): string {
+  const old = sc.canvasLine ? stmtToks(src, sc.canvasLine) ?? [] : [];
+  const keep = new Map(old.filter((t) => t.t === 'prop').map((t) => [t.k!, t.v]));
+  for (const [k, v] of Object.entries(bg)) if (v === null) keep.delete(k); else keep.set(k, v);
+  const toks: Tok[] = [{ t: 'word', v: 'canvas' }, { t: 'word', v: `${Math.round(w)}x${Math.round(h)}` }, ...[...keep].map(([k, v]) => ({ t: 'prop', k, v }) as Tok)];
+  if (sc.canvasLine) return patchSource(src, new Map([[sc.canvasLine, () => toks]]));
   const lines = src.split('\n');
   const li = lines.findIndex((l) => /^look\b/.test(l));
-  lines.splice(li + 1, 0, line);
+  lines.splice(li + 1, 0, fmtStmt(toks));
   return lines.join('\n');
 }
 
