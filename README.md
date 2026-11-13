@@ -137,7 +137,9 @@ bin/fastdraw init-look team.look
 bin/fastdraw preview-look team.look
 ```
 
-A diagram picks its look with one line, `look "./team.look"`. A look can also bring its own fonts
+A diagram picks its look with one line, `look "./team.look"`, or names one that ships with FastDraw:
+`look headline`, `look reference`, `look sketch` or `look whiteboard`. In the editor, the **Look** button
+previews the diagram in each one before you keep it. A look can also bring its own fonts
 (`fontdir`) and colour icons (`icondir`). `fastdraw guide look` explains the format.
 
 ## Gallery

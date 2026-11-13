@@ -35,6 +35,10 @@ style external extends node fill=paper stroke=soft sw=1 dash=3,3
     use="a person or system outside what you own"
 style optional extends node fill=paper stroke=hair sw=1 dash=2,3
     use="optional or asynchronous participant"
+style sticky extends node size=120x120 fill=#efe3a2 title.weight=500
+    use="a yellow sticky note: an idea, comment or open question"
+style sticky-orange extends sticky fill=#efd2bb use="an orange sticky note: a risk or issue"
+style sticky-violet extends sticky fill=#ddd8ec use="a violet sticky note: a decision or note"
 
 // ---- flowchart shapes -----------------------------------------------------
 style step extends node size=160x48 use="flowchart action"
@@ -72,9 +76,11 @@ style rule line head=none stroke=hair sw=1 route=straight use="thin separator"
 
 // ---- text -----------------------------------------------------------------
 style h1 text font=serif size=28 weight=500 color=ink use="diagram title, a serif headline"
+style kicker text font=sans size=10 weight=700 color=accent caps=1 spacing=0.08 use="optional: a short category above the title, e.g. PROCESS"
 style dek text font=sans size=15 color=muted use="one line under the title that says what the diagram shows"
 style eyebrow text font=sans size=10 weight=700 color=muted caps=1 spacing=0.06 use="small heading"
 style caption text font=sans size=10 color=muted use="small explanatory text"
+style legend extends legend rule=hair title.font=sans title.size=9 title.weight=700 title.spacing=0.06 item.font=sans item.size=10
 style note text font=serif italic=1 size=15 color=muted use="a short aside; at most two"
 style small text font=sans size=10 color=soft use="source line, or technical detail: a port, path or command"
 

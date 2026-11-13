@@ -1,6 +1,7 @@
 import { parseStatements } from './parse.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
 import { ICONS } from './icons.ts';
+import { BUNDLED_LOOKS } from './bundledLooks.ts';
 
 export type Kind = 'shape' | 'line' | 'text';
 export type Props = Record<string, string>;
@@ -161,6 +162,19 @@ export function fontFamily(look: Look, v: string | undefined): string {
 
 let cachedDefault: Look | undefined;
 // The built-in look, used when a diagram names no look of its own.
+// The looks that ship inside FastDraw, by the name a diagram gives them: `look sketch`. A name is a
+// bare word; anything with a slash or ending in .look is a file path.
+export const BUNDLED_LOOK_NAMES = Object.keys(BUNDLED_LOOKS);
+export const isBundledLook = (p: string | undefined): p is string => !!p && Object.hasOwn(BUNDLED_LOOKS, p);
+const bundledCache = new Map<string, Look>();
+export function bundledLook(name: string): Look | null {
+  if (!isBundledLook(name)) return null;
+  let l = bundledCache.get(name);
+  if (!l) bundledCache.set(name, (l = parseLook(BUNDLED_LOOKS[name]!, `${name} look`)));
+  return l;
+}
+export const bundledLookSource = (name: string): string | null => (isBundledLook(name) ? BUNDLED_LOOKS[name]! : null);
+
 export function defaultLook(): Look {
   cachedDefault ??= parseLook(DEFAULT_LOOK, 'default look');
   return cachedDefault;
