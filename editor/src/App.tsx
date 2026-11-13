@@ -10,7 +10,7 @@ import * as files from './files.ts';
 import { Panel, TextField } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import {
-  BringToFront, Check, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, ImageDown, Lock, LockOpen,
+  BringToFront, Check, FilePlus, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, ImageDown, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
@@ -37,6 +37,7 @@ type Editing = { id: string; value: string; box: Box } | null;
 type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string };
 
 const snap = (v: number) => Math.round(v / 4) * 4;
+const BLANK = 'canvas 1000x700\n';
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
 const ICONS: Record<string, React.ReactNode> = {
   hand: <Hand size={17} />, select: <MousePointer2 size={17} />, rect: <Square size={17} />, ellipse: <Circle size={17} />, diamond: <Diamond size={17} />,
@@ -242,6 +243,16 @@ export function App() {
       setLookSrc(r.text);
     } catch { /* cancelled */ }
   }, []);
+
+  // A blank canvas in the built-in look, kept in memory until downloaded.
+  const newDiagram = () => {
+    const h = hist.current;
+    if (srcRef.current !== null && !io.current.file && h.past.length && !window.confirm('Start a new diagram? Changes to this one have not been downloaded.')) return;
+    io.current = { fileMod: 0, lookMod: 0, written: '' };
+    setFolderFiles([]);
+    setCarriedIcons({});
+    load(BLANK, null, 'untitled');
+  };
 
   const openDemo = (text: string, label: string) => {
     io.current = { fileMod: 0, lookMod: 0, written: '' };
@@ -625,6 +636,7 @@ export function App() {
           <h1>FastDraw</h1>
           <p className="lede">Open a diagram an agent wrote, change anything on the canvas, and it is saved back to the same file.</p>
           <div className="choices">
+            <button className="choice" onClick={newDiagram}><FilePlus size={20} /><span><b>New diagram</b><i>Start from a blank canvas and draw with the toolbar</i></span></button>
             {files.hasFileAccess && (
               <button className="choice" onClick={openFolder}><FolderOpen size={20} /><span><b>Open a folder</b><i>Finds the diagrams and their look, saves in place, follows an agent live</i></span></button>
             )}
@@ -722,6 +734,7 @@ export function App() {
         <button className="iconbtn island" title="Menu" aria-label="Menu" aria-expanded={menuOpen} onClick={() => { setMenuOpen((o) => !o); setGalleryOpen(false); setCtx(null); }}><Menu size={18} /></button>
         {menuOpen && (
           <div className="dropdown island" role="menu">
+            <button role="menuitem" onClick={() => { closePopups(); newDiagram(); }}><FilePlus size={16} />New diagram</button>
             {files.hasFileAccess && <button role="menuitem" onClick={() => { closePopups(); openFolder(); }}><FolderOpen size={16} />Open folder</button>}
             <button role="menuitem" onClick={() => { closePopups(); openFile(); }}><FileText size={16} />Open file</button>
             <button role="menuitem" onClick={() => { closePopups(); setPasteOpen(true); }}><ClipboardPaste size={16} />Paste diagram text</button>

@@ -395,3 +395,19 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   await expect(page.locator('.banner')).toContainText('This look brings its own icons from a folder');
   expect(errors).toEqual([]);
 });
+
+test('a new diagram starts blank in the built-in look, from the start screen and from the menu', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: /New diagram/ }).click();
+  await page.waitForSelector('svg.canvas');
+  expect(await source(page)).toBe('canvas 1000x700\n');
+  await page.keyboard.press('r');
+  await drag(page, await at(page, 200, 200), 140, 80);
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^rect: rect at 200,200 \d+x\d+$/);
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'New diagram' }).click();
+  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(errors).toEqual([]);
+});
