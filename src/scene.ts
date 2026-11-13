@@ -147,10 +147,17 @@ function curvePts(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, via: Pt[], bend:
   const segs: [Pt, Pt, Pt, Pt][] = [];
   const dx = P1.x - P0.x, dy = P1.y - P0.y, dist = Math.hypot(dx, dy) || 1;
   if (via.length) {
+    // through each point along the line joining its neighbours; the ends leave and arrive along the sides
+    // they are attached to. Each handle is a third of its own segment, so a short hop next to a long one
+    // rounds the corner instead of swinging wide.
     const P = [P0, ...via, P1];
+    const unit = (x: number, y: number) => { const l = Math.hypot(x, y) || 1; return { x: x / l, y: y / l }; };
+    const T = P.map((p, i) => i === 0 ? (d0 ?? unit(P[1].x - p.x, P[1].y - p.y))
+      : i === P.length - 1 ? (d1 ? { x: -d1.x, y: -d1.y } : unit(p.x - P[i - 1].x, p.y - P[i - 1].y))
+      : unit(P[i + 1].x - P[i - 1].x, P[i + 1].y - P[i - 1].y));
     for (let i = 0; i < P.length - 1; i++) {
-      const p0 = P[i - 1] ?? P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] ?? P[i + 1];
-      segs.push([p1, { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }, { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }, p2]);
+      const p1 = P[i], p2 = P[i + 1], L = Math.hypot(p2.x - p1.x, p2.y - p1.y) / 3;
+      segs.push([p1, { x: p1.x + T[i].x * L, y: p1.y + T[i].y * L }, { x: p2.x - T[i + 1].x * L, y: p2.y - T[i + 1].y * L }, p2]);
     }
   } else if (!isNaN(bend)) {
     const ox = (dy / dist) * bend * (4 / 3), oy = (-dx / dist) * bend * (4 / 3);

@@ -7,9 +7,9 @@ must define every style, so nothing falls back to plain styles after a switch.
 ## Goals
 - Bundled looks by name: `look headline`, `look reference`, `look sketch`, `look whiteboard`
   resolve to looks shipped inside FastDraw (CLI, editor, fastdraw.dev). No `look` line = built-in.
-- Editor **Look** picker: thumbnails of the current diagram in each look; hover/click previews it
-  live on the canvas without touching the file; **Apply** writes the `look` line (removes it for
-  built-in); **Esc/Cancel** restores the original.
+- Editor **Look** picker: thumbnails of the current diagram in each look; hover previews it live
+  on the canvas without touching the file; a **click** writes the `look` line at once (removes it
+  for built-in), one undo step, no separate Apply; the picker stays open to try more, Esc closes it.
 - A diagram already using its own look file keeps it as the "Current" entry in the picker.
 - Every look (built-in + 4) defines the same style set — the union of today's names:
   node focal store cloud external optional sticky sticky-orange sticky-violet step terminal

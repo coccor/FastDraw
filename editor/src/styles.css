@@ -76,7 +76,7 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .field span { display: block; font-size: 11px; color: var(--mute); margin-bottom: 2px; }
 .field input { width: 100%; }
 
-/* look styles gallery */
+/* components gallery */
 .gallerywrap { width: min(640px, calc(100vw - 48px)); max-height: calc(100vh - 150px); overflow-y: auto; }
 .gallery { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
 .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }

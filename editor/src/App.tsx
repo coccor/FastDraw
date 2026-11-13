@@ -12,7 +12,7 @@ import * as served from './served.ts';
 import { Panel, TextField, Swatches } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
-import type { LookChoice } from './LookPicker.tsx';
+import type { LookChoice, FileLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import {
   BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
@@ -145,6 +145,7 @@ export function App() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   // the look picker, and the look being tried on the canvas (undefined: none, null: the built-in look)
   const [lookOpen, setLookOpen] = useState(false);
+  const pickerFile = useRef<FileLook>(null);
   const [lookPreview, setLookPreview] = useState<LookChoice | undefined>(undefined);
   const lockedRef = useRef(false); lockedRef.current = locked;
   const doneDrawing = () => { if (!lockedRef.current) setTool('select'); };
@@ -222,7 +223,8 @@ export function App() {
   const shown = useMemo(() => {
     if (lookPreview === undefined) return scene;
     const p = lookPreview;
-    return buildScene(ops.setLook(cur, p), p !== null && !isBundledLook(p) ? look : null);
+    const fl = pickerFile.current && p === pickerFile.current.path ? pickerFile.current.look : look;
+    return buildScene(ops.setLook(cur, p), p !== null && !isBundledLook(p) ? fl : null);
   }, [scene, lookPreview, cur, look]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
   // the page layers are left out: the paper and dots fill the whole view instead
@@ -939,7 +941,7 @@ export function App() {
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
     setRoute: (r: string) => src !== null && commit(ops.setRoute(src, scene, sel, r)),
     setRows: (rows: RowSpec[]) => { const e = ops.find(scene, sel[0]); if (src !== null && e?.kind === 'shape') commit(ops.setRows(src, scene, e.el, rows)); },
-    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no look styles yet'); },
+    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no components yet'); },
   };
   const actRef = useRef(act); actRef.current = act;
   const stateRef = useRef({ sel, scene, src, editing }); stateRef.current = { sel, scene, src, editing };
@@ -1035,7 +1037,7 @@ export function App() {
   // ---- render -------------------------------------------------------------
   const closePopups = () => { setMenuOpen(false); setGalleryOpen(false); setLookOpen(false); setLookPreview(undefined); setCtx(null); };
   const applyLook = (v: LookChoice) => {
-    setLookOpen(false); setLookPreview(undefined);
+    setLookPreview(undefined);
     if (src === null) return;
     const next = ops.setLook(cur, v);
     if (next !== cur) { commit(next, sel); setStatus(`look: ${lookLabel(v, null)}`); }
@@ -1075,6 +1077,8 @@ export function App() {
   const missingLook = lookPath(cur) && !isBundledLook(lookPath(cur)) && lookSrc === null;
   const curLook = lookPath(cur) ?? null;
   const fileLook = curLook && !isBundledLook(curLook) && look ? { path: curLook, look } : null;
+  // the diagram's own look file stays a choice while the picker is open, even after a click moves off it
+  if (!lookOpen) pickerFile.current = null; else if (fileLook && !pickerFile.current) pickerFile.current = fileLook;
   const single = sel.length === 1 ? ops.find(scene, sel[0]) : undefined;
   const hs = 8 / view.k;
   const armed = tool.startsWith('style:') || tool.startsWith('conn:');
@@ -1195,15 +1199,15 @@ export function App() {
             </button>
           ))}
           <span className="sep" />
-          <button className={'tool wide lookstyles' + (armed || galleryOpen ? ' on' : '')} title="Styles from this diagram's look" aria-expanded={galleryOpen} onClick={() => { setGalleryOpen((o) => !o); setLookOpen(false); setLookPreview(undefined); setMenuOpen(false); setCtx(null); }}>
-            <Shapes size={17} /><span>{armed ? tool.replace(/^(style|conn):/, '') : 'Look styles'}</span>
+          <button className={'tool wide lookstyles' + (armed || galleryOpen ? ' on' : '')} title="Components from this diagram's look" aria-expanded={galleryOpen} onClick={() => { setGalleryOpen((o) => !o); setLookOpen(false); setLookPreview(undefined); setMenuOpen(false); setCtx(null); }}>
+            <Shapes size={17} /><span>{armed ? tool.replace(/^(style|conn):/, '') : 'Components'}</span>
           </button>
           <button className={'tool wide' + (lookOpen ? ' on' : '')} title="Try the diagram in another look" aria-expanded={lookOpen}
             onClick={() => { setLookOpen((o) => !o); setLookPreview(undefined); setGalleryOpen(false); setMenuOpen(false); setCtx(null); }}>
             <Palette size={17} /><span>Look</span>
           </button>
         </div>
-        {lookOpen && <LookPicker src={cur} current={curLook} file={fileLook} onPreview={setLookPreview} onApply={applyLook} onCancel={() => { setLookOpen(false); setLookPreview(undefined); }} />}
+        {lookOpen && <LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} />}
         {galleryOpen && <div className="island gallerywrap"><Gallery look={scene.look} current={tool} onPick={(t) => { setTool(t); setGalleryOpen(false); }} /></div>}
         {tool === 'freehand' && !galleryOpen && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
         {armed && !galleryOpen && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}

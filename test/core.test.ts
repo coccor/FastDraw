@@ -336,6 +336,15 @@ test('route=curve draws a smooth line: bend bows it, via points are passed throu
   assert.ok(down.pts[12].y > down.pts[0].y);
   const through = c('a.bottom -> b.bottom route=curve via=292,260');
   assert.ok(through.pts.some((p) => p.x === 292 && p.y === 260));
+  // through via points the curve arrives along the side it ends on: the head points straight up into b,
+  // and the line stops at the head's base instead of showing through a hollow one
+  const back = scene(two + 'a.bottom -> b.bottom head=triangle route=curve via=100,260;460,260\n');
+  const tri = /<polygon points="([^"]+)"/.exec(renderSvg(back))![1].split(' ').map((s) => s.split(',').map(Number));
+  const base = [(tri[1][0] + tri[2][0]) / 2, (tri[1][1] + tri[2][1]) / 2], len = Math.hypot(tri[0][0] - base[0], tri[0][1] - base[1]);
+  assert.ok(Math.abs(tri[0][0] - base[0]) / len < 0.1 && (base[1] - tri[0][1]) / len > 0.99, `head ${tri.join(' ')}`);
+  assert.ok(back.conns[0].pts.every((p) => p.x >= 80 && p.x <= 480)); // no swinging wide of the via points
+  const drawn = /<path d="M [^"]* L ([\d.]+),([\d.]+)" fill="none"/.exec(renderSvg(back))!.slice(1).map(Number);
+  assert.ok(drawn[1] - tri[0][1] >= 10, `line ends at ${drawn}`);
   const sc = scene(two + 'a -> b "carries" route=curve bend=40\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   assert.match(check(scene(two + 'a -> b route=wavy\n')).map((i) => i.msg).join(), /route=wavy is not a route; use ortho, straight or curve/);

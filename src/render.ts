@@ -376,11 +376,38 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   }
 }
 
+// The point `dist` back along a polyline from its last point (or the first one, if it is the farthest).
+function backAlong(pts: Pt[], dist: number): Pt {
+  let left = dist;
+  for (let i = pts.length - 1; i > 0; i--) {
+    const a = pts[i], b = pts[i - 1], l = Math.hypot(a.x - b.x, a.y - b.y);
+    if (l >= left) return { x: a.x + ((b.x - a.x) / l) * left, y: a.y + ((b.y - a.y) / l) * left };
+    left -= l;
+  }
+  return pts[0];
+}
+
+// A polyline cut back by `dist` at its end, across as many steps as that takes.
+function cutEnd(pts: Pt[], dist: number): Pt[] {
+  if (!dist) return pts;
+  let left = dist;
+  for (let i = pts.length - 1; i > 0; i--) {
+    const a = pts[i], b = pts[i - 1], l = Math.hypot(a.x - b.x, a.y - b.y);
+    if (l > left) return [...pts.slice(0, i), { x: a.x + ((b.x - a.x) / l) * left, y: a.y + ((b.y - a.y) / l) * left }];
+    left -= l;
+  }
+  return pts.slice(0, 2);
+}
+
 function drawConn(look: Look, c: Conn): string {
   const p = c.p, sw = num(p.sw, 1.2), stroke = col(look, p.stroke ?? 'muted');
   const n = c.pts.length, paper = col(look, look.canvas.paper ?? 'paper');
-  const head = marker(c.headM, c.pts[n - 1], c.pts[n - 2], sw, stroke, paper), tail = marker(c.tailM, c.pts[0], c.pts[1], sw, stroke, paper);
-  const d = pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
+  // a curve is many short steps: aim its ends along the last stretch of it, not the last step alone
+  const hFrom = c.curve ? backAlong(c.pts, 10) : c.pts[n - 2], tFrom = c.curve ? backAlong([...c.pts].reverse(), 10) : c.pts[1];
+  const head = marker(c.headM, c.pts[n - 1], hFrom, sw, stroke, paper), tail = marker(c.tailM, c.pts[0], tFrom, sw, stroke, paper);
+  const d = c.curve
+    ? pathD(cutEnd(cutEnd(c.pts, head.trim).reverse(), tail.trim).reverse(), 0, 0, 0)
+    : pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
   const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}`;
   let s = roughOf(p) ? sketchSvg(d, a, roughOf(p)) : `<path d="${d}" ${a}/>`;
   if (head.svg) s += '\n' + head.svg;
