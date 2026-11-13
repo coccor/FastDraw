@@ -1,4 +1,4 @@
-// Round 2 step 3: small mono labels a size up (lines 8 -> 9, zones 7 -> 8, legend 8.5 -> 9.5)
+// Round 2 step 3: main path heavier (1.4 -> 2)
 
 canvas paper=paper
 
@@ -17,7 +17,7 @@ font serif "Newsreader"
 style node shape=rect radius=2 size=144x64 fill=#ffffff stroke=ink sw=1
     tag.color=ink tag.border=ink/0.4
     use="default box: a backend, service, component or step"
-style focal extends node fill=accent/0.14 stroke=accent title.color=accent
+style focal extends node fill=accent/0.14 stroke=accent
     tag.color=accent tag.border=accent/0.5 ghost.color=accent/0.10
     use="the one or two elements the diagram is about"
 style store extends node fill=ink/0.05 stroke=muted tag.color=muted tag.border=muted/0.5
@@ -33,7 +33,7 @@ style optional extends node fill=ink/0.02 stroke=ink/0.22 dash=4,3 tag.color=sof
 style step extends node size=160x48 use="flowchart action"
 style terminal shape=rect radius=24 size=160x48 fill=ink/0.03 stroke=ink/0.30 sw=1
     use="flowchart start or end"
-style terminal-focal extends terminal fill=accent/0.14 stroke=accent title.color=accent
+style terminal-focal extends terminal fill=accent/0.14 stroke=accent
     use="the flowchart outcome that matters most"
 style decision shape=diamond size=200x96 fill=#ffffff stroke=ink sw=1
     use="flowchart yes/no question; put the text on two short lines"
@@ -48,7 +48,7 @@ style bar shape=rect size=8x80 fill=ink/0.06 stroke=muted sw=0.8
 // ---- lines ----------------------------------------------------------------
 style arrow line stroke=muted sw=1.2 route=ortho radius=8 label.font=mono label.size=9 label.spacing=0.08
     use="default arrow"
-style primary extends arrow stroke=accent sw=1.4 use="the main path; at most two per diagram"
+style primary extends arrow stroke=accent sw=2 use="the main path; at most two per diagram"
 style link extends arrow stroke=link use="an HTTP or API request crossing a boundary"
 style return extends arrow dash=5,4 use="a response, or something optional or asynchronous"
 style lifeline line head=none stroke=ink/0.22 sw=1 dash=3,3 route=straight use="sequence diagram lifeline"
