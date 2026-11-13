@@ -75,7 +75,7 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 .tools svg { width: 26px; height: 26px; padding: 5.5px; border-radius: 5px; }
 .tools svg.on { background: #ecebfb; color: #3b30b8; }
 
-.term-win { left: 0; bottom: 0; width: 60%; height: 236px; z-index: 2; }
+.term-win { left: 0; bottom: 24px; width: 60%; height: 212px; z-index: 2; }
 .term { padding: 12px 16px; font: 12px/1.75 var(--mono); font-variant-ligatures: none; }
 .term .you { color: var(--ink); margin-bottom: 6px; }
 .term .sign { color: var(--accent); margin-right: 8px; }

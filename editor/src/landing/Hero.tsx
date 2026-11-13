@@ -49,7 +49,7 @@ function script(): [number, (s: State) => State][] {
 
 const payLine = (y: number) => LINES[PAY].replace(`,${FROM} `, `,${y} `);
 // the changed line with its middle left out, so the part that changed stays in view
-const short = (l: string) => l.replace(/ sub="[^"]*"/, " …").replace(/\s+/, " ");
+const short = (l: string) => l.replace(/^(\w+):.*?( at .*)$/, "$1: …$2");
 
 export function Hero() {
   const reduced = useMemo(() => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, []);
