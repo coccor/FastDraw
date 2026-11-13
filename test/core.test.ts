@@ -533,11 +533,17 @@ test('text that cannot be read against its background is reported; plain-line st
   assert.deepEqual(sc.conns.map((c) => c.headM), ['none', 'open', 'arrow']);
 });
 
+test('a stroke drawn by hand is one smooth open line that nothing treats as a box', () => {
+  const sc = scene('a: rect "A" at 40,100 120x48\nb: rect "B" at 400,100 120x48\nring: freehand at 20,60 points=0,60;40,0;160,0;180,60;160,120;40,120;0,62\nmark: freehand at 240,90 points=0,0;40,60;80,0\na -> b "calls"\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []); // circling a box, or lying across an arrow and its label, is not a problem
+  assert.deepEqual(sc.conns[0].pts, [{ x: 160, y: 124 }, { x: 400, y: 124 }]); // the arrow runs straight under the mark, not around it
+  assert.match(renderSvg(sc), /<path d="M 20,120 C [^"]+" stroke-linejoin="round" fill="none" stroke="[^"]+" stroke-width="2" stroke-linecap="round"\/>/);
+});
+
 test('legend swatches take hex colours; an unfilled badge on a filled box is judged against that box', () => {
   const dflt = (b: string) => buildScene(`canvas 800x400\n${b}`, null);
   const sc = dflt('f: focal "Shared types" at 40,40 160x64 fill=accent title.color=#ffffff\nb: rect "4 in" at 152,44 40x16 fill=none stroke=#ffffff title.color=#ffffff title.size=8 overlap=ok\nlegend at 40,300 swatch.#4a7c59="Stream" dot.#b07a2a/0.5="Table"\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
-  assert.ok(renderSvg(sc).includes('fill="#4a7c59"'));
-  // the same white badge with no dark box under it is on paper, and is reported
+  assert.ok(renderSvg(sc).includes('fill="#4a7c59"'));  // the same white badge with no dark box under it is on paper, and is reported
   assert.match(check(dflt('b: rect "4 in" at 152,44 48x16 fill=none stroke=ink title.color=#ffffff title.size=8\n')).map((i) => i.msg).join(), /the text of b is almost the same colour as its background/);
 });

@@ -374,6 +374,46 @@ test('line shape: switch an arrow to curved and bend it by dragging its middle',
   expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=ortho');
 });
 
+test('draw by hand: the pen leaves a short smooth stroke, stays in hand, and a stroke is picked by its line', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const before = await source(page), k = await zoom(page);
+  const wave = async (x: number, y: number) => {
+    const a = await at(page, x, y);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 40; i++) await page.mouse.move(a.x + i * 4 * k, a.y + Math.sin(i / 6) * 40 * k);
+  };
+  await page.keyboard.press('p');
+  await wave(300, 60);
+  await expect(page.locator('svg.canvas polyline.ink')).toHaveCount(1); // the ink follows the pointer
+  expect(await source(page)).toBe(before); // nothing is saved until the pen lifts
+  await page.mouse.up();
+  await expect(page.locator('svg.canvas polyline.ink')).toHaveCount(0);
+  const line = lineOf(await source(page), 'stroke');
+  expect(line).toMatch(/^stroke: freehand at 300,2\d points=([\d.]+,[\d.]+;){3,}[\d.]+,[\d.]+$/);
+  expect(line.split(';').length).toBeLessThan(25); // 40 pointer positions, thinned to the few that carry the shape
+  // the pen is still in hand: a second stroke needs no second trip to the toolbar
+  await wave(300, 340);
+  await page.mouse.up();
+  expect(lineOf(await source(page), 'stroke2')).toMatch(/^stroke2: freehand at 300,3\d\d points=/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // back to the arrow: a press inside the stroke's box but off its line picks nothing, a press on the line picks it
+  await page.keyboard.press('Escape');
+  const off = await at(page, 340, 30), on = await at(page, 300, 60);
+  await page.mouse.click(off.x, off.y);
+  await expect(page.locator('[data-handle]')).toHaveCount(0);
+  await page.mouse.click(on.x, on.y);
+  await expect(page.locator('[data-handle="se"]')).toHaveCount(1);
+  await page.keyboard.press('ArrowRight');
+  expect(lineOf(await source(page), 'stroke')).toMatch(/^stroke: freehand at 304,2\d points=/);
+  await page.keyboard.press('Control+z');
+  await page.keyboard.press('Control+z');
+  await page.keyboard.press('Control+z');
+  expect(await source(page)).toBe(before);
+  expect(errors).toEqual([]);
+});
+
 test('polygon: drag a corner, move and resize it', async ({ page }) => {
   await paste(page, 'canvas 600x400\ntri: polygon "T" at 100,100 points=60,0;120,80;0,80 fill=accent/0.2\n');
   const k = await zoom(page);

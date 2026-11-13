@@ -648,7 +648,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       // the simple route cuts through a box: find a way around (hand-set via points are left alone)
       if (c.ortho && !via.length && !c.ushape) {
         const strictlyIn = (o: Box, p: Pt) => p.x > o.x + 1 && p.x < o.x + o.w - 1 && p.y > o.y + 1 && p.y < o.y + o.h - 1;
-        const obs = shapes.filter((o) => !o.back && o.shape !== 'legend' && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        // (an open outline is a line, not a box: nothing goes around it)
+        const obs = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
         if (crosses(c.pts, obs)) { const alt = routeAround(a.pt, a.dir, b.pt, b.dir, obs, taken); if (alt) c.pts = alt; }
       }
       if (c.ortho) for (let i = 0; i < c.pts.length - 1; i++) taken.push([c.pts[i], c.pts[i + 1]]);

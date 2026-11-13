@@ -15,6 +15,8 @@ const hasPt = (b: Box, p: Pt) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y &&
 const inset = (b: Box, n: number): Box => ({ x: b.x + n, y: b.y + n, w: b.w - 2 * n, h: b.h - 2 * n });
 const name = (c: Conn) => (c.id.startsWith('_') ? `${c.a.raw} ${c.head ? '->' : '--'} ${c.b.raw}` : c.id);
 const tiny = (s: Box) => Math.min(s.w, s.h) <= 12;
+// an open outline (a trend line, a stroke drawn by hand) is a line: its box is empty space that lines and labels may use
+const isLine = (s: Shape) => !!s.poly && s.p.open === '1';
 
 // ---- can the text be read against what it sits on? --------------------------
 type RGB = [number, number, number];
@@ -123,7 +125,7 @@ export function check(sc: Scene): Issue[] {
       if (c.ortho && A.x !== B.x && A.y !== B.y) warn(c.line, `${name(c)} has a diagonal segment (${A.x},${A.y} to ${B.x},${B.y}); fix the via points so each step is horizontal or vertical`);
       for (const s of front) {
         if (c.p.layer === 'back' || c.p.layer === 'front') break; // a grid line or guide meant to run behind the boxes
-        if (s.id === c.a.id || s.id === c.b.id || tiny(s) || hit.has(s.id)) continue;
+        if (s.id === c.a.id || s.id === c.b.id || tiny(s) || hit.has(s.id) || isLine(s)) continue;
         if (hasPt(s, c.pts[0]) || hasPt(s, c.pts[c.pts.length - 1])) continue;
         if (segHits(A, B, inset(s, 1))) { hit.add(s.id); warn(c.line, `${name(c)} passes through ${s.id}; route around it with from=/to= sides or via=x,y`); }
       }
@@ -132,7 +134,7 @@ export function check(sc: Scene): Issue[] {
     for (const p of [first, last]) if (p.x < 0 || p.y < 0 || p.x > sc.w || p.y > sc.h) { warn(c.line, `${name(c)} ends outside the canvas (${sc.w}x${sc.h})`); break; }
     const l = c.label;
     if (!l) continue;
-    for (const s of front) if (!tiny(s) && inter(l, s, 1)) warn(c.line, `label "${l.text}" of ${name(c)} collides with ${s.id}; shorten it, move things apart, or place it with lpos=x,y or lside=below|left`);
+    for (const s of front) if (!tiny(s) && !isLine(s) && inter(l, s, 1)) warn(c.line, `label "${l.text}" of ${name(c)} collides with ${s.id}; shorten it, move things apart, or place it with lpos=x,y or lside=below|left`);
     for (const z of sc.shapes) {
       if (!z.back || !inter(l, z, 0) || contains(z, l)) continue;
       warn(c.line, `label "${l.text}" of ${name(c)} sits on the border of ${z.id}; place it on a clear stretch of the line with lpos=x,y`);

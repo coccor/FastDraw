@@ -113,6 +113,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const first = els[0]!;
   const kind = first.kind;
   const same = els.every((e) => e!.kind === kind);
+  // a stroke drawn by hand (any open outline) is only a line: it has no inside to fill and carries no text or icon
+  const stroke = els.every((e) => e!.kind === 'shape' && !!e!.el.poly && e!.el.p.open === '1');
   const p = first.el.p;
   const names = [...sc.look.colors.keys()].filter((n) => n !== 'paper');
   const fills = ['none', '#ffffff', ...names.map((n) => `${n}/0.08`), ...names.filter((n) => n !== 'ink')];
@@ -138,7 +140,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           </select>
         </section>
       )}
-      {same && kind === 'shape' && (
+      {same && kind === 'shape' && !stroke && (
         <section><h4>Background</h4><Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} /></section>
       )}
       {same && kind !== 'text' && (
@@ -212,7 +214,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           </section>
         </>
       )}
-      {same && (
+      {same && !stroke && (
         <section>
           <h4>Text size</h4>
           <div className="seg">
@@ -227,7 +229,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <p className="muted small">Clear an entry to remove it.</p>
         </section>
       )}
-      {same && kind === 'shape' && !first.el.legend && !first.el.rows && (
+      {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Icon</h4>
           <select aria-label="Icon" value={p.icon ?? 'none'} onChange={(e) => act.setProp('icon', e.target.value === 'none' ? null : e.target.value)}>
@@ -245,7 +247,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         </section>
       )}
       {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
-      {els.length === 1 && first.kind === 'shape' && !first.el.legend && !first.el.rows && (
+      {els.length === 1 && first.kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Extra text</h4>
           <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />

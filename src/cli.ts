@@ -100,7 +100,7 @@ if (cmd === 'check') {
   const look = file ? loadLook(file) : defaultLook();
   const errs = look.issues.filter((i) => i.level === 'error');
   if (errs.length) { for (const i of errs) console.log(`${file}:${i.line}  error  ${i.msg}`); process.exit(1); }
-  const skip = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'arc', 'icon', 'text', 'line', 'legend']);
+  const skip = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'freehand', 'arc', 'icon', 'text', 'line', 'legend']);
   const all = [...look.styles.values()].filter((s) => !skip.has(s.name));
   const L: string[] = [];
   const W = 880;
