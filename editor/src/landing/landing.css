@@ -234,3 +234,103 @@ footer p { margin: 0 0 6px; }
   .artframe { overflow-x: auto; margin: 8px -16px 0; padding: 0 8px; }
   .artframe svg { width: 820px; max-width: none; }
 }
+
+/* ---- depth: soft light, lift and colour over the flat base ------------------------------------ */
+html, body { overflow-x: clip; }
+
+/* a frosted header that stays at the top */
+.top {
+  position: sticky; top: 0; z-index: 30; max-width: none; margin: 0;
+  padding: 14px max(24px, calc(50vw - 596px));
+  background: rgba(245, 245, 245, .72); backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
+  border-bottom: 1px solid rgba(31, 35, 40, .06);
+}
+
+/* colour light behind the opening scene */
+.hero { position: relative; isolation: isolate; }
+.hero::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -120px -14vw -60px 28%;
+  background:
+    radial-gradient(38% 46% at 66% 36%, rgba(109, 74, 255, .28), transparent 70%),
+    radial-gradient(34% 42% at 92% 74%, rgba(20, 184, 166, .26), transparent 70%),
+    radial-gradient(30% 38% at 34% 88%, rgba(255, 122, 89, .22), transparent 70%),
+    radial-gradient(26% 30% at 96% 8%, rgba(255, 194, 61, .16), transparent 70%);
+  filter: blur(8px);
+}
+
+/* buttons with weight: the main one solid green, the other a raised white key */
+.btn {
+  border-radius: 10px; padding: 10px 18px; border: 1px solid rgba(31, 35, 40, .14);
+  box-shadow: 0 1px 2px rgba(31, 35, 40, .06), 0 6px 14px -8px rgba(31, 35, 40, .22);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(31, 35, 40, .06), 0 12px 24px -10px rgba(31, 35, 40, .28); }
+.btn.focal {
+  background: linear-gradient(180deg, #36a04f, #2e8540); border-color: #276f36; color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 22px -10px rgba(46, 133, 64, .75);
+}
+.btn.focal:hover { background: linear-gradient(180deg, #3aa955, #2b7b3c); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 16px 30px -12px rgba(46, 133, 64, .8); }
+
+/* the scene's windows: rounded, lit from above, casting a real shadow */
+.win { border-radius: 12px; border-color: rgba(31, 35, 40, .10); box-shadow: 0 1px 2px rgba(36, 33, 74, .05), 0 8px 18px -10px rgba(36, 33, 74, .18), 0 40px 70px -30px rgba(36, 33, 74, .35); }
+.bar { background: linear-gradient(180deg, #fdfdfe, #f4f4f7); }
+.diff { border-radius: 10px; border-color: rgba(31, 35, 40, .10); box-shadow: 0 12px 30px -16px rgba(36, 33, 74, .35); }
+.tools { border-radius: 10px; box-shadow: 0 4px 12px -6px rgba(36, 33, 74, .25); }
+
+/* the look switcher and its frame */
+.showcase { background: linear-gradient(180deg, #eceefe 0%, #f1f2f8 55%, var(--page) 100%); border-top: 0; }
+.looks button { box-shadow: 0 1px 2px rgba(31, 35, 40, .06); transition: transform .15s ease; }
+.looks button:hover { transform: translateY(-1px); }
+.showframe { border-radius: 18px; box-shadow: 0 0 0 1px rgba(36, 33, 74, .06), 0 10px 24px -14px rgba(36, 33, 74, .25), 0 50px 90px -40px rgba(36, 33, 74, .40); }
+
+/* setup: a raised panel, with commands set in dark ink like a terminal */
+.setup { border: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 0 0 1px rgba(36, 33, 74, .06), 0 20px 50px -28px rgba(36, 33, 74, .35); }
+.tabs { background: linear-gradient(180deg, #fbfbfd, #f5f5f9); padding: 0 12px; }
+.tabs button.on { border-bottom-width: 3px; }
+.tabpanel { padding: 12px 24px 24px; }
+.command { background: #23204a; border: 0; border-radius: 12px; padding: 8px 8px 8px 16px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 12px 24px -16px rgba(36, 33, 74, .6); }
+.command code { color: #eeebff; font-size: 14.5px; }
+.command code::before { content: '$ '; color: #8f7bff; }
+.command .copy { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .14); color: #d9d4ff; border-radius: 8px; }
+.command .copy:hover { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .3); color: #fff; }
+.copy { border-radius: 8px; }
+.asks li {
+  background: #fff; border-left: 3px solid var(--accent); border-radius: 10px; padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(31, 35, 40, .05), 0 8px 18px -12px rgba(31, 35, 40, .25);
+}
+
+/* why a text file: four raised cards, each with a coloured mark */
+.why dl { gap: 18px; }
+.why dl > div { background: #fff; border-radius: 18px; padding: 24px 24px 26px; box-shadow: 0 0 0 1px rgba(36, 33, 74, .05), 0 14px 34px -22px rgba(36, 33, 74, .35); }
+.why dt { display: flex; align-items: center; gap: 12px; }
+.mark { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; }
+.mark.violet { background: #ece7ff; color: #6d4aff; }
+.mark.coral { background: #ffe6de; color: #e5603f; }
+.mark.teal { background: #d6f5ee; color: #0e9c8c; }
+.mark.sky { background: #dcecff; color: #2a86e0; }
+.why dd { margin-left: 50px; }
+
+/* the gallery: tiles that lift */
+.tile { border: 0; border-radius: 14px; padding: 10px 10px 16px; box-shadow: 0 0 0 1px rgba(36, 33, 74, .06), 0 8px 20px -14px rgba(36, 33, 74, .30); transition: transform .18s ease, box-shadow .18s ease; }
+.tile:hover { transform: translateY(-3px); box-shadow: 0 0 0 1.5px var(--accent), 0 18px 34px -16px rgba(36, 33, 74, .40); }
+.tile .pic { border-radius: 9px; overflow: hidden; }
+
+/* a deep indigo footer to close the page */
+footer {
+  max-width: none; margin: 128px 0 0; padding: 48px max(24px, calc(50vw - 596px)) 56px;
+  background: #1f1d3d; color: #cfcbea; border-top: 0;
+}
+footer a { color: #fff; }
+footer a:hover { color: #c9bcff; }
+footer .muted { color: #9a95c4; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn:hover, .tile, .tile:hover, .looks button:hover { transition: none; transform: none; }
+}
+@media (max-width: 860px) { .why dd { margin-left: 0; margin-top: 8px; } }
+@media (max-width: 600px) {
+  .top { padding: 12px 16px; }
+  footer { padding: 40px 16px 48px; }
+  .hero::before { inset: 20% -30% -10% -30%; }
+}
+.next .command code { font-size: 13px; }

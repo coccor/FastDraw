@@ -1,7 +1,7 @@
 // fastdraw.dev: what FastDraw is (an agent writes the diagram, a person edits it), how to set an
 // agent up, and every kind of diagram it has a guide for. The editor itself lives at /edit/.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, GitPullRequest, MousePointer2, Palette, ShieldCheck } from 'lucide-react';
 import { buildScene } from '../../../src/scene.ts';
 import { renderBody } from '../../../src/render.ts';
 import { TEMPLATES, type Template } from '../templates.ts';
@@ -183,10 +183,10 @@ export function Landing() {
         <section className="block why">
           <h2>Why a text file</h2>
           <dl>
-            <div><dt>It is reviewed like code</dt><dd>Diagrams live in the repository next to what they describe. A change shows up as a few lines in a diff.</dd></div>
-            <div><dt>Your edits are kept</dt><dd>Moving a box changes one line. The agent leaves what you arranged alone and places only what it adds.</dd></div>
-            <div><dt>One look for the whole team</dt><dd>A <code>.look</code> file names the styles: what a service, a store or the main path looks like. Every diagram follows it.</dd></div>
-            <div><dt>Nothing is uploaded</dt><dd>The editor runs in your browser and saves to your files. Exported PNG and SVG files carry the diagram inside, so they open for editing again.</dd></div>
+            <div><dt><span className="mark violet" aria-hidden="true"><GitPullRequest size={19} /></span>It is reviewed like code</dt><dd>Diagrams live in the repository next to what they describe. A change shows up as a few lines in a diff.</dd></div>
+            <div><dt><span className="mark coral" aria-hidden="true"><MousePointer2 size={19} /></span>Your edits are kept</dt><dd>Moving a box changes one line. The agent leaves what you arranged alone and places only what it adds.</dd></div>
+            <div><dt><span className="mark teal" aria-hidden="true"><Palette size={19} /></span>One look for the whole team</dt><dd>A <code>.look</code> file names the styles: what a service, a store or the main path looks like. Every diagram follows it.</dd></div>
+            <div><dt><span className="mark sky" aria-hidden="true"><ShieldCheck size={19} /></span>Nothing is uploaded</dt><dd>The editor runs in your browser and saves to your files. Exported PNG and SVG files carry the diagram inside, so they open for editing again.</dd></div>
           </dl>
         </section>
 
