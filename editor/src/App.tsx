@@ -7,11 +7,12 @@ import { check } from '../../src/check.ts';
 import { renderBody, renderSvg } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
+import * as ws from './workspace.ts';
 import { Panel, TextField } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import {
-  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, ImageDown, Lock, LockOpen,
+  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
@@ -35,7 +36,12 @@ type Drag =
   | { type: 'label'; id: string; base: string; scene: Scene; dx: number; dy: number };
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 type Editing = { id: string; value: string; box: Box } | null;
-type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string };
+// pending: handles kept from before a reload, used once the browser lets the page write them again
+type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string; pending?: { file: files.Handle; look?: files.Handle } };
+type History = { past: string[]; future: string[] };
+// One open diagram. The active one lives in the component's state; the others wait in `docs`.
+type Doc = { id: string; name: string; src: string; lookSrc: string | null; carried: Record<string, string>; view: ws.View; io: Io; hist: History; folderFiles: string[] };
+const IN_BROWSER = 'saved in this browser';
 
 const snap = (v: number) => Math.round(v / 4) * 4;
 const BLANK = 'canvas 1000x700\n';
@@ -74,7 +80,12 @@ export function App() {
   const lockedRef = useRef(false); lockedRef.current = locked;
   const doneDrawing = () => { if (!lockedRef.current) setTool('select'); };
 
-  const hist = useRef<{ past: string[]; future: string[] }>({ past: [], future: [] });
+  const [docId, setDocId] = useState<string | null>(null);
+  const [tabs, setTabs] = useState<string[]>([]);
+  const [ready, setReady] = useState(false);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const docs = useRef(new Map<string, Doc>());
+  const hist = useRef<History>({ past: [], future: [] });
   const io = useRef<Io>({ fileMod: 0, lookMod: 0, written: '' });
   const drag = useRef<Drag | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -93,6 +104,9 @@ export function App() {
   const [iconFiles, setIconFiles] = useState<{ name: string; bytes: Uint8Array }[]>([]);
   const [carriedIcons, setCarriedIcons] = useState<Record<string, string>>({});
   const [iconNote, setIconNote] = useState('');
+  // the active diagram as it stands now, kept current on every render
+  const live = useRef<Doc | null>(null);
+  live.current = docId && src !== null ? { id: docId, name, src: srcRef.current ?? src, lookSrc, carried: carriedIcons, view, io: io.current, hist: hist.current, folderFiles } : null;
   const look = useMemo(() => (parsedLook && (iconFiles.length || Object.keys(carriedIcons).length) ? withIconImages(parsedLook, iconFiles, carriedIcons) : parsedLook), [parsedLook, iconFiles, carriedIcons]);
   useEffect(() => {
     let stale = false;
@@ -108,7 +122,7 @@ export function App() {
         : `This look brings its own icons from a folder (${dirs.join(', ')}). Open the folder that holds the diagram so they can be loaded.`);
     })();
     return () => { stale = true; };
-  }, [parsedLook, name, carriedIcons]);
+  }, [parsedLook, name, carriedIcons, docId]);
   // Load the fonts the look brings (possible when a folder is open), and say so when it can't be done.
   const [fontNote, setFontNote] = useState('');
   useEffect(() => {
@@ -127,7 +141,7 @@ export function App() {
         : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in a fallback font.`);
     })();
     return () => { stale = true; };
-  }, [look, name]);
+  }, [look, name, docId]);
   const cur = draft ?? src ?? '';
   const scene = useMemo(() => buildScene(cur, look), [cur, look]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
@@ -136,7 +150,7 @@ export function App() {
   // ---- saving and history -------------------------------------------------
   const save = useCallback((text: string) => {
     window.clearTimeout(saveTimer.current);
-    if (!io.current.file) { setStatus('not saved to disk'); return; }
+    if (!io.current.file) { setStatus(io.current.pending ? 'not connected to the file' : IN_BROWSER); return; }
     setStatus('saving…');
     saveTimer.current = window.setTimeout(async () => {
       try {
@@ -169,18 +183,149 @@ export function App() {
     srcRef.current = next; setSrcState(next); setDraft(null); save(next);
   }, [save]);
 
-  const load = useCallback((text: string, lookText: string | null, label: string) => {
-    hist.current = { past: [], future: [] };
-    srcRef.current = text; setSrcState(text); setDraft(null); setLookSrc(lookText); setName(label); setSel([]); setEditing(null);
-    setStatus(io.current.file ? 'saved' : 'not saved to disk');
+  // ---- open diagrams (tabs) -----------------------------------------------
+  const statusOf = (s: Io) => (s.file ? 'saved' : s.pending ? 'not connected to the file' : IN_BROWSER);
+
+  // Put a diagram on the canvas. The one there before must already be stashed in `docs`.
+  const show = useCallback((d: Doc) => {
+    hist.current = d.hist; io.current = d.io; srcRef.current = d.src;
+    setDocId(d.id); setSrcState(d.src); setDraft(null); setLookSrc(d.lookSrc); setName(d.name); setCarriedIcons(d.carried);
+    setView(d.view); setFolderFiles(d.folderFiles); setSel([]); setEditing(null); setRenaming(null); setStatus(statusOf(d.io));
+  }, []);
+  const stash = () => { if (live.current) docs.current.set(live.current.id, { ...live.current }); };
+
+  // Open text in a new tab, or in place of the current one (`replace`, or when that is a blank untouched canvas).
+  // The caller sets io.current for the new diagram first.
+  const load = useCallback((text: string, lookText: string | null, label: string, opt: { replace?: boolean; carried?: Record<string, string> } = {}) => {
+    const cur = live.current;
+    const reuse = !!cur && (opt.replace || (text !== BLANK && cur.src === BLANK && !cur.hist.past.length && !cur.io.file && !cur.io.pending));
     const sc = buildScene(text, lookText != null ? parseLook(lookText) : null);
     const vw = window.innerWidth, vh = window.innerHeight;
     const k = Math.min(1.5, Math.max(0.2, Math.min((vw - 340) / sc.w, (vh - 140) / sc.h)));
-    setView({ x: Math.round((vw - sc.w * k) / 2 + 80), y: Math.round((vh - sc.h * k) / 2 + 16), k });
+    const taken = new Set([...docs.current.values()].filter((d) => !(reuse && d.id === cur!.id)).map((d) => d.name));
+    let unique = label;
+    for (let n = 2; taken.has(unique); n++) unique = `${label} ${n}`;
+    if (cur && !reuse) stash();
+    const d: Doc = {
+      id: reuse ? cur!.id : ws.newId(), name: unique, src: text, lookSrc: lookText, carried: opt.carried ?? {}, io: io.current, hist: { past: [], future: [] },
+      view: { x: Math.round((vw - sc.w * k) / 2 + 80), y: Math.round((vh - sc.h * k) / 2 + 16), k }, folderFiles: io.current.folder?.files ?? [],
+    };
+    docs.current.set(d.id, d);
+    if (!reuse) setTabs((t) => [...t, d.id]);
+    show(d);
+  }, [show]);
+
+  const switchTo = (id: string) => {
+    const d = docs.current.get(id);
+    if (id === live.current?.id || !d) return; // (text being edited is finished by the textarea losing focus)
+    stash();
+    show(d);
+  };
+
+  const closeTab = (id: string) => {
+    if (id === docId) stash();
+    const d = docs.current.get(id);
+    if (!d) return;
+    const onlyHere = !d.io.file && !d.io.pending && d.src !== BLANK;
+    if (onlyHere && !window.confirm(`Close “${d.name}”? It is kept only in this browser, so closing it deletes it. To keep a copy, download it from the menu first.`)) return;
+    docs.current.delete(id);
+    ws.removeDoc(id);
+    const i = tabs.indexOf(id), rest = tabs.filter((t) => t !== id);
+    setTabs(rest);
+    if (id !== docId) return;
+    const next = rest[Math.min(i, rest.length - 1)];
+    if (next) { show(docs.current.get(next)!); return; }
+    hist.current = { past: [], future: [] }; io.current = { fileMod: 0, lookMod: 0, written: '' }; srcRef.current = null;
+    setSrcState(null); setDocId(null); setStatus('');
+  };
+
+  const rename = (id: string, value: string) => {
+    setRenaming(null);
+    const v = value.trim(), d = docs.current.get(id);
+    if (!v || !d || v === d.name) return;
+    d.name = v;
+    if (id === docId) setName(v);
+    else ws.putDoc(toStored(d)).catch(() => {});
+  };
+
+  // Keep every change in the browser, so a reload brings it back.
+  const toStored = (d: Doc): ws.StoredDoc => ({
+    id: d.id, name: d.name, src: d.src, look: d.lookSrc, carried: d.carried, view: d.view, past: d.hist.past, future: d.hist.future,
+    file: d.io.file ?? d.io.pending?.file, lookFile: d.io.look ?? d.io.pending?.look, folder: d.io.folder, path: d.io.path, written: d.io.written, updated: 0,
+  });
+  const persist = useCallback(() => {
+    const d = live.current;
+    if (!d) return;
+    docs.current.set(d.id, { ...d });
+    ws.putDoc(toStored(d)).catch((e) => setStatus('could not keep a copy in this browser: ' + (e as Error).message));
   }, []);
+  useEffect(() => { if (ready) persist(); }, [ready, docId, src, lookSrc, name, carriedIcons, persist]);
+  useEffect(() => {
+    if (!ready) return;
+    const t = window.setTimeout(persist, 400);
+    return () => window.clearTimeout(t);
+  }, [ready, view, persist]);
+  useEffect(() => { if (ready) ws.putTabs(tabs, docId); }, [ready, tabs, docId]);
+  const tabsRef = useRef(tabs); tabsRef.current = tabs;
+  useEffect(() => {
+    // when the page goes away: the last moment's view, and the tab choice in case its own write has not run yet
+    const flush = () => { if (!live.current) return; persist(); ws.putTabs(tabsRef.current, live.current.id); };
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, [persist]);
+
+  // Bring back the diagrams that were open before the reload.
+  useEffect(() => {
+    (async () => {
+      const { docs: kept, active } = await ws.loadAll();
+      for (const k of kept) {
+        docs.current.set(k.id, {
+          id: k.id, name: k.name, src: k.src, lookSrc: k.look, carried: k.carried ?? {}, view: k.view, hist: { past: k.past ?? [], future: k.future ?? [] },
+          io: { fileMod: 0, lookMod: 0, written: k.written ?? '', folder: k.folder, path: k.path, pending: k.file ? { file: k.file, look: k.lookFile } : undefined },
+          folderFiles: k.folder?.files ?? [],
+        });
+      }
+      if (kept.length) {
+        setTabs(kept.map((k) => k.id));
+        show(docs.current.get(active && docs.current.has(active) ? active : kept[kept.length - 1].id)!);
+      }
+      setReady(true);
+    })();
+  }, [show]);
+
+  // A diagram kept from before the reload that belongs to a file: write to the file again once allowed.
+  // Whichever side changed since the last save wins, and the other stays one undo away.
+  const reconnect = useCallback(async (ask: boolean) => {
+    const s = io.current, p = s.pending;
+    if (!p) return;
+    const ok = ask ? await files.askAccess(s.folder?.root ?? p.file) : await files.hasAccess(s.folder?.root ?? p.file);
+    if (s !== io.current) return; // another tab was opened meanwhile
+    if (!ok) { setStatus('not connected to the file'); return; }
+    if (ask && !s.folder && p.look) await files.askAccess(p.look);
+    try {
+      const { text, modified } = await files.readHandle(p.file);
+      if (s !== io.current) return;
+      s.pending = undefined; s.file = p.file; s.look = p.look; s.fileMod = modified;
+      const mine = srcRef.current ?? '';
+      if (text === mine) { s.written = text; setStatus('saved'); }
+      else if (text === s.written) save(mine); // only this copy changed: the reload came before the write finished
+      else {
+        hist.current.past.push(mine); hist.current.future = [];
+        s.written = text; srcRef.current = text; setSrcState(text); setDraft(null);
+        setStatus('updated from disk');
+      }
+      if (s.look) { try { const r = await files.readHandle(s.look); s.lookMod = r.modified; setLookSrc(r.text); } catch { s.look = undefined; } }
+    } catch {
+      if (s !== io.current) return;
+      s.pending = undefined;
+      setStatus(`${p.file.name} could not be read, so this copy is ${IN_BROWSER}`);
+      persist();
+    }
+  }, [save, persist]);
+  useEffect(() => { if (ready && io.current.pending) reconnect(false); }, [ready, docId, reconnect]);
 
   // ---- opening ------------------------------------------------------------
-  const openPath = useCallback(async (folder: files.Folder, path: string) => {
+  const openPath = useCallback(async (folder: files.Folder, path: string, replace = false) => {
     const h = await files.resolveIn(folder.root, path);
     if (!h) return;
     const { text, modified } = await files.readHandle(h);
@@ -188,14 +333,13 @@ export function App() {
     const lh = lp && lp.toLowerCase().endsWith('.look') ? await files.resolveIn(folder.root, files.dirOf(path) + lp) : null;
     const lr = lh ? await files.readHandle(lh) : null;
     io.current = { file: h, look: lh ?? undefined, fileMod: modified, lookMod: lr?.modified ?? 0, written: text, folder, path };
-    load(text, lr?.text ?? null, path);
+    load(text, lr?.text ?? null, path, { replace });
   }, [load]);
 
   const openFolder = useCallback(async () => {
     try {
       const opfs = new URLSearchParams(location.search).has('opfs');
       const folder = opfs ? await files.scanFolder(await navigator.storage.getDirectory()) : await files.pickFolder();
-      setFolderFiles(folder.files);
       io.current = { fileMod: 0, lookMod: 0, written: '', folder };
       if (folder.files.length) await openPath(folder, folder.files[0]);
       else setStatus('no .fdraw files in that folder');
@@ -212,10 +356,10 @@ export function App() {
       }
       const h = await files.pickFile('diagram');
       if (/\.(png|svg)$/i.test(h.name)) { await openBlob(await h.getFile()); return; }
+      for (const d of [...docs.current.values()]) if (await files.sameFile(d.io.file ?? d.io.pending?.file, h)) { switchTo(d.id); return; }
       await files.ensureWritable(h);
       const { text, modified } = await files.readHandle(h);
       io.current = { file: h, fileMod: modified, lookMod: 0, written: text };
-      setFolderFiles([]);
       load(text, null, h.name);
     } catch { /* picker cancelled */ }
   }, [load]);
@@ -230,9 +374,8 @@ export function App() {
     else diagram = await f.text();
     if (diagram === null) { setStatus(`${f.name} was not exported from FastDraw, so it has no diagram inside`); return false; }
     io.current = { fileMod: 0, lookMod: 0, written: '' };
-    setFolderFiles([]);
-    setCarriedIcons(carried && typeof carried === 'object' ? carried : {}); // checked again, name by name, before use
-    load(diagram, lookText ?? null, f.name.replace(/\.(png|svg)$/i, '.fdraw'));
+    // the carried icons are checked again, name by name, before use
+    load(diagram, lookText ?? null, f.name.replace(/\.(png|svg)$/i, '.fdraw'), { carried: carried && typeof carried === 'object' ? carried : {} });
     return true;
   }, [load]);
 
@@ -246,14 +389,10 @@ export function App() {
     } catch { /* cancelled */ }
   }, []);
 
-  // A blank canvas in the built-in look, kept in memory until downloaded.
+  // A blank canvas in the built-in look, in a new tab, kept in this browser.
   // A template is a finished example in the built-in look, opened the same way.
   const newDiagram = (text = BLANK, label = 'untitled') => {
-    const h = hist.current;
-    if (srcRef.current !== null && !io.current.file && h.past.length && !window.confirm('Start a new diagram? Changes to this one have not been downloaded.')) return;
     io.current = { fileMod: 0, lookMod: 0, written: '' };
-    setFolderFiles([]);
-    setCarriedIcons({});
     setTemplatesOpen(false);
     load(text, null, label);
   };
@@ -261,7 +400,6 @@ export function App() {
 
   const openDemo = (text: string, label: string) => {
     io.current = { fileMod: 0, lookMod: 0, written: '' };
-    setFolderFiles([]);
     load(text, demoLook, label + ' (example)');
   };
 
@@ -634,6 +772,7 @@ export function App() {
   const closePopups = () => { setMenuOpen(false); setGalleryOpen(false); setCtx(null); };
   const baseName = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
 
+  if (!ready) return null; // the diagrams kept in the browser are on their way
   if (src === null) {
     return (
       <div className="start">
@@ -652,8 +791,8 @@ export function App() {
           <p className="muted">Or look at an example: {DEMOS.map(([l, t]) => <button key={l} className="linkbtn" onClick={() => openDemo(t, l)}>{l}</button>)}</p>
           <p className="muted">
             {files.hasFileAccess
-              ? 'Files stay on your machine. Nothing is uploaded.'
-              : 'This browser cannot save files in place, so changes stay in memory and you download the result. Chrome and Edge can save in place. Nothing is uploaded.'}
+              ? 'Files stay on your machine. Nothing is uploaded. Open diagrams are also kept in this browser, so a reload loses nothing.'
+              : 'This browser cannot save files in place, so diagrams are kept in this browser and you download the result. Chrome and Edge can save in place. Nothing is uploaded.'}
           </p>
           {status && <p className="muted warn">{status}</p>}
         </div>
@@ -669,7 +808,8 @@ export function App() {
   const armed = tool.startsWith('style:') || tool.startsWith('conn:');
   const cursor = space.current || tool === 'hand' ? 'grab' : tool === 'select' ? (hover ? 'move' : 'default') : 'crosshair';
   const hovered = hover && !sel.includes(hover) && tool === 'select' ? ops.find(scene, hover) : undefined;
-  const saveState = status.startsWith('could not') ? 'bad' : status === 'not saved to disk' ? 'mem' : 'ok';
+  const saveState = status.includes('could not') ? 'bad' : status === 'not connected to the file' ? 'mem' : 'ok';
+  const tabName = (id: string) => (id === docId ? name : docs.current.get(id)?.name ?? '').replace(/^.*\//, '');
 
   return (
     <div className="app" onPointerDown={closePopups}>
@@ -792,10 +932,11 @@ export function App() {
       <div className="topright" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island filechip">
           {folderFiles.length > 1
-            ? <select aria-label="Diagram" value={io.current.path} onChange={(e) => io.current.folder && openPath(io.current.folder, e.target.value)}>{folderFiles.map((f) => <option key={f}>{f}</option>)}</select>
+            ? <select aria-label="Diagram" value={io.current.path} onChange={(e) => io.current.folder && openPath(io.current.folder, e.target.value, true)}>{folderFiles.map((f) => <option key={f}>{f}</option>)}</select>
             : <b title={name}>{name}</b>}
           <span className={'dot ' + saveState} />
           <span className="status">{status}</span>
+          {io.current.pending && <button className="reconnect" title={`Let the editor write to ${io.current.pending.file.name} again`} onClick={() => reconnect(true)}>Reconnect</button>}
         </div>
         <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
           title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
@@ -825,6 +966,27 @@ export function App() {
         </div>
       </div>
 
+      <div className="bottomcenter" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="island tabs" role="tablist" aria-label="Open diagrams">
+          {tabs.map((id) => {
+            const d = id === docId ? live.current : docs.current.get(id);
+            const where = d?.io.file || d?.io.pending ? `Saved to ${d.io.path ?? d.io.file?.name ?? d.io.pending?.file.name}` : 'Kept in this browser';
+            return (
+              <div key={id} className={'tab' + (id === docId ? ' on' : '')}>
+                {renaming === id
+                  ? <input className="tabname" autoFocus defaultValue={d?.name} aria-label="Diagram name" onFocus={(e) => e.target.select()}
+                      onBlur={(e) => rename(id, e.target.value)}
+                      onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') rename(id, e.currentTarget.value); else if (e.key === 'Escape') setRenaming(null); }} />
+                  : <button role="tab" aria-selected={id === docId} title={`${d?.name} — ${where}${d?.io.file || d?.io.pending ? '' : '. Double-click to rename'}`}
+                      onClick={() => switchTo(id)} onDoubleClick={() => d && !d.io.file && !d.io.pending && setRenaming(id)}>{tabName(id)}</button>}
+                <button className="tabx" aria-label={`Close ${tabName(id)}`} title="Close" onClick={() => closeTab(id)}><X size={13} /></button>
+              </div>
+            );
+          })}
+          <button className="tabnew" aria-label="New diagram in a new tab" title="New diagram" onClick={() => newDiagram()}><Plus size={15} /></button>
+        </div>
+      </div>
+
       {ctx && (
         <div className="island dropdown ctx" style={{ left: ctx.x, top: ctx.y }} role="menu" onPointerDown={(e) => e.stopPropagation()}>
           {sel.length === 1 && <button role="menuitem" onClick={() => { setCtx(null); startEdit(sel[0]); }}><Pencil size={15} />Edit text<kbd>Enter</kbd></button>}
@@ -839,7 +1001,7 @@ export function App() {
         </div>
       )}
 
-      {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; setFolderFiles([]); load(t, lookSrc, 'pasted diagram'); }} />}
+      {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
       {templateDialog}
     </div>
   );

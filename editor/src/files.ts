@@ -65,6 +65,26 @@ export async function ensureWritable(h: Handle): Promise<boolean> {
   } catch { return true; } // origin-private files have no permission prompt
 }
 
+// Whether a handle kept from an earlier visit can still be written without asking.
+export async function hasAccess(h: FileSystemHandle): Promise<boolean> {
+  try {
+    // @ts-expect-error: permission methods are not in the bundled DOM types
+    return (await h.queryPermission({ mode: 'readwrite' })) === 'granted';
+  } catch { return true; } // origin-private files have no permission prompt
+}
+
+// Ask again (needs a click). For a folder this covers the diagram, its look and fonts at once.
+export async function askAccess(h: FileSystemHandle): Promise<boolean> {
+  try {
+    // @ts-expect-error: permission methods are not in the bundled DOM types
+    return (await h.requestPermission({ mode: 'readwrite' })) === 'granted';
+  } catch { return true; }
+}
+
+export async function sameFile(a: Handle | undefined, b: Handle): Promise<boolean> {
+  try { return !!a && await a.isSameEntry(b); } catch { return false; }
+}
+
 export async function readHandle(h: Handle): Promise<{ text: string; modified: number }> {
   const f = await h.getFile();
   return { text: await f.text(), modified: f.lastModified };
