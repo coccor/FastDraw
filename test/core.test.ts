@@ -484,6 +484,22 @@ test('icons: on a box, on their own, from the look, and with clear errors', () =
   assert.ok(renderSvg(buildScene('look "x.look"\nh: hot "Fast" at 40,40 120x48\n', look)).includes('M13 3 L4 14'));
 });
 
+test('built-in icons: every one would pass the look rules, and a search finds them by meaning as well as name', async () => {
+  const { ICONS, ICON_WORDS, iconMatches } = await import('../src/icons.ts');
+  assert.ok(Object.keys(ICONS).length >= 120);
+  for (const [name, paths] of Object.entries(ICONS)) {
+    assert.match(name, /^[a-z][a-z0-9-]*$/);
+    assert.ok(paths.length && paths.length <= 12 && paths.every((d) => /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) && d.length <= 4000), name);
+  }
+  assert.deepEqual(Object.keys(ICON_WORDS).filter((n) => !ICONS[n]), []);
+  const find = (w: string) => Object.keys(ICONS).filter((n) => iconMatches(n, w));
+  assert.ok(find('email').includes('mail') && find('k8s').includes('pod') && find('db').includes('database') && find('lambda').includes('function'));
+  assert.ok(find('load balancer').includes('load-balancer') && find('').length === Object.keys(ICONS).length);
+  // a wrong name points at what was probably meant first
+  const msg = check(scene('a: node "A" icon=email at 40,40\n')).map((i) => i.msg).join();
+  assert.match(msg, /there is no icon called "email"; the look has: mail, /);
+});
+
 test('icon files from a look folder: named from the file, drawn as images, carried in exports, never trusted', async () => {
   const { iconName, withIconImages, isIconUri, svgDataUri } = await import('../src/iconfiles.ts');
   assert.deepEqual(['10021-icon-service-Virtual-Machine.svg', 'Load Balancer.SVG', '  App_Service (v2).svg'].map(iconName), ['virtual-machine', 'load-balancer', 'app-service-v2']);

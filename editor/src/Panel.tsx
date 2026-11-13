@@ -8,6 +8,7 @@ import { MARKERS } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
+import { IconPicker } from './IconPicker.tsx';
 import type { AlignMode } from './ops.ts';
 
 export type PanelActions = {
@@ -232,17 +233,28 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Icon</h4>
-          <select aria-label="Icon" value={p.icon ?? 'none'} onChange={(e) => act.setProp('icon', e.target.value === 'none' ? null : e.target.value)}>
-            <option value="none">None</option>
-            {sc.look.images.size > 0 && <optgroup label="From the look's folder">{[...sc.look.images.keys()].map((n) => <option key={n} value={n}>{n}</option>)}</optgroup>}
-            <optgroup label="Built in">{[...sc.look.icons.keys()].filter((n) => !sc.look.images.has(n)).map((n) => <option key={n} value={n}>{n}</option>)}</optgroup>
-          </select>
+          <IconPicker look={sc.look} value={p.icon} onPick={(n) => act.setProp('icon', n)} />
           {p.icon && p.icon !== 'none' && (
-            <div className="seg" style={{ marginTop: 6 }}>
-              {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
-                <button key={l} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l}</button>
-              ))}
-            </div>
+            <>
+              <div className="seg" style={{ marginTop: 6 }}>
+                {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
+                  <button key={l} aria-label={l} title={`Icon ${l.toLowerCase()}`} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l.split(' ')[0]}</button>
+                ))}
+              </div>
+              <div className="seg" role="group" aria-label="Icon size" style={{ marginTop: 6 }}>
+                {[['Auto', ''], ['S', '16'], ['M', '24'], ['L', '32'], ['XL', '48']].map(([l, v]) => (
+                  <button key={l} title={v ? `${v}px` : 'Sized to fit the box'} className={(p['icon.size'] ?? '') === v ? 'on' : ''} onClick={() => act.setProp('icon.size', v || null)}>{l}</button>
+                ))}
+              </div>
+              {!sc.look.images.has(p.icon) && (
+                <div style={{ marginTop: 6 }}>
+                  <div className="seg" style={{ marginBottom: 4 }}>
+                    <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
+                  </div>
+                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} />
+                </div>
+              )}
+            </>
           )}
         </section>
       )}

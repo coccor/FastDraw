@@ -161,7 +161,7 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 
 ### Icons
 
-`icon=name` puts a small outline icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, laptop, api and about forty more).
+`icon=name` puts a small outline icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, mail, function, ai and about 120 more). `fastdraw icons email` searches them by name or meaning: it finds `mail`, and `k8s` finds `pod`.
 
 - The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height.
 - With no text, the icon fills the box. A box of style `icon` has no outline, so it is an icon on its own: `icon at 60,220 icon=server` (24x24; give `WxH` for another size).
