@@ -4,7 +4,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Circle, Diamond, Hand, MousePointer2, Square, Type } from 'lucide-react';
 import { buildScene } from '../../../src/scene.ts';
+import { bundledLook } from '../../../src/look.ts';
 import { renderBody } from '../../../src/render.ts';
+
+// drawn in the Whiteboard look: sticky-note colours, so the first picture on the page is a lively one
+const LOOK = bundledLook('whiteboard');
 
 const PROMPT = 'Draw our checkout flow as docs/checkout.fdraw';
 const LINES = [
@@ -72,8 +76,8 @@ export function Hero() {
   }, [run, reduced]);
 
   const text = LINES.slice(0, s.lines).map((l, i) => (i === PAY ? payLine(s.payY) : l)).join('\n');
-  const final = useMemo(() => buildScene(LINES.join('\n'), null), []);
-  const body = useMemo(() => renderBody(buildScene(text, null), false), [text]);
+  const final = useMemo(() => buildScene(LINES.join('\n'), LOOK), []);
+  const body = useMemo(() => renderBody(buildScene(text, LOOK), false), [text]);
   const hs = 7; // handle size, in diagram units
   const corners = [[0, 0], [0.5, 0], [1, 0], [1, 0.5], [1, 1], [0.5, 1], [0, 1], [0, 0.5]];
 
