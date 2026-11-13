@@ -4,8 +4,8 @@
 // The server listens on 127.0.0.1 only, under a random token, and answers only the editor's own origin.
 // It reads files inside the folder and writes only .fdraw and .look files there.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readdirSync, readFileSync, writeFileSync, statSync, realpathSync, existsSync } from 'node:fs';
-import { join, resolve, sep, extname } from 'node:path';
+import { readdirSync, readFileSync, writeFileSync, statSync, lstatSync, realpathSync, existsSync } from 'node:fs';
+import { join, resolve, sep, extname, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 
 export const DEFAULT_EDITOR = 'https://fastdraw.dev/';
@@ -44,7 +44,12 @@ function inside(root: string, rel: string): string | null {
   if (!parts.length || parts.some((p) => !p || p.startsWith('.') || p.includes('\0') || p.includes('\\') || p.includes(sep))) return null;
   const full = resolve(root, ...parts);
   if (!full.startsWith(root + sep)) return null;
-  if (existsSync(full)) { try { if (!realpathSync(full).startsWith(root + sep)) return null; } catch { return null; } }
+  try {
+    // the folder it sits in, with every link resolved, must be inside; so must the file itself if it exists
+    const parent = realpathSync(dirname(full));
+    if (parent !== root && !parent.startsWith(root + sep)) return null;
+    if (existsSync(full) && !realpathSync(full).startsWith(root + sep)) return null;
+  } catch { return null; }
   return full;
 }
 
@@ -94,6 +99,7 @@ export function serveFolder(folder: string, opts: { editor?: string; open?: stri
     }
     if (req.method === 'PUT') {
       if (!WRITABLE.has(extname(file).toLowerCase())) return send(403, 'only .fdraw and .look files are written');
+      try { if (lstatSync(file).isSymbolicLink()) return send(403, 'not written through a link'); } catch { /* a new file */ }
       const chunks: Buffer[] = [];
       let size = 0;
       req.on('data', (c: Buffer) => { size += c.length; if (size <= MAX_WRITE) chunks.push(c); });

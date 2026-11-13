@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveFolder } from '../src/serve.ts';
@@ -79,5 +79,14 @@ test('writes only diagrams and looks', async () => {
     assert.equal((await put('notes.txt', 'x')).status, 403);
     assert.equal((await put('icons/x y.svg', 'x')).status, 403);
     assert.equal(readFileSync(join(dir, 'notes.txt'), 'utf8'), 'hello');
+    // not through a linked folder that leads outside, nor through a linked file
+    const outside = mkdtempSync(join(tmpdir(), 'fdout-'));
+    symlinkSync(outside, join(dir, 'away'));
+    assert.equal((await put('away/new.look', 'x')).status, 403);
+    assert.ok(!existsSync(join(outside, 'new.look')));
+    writeFileSync(join(outside, 'target.fdraw'), 'keep');
+    symlinkSync(join(outside, 'target.fdraw'), join(dir, 'link.fdraw'));
+    assert.equal((await put('link.fdraw', 'x')).status, 403);
+    assert.equal(readFileSync(join(outside, 'target.fdraw'), 'utf8'), 'keep');
   } finally { await s.close(); }
 });
