@@ -16,6 +16,20 @@ test('the landing page says what FastDraw is, sets up an agent, and opens a kind
   expect(errors).toEqual([]);
 });
 
+test('the showcase redraws the same file in each look, and the page does not scroll sideways on a phone', async ({ page }) => {
+  await page.goto('/');
+  const svg = page.locator('.showframe svg');
+  await expect(svg).toHaveAttribute('aria-label', /Whiteboard look/);
+  const before = await svg.innerHTML();
+  await page.getByRole('radio', { name: 'Sketch' }).click();
+  await expect(svg).toHaveAttribute('aria-label', /Sketch look/);
+  expect(await svg.innerHTML()).not.toBe(before);
+  await page.getByRole('button', { name: /Show the file/ }).click();
+  await expect(page.locator('.showsrc')).toContainText('look sketch');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
 test('the guide is served for agents: llms.txt and each kind', async ({ request }) => {
   const llms = await (await request.get('/llms.txt')).text();
   expect(llms).toContain('npx fastdraw');

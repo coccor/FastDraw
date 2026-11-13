@@ -45,7 +45,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hero { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 56px; align-items: center; padding: 28px 0 40px; min-height: min(640px, calc(100vh - 80px)); }
 h1, h2 { font-family: 'Newsreader', Georgia, serif; font-weight: 400; color: var(--ink); margin: 0; }
 h1 { font-size: clamp(38px, 4.1vw, 56px); line-height: 1.04; letter-spacing: -0.015em; text-wrap: balance; }
-h2 { font-size: clamp(30px, 3.6vw, 40px); line-height: 1.12; letter-spacing: -0.01em; max-width: 22em; }
+h2 { font-size: clamp(30px, 3.6vw, 40px); line-height: 1.12; letter-spacing: -0.01em; max-width: 22em; text-wrap: balance; }
 h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 .lede { font-size: 18px; color: var(--muted); max-width: 62ch; margin: 18px 0 0; }
 .intro .lede { font-size: 17.5px; max-width: 40ch; margin-top: 22px; }
@@ -102,6 +102,36 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 
 .replay { position: absolute; right: 0; bottom: 0; background: none; border: 0; color: var(--link); font-size: 14px; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
 .replay:hover { color: var(--ink); }
+
+/* the showcase: a full-width band with one large diagram, redrawn in each look */
+.showcase {
+  margin: 48px calc(50% - 50vw) 0; padding: 80px max(24px, calc(50vw - 620px)) 72px;
+  background: linear-gradient(180deg, #e9ebef 0%, #eef0f3 60%, var(--page) 100%);
+  border-top: 1px solid var(--hair);
+}
+.showhead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 56px; align-items: end; }
+.showhead .lede { margin: 0; }
+.looks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 32px 0 16px; }
+.looks button {
+  background: var(--box); border: 1px solid var(--stroke); border-radius: 999px; padding: 7px 16px; font-size: 14.5px; color: var(--muted);
+}
+.looks button:hover { color: var(--ink); border-color: var(--ink); }
+.looks button.on { background: var(--accent-tint); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.lookabout { margin-left: 10px; font-size: 14px; color: var(--muted); }
+.showframe {
+  margin: 0; border-radius: 10px; overflow: hidden; background: var(--box);
+  box-shadow: 0 0 0 1px rgba(31, 35, 40, .08), 0 2px 4px rgba(31, 35, 40, .04), 0 32px 64px -32px rgba(31, 35, 40, .35);
+}
+.showframe svg { display: block; width: 100%; height: auto; animation: lookin .45s ease-out; }
+@keyframes lookin { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .showframe svg { animation: none; } }
+.showfoot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-top: 16px; font-size: 14px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
+.linkish:hover { color: var(--ink); }
+.showsrc {
+  margin: 14px 0 0; padding: 16px 18px; max-height: 420px; overflow: auto; background: var(--box); border: 1px solid var(--stroke); border-radius: 4px;
+  font: 12.5px/1.65 var(--mono); font-variant-ligatures: none;
+}
 
 /* sections */
 .block { padding: 96px 0 0; }
@@ -166,4 +196,15 @@ footer p { margin: 0 0 6px; }
   .lede { font-size: 17px; }
   .block { padding-top: 72px; }
   .tabpanel { padding: 4px 14px 16px; }
+}
+@media (max-width: 860px) {
+  .showhead { grid-template-columns: minmax(0, 1fr); }
+  .showcase { padding-top: 56px; padding-bottom: 48px; }
+  .lookabout { flex-basis: 100%; margin: 6px 0 0; }
+}
+@media (max-width: 600px) {
+  .showcase { padding-left: 16px; padding-right: 16px; }
+  .showframe { border-radius: 6px; overflow-x: auto; }
+  .showframe svg { width: 780px; max-width: none; }
+  .looks button { padding: 6px 12px; font-size: 13.5px; }
 }

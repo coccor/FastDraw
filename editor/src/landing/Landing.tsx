@@ -6,6 +6,7 @@ import { buildScene } from '../../../src/scene.ts';
 import { renderBody } from '../../../src/render.ts';
 import { TEMPLATES, type Template } from '../templates.ts';
 import { Hero } from './Hero.tsx';
+import { Showcase } from './Showcase.tsx';
 
 const REPO = 'https://github.com/coccor/fastdraw';
 
@@ -152,6 +153,8 @@ export function Landing() {
           </div>
           <Hero />
         </section>
+
+        <Showcase />
 
         <section id="setup" className="block">
           <h2>Set up your agent</h2>
