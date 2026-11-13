@@ -43,7 +43,7 @@ guidance "Use focal on at most two things in one diagram."
 
 ### Colours
 
-A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names.
+A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names. `card` is the fill of a plain box (white unless a look sets it; a dark look sets it to its box colour), so a diagram that writes `fill=card` stays right in every look.
 
 ### Fonts
 

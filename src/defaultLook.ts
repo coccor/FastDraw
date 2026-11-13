@@ -7,6 +7,7 @@ export const DEFAULT_LOOK = `// FastDraw default look. Copy it with "fastdraw in
 canvas paper=paper dots=ink/0.07 dotgap=24
 
 color paper  #f6f7fb
+color card   #ffffff
 color ink    #0f172a
 color muted  #475569
 color soft   #94a3b8

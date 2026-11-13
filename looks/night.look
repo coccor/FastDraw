@@ -5,6 +5,7 @@
 canvas paper=paper dots=ink/0.08 dotgap=24
 
 color paper  #0b1226
+color card   #131c38
 color ink    #e2e8f0
 color muted  #94a3b8
 color soft   #64748b

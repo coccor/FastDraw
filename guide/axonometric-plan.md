@@ -16,7 +16,7 @@ A box from `x0,y0` to `x1,y1`, standing from z to z+h, has four top corners: A (
 
 ```
 // desk: 24,28 to 68,52, z 6 to 16 · origin 450,142
-polygon at 422,152 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=#ffffff stroke=ink sw=1 overlap=ok          // silhouette A B Bb Cb Db D
+polygon at 422,152 points=24,0;68,22;68,32;44,44;0,22;0,12 fill=card stroke=ink sw=1 overlap=ok          // silhouette A B Bb Cb Db D
 polygon at 422,164 points=0,0;44,22;44,32;0,10 fill=ink/0.07 stroke=none overlap=ok mask=0                  // left face: D C Cb Db
 polygon at 466,174 points=0,12;24,0;24,10;0,22 fill=ink/0.15 stroke=none overlap=ok mask=0                  // right face: C B Bb Cb
 polygon at 422,164 points=0,0;44,22;44,32;44,22;68,10 open=1 stroke=ink/0.55 sw=0.8 overlap=ok              // inner edges: D C Cb C B
@@ -40,7 +40,7 @@ One room or one building: the accent floor tint and an accent tag. Its furniture
 
 ## Text
 
-- Each room is named by a tag: `rect "Kitchen" sub="café, lockers" at 456,300 96x32 radius=2 fill=#ffffff stroke=ink/0.12 sw=0.8 title.size=12 sub.size=8 overlap=ok`. The focal tag has `stroke=accent title.color=accent sub.color=accent`. Tags are level, never tilted onto the floor, and written after every box so no wall cuts them. One or two words per name.
+- Each room is named by a tag: `rect "Kitchen" sub="café, lockers" at 456,300 96x32 radius=2 fill=card stroke=ink/0.12 sw=0.8 title.size=12 sub.size=8 overlap=ok`. The focal tag has `stroke=accent title.color=accent sub.color=accent`. Tags are level, never tilted onto the floor, and written after every box so no wall cuts them. One or two words per name.
 - A tag goes on open floor inside its room: project a floor point (z=6), centre the 96x32 tag on it. Accept the spot only if the whole tag rectangle lies inside the slab outline and does not touch the silhouette of any box (tall boxes in front of the spot reach 2h units up the screen) or another tag. Step the point in 5-unit moves until it passes; a script can test the rectangle's corners and edge midpoints with a point-in-polygon check. On a 300x200 plan with two furnished rooms there is room for about one spot per room.
 - When no spot passes (a small plan, a crowded room, a building tag that would sit on furniture), put the tag outside the slab: a 6x6 dot (`ellipse ... fill=ink stroke=none overlap=ok`) on the floor point, a level leader to the tag (`px,py -- tagright,py stroke=ink/0.4 sw=0.8 layer=front`) and the tag 12px beyond the slab's left corner (`ox - Y`) or right corner (`ox + X`), at the same height as the dot. Pick a height where the leader crosses no tall box. A building's tag may instead sit on its roof.
 
