@@ -5,18 +5,21 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Circle, Diamond, Hand, MousePointer2, Square, Type } from 'lucide-react';
 import { buildScene } from '../../../src/scene.ts';
 import { bundledLook } from '../../../src/look.ts';
+import { withIconImages } from '../../../src/iconfiles.ts';
 import { renderBody } from '../../../src/render.ts';
 
 // drawn in the Whiteboard look: sticky-note colours, so the first picture on the page is a lively one
-const LOOK = bundledLook('whiteboard');
+// with the colour pictures from the illustration's look folder, so its boxes carry colour icons
+const PICTURES = import.meta.glob('../../../examples/showcase/icons/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+const LOOK = withIconImages(bundledLook('whiteboard')!, Object.entries(PICTURES).map(([path, svg]) => ({ name: path.replace(/^.*\//, ''), bytes: new TextEncoder().encode(svg) })));
 
 const PROMPT = 'Draw our checkout flow as docs/checkout.fdraw';
 const LINES = [
   'text "Checkout" at 40,56 style=h1',
-  'shop: external "Web shop" sub="browser" icon=desktop at 40,104 152x64',
-  'api:  focal "Checkout API" sub="prices, validates" icon=cart at 304,104 168x64',
-  'pay:  cloud "Payments" sub="card provider" icon=payment at 560,104 152x64',
-  'db:   store "Orders DB" sub="Postgres" icon=database at 304,232 168x64',
+  'shop: external "Web shop" sub="browser" icon=shopper icon.size=30 at 40,104 152x64',
+  'api:  focal "Checkout API" sub="prices, validates" icon=basket icon.size=30 at 304,104 168x64',
+  'pay:  cloud "Payments" sub="card provider" icon=card icon.size=30 at 560,104 152x64',
+  'db:   store "Orders DB" sub="Postgres" icon=vault icon.size=30 at 304,232 168x64',
   'shop -> api "places order" style=primary',
   'api -> pay "charges"',
   'api -> db "writes"',
