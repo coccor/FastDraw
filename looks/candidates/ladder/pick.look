@@ -58,6 +58,7 @@ style rule line head=none stroke=ink/0.10 sw=0.8 route=straight use="thin separa
 style h1 text font=serif size=28 weight=500 color=ink use="diagram title"
 style eyebrow text font=mono size=8 color=muted spacing=0.18 caps=1 use="small caps label, e.g. LEGEND"
 style caption text font=sans size=9.5 color=muted use="legend entry"
+style legend extends legend item.size=9.5
 style note text font=serif italic=1 size=14 color=muted use="a short editorial aside; at most two"
 style small text font=mono size=9 color=muted use="technical detail: a port, path or command"
 style kicker text font=mono size=10 weight=500 color=accent spacing=0.16 caps=1 use="optional: a short category above the title, e.g. PROCESS"
