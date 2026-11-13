@@ -1,0 +1,99 @@
+// Whiteboard: an online-whiteboard look. A white board with a light dot grid, white rounded
+// shapes with a dark outline, pastel sticky notes for the kinds of thing, curved dark connectors,
+// one bright blue for the subject and the main path, and sans type throughout.
+
+canvas paper=paper dots=ink/0.14 dotgap=24
+
+color paper  #fafafb
+color ink    #1a1b25
+color muted  #4b4d5c
+color soft   #8a8c99
+color accent #4262ff
+color link   #2b7a78
+
+// sticky-note pastels
+color yellow #fff6a6
+color blue   #c6e2ff
+color green  #d3f2b4
+color pink   #ffd1e6
+color orange #ffd8b0
+color violet #e2d6ff
+
+font sans  "Geist"
+font mono  "Geist Mono"
+font serif "Newsreader"
+
+// ---- boxes ----------------------------------------------------------------
+// plain boards shapes are white with a dark outline; stickies have no outline
+style node shape=rect radius=10 size=144x64 fill=#ffffff stroke=ink sw=1.6
+    title.font=sans title.weight=500 title.color=ink sub.font=sans sub.color=muted
+    tag.color=ink tag.border=ink/0.35
+    use="default box: a backend, service, component or step"
+style focal extends node fill=accent/0.10 stroke=accent sw=2.2
+    title.color=accent tag.color=accent tag.border=accent/0.5 ghost.color=accent/0.12
+    use="the one or two elements the diagram is about"
+style store extends node radius=3 fill=blue stroke=none sw=0 tag.color=ink tag.border=ink/0.3
+    use="something that holds data or state (blue sticky)"
+style cloud extends node radius=3 fill=green stroke=none sw=0 tag.color=ink tag.border=ink/0.3
+    use="a hosted or third-party platform (green sticky)"
+style external extends node radius=3 fill=pink stroke=none sw=0 tag.color=ink tag.border=ink/0.3
+    use="a person or system outside what you own (pink sticky)"
+style optional extends node fill=#ffffff stroke=soft sw=1.4 dash=6,4 tag.color=soft tag.border=soft/0.5
+    title.color=muted
+    use="optional or asynchronous participant"
+style sticky extends node radius=3 size=120x120 fill=yellow stroke=none sw=0 title.weight=400
+    tag.color=ink tag.border=ink/0.3
+    use="a yellow sticky note: an idea, comment or open question"
+style sticky-orange extends sticky fill=orange use="an orange sticky note: a risk or issue"
+style sticky-violet extends sticky fill=violet use="a violet sticky note: a decision or note"
+
+// ---- flowchart shapes -----------------------------------------------------
+style step extends node size=160x48 use="flowchart action"
+style terminal shape=rect radius=24 size=160x48 fill=#ffffff stroke=ink sw=1.6 title.weight=500
+    sub.font=sans sub.color=muted tag.color=ink tag.border=ink/0.35
+    use="flowchart start or end"
+style terminal-focal extends terminal fill=accent stroke=accent title.color=#ffffff
+    sub.color=#ffffff/0.85 tag.color=#ffffff tag.border=#ffffff/0.6
+    use="the flowchart outcome that matters most"
+style decision shape=diamond size=200x96 fill=yellow stroke=ink sw=1.6 title.weight=500
+    use="flowchart yes/no question; put the text on two short lines"
+
+// ---- other shapes ---------------------------------------------------------
+// a zone is a board frame: white sheet, light outline, plain sans name
+style zone shape=rect radius=6 fill=#ffffff/0.7 stroke=ink/0.16 sw=1 layer=back
+    title.pos=top title.font=sans title.size=11 title.weight=500 title.color=muted title.spacing=0 title.caps=0
+    use="a labelled region drawn behind a group of boxes; always give WxH"
+style bar shape=rect radius=2 size=8x80 fill=accent/0.14 stroke=accent sw=1
+    use="sequence diagram activation bar, centred on a lifeline; always give WxH"
+
+style table shape=table radius=8 fill=#ffffff stroke=ink sw=1.4 head.fill=blue rule=ink/0.1
+    cell.font=sans cell.size=10.5 detail.color=muted
+    use="an entity, class or database table: a header and rows. One line per row: | id \"name\" \"type\" \"key\". Arrows can end on a row: orders.user_id -> users.id"
+style matrix extends table align=center grid=1 cell.font=sans
+    use="a grid of values: first row with |= for the column headings, first cell of each row is its name"
+
+// ---- lines ----------------------------------------------------------------
+style arrow line stroke=ink sw=1.6 route=curve radius=10 label.font=sans label.size=10.5 label.color=muted label.spacing=0 label.caps=0
+    use="default connector"
+style primary extends arrow stroke=accent sw=2.2 use="the main path; at most two per diagram"
+style link extends arrow stroke=link use="an HTTP or API request crossing a boundary"
+style return extends arrow stroke=muted dash=6,4 use="a response, or something optional or asynchronous"
+style relation extends relation label.font=sans label.size=10.5 label.spacing=0 label.caps=0
+style lifeline line head=none stroke=ink/0.25 sw=1.2 dash=4,4 route=straight use="sequence diagram lifeline"
+style rule line head=none stroke=ink/0.12 sw=1 route=straight use="thin separator, e.g. above a legend"
+
+// ---- text -----------------------------------------------------------------
+style h1 text font=sans size=28 weight=600 color=ink use="diagram title"
+style kicker text font=sans size=11 weight=600 color=accent spacing=0.06 caps=1 use="optional: a short category above the title, e.g. PROCESS"
+style dek text font=sans size=14 color=muted use="optional: one line under the title saying what the diagram shows"
+style eyebrow text font=sans size=9 weight=600 color=muted spacing=0.08 caps=1 use="small caps label, e.g. LEGEND"
+style caption text font=sans size=10 color=muted use="small explanatory text"
+style legend extends legend title.font=sans item.font=sans item.size=10
+style note text font=sans size=13 color=muted use="a short aside; at most two"
+style small text font=mono size=9.5 color=muted use="technical detail: a port, path or command"
+
+guidance "focal, terminal-focal and primary are the blue accent. Use the accent on at most two things in one diagram."
+guidance "store, cloud and external are sticky notes (blue, green, pink). sticky, sticky-orange and sticky-violet are free notes for ideas, risks and decisions; keep their text short."
+guidance "Never fill a shape with ink to make it stand out; use the accent."
+guidance "tag= is a 3 or 4 letter type marker in the corner of a box (EXT, EDGE, API, DB). Use it on architecture boxes, not flowchart shapes."
+guidance "Finish with a legend: one statement, 'legend at x,y' followed by style=\"what it means\" for each style you used."

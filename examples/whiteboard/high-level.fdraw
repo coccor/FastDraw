@@ -1,0 +1,47 @@
+look "../../looks/whiteboard.look"
+canvas 1200x640
+
+text "High-level architecture · End-to-end stack" at 40,52 style=h1
+
+// phase banner: one chevron per column, 224 apart; column centres 152, 376, 600, 824, 1048
+p1: polygon "DATA SOURCES" at 40,88 points=0,0;216,0;232,16;216,32;0,32 fill=violet stroke=none title.color=ink title.font=sans title.size=10 overlap=ok
+p2: polygon "INGESTION" at 264,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=yellow stroke=none title.color=ink title.font=sans title.size=10 overlap=ok
+p3: polygon "STORAGE" at 488,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=violet stroke=none title.color=ink title.font=sans title.size=10 overlap=ok
+p4: polygon "TRANSFORMATION & ANALYSIS" at 712,88 points=0,0;216,0;232,16;216,32;0,32;16,16 fill=yellow stroke=none title.color=ink title.font=sans title.size=10 overlap=ok
+p5: polygon "VISUALIZATION" at 936,88 points=0,0;224,0;224,32;0,32;16,16 fill=violet stroke=none title.color=ink title.font=sans title.size=10 overlap=ok
+
+// outside the cluster: dashed zone
+sources: zone "Sources" at 48,136 208x328 dash=4,3
+web:    external "Web" sub="Census · Survey" tag="EXT" at 72,172 160x56
+ftp:    external "FTP" sub="Census · Business" tag="EXT" at 72,244 160x56
+dbc:    external "DB Connection" sub="CDC · SQL · API" tag="EXT" at 72,316 160x56
+legacy: external "Legacy System" sub="Trade data" tag="EXT" at 72,388 160x56
+
+// the cluster: solid zone; every box is centred under its phase
+k8s: zone "Kubernetes cluster" at 272,136 888x328 dash=none
+air:   cloud "Orchestration / Workflow Automation" sub="Apache Airflow" at 288,160 856x48
+nifi:  node "Apache NiFi" sub="Collect · route" tag="COLL" at 304,240
+trino: node "Trino" sub="SQL · virtualization" tag="VIRT" at 528,240
+minio: focal "MinIO / S3" sub="Object store · S3 API" tag="STORE" at 528,368
+model: node "Data Modeling" sub="Notebook · Python · R" tag="ANLZ" at 752,304
+dash:  node "Dashboards" sub="Superset · reports" tag="DASH" at 976,304
+
+// below the cluster: applies to everything, connects to nothing
+idm: cloud "Identity Manager" sub="Active Directory" at 40,488 1120x48
+
+// sources: two into the left side, two up into the bottom, each at its own point
+web.right -> nifi.left@256
+ftp.right -> nifi.left@272
+dbc.right -> nifi.bottom@352
+legacy.right -> nifi.bottom@400
+nifi.right@272 -> trino.left@272
+nifi.right@288 -> minio.left style=primary
+trino <-> minio style=return
+trino.right -> model.left@320
+minio.right -> model.left@352 style=primary
+model -> dash
+air.bottom@600 -> trino.top@600 style=return
+air.bottom@824 -> model.top@824 style=return
+air.bottom@1048 -> dash.top@1048 style=return
+
+legend at 40,560 external="Source outside the cluster" focal="The storage hub" cloud="Spans every phase" primary="Main data path" arrow="Data flow" return="Trigger or read-back"
