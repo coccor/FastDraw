@@ -255,13 +255,17 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
   return { x, y: s.y + (s.h - size) / 2, size, dx: (size + 8) / 2, dy: 0 };
 }
 
-function drawIcon(look: Look, name: string, x: number, y: number, size: number, colour: string): string {
-  const img = look.images.get(name);
+// An outline icon is drawn with icon.color as its line, icon.fill inside its closed parts (none by default),
+// and icon.width as the line's thickness in pixels at the size it is drawn.
+function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
+  const name = p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
   if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
   const k = r2(size / 24);
+  const stroke = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink'), fill = col(look, p['icon.fill'] ?? 'none');
+  const px = num(p['icon.width'], 0), sw = px > 0 ? Math.min(px, 8) / k : Math.max(1.5, 1.2 / k);
   const paths = (look.icons.get(name) ?? []).map((d) => `<path d="${esc(d)}"/>`).join('');
-  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="none" stroke="${colour}" stroke-width="${r2(Math.max(1.5, 1.2 / k))}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
+  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="${fill}" stroke="${stroke}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
 }
 
 function drawShape(look: Look, s: Shape): string {
@@ -295,9 +299,9 @@ function drawShape(look: Look, s: Shape): string {
     out.push(`<text x="${s.x + 8 + tw / 2}" y="${s.y + 17}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
   }
   const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
-  const ib = iconBox(s), iconCol = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
+  const ib = iconBox(s);
   if (ib) { cxm += ib.dx; cym += ib.dy; }
-  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p.icon, ib.x, ib.y, ib.size, iconCol));
+  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x, ib.y, ib.size));
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
     const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
@@ -312,7 +316,7 @@ function drawShape(look: Look, s: Shape): string {
     const subs = p.sub ? p.sub.split('\n') : [], slh = Math.round(sub.size * 1.3);
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
     const top = cym - block / 2 + (p.tag ? 8 : 0);
-    if (ib && ib.dy > 0) out.push(drawIcon(look, p.icon, ib.x, top - ib.size - 6, ib.size, iconCol));
+    if (ib && ib.dy > 0) out.push(drawIcon(look, p, ib.x, top - ib.size - 6, ib.size));
     const al = p['title.align'], tx = al === 'left' ? s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
     subs.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3 + i * slh)}" text-anchor="${anchor}" ${sub.a}>${esc(l)}</text>`));

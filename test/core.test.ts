@@ -495,6 +495,11 @@ test('built-in icons: every one would pass the look rules, and a search finds th
   const find = (w: string) => Object.keys(ICONS).filter((n) => iconMatches(n, w));
   assert.ok(find('email').includes('mail') && find('k8s').includes('pod') && find('db').includes('database') && find('lambda').includes('function'));
   assert.ok(find('load balancer').includes('load-balancer') && find('').length === Object.keys(ICONS).length);
+  // stroke, fill and stroke width: the width is in pixels at the size the icon is drawn (24px here: scale 1)
+  const svg = renderSvg(scene('a: icon at 40,40 icon=database icon.color=#112233 icon.fill=#2e8540/0.2 icon.width=2.5\nb: icon at 100,40 icon=database\n'));
+  assert.match(svg, /fill="rgba\(46, ?133, ?64, ?0\.2\)" stroke="#112233" stroke-width="2\.5"/);
+  assert.match(svg, /fill="none" stroke="[^"]+" stroke-width="1\.5"/);
+  assert.match(check(scene('a: icon at 40,40 icon=server icon.width=thick\n')).map((i) => i.msg).join(), /icon\.width=thick: the icon's line thickness in pixels/);
   // a wrong name points at what was probably meant first
   const msg = check(scene('a: node "A" icon=email at 40,40\n')).map((i) => i.msg).join();
   assert.match(msg, /there is no icon called "email"; the look has: mail, /);

@@ -90,6 +90,7 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .icontile img { object-fit: contain; }
 .icontile.on { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
 .iconname { font-family: 'Geist Mono', monospace; }
+.panel .sublabel { font-size: 11px; color: var(--mute); margin: 10px 0 4px; }
 
 /* look styles gallery */
 .gallerywrap { width: min(640px, calc(100vw - 48px)); max-height: calc(100vh - 150px); overflow-y: auto; }

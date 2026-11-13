@@ -522,16 +522,32 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain('icon.size=32');
   await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'Auto' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.size');
-  const ink = await page.locator('.panel .swatch').last().getAttribute('aria-label');
-  await page.locator('.panel .swatch').last().click();
+  const strokes = page.getByRole('group', { name: 'Icon stroke colours' });
+  const ink = await strokes.locator('.swatch').last().getAttribute('aria-label');
+  await strokes.locator('.swatch').last().click();
   expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
   // any colour, from the system colour picker
   await page.getByLabel('Custom icon colour').fill('#e0457b');
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
   await expect(page.locator('svg.canvas g[stroke="#e0457b"]')).toHaveCount(1);
-  await expect(page.locator('.panel .swatches .custom.on')).toHaveCount(1);
+  await expect(strokes.locator('.custom.on')).toHaveCount(1);
   await page.getByRole('button', { name: 'Text colour' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
+  // a fill inside the icon's closed parts: a tint, any colour, or none
+  const fills = page.getByRole('group', { name: 'Icon fill colours' });
+  const tint = await fills.locator('.swatch').nth(1).getAttribute('aria-label');
+  await fills.locator('.swatch').nth(1).click();
+  expect(lineOf(await source(page), 'db')).toContain(`icon.fill=${tint}`);
+  await page.getByLabel('Custom icon fill').fill('#ffd400');
+  expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
+  await expect(page.locator('svg.canvas g[fill="#ffd400"]')).toHaveCount(1);
+  await fills.getByRole('button', { name: 'none', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).not.toContain('icon.fill');
+  // the stroke width, in pixels on screen
+  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Bold' }).click();
+  expect(lineOf(await source(page), 'db')).toContain('icon.width=2');
+  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Regular' }).click();
+  expect(lineOf(await source(page), 'db')).not.toContain('icon.width');
   await page.getByRole('button', { name: 'Remove' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon=');
   await page.keyboard.press('Escape');
