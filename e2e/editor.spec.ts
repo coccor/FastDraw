@@ -95,6 +95,27 @@ test('draw a rectangle, connect to it, then undo both', async ({ page }) => {
   expect(await source(page)).toContain('rect: rect at 300,300');
 });
 
+test('while dragging a new shape, the real shape is drawn, and dropping it places what was shown', async ({ page }) => {
+  await paste(page, SMALL);
+  const body = page.locator('svg.canvas > g > g').first();
+  for (const [key, style, mark] of [['o', 'ellipse', 'ellipse'], ['d', 'diamond', 'polygon, path']] as const) {
+    const before = await source(page);
+    const marks = await body.locator(mark).count();
+    await page.keyboard.press(key);
+    const from = await at(page, 300, 300), to = await at(page, 440, 380);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 4 });
+    await expect(page.locator(`svg.canvas rect[data-id="${style}"]`)).toHaveCount(1); // the preview is in the drawn scene
+    expect(await body.locator(mark).count()).toBeGreaterThan(marks);
+    expect(await source(page)).toBe(before); // nothing is saved until the drop
+    await page.mouse.up();
+    expect((await source(page)).trim().split('\n').pop()).toBe(`${style}: ${style} at 300,300 140x80`);
+    await page.keyboard.press('Control+z');
+  }
+  expect(await source(page)).toBe(SMALL);
+});
+
 test('resize, nudge, duplicate and delete', async ({ page }) => {
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
