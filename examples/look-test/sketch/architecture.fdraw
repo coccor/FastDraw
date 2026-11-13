@@ -1,0 +1,42 @@
+look "../../../looks/sketch.look"
+canvas 1000x464
+
+text "Content site in production" at 40,60 style=h1
+
+// zone behind the content column
+content: zone "Content" at 776,100 184x264
+
+// spine: y=212, centre line y=244
+reader: external "Reader" sub="browser" tag="EXT" at 40,212 128x64
+cf:     cloud "Cloudflare" sub="Pages · edge cache" tag="EDGE" at 268,212 144x64
+astro:  focal "Astro Origin" sub="SSR · MDX" tag="SSR" at 512,212 160x64
+
+// content column: one above the spine, one below
+mdx: store "MDX Bundle" sub="src/content/*.mdx" tag="MDX" at 788,136 160x64
+cms: store "Content CMS" sub="assets, og images" tag="CMS" at 788,288 160x64
+
+reader -> cf "HTTPS request" style=link
+cf -> reader "response" style=return lside=below
+cf -> astro "passes on" style=primary
+astro -> mdx "reads MDX" lpos=724,223
+astro -> cms "queries" lpos=724,273
+
+// legend
+40,388 -- 960,388 style=rule
+text "Legend" at 40,404 style=eyebrow
+focal at 40,416 14x10 radius=2
+text "Focal element" at 60,424 style=caption
+cloud at 152,416 14x10 radius=2
+text "Hosted platform" at 172,424 style=caption
+external at 272,416 14x10 radius=2
+text "Outside the system" at 292,424 style=caption
+store at 404,416 14x10 radius=2
+text "Holds content" at 424,424 style=caption
+516,421 -> 544,421 style=primary
+text "Main path" at 550,424 style=caption
+626,421 -> 654,421 style=link
+text "HTTPS request" at 660,424 style=caption
+756,421 -> 784,421 style=return
+text "Response" at 790,424 style=caption
+864,421 -> 892,421
+text "Reads / queries" at 898,424 style=caption

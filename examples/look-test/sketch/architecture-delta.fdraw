@@ -1,0 +1,55 @@
+look "../../../looks/sketch.look"
+canvas 1192x624
+
+text "Image processing leaves the monolith" at 40,56 style=h1
+
+text "Before" at 40,104 size=14 weight=600
+text "Resize runs inside the shop app" at 40,122 style=caption
+text "Changes" at 264,104 size=14 weight=600
+text "What differs" at 264,122 style=caption
+text "After" at 724,104 size=14 weight=600
+text "Resize runs in a queue-fed worker" at 724,122 style=caption
+
+232,88 -- 232,536 style=rule
+688,88 -- 688,536 style=rule
+
+b_web:   node "Storefront" sub="browser clients" at 40,152 160x64
+b_app:   focal "Shop app" sub="resizes inline" tag="~ CHANGED" at 40,256 160x64
+b_store: node "Image store" sub="object storage" at 40,464 160x64
+
+b_web -> b_app "r1 · HTTPS"
+b_app -> b_store "r2 · inline" dash=2,3
+
+a_web:   node "Storefront" sub="browser clients" at 724,152 160x64
+a_app:   focal "Shop app" sub="enqueues only" tag="~ CHANGED" at 724,256 160x64
+a_queue: node "Job queue" sub="resize jobs" tag="+ ADDED" sw=2 at 724,360 160x64
+a_store: node "Image store" sub="object storage" at 724,464 160x64
+a_work:  node "Image worker" sub="resizes, writes" tag="+ ADDED" sw=2 at 988,360 160x64
+
+a_web -> a_app "r1 · HTTPS"
+a_app -> a_queue "r2 · enqueue" dash=2,3
+a_queue -> a_work "r3 · consume" sw=1.8
+a_work.bottom@1068 -> a_store.right@496 "r4 · write" sw=1.8
+
+ledger: table "6 changes" at 264,152
+  | "01" "CHANGED" "app"    "Shop app: inline resize → enqueue only"
+  | "02" "ADDED"   "queue"  "Job queue between app and worker"
+  | "03" "ADDED"   "worker" "Image worker resizes and writes"
+  | "04" "REWIRED" "r2"     "App → store becomes app → queue"
+  | "05" "ADDED"   "r3"     "Queue → worker"
+  | "06" "ADDED"   "r4"     "Worker → store"
+  | ---
+  | ""   "KEPT"    ""       "Storefront · image store · r1"
+
+40,552 -- 1152,552 style=rule
+text "Legend" at 40,568 style=eyebrow
+focal at 40,580 14x10 radius=2
+text "Changed" at 60,588 style=caption
+node at 130,580 14x10 radius=2 sw=2
+text "Added" at 150,588 style=caption
+250,585 -> 278,585
+text "Unchanged" at 284,588 style=caption
+370,585 -> 398,585 sw=1.8
+text "Added" at 404,588 style=caption
+460,585 -> 488,585 dash=2,3
+text "Rewired" at 494,588 style=caption
