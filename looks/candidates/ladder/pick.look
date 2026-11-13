@@ -60,8 +60,11 @@ style eyebrow text font=mono size=8 color=muted spacing=0.18 caps=1 use="small c
 style caption text font=sans size=9.5 color=muted use="legend entry"
 style note text font=serif italic=1 size=14 color=muted use="a short editorial aside; at most two"
 style small text font=mono size=9 color=muted use="technical detail: a port, path or command"
+style kicker text font=mono size=10 weight=500 color=accent spacing=0.16 caps=1 use="optional: a short category above the title, e.g. PROCESS"
+style dek text font=sans size=14 color=muted use="optional: one line under the title saying what the diagram shows"
 
 guidance "focal, terminal-focal and primary are the accent. Use the accent on at most two things in one diagram."
 guidance "tag= is a 3 or 4 letter type marker in the corner of a box (EXT, EDGE, API, DB). Use it on architecture boxes, not flowchart shapes."
 guidance "sub= is for technical detail in mono type: a product name, path, port or protocol. Names of things go in the main text."
+guidance "kicker and dek are optional. Add a kicker only when the diagram belongs to a named category, and a dek only when there is one clear message; most diagrams need neither."
 guidance "Finish with a legend: one statement, 'legend at x,y' followed by style=\"what it means\" for each style you used."
