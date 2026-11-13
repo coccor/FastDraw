@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x536
 text "What makes a good product" at 40,52 style=h1
 want:  ellipse at 360,96 280x280 fill=ink/0.04   stroke=ink sw=1 overlap=ok mask=0
 build: ellipse at 288,236 280x280 fill=muted/0.05 stroke=muted sw=1 overlap=ok mask=0

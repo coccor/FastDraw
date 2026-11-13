@@ -267,7 +267,13 @@ test('routing by hand: drag a run, slide an end, drag the label, reset, and stal
   const onRun = await at(page, 400, runY);
   await page.mouse.click(onRun.x, onRun.y);
   const handles = () => page.locator('[data-seg]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { i: +e.getAttribute('data-seg')!, x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, horiz: r.width > r.height }; }));
-  const longest = async () => (await handles()).filter((h) => h.horiz).sort((p, q) => q.w - p.w)[0];
+  // the handle on the longest flat run of the line (handles are all one size, so it is found from the points)
+  const longest = async () => {
+    const ps = (await page.locator('polyline[data-id="r1"]').getAttribute('points'))!.split(' ').map((p) => p.split(',').map(Number));
+    let best = -1, len = -1;
+    ps.slice(0, -1).forEach((p, i) => { const l = Math.abs(ps[i + 1][0] - p[0]); if (p[1] === ps[i + 1][1] && l > len) { len = l; best = i; } });
+    return (await handles()).find((h) => h.i === best)!;
+  };
   await drag(page, await longest(), 0, away * 32 * k);
   expect(lineOf(await source(page), 'r1')).toMatch(new RegExp(`via=.*,${runY + away * 32};.*,${runY + away * 32}`));
   const first = (await handles()).find((h) => h.i === 0)!;
@@ -519,13 +525,13 @@ test('a new diagram starts blank in the built-in look, from the start screen and
   await page.goto('/');
   await page.getByRole('button', { name: /New diagram/ }).click();
   await page.waitForSelector('svg.canvas');
-  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(await source(page)).toBe('\n');
   await page.keyboard.press('r');
   await drag(page, await at(page, 200, 200), 140, 80);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^rect: rect at 200,200 \d+x\d+$/);
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('menuitem', { name: 'New diagram' }).click();
-  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(await source(page)).toBe('\n');
   await expect(page.getByRole('tab')).toHaveText(['untitled', 'untitled 2']); // the first one is still open beside it
   expect(errors).toEqual([]);
 });
@@ -551,7 +557,7 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   await page.keyboard.press('Control+z');
   expect(await source(page)).toBe(SMALL);
   await page.getByRole('tab', { name: 'untitled' }).click();
-  expect(await source(page)).toBe('canvas 1000x700\n');
+  expect(await source(page)).toBe('\n');
   expect(errors).toEqual([]);
 });
 
@@ -565,7 +571,7 @@ test('each tab keeps its own diagram and history; closing one asks first and sta
   await page.keyboard.press('Delete'); // nothing selected: no change
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Delete');
-  expect(await source(page)).toBe('canvas 600x400\n');
+  expect(await source(page)).toBe('');
   await page.getByRole('tab', { name: 'pasted diagram', exact: true }).click();
   expect(await source(page)).toBe(SMALL);
   await page.keyboard.press('Control+z'); // nothing to undo in this tab
@@ -701,4 +707,22 @@ test('`fastdraw open` lends a folder: the diagram opens with its look and icons,
     expect(lineOf(await source(page), 'vm')).toContain('"Web VM 2"');
     expect(errors).toEqual([]);
   } finally { await s.close(); }
+});
+
+test('no page: no border or size fields, a shape goes past 0,0, and an old canvas size goes with the first edit', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const OLD = 'canvas 600x300\na: node "A" at 40,40\nb: node "B" at 320,200\n';
+  await openFolder(page, { 'old.fdraw': OLD });
+  expect(await diskText(page, 'old.fdraw')).toBe(OLD); // opening never writes
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await expect(page.getByText('Canvas size')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  const k = await zoom(page);
+  await drag(page, await corner(page, 'a'), -160 * k, -120 * k);
+  await saved(page);
+  const text = await diskText(page, 'old.fdraw');
+  expect(text).not.toMatch(/canvas/);
+  expect(lineOf(text, 'a')).toMatch(/at -1[12]\d,-8\d/);
+  await expect(page.locator('rect[data-id="a"]')).toBeVisible();
+  expect(errors).toEqual([]);
 });

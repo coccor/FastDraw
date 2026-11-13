@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x560
 
 // stack: x = 136, 824 wide; rows 64 tall at y = 104, 168, 232, 296, 360 (ends 424)
 // in a row: index at x+20, name at x+88, detail right-aligned at x+804; baselines 38px under the row top

@@ -362,13 +362,14 @@ export function align(src: string, sc: Scene, ids: string[], mode: AlignMode): s
   return cur;
 }
 
-export function setCanvas(src: string, sc: Scene, w: number, h: number): string {
-  const line = `canvas ${Math.round(w)}x${Math.round(h)}`;
-  if (sc.canvasLine) return patchSource(src, new Map([[sc.canvasLine, () => [{ t: 'word', v: 'canvas' }, { t: 'word', v: `${Math.round(w)}x${Math.round(h)}` }] as Tok[]]]));
-  const lines = src.split('\n');
-  const li = lines.findIndex((l) => /^look\b/.test(l));
-  lines.splice(li + 1, 0, line);
-  return lines.join('\n');
+// There is no page size any more: an old `canvas WxH` loses its size, and the line goes if nothing else is on it.
+export function dropCanvasSize(src: string): string {
+  const st = parseStatements(src).find((x) => x.toks[0]?.t === 'word' && x.toks[0].v === 'canvas' && x.toks.some((t) => /^\d+x\d+$/.test(t.v ?? '')));
+  if (!st) return src;
+  return patchSource(src, new Map([[st.line, (toks: Tok[]) => {
+    const rest = toks.filter((t, i) => i > 0 && !/^\d+x\d+$/.test(t.v ?? ''));
+    return rest.length ? [toks[0], ...rest] : null;
+  }]]));
 }
 
 // Everything that shares a group name with the given elements.
@@ -400,9 +401,7 @@ export function addLegend(src: string, sc: Scene): { src: string; id: string } |
   const y = Math.ceil((bottom + 28) / 4) * 4;
   const id = freshId(src, 'legend');
   const line = `${id}: legend at 40,${y} ` + used.map((n) => `${n}=${JSON.stringify(label(n))}`).join(' ');
-  let next = appendStatements(src, [line]);
-  if (sc.h < y + 72) next = setCanvas(next, sc, sc.w, y + 72);
-  return { src: next, id };
+  return { src: appendStatements(src, [line]), id };
 }
 
 // Drag one segment of a right-angle connector sideways. Inner segments move freely; a segment

@@ -7,9 +7,9 @@ import { TEMPLATES, type Template } from './templates.ts';
 function Preview({ t }: { t: Template }) {
   const view = useMemo(() => {
     const sc = buildScene(t.text, null);
-    return { body: renderBody(sc), w: sc.w, h: sc.h };
+    return { body: renderBody(sc), x: sc.x, y: sc.y, w: sc.w, h: sc.h };
   }, [t]);
-  return <svg viewBox={`0 0 ${view.w} ${view.h}`} preserveAspectRatio="xMidYMid meet" className="tplthumb" aria-hidden="true" dangerouslySetInnerHTML={{ __html: view.body }} />;
+  return <svg viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} preserveAspectRatio="xMidYMid meet" className="tplthumb" aria-hidden="true" dangerouslySetInnerHTML={{ __html: view.body }} />;
 }
 
 export function TemplateDialog({ onClose, onPick }: { onClose: () => void; onPick: (t: Template) => void }) {

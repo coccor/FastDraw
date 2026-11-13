@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1120x590
 text "Why checkout got slow" at 40,52 style=h1
 effect: focal "Checkout p99 latency\n4x for 90 minutes" tag="EFFECT" at 880,256 200x88
 240,300 -> effect.left stroke=ink

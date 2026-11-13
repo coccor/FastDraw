@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x612
 
 // each part is a 384x208 box: a square plate 16 thick, seen at 2:1. Parts are 116 apart, the top one at y=96; bottom part first
 

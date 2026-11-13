@@ -23,7 +23,7 @@ rect at 328,144 4x56 fill=accent stroke=none overlap=ok        // strip on the b
 
 ## Composition
 
-- Title at 40,52; columns start at y=96. Columns are 240 wide with 32px between them, starting at x=40. Canvas width = 48 + 272 * columns: four columns 1136, five 1408. Five is the limit.
+- Title at 40,52; columns start at y=96. Columns are 240 wide with 32px between them, starting at x=40. Column k (from 0) is at `x = 40 + 272*k`. Five is the limit.
 - All columns have the same height: 52 + 68 * (cards in the fullest column). The space left under a short column is its free capacity; leave it.
 - Header: the name at column x+16, baseline 20px below the column top. The chip is 40x16, at column x+184 (its right edge 16px in), 8px below the top. The line under the header is 36px below the top and spans the column.
 - A card is 208x56 (the column width minus 16px each side). The first card starts 12px under the header line (column top + 48); the next starts 68px lower (56 plus a 12px gap).
@@ -50,4 +50,4 @@ Every card has `title.align=left`, a short title and a `sub=` of ticket id and o
 
 ## Legend
 
-The blocked card, the done card and the chip are overrides, not styles, so mix styles and marks in one statement, 24px under the columns (column top + height + 24): `legend at 40,Y node="Open" optional="Waiting on someone outside" swatch.accent/0.15="Blocked" swatch.ink/0.08="Done" line.accent="Over its limit"`. Leave 70px of canvas below it.
+The blocked card, the done card and the chip are overrides, not styles, so mix styles and marks in one statement, 24px under the columns (column top + height + 24): `legend at 40,Y node="Open" optional="Waiting on someone outside" swatch.accent/0.15="Blocked" swatch.ink/0.08="Done" line.accent="Over its limit"`.

@@ -7,7 +7,7 @@ FastDraw has no treemap element. Each cell is a plain `rect` at coordinates you 
 ## Building blocks
 
 ```
-// canvas 1000x580, title at y=52. Whole = 916x380 at 40,96. Asia: 59% of the area = the full height and 59% of the width, less the gap
+// title at y=52. Whole = 916x380 at 40,96. Asia: 59% of the area = the full height and 59% of the width, less the gap
 title: text "Asia holds 59% of the world's people" at 40,52 style=h1
 asia: rect at 40,96 532x380 radius=2 fill=accent/0.16 stroke=accent sw=1.5
 text "Asia" at 56,124 size=14 weight=600 color=ink                      // 16px in from the left, baseline 28px down
@@ -22,7 +22,7 @@ legend at 40,500 swatch.accent/0.16="Asia · more than the rest together" swatch
 
 ## Composition
 
-- Canvas 1000x580. The whole is a rectangle of 916x380 at 40,96; the legend goes at y=500.
+- The whole is a rectangle of 916x380 at 40,96; the legend goes at y=500.
 - Four to eight cells. Merge a long tail into one cell called "Other" and say in the legend what is in it. Never drop a part: the picture claims to be the whole.
 - Layout, largest first, in strips. The free rectangle starts as the whole. Lay each strip along the shorter side of the free rectangle: a column at its left edge when it is wider than tall, a row at its top otherwise. Put the next part in the strip, and keep adding parts while the cells get closer to square (usually one to three per strip).
   - Strip thickness = (strip's share / share of everything still free) x the free rectangle's length across the strip.
@@ -64,4 +64,4 @@ text "web · 31%" at 180,492 style=small color=muted anchor=middle      // under
 
 ## Legend
 
-One `legend` statement, 24px under the lowest element: `legend at 40,500 swatch.accent/0.16="Asia · more people than the rest together" swatch.ink/0.16="Other continents · a stronger tint is a larger share" dot.ink="Oceania · 0.05B, too small to label" title="Area = population · 8.09B in total"`. The heading says what area means and the total. For the marimekko the column names sit lower: legend at y=512 and canvas 590. The tint after the slash is the fill of the cells.
+One `legend` statement, 24px under the lowest element: `legend at 40,500 swatch.accent/0.16="Asia · more people than the rest together" swatch.ink/0.16="Other continents · a stronger tint is a larger share" dot.ink="Oceania · 0.05B, too small to label" title="Area = population · 8.09B in total"`. The heading says what area means and the total. For the marimekko the column names sit lower: legend at y=512. The tint after the slash is the fill of the cells.

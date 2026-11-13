@@ -37,8 +37,6 @@ back as a small edit to the text. Neither side has to redo the other's work.
 ## A first diagram
 
 ```
-canvas 760x260
-
 shopper: external "Shopper" at 40,60
 api:     focal "Orders API" sub="REST" at 296,60
 db:      store "Orders DB" at 552,56

@@ -1,5 +1,4 @@
 look "./fira.look"
-canvas 640x220
 text "Fonts from the look's own folder" at 40,56 style=h1
 a: node "Regular and SemiBold" sub="Fira Sans Regular" at 40,100 200x64
 b: focal "Quartz glyph job" sub="second line" at 360,100 200x64

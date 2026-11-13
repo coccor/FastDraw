@@ -1,5 +1,4 @@
 look "../../looks/whiteboard.look"
-canvas 1200x640
 
 text "High-level architecture · End-to-end stack" at 40,52 style=h1
 

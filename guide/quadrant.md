@@ -22,7 +22,7 @@ text "Update changelog" at 332,220 size=11 color=muted
 
 ## Composition
 
-- A canvas 1000x540 with axes from x=120 to 880 and y=96 to 440 gives four quadrants of 380x172, crossing at 500,268. Keep the crossing at the centre of the plot, so the four quadrants are equal.
+- Axes from x=120 to 880 and y=96 to 440 give four quadrants of 380x172, crossing at 500,268. Keep the crossing at the centre of the plot, so the four quadrants are equal.
 - Name each end of each axis with one or two words in `eyebrow` style, beside the tip and never on the line: under the x axis at its two ends (baseline 16px below, `anchor=end` on the right), and 12px to the right of the y axis at its top (baseline 100) and bottom (baseline 440). No arrow characters in the text; the arrowhead already says which way is more. Do not label the middle of an axis.
 - Name each quadrant in its outer corner, 20px in from the axis ends: `eyebrow` with `size=9`, `anchor=end` for the two on the right (baselines 120 above, 428 below).
 - A dot is an `ellipse` 8x8 placed at `x-4, y-4`. Its name starts 16px right of the dot centre with its baseline 4px below the centre.
@@ -37,7 +37,7 @@ text "Update changelog" at 332,220 size=11 color=muted
 
 ## Legend
 
-The dots are not styles of the look, but `legend` takes dot entries: `legend at 40,472 dot.accent="Start tomorrow" dot.ink="Candidate project"` (32px under the y axis; it draws its own rule, so write no rule line of your own). The canvas is 70px taller than the legend's y. The axes themselves are written with `->` (head at the high end); any plain rule you add elsewhere is `--`, because `->` grows an arrowhead.
+The dots are not styles of the look, but `legend` takes dot entries: `legend at 40,472 dot.accent="Start tomorrow" dot.ink="Candidate project"` (32px under the y axis; it draws its own rule, so write no rule line of your own). The axes themselves are written with `->` (head at the high end); any plain rule you add elsewhere is `--`, because `->` grows an arrowhead.
 
 ## Variant: four named scenarios
 

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x468
 // projection: sx = 450 + x - y ; sy = 142 + (x + y)/2 - z · plan 300x200, slab z 0..6, back walls 40, partitions 32
 title: text "A studio flat, room by room" at 40,52 style=h1
 // slab

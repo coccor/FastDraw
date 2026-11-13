@@ -23,7 +23,7 @@ f1: polygon "Visitors" sub="10,000" at 200,96 points=0,0;600,0;480,64;120,64 fil
 - All layers have the same height, 56 to 72px, and share one centre x. Each sits exactly on the one below: its bottom edge equals the top edge of the next.
 - Pyramid: the sides are two straight lines from the base corners to the tip, so every layer loses the same width on each side (its height, for 45° sides). With n layers in all (apex included) the base is `128(n+1)` wide: 640 for four, giving three trapezoids and a triangle 128 high on top. The apex's top is y=96, layer k (from the apex, k=1..n-1) has its top edge at `y = 224 + 64(k-1)`, and the base is at `96 + 128 + 64(n-1)` = 416 for four.
 - Funnel with real numbers: pick a scale (say 600px for the largest count) and make every edge that wide. Uneven drops then show as uneven steps. Do not smooth them into a straight side. The last layer is a plain rectangle of its own width, at least 48px so its name fits.
-- Leave 180px free on each side of the widest layer for side notes and an axis (canvas at least `128(n+1) + 360` wide).
+- Leave 180px free on each side of the widest layer for side notes and an axis.
 - Fill every plain layer the same (`fill=ink/0.05 stroke=ink/0.12`). One layer takes the accent (`fill=accent/0.08 stroke=accent`): the tip of a pyramid, the outcome of a funnel, or the step where most is lost. Never the base.
 - Write the accent layer last in the file. Shapes are drawn in file order, and a neighbour written after it would cover the shared edge.
 
@@ -38,7 +38,7 @@ f1: polygon "Visitors" sub="10,000" at 200,96 points=0,0;600,0;480,64;120,64 fil
 
 ## Legend
 
-The layers are not styles of the look, but `legend` takes swatches: `legend at 40,464 swatch.accent/0.1="Apex: rarest" swatch.ink/0.1="Supporting layer"` (24px under the note that sits 32px under the base; the canvas is 70px taller than the legend's y). If the widths follow real numbers, say so in the title's `caption` line.
+The layers are not styles of the look, but `legend` takes swatches: `legend at 40,464 swatch.accent/0.1="Apex: rarest" swatch.ink/0.1="Supporting layer"` (24px under the note that sits 32px under the base). If the widths follow real numbers, say so in the title's `caption` line.
 
 ## Traps
 

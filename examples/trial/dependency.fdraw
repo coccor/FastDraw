@@ -1,4 +1,3 @@
-canvas 1000x700
 
 text "Mobile app monorepo: package dependencies" at 180,60 style=h1
 

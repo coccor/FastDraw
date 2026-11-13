@@ -7,7 +7,7 @@ FastDraw has no polar element. Rings are `ellipse`s, rays are plain lines with a
 ## Building blocks
 
 ```
-// canvas 1000x592, title at y=52. Centre 500,300, radius 160 = 100, so 1.6px per point. Eight categories, the first straight up, then clockwise.
+// title at y=52. Centre 500,300, radius 160 = 100, so 1.6px per point. Eight categories, the first straight up, then clockwise.
 title: text "Request demand by UTC window" at 40,52 style=h1
 text "% of daily peak · 0 to 100" at 40,74 style=caption
 ellipse at 436,236 128x128 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0      // ring at 40: at = centre - r, size = 2r
@@ -34,7 +34,7 @@ A value `v` in category `i` ends at `centre + v * px per point * direction of i`
 
 ## Composition
 
-- Canvas 1000x592, centre 500,300, radius 160, legend at y=520. The top label (name baseline 110) clears the title; the bottom one ends near y=502, so the legend cannot go higher.
+- Centre 500,300, radius 160, legend at y=520. The top label (name baseline 110) clears the title; the bottom one ends near y=502, so the legend cannot go higher.
 - Four to twelve categories, in their natural order. Twelve still reads (the spokes are 30° apart); with more, group them. Do not sort by value: the circle is the order. If the order does not wrap around, use a bar chart; it is easier to read.
 - One number per category. The scale starts at 0 in the centre and every ray uses it.
 - Five rings at equal steps of the scale: the inner four `stroke=ink/0.1`, the outer `ink/0.25`. They need `overlap=ok mask=0`.

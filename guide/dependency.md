@@ -6,7 +6,7 @@ Shows what depends on what among packages, modules or services. Draw it when the
 
 - Rank the boxes first. Rank 0 is what nothing depends on (the apps); a box sits one rank below the lowest thing that depends on it. Four ranks at most, nine boxes at most, fourteen arrows at most. Over that, fold a group of leaves into one box named "+6 leaves".
 - Ranks are rows, rank 0 on top (first row at y=96, under the title `text "..." at 40,52 style=h1`): boxes `160x64` (write the size on every box; the default is 144x64), rows 144px apart (80px of free space between rows, for bends). Name each row at the left margin: `text "Rank 0" at 40,<row y + 36> style=eyebrow`.
-- Columns: three, 240px apart (x = 180, 420, 660 on a 1000px canvas). A box goes in the column of the thing it mostly depends on or is depended on by, so that as many arrows as possible are straight vertical lines. Leave a cell empty rather than force a bend; a straight arrow may pass through an empty cell.
+- Columns: three, 240px apart (x = 180, 420, 660). A box goes in the column of the thing it mostly depends on or is depended on by, so that as many arrows as possible are straight vertical lines. Leave a cell empty rather than force a bend; a straight arrow may pass through an empty cell.
 - The box that most others depend on goes in the middle column, with the boxes that use it on both sides above it. That box is `focal`.
 - One box per package or service, never per file. `sub=` is its path (`packages/ui-kit`) or, for a third-party one, version and registry (`v3.23 · npm`). `tag=` is its kind (APP, SVC, PKG, EXT).
 - Styles: `node` for your own, `cloud` for third party, `focal` for the most used. Nothing else: a box that depends on nothing is shown by sitting on the lowest rank, not by a style (`store` means data, and many looks draw it as a cylinder).
@@ -35,4 +35,4 @@ Show one cycle at most, the one that matters. Draw its back arrow with `style=pr
 
 ## Legend
 
-One `legend at 40,Y` 24px under the last row (the box bottom + 24 = 616): each box style used, `arrow="Depends on"`, `primary="Closes a cycle"`. Canvas height = Y + 72.
+One `legend at 40,Y` 24px under the last row (the box bottom + 24 = 616): each box style used, `arrow="Depends on"`, `primary="Closes a cycle"`.

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x624
 // scale: 0.02px per minute (12,000 min = 240px) - bars 12 wide at x = 120, 500, 880. Every column is centred on y=348
 title: text "Where the CI minutes go, and what the reruns cost" at 40,52 style=h1
 text "CI MINUTES" at 126,108 style=eyebrow anchor=middle

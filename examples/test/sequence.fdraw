@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x648
 
 // grid: lifelines at x = 164, 388, 612, 836 (224 apart); messages every 56px from y = 208
 

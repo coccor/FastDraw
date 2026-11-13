@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x540
 text "What to build next" at 40,68 style=h1
 
 // the one quadrant that matters, tinted; a zone, so it is drawn behind the axes

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x688
 
 text "What depends on what in the monorepo" at 40,60 style=h1
 

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x548
 
 text "What the AI assistant is built on" at 40,60 style=h1
 

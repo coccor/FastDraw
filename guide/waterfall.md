@@ -22,7 +22,7 @@ wf: chart at 96,104 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Clo
 
 ## Composition
 
-- Title at 40,52 (`style=h1`). Canvas 1000x544, plot `at 96,104 864x320` (the axis title sits above the plot, clear of the heading), legend at y=472.
+- Title at 40,52 (`style=h1`). Plot `at 96,104 864x320` (the axis title sits above the plot, clear of the heading), legend at y=472.
 - Three to eight bars, totals included, in the order of the story: start total, steps, end total. One subtotal in the middle at most (a pair `0,value` in the Total series). Merge small steps into one named "Other".
 - The y axis starts at 0 (`y=0..N`). Pick N and the plot height so that a unit is a simple number of px; it makes the carry lines easy to place.
 - Leave out a step of zero. It would be an invisible bar holding a column.

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1040x640
 
 // tiers: y = 96, 244, 392; tier dividers at y = 172, 320; buses draw themselves
 // specialists: 136 wide, 24 apart, centres x = 120, 280, 440, 600, 760, 920; each pod is centred over its people

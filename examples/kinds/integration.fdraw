@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1200x648
 
 text "Generic data platform integration topology" at 40,52 style=h1
 

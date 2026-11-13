@@ -1,5 +1,4 @@
 look "../s0.look"
-canvas 1200x628
 
 text "IoT sensor platform, devices to dashboards" at 40,56 style=h1
 

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1044x728
 
 text "Order fulfilment, before and after" at 40,52 style=h1
 

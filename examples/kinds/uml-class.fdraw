@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x712
 
 text "Payment classes" at 40,52 style=h1
 

@@ -18,7 +18,6 @@ export type PanelActions = {
   align: (mode: AlignMode) => void;
   remove: () => void;
   duplicate: () => void;
-  setCanvas: (w: number, h: number) => void;
   resetRoute: () => void;
   setRows: (rows: RowSpec[]) => void;
   setRoute: (route: string) => void;

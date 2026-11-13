@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x700
 
 text "Should you write this as a skill?" at 40,72 style=h1
 

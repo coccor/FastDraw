@@ -1,4 +1,3 @@
-canvas 1000x400
 // projection: sx = 450 + x - y ; sy = 80 + (x+y)/2 - z · plan 280x180, slab z 0..6, walls z 6..28
 // slab: 0,0 to 280,180, z 0 to 6
 polygon at 270,74 points=180,0;460,140;460,146;280,236;0,96;0,90 fill=#ffffff stroke=ink sw=1 overlap=ok

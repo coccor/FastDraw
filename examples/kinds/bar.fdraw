@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x528
 
 text "Story points per sprint, by sprint" at 40,52 style=h1
 

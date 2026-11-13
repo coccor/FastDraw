@@ -5,7 +5,7 @@ Shows how two measured numbers relate across a set of things: one dot per thing.
 ## Building blocks
 
 ```
-// canvas 1000x560, title at y=52, plot 96,96 to 960,412: 43.2px per x unit, 13.17px per y unit
+// title at y=52, plot 96,96 to 960,412: 43.2px per x unit, 13.17px per y unit
 title: text "Teams that deploy often wait least" at 40,52 style=h1
 dora: chart at 96,96 864x316 x=0..20 xstep=4 y=0..24 step=6 grid=both key=0 xtitle="Deploys per week" ytitle="Lead time (days)"
   | line 1,20 20,1 stroke=ink/0.3 sw=1 dash=4,3                               // trend, written first so dots cover it
@@ -16,7 +16,7 @@ legend at 40,480 dot.accent="Platform team · ships most often" dot.muted/0.55="
 ```
 
 - A numeric x axis (`x=lo..hi`) makes every point an `x,y` pair. `grid=both` draws grid lines both ways.
-- The plot ends at y=412. Under it come the tick labels (28px) and `xtitle=` (16px more), so the legend goes at y=480 and the canvas is 560 high.
+- The plot ends at y=412. Under it come the tick labels (28px) and `xtitle=` (16px more), so the legend goes at y=480.
 - The legend dot for the plain dots takes the same opacity as the plotted ones: `dot.muted/0.55=`.
 
 ## Composition
