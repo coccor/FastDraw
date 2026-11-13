@@ -8,6 +8,7 @@ import { MARKERS } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
+import { IconPicker } from './IconPicker.tsx';
 import type { AlignMode } from './ops.ts';
 
 export type PanelActions = {
@@ -24,9 +25,11 @@ export type PanelActions = {
   setRoute: (route: string) => void;
 };
 
-export function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
+// `custom` adds a last swatch that opens the system colour picker; it shows the chosen colour when that is not one of `values`.
+export function Swatches({ sc, values, current, onPick, custom, label }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom?: string; label?: string }) {
+  const own = !!current && !values.includes(current) && /^#[0-9a-f]{6}$/i.test(current) ? current : null;
   return (
-    <div className="swatches">
+    <div className="swatches" role={label ? "group" : undefined} aria-label={label}>
       {values.map((v) => {
         const c = color(sc.look, v);
         return (
@@ -34,6 +37,11 @@ export function Swatches({ sc, values, current, onPick }: { sc: Scene; values: s
             onClick={() => onPick(v)} style={{ background: c === 'none' ? undefined : c }} />
         );
       })}
+      {custom && (
+        <label className={'custom' + (own ? ' on' : '')} title={own ? `${own} (pick another)` : 'Any colour'} style={own ? { background: own } : undefined}>
+          <input type="color" aria-label={custom} value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : '#000000')} onChange={(e) => onPick(e.target.value)} />
+        </label>
+      )}
     </div>
   );
 }
@@ -107,6 +115,17 @@ const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
   </svg>
 );
 
+// An icon's stroke width in pixels; Regular leaves it to the icon's size.
+function IconWidths({ value, onPick }: { value: string | undefined; onPick: (v: string | null) => void }) {
+  return (
+    <div className="seg" role="group" aria-label="Icon stroke width">
+      {([['Thin', '1', 1.2], ['Regular', '', 1.8], ['Bold', '2', 2.6], ['Heavy', '2.75', 3.4]] as const).map(([l, v, w]) => (
+        <button key={l} title={l} aria-label={l} className={(value ?? '') === v ? 'on' : ''} onClick={() => onPick(v || null)}><Stroke w={w} /></button>
+      ))}
+    </div>
+  );
+}
+
 export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: string[]; act: PanelActions }) {
   const els = sel.map((id) => find(sc, id)).filter((e) => !!e);
   if (!els.length) return null;
@@ -119,6 +138,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const names = [...sc.look.colors.keys()].filter((n) => n !== 'paper');
   const fills = ['none', '#ffffff', ...names.map((n) => `${n}/0.08`), ...names.filter((n) => n !== 'ink')];
   const strokes = [...names, ...names.slice(0, 1).map((n) => `${n}/0.3`), 'none'];
+  const iconFills = ['none', ...names.filter((n) => n !== 'ink').map((n) => `${n}/0.2`), ...names];
+  const iconShape = same && kind === 'shape' && els.every((e) => e!.kind === 'shape' && e!.el.shape === 'icon');
   const styles = [...sc.look.styles.values()].filter((s) => s.kind === (kind === 'conn' ? 'line' : kind));
   const dashOf = (v: string | undefined) => (!v || v === 'none' ? 'solid' : v.startsWith('1') || v.startsWith('2') ? 'dotted' : 'dashed');
   const sizeKey = kind === 'shape' ? 'title.size' : kind === 'text' ? 'size' : 'label.size';
@@ -140,10 +161,21 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           </select>
         </section>
       )}
-      {same && kind === 'shape' && !stroke && (
+      {iconShape && (
+        // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
+        <>
+          <section><h4>Fill</h4><Swatches sc={sc} values={iconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>
+          <section><h4>Stroke</h4><Swatches sc={sc} values={names} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon stroke colours" /></section>
+          <section>
+            <h4>Stroke width</h4>
+            <IconWidths value={p.sw} onPick={(v) => act.setProp('sw', v)} />
+          </section>
+        </>
+      )}
+      {same && kind === 'shape' && !stroke && !iconShape && (
         <section><h4>Background</h4><Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} /></section>
       )}
-      {same && kind !== 'text' && (
+      {same && kind !== 'text' && !iconShape && (
         <>
           <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} /></section>
           <section>
@@ -232,17 +264,34 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Icon</h4>
-          <select aria-label="Icon" value={p.icon ?? 'none'} onChange={(e) => act.setProp('icon', e.target.value === 'none' ? null : e.target.value)}>
-            <option value="none">None</option>
-            {sc.look.images.size > 0 && <optgroup label="From the look's folder">{[...sc.look.images.keys()].map((n) => <option key={n} value={n}>{n}</option>)}</optgroup>}
-            <optgroup label="Built in">{[...sc.look.icons.keys()].filter((n) => !sc.look.images.has(n)).map((n) => <option key={n} value={n}>{n}</option>)}</optgroup>
-          </select>
-          {p.icon && p.icon !== 'none' && (
-            <div className="seg" style={{ marginTop: 6 }}>
-              {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
-                <button key={l} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l}</button>
-              ))}
-            </div>
+          <IconPicker look={sc.look} value={p.icon} onPick={(n) => act.setProp('icon', n)} />
+          {p.icon && p.icon !== 'none' && !iconShape && (
+            <>
+              <div className="seg" style={{ marginTop: 6 }}>
+                {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
+                  <button key={l} aria-label={l} title={`Icon ${l.toLowerCase()}`} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l.split(' ')[0]}</button>
+                ))}
+              </div>
+              <div className="seg" role="group" aria-label="Icon size" style={{ marginTop: 6 }}>
+                {[['Auto', ''], ['S', '16'], ['M', '24'], ['L', '32'], ['XL', '48']].map(([l, v]) => (
+                  <button key={l} title={v ? `${v}px` : 'Sized to fit the box'} className={(p['icon.size'] ?? '') === v ? 'on' : ''} onClick={() => act.setProp('icon.size', v || null)}>{l}</button>
+                ))}
+              </div>
+              {!sc.look.images.has(p.icon) && (
+                <>
+                  <div className="sublabel">Icon stroke</div>
+                  <div className="seg" style={{ marginBottom: 4 }}>
+                    <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
+                  </div>
+                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon stroke colours" />
+                  <div className="sublabel">Icon fill</div>
+                  <Swatches sc={sc} values={iconFills} current={p['icon.fill'] ?? 'none'}
+                    onPick={(v) => act.setProp('icon.fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" />
+                  <div className="sublabel">Icon stroke width</div>
+                  <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
+                </>
+              )}
+            </>
           )}
         </section>
       )}
