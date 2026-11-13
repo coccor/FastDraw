@@ -53,6 +53,7 @@ function strokeAttrs(look: Look, p: Props): string {
   let a = `fill="${col(look, p.fill)}" stroke="${col(look, p.stroke)}"`;
   if (p.stroke && p.stroke !== 'none') a += ` stroke-width="${num(p.sw, 1)}"`;
   if (p.dash && p.dash !== 'none') a += ` stroke-dasharray="${esc(p.dash)}"`;
+  if (p.cap === 'round') a += ' stroke-linecap="round"';
   return a;
 }
 

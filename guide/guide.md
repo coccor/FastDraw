@@ -68,6 +68,7 @@ trend: polygon at 60,330 points=0,40;80,10;160,30;240,0 open=1 stroke=accent sw=
 - `open=1` leaves the outline unclosed and unfilled: a line through the points, for a trend or a series.
 - `smooth=1` rounds the outline into a curve that passes through every point.
 - Give `WxH` only to stretch the outline to another size.
+- `freehand` is what the editor's Draw tool writes when a person sketches with the pointer: `freehand at x,y points=...`, a smooth open line with round ends, 2px wide, that lines and labels may cross. Leave such lines as they are when editing a file; do not write them yourself, a diagram written as text is made of boxes, lines and polygons.
 
 `arc` is a slice of the circle (or ellipse) that fills its box. Angles are degrees, clockwise from the top:
 

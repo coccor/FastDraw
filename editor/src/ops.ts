@@ -203,6 +203,41 @@ export function addShape(src: string, style: string, b: Box, sized: boolean, tab
   return { src: appendStatements(src, [line]), id };
 }
 
+// Fewer points that still follow the same path: drop every point closer than `eps` to the line between its neighbours.
+function simplify(pts: Pt[], eps: number): Pt[] {
+  if (pts.length < 3) return pts;
+  const keep = new Uint8Array(pts.length);
+  keep[0] = keep[pts.length - 1] = 1;
+  const stack: [number, number][] = [[0, pts.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop()!;
+    const A = pts[a], B = pts[b], dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy);
+    let far = -1, max = eps;
+    for (let i = a + 1; i < b; i++) {
+      const d = len ? Math.abs((pts[i].x - A.x) * dy - (pts[i].y - A.y) * dx) / len : Math.hypot(pts[i].x - A.x, pts[i].y - A.y);
+      if (d > max) { max = d; far = i; }
+    }
+    if (far >= 0) { keep[far] = 1; stack.push([a, far], [far, b]); }
+  }
+  return pts.filter((_, i) => keep[i]);
+}
+
+// A stroke drawn by hand: the pointer's path, thinned so the file stays short, kept as one smooth open line.
+// Returns null for a press that did not travel.
+export function addFreehand(src: string, path: Pt[], eps = 1): { src: string; id: string } | null {
+  const pts: Pt[] = [];
+  for (const q of simplify(path, eps)) {
+    const p = { x: Math.round(q.x), y: Math.round(q.y) }, last = pts[pts.length - 1];
+    if (!last || last.x !== p.x || last.y !== p.y) pts.push(p);
+  }
+  if (pts.length < 2) return null;
+  const x0 = Math.min(...pts.map((q) => q.x)), y0 = Math.min(...pts.map((q) => q.y));
+  if (Math.max(...pts.map((q) => q.x)) - x0 < 3 && Math.max(...pts.map((q) => q.y)) - y0 < 3) return null;
+  const id = freshId(src, 'stroke');
+  const line = `${id}: freehand at ${x0},${y0} points=${pts.map((q) => `${q.x - x0},${q.y - y0}`).join(';')}`;
+  return { src: appendStatements(src, [line]), id };
+}
+
 export function addText(src: string, x: number, y: number, style?: string): { src: string; id: string } {
   const id = freshId(src, 'note');
   const line = `${id}: text "Text" at ${Math.round(x)},${Math.round(y)}${style && style !== 'text' ? ` style=${style}` : ''}`;
@@ -274,7 +309,7 @@ export function groupElements(src: string, sc: Scene, ids: string[]): string {
 
 // A legend listing every look style the diagram uses, placed under the drawing.
 export function addLegend(src: string, sc: Scene): { src: string; id: string } | null {
-  const skip = new Set(['rect', 'ellipse', 'diamond', 'text', 'arrow', 'line', 'legend']);
+  const skip = new Set(['rect', 'ellipse', 'diamond', 'freehand', 'text', 'arrow', 'line', 'legend']);
   const used: string[] = [];
   const note = (name: string) => { if (!skip.has(name) && sc.look.styles.has(name) && !used.includes(name)) used.push(name); };
   for (const s of sc.shapes) if (!s.back && Math.min(s.w, s.h) > 12) note(s.style);

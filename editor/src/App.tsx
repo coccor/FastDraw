@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { parseLook } from '../../src/look.ts';
 import { buildScene, lookPath } from '../../src/scene.ts';
-import type { Scene, Pt, Box, Conn } from '../../src/scene.ts';
+import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
-import { renderBody, renderSvg } from '../../src/render.ts';
+import { renderBody, renderSvg, col } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
@@ -29,6 +29,7 @@ type Drag =
   | { type: 'resize'; id: string; corner: string; base: string; scene: Scene; dx: number; dy: number }
   | { type: 'marquee'; start: Pt; add: boolean }
   | { type: 'draw'; style: string; start: Pt; base: string }
+  | { type: 'free'; pts: Pt[] }
   | { type: 'conn'; op: string; from: string; start: Pt; style?: string }
   | { type: 'end'; id: string; which: 'a' | 'b'; base: string; scene: Scene }
   | { type: 'seg'; id: string; index: number; base: string; scene: Scene }
@@ -45,6 +46,9 @@ type Doc = { id: string; name: string; src: string; lookSrc: string | null; carr
 const IN_BROWSER = 'saved in this browser';
 
 const snap = (v: number) => Math.round(v / 4) * 4;
+// an open outline is a line, not an area: it is picked by its stroke and nothing attaches to its box
+const isStroke = (s: Shape) => !!s.poly && s.p.open === '1';
+const polyPoints = (pts: Pt[]) => pts.map((p) => `${p.x},${p.y}`).join(' ');
 
 let measurer: CanvasRenderingContext2D | null = null;
 const textWidth = (s: string, font: string) => {
@@ -70,11 +74,11 @@ const BLANK = 'canvas 1000x700\n';
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
 const ICONS: Record<string, React.ReactNode> = {
   hand: <Hand size={17} />, select: <MousePointer2 size={17} />, rect: <Square size={17} />, ellipse: <Circle size={17} />, diamond: <Diamond size={17} />,
-  arrow: <MoveUpRight size={17} />, line: <Minus size={17} />, text: <Type size={17} />,
+  arrow: <MoveUpRight size={17} />, line: <Minus size={17} />, freehand: <Pencil size={17} />, text: <Type size={17} />,
 };
 const TOOLS: [string, string, string][] = [
   ['hand', 'Hand (pan)', 'H'], ['select', 'Select', 'V'], ['rect', 'Rectangle', 'R'], ['ellipse', 'Ellipse', 'O'], ['diamond', 'Diamond', 'D'],
-  ['arrow', 'Arrow', 'A'], ['line', 'Line', 'L'], ['text', 'Text', 'T'],
+  ['arrow', 'Arrow', 'A'], ['line', 'Line', 'L'], ['freehand', 'Draw', 'P'], ['text', 'Text', 'T'],
 ];
 
 export function App() {
@@ -86,6 +90,7 @@ export function App() {
   const [tool, setTool] = useState('select');
   const [view, setView] = useState({ x: 60, y: 90, k: 1 });
   const [ghost, setGhost] = useState<Ghost>(null);
+  const [ink, setInk] = useState<Pt[] | null>(null); // the stroke being drawn by hand
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [editing, setEditing] = useState<Editing>(null);
   const [edLook, setEdLook] = useState<EdLook | null>(null);
@@ -476,7 +481,7 @@ export function App() {
     return { x: (e.clientX - r.left - view.x) / view.k, y: (e.clientY - r.top - view.y) / view.k };
   };
   const shapeAt = (sc: Scene, p: Pt) =>
-    [...sc.shapes].reverse().find((s) => !s.back && p.x >= s.x && p.x <= s.x + s.w && p.y >= s.y && p.y <= s.y + s.h);
+    [...sc.shapes].reverse().find((s) => !s.back && !isStroke(s) && p.x >= s.x && p.x <= s.x + s.w && p.y >= s.y && p.y <= s.y + s.h);
   // What a connector end dropped at p should attach to: a shape, a point on a straight line, or a free point.
   const attachAt = (sc: Scene, p: Pt, not?: string): string => {
     const s = shapeAt(sc, p);
@@ -548,6 +553,7 @@ export function App() {
       drag.current = { type: 'conn', op: plain ? '--' : '->', from: attachAt(scene, p), start: p, style };
       return;
     }
+    if (tool === 'freehand') { drag.current = { type: 'free', pts: [p] }; setInk([p]); return; }
     if (tool !== 'select') { drag.current = { type: 'draw', style: tool.replace(/^style:/, ''), start: p, base: src }; return; }
     const handle = t.getAttribute('data-handle'), end = t.getAttribute('data-end');
     if (handle || end || t.hasAttribute('data-seg')) lastClick.current = { id: '', t: 0 }; // a press on a handle never counts towards a double-click
@@ -626,6 +632,16 @@ export function App() {
     }
     const p = world(e);
     if (d.type === 'pan') { setView((v) => ({ ...v, x: d.vx + e.clientX - d.sx, y: d.vy + e.clientY - d.sy })); return; }
+    if (d.type === 'free') {
+      // every position the pointer reported, not just one per frame, so a fast stroke keeps its shape
+      const evs = e.nativeEvent.getCoalescedEvents?.() ?? [];
+      for (const q of (evs.length ? evs : [e]).map(world)) {
+        const last = d.pts[d.pts.length - 1];
+        if (Math.hypot(q.x - last.x, q.y - last.y) * view.k >= 1) d.pts.push(q);
+      }
+      setInk([...d.pts]);
+      return;
+    }
     if (d.type === 'move') {
       let dx = p.x - d.start.x, dy = p.y - d.start.y;
       if (!d.moved && Math.hypot(dx, dy) * view.k < 3) return;
@@ -714,7 +730,7 @@ export function App() {
   const onUp = (e: React.PointerEvent) => {
     const d = drag.current;
     drag.current = null;
-    setGhost(null); setGuides({});
+    setGhost(null); setGuides({}); setInk(null);
     if (pendingEdit.current) { const id = pendingEdit.current; pendingEdit.current = null; startEdit(id); return; }
     if (!d || src === null) return;
     const p = world(e);
@@ -725,6 +741,12 @@ export function App() {
       const inside = (b: Box) => b.x >= box.x && b.y >= box.y && b.x + b.w <= box.x + box.w && b.y + b.h <= box.y + box.h;
       const hit = [...scene.shapes, ...scene.texts].filter(inside).map((s) => s.id).concat(scene.conns.filter((c) => inside(ops.boxOf({ kind: 'conn', el: c }))).map((c) => c.id));
       setSel(d.add ? [...new Set([...sel, ...hit])] : hit);
+      return;
+    }
+    if (d.type === 'free') {
+      // the pen stays in hand, and the stroke is not selected, so the next one can follow straight away
+      const r = ops.addFreehand(src, d.pts);
+      if (r) commit(r.src, []);
       return;
     }
     if (d.type === 'draw') {
@@ -941,7 +963,9 @@ export function App() {
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
             {scene.conns.map((c) => <polyline key={c.id} data-id={c.id} points={c.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" strokeWidth={12} pointerEvents="stroke" />)}
             {scene.conns.filter((c) => c.label).map((c) => <rect key={c.id + '-l'} data-id={c.id} data-label={c.id} style={sel.length === 1 && sel[0] === c.id ? { cursor: 'grab' } : undefined} x={c.label!.x} y={c.label!.y} width={c.label!.w} height={c.label!.h} />)}
-            {scene.shapes.filter((s) => !s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} />)}
+            {scene.shapes.filter((s) => !s.back).map((s) => isStroke(s)
+              ? <polyline key={s.id} data-id={s.id} points={polyPoints(s.poly!)} fill="none" strokeWidth={Math.max(12, +s.p.sw || 0)} strokeLinecap="round" strokeLinejoin="round" pointerEvents="stroke" />
+              : <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} />)}
             {scene.texts.map((t) => <rect key={t.id} data-id={t.id} x={t.x - 2} y={t.y - 2} width={t.w + 4} height={t.h + 4} />)}
           </g>
           <g fill="none" stroke="var(--accent)" strokeWidth={1.5 / view.k} pointerEvents="none">
@@ -960,6 +984,10 @@ export function App() {
             {ghost?.kind === 'box' && <rect x={ghost.box.x} y={ghost.box.y} width={ghost.box.w} height={ghost.box.h} fill={ghost.dashed ? 'rgba(84,72,214,0.07)' : 'none'} strokeDasharray={ghost.dashed ? `${4 / view.k}` : undefined} />}
             {ghost?.kind === 'line' && <line x1={ghost.a.x} y1={ghost.a.y} x2={ghost.b.x} y2={ghost.b.y} />}
           </g>
+          {ink && (() => {
+            const p = scene.look.styles.get('freehand')?.props ?? {};
+            return <polyline className="ink" points={polyPoints(ink)} fill="none" stroke={col(scene.look, p.stroke ?? 'ink')} strokeWidth={+p.sw || 2} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />;
+          })()}
           {single?.kind === 'shape' && tool === 'select' && !editing && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
               {(() => {
@@ -975,7 +1003,7 @@ export function App() {
               })()}
             </g>
           )}
-          {single?.kind === 'shape' && single.el.poly && tool === 'select' && !editing && (
+          {single?.kind === 'shape' && single.el.poly && single.el.poly.length <= 12 && tool === 'select' && !editing && (
             <g fill="var(--accent)" stroke="#fff" strokeWidth={1 / view.k}>
               {single.el.poly.map((q, i) => <circle key={i} data-vertex={i} cx={q.x} cy={q.y} r={hs * 0.55} style={{ cursor: 'move' }}><title>Drag to move this corner</title></circle>)}
             </g>
@@ -1046,6 +1074,7 @@ export function App() {
           </button>
         </div>
         {galleryOpen && <div className="island gallerywrap"><Gallery look={scene.look} current={tool} onPick={(t) => { setTool(t); setGalleryOpen(false); }} /></div>}
+        {tool === 'freehand' && !galleryOpen && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
         {armed && !galleryOpen && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
         {fontNote && <div className="banner">{fontNote}</div>}
         {iconNote && <div className="banner">{iconNote}</div>}
