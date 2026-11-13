@@ -46,16 +46,17 @@ style bar shape=rect size=8x80 fill=ink/0.06 stroke=muted sw=0.8
     use="sequence diagram activation bar, centred on a lifeline; always give WxH"
 
 // ---- lines ----------------------------------------------------------------
-style arrow line stroke=muted sw=1.2 route=ortho radius=8 label.font=mono label.size=9 label.spacing=0.08
+style arrow line stroke=muted sw=1.2 route=ortho radius=8 label.font=sans label.size=10 label.spacing=0 label.caps=0
     use="default arrow"
 style primary extends arrow stroke=accent sw=1.4 use="the main path; at most two per diagram"
 style link extends arrow stroke=link use="an HTTP or API request crossing a boundary"
 style return extends arrow dash=5,4 use="a response, or something optional or asynchronous"
+style relation extends relation label.font=sans label.size=10 label.spacing=0 label.caps=0
 style lifeline line head=none stroke=ink/0.22 sw=1 dash=3,3 route=straight use="sequence diagram lifeline"
 style rule line head=none stroke=ink/0.10 sw=0.8 route=straight use="thin separator, e.g. above a legend"
 
 // ---- text -----------------------------------------------------------------
-style h1 text font=serif size=28 weight=500 color=ink use="diagram title"
+style h1 text font=serif size=28 weight=400 color=ink use="diagram title"
 style eyebrow text font=mono size=8 color=muted spacing=0.18 caps=1 use="small caps label, e.g. LEGEND"
 style caption text font=sans size=9.5 color=muted use="legend entry"
 style legend extends legend item.size=9.5
