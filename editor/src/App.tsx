@@ -28,7 +28,7 @@ type Drag =
   | { type: 'move'; start: Pt; ids: string[]; base: string; scene: Scene; moved: boolean }
   | { type: 'resize'; id: string; corner: string; base: string; scene: Scene; dx: number; dy: number }
   | { type: 'marquee'; start: Pt; add: boolean }
-  | { type: 'draw'; style: string; start: Pt }
+  | { type: 'draw'; style: string; start: Pt; base: string }
   | { type: 'conn'; op: string; from: string; start: Pt; style?: string }
   | { type: 'end'; id: string; which: 'a' | 'b'; base: string; scene: Scene }
   | { type: 'seg'; id: string; index: number; base: string; scene: Scene }
@@ -548,7 +548,7 @@ export function App() {
       drag.current = { type: 'conn', op: plain ? '--' : '->', from: attachAt(scene, p), start: p, style };
       return;
     }
-    if (tool !== 'select') { drag.current = { type: 'draw', style: tool.replace(/^style:/, ''), start: p }; return; }
+    if (tool !== 'select') { drag.current = { type: 'draw', style: tool.replace(/^style:/, ''), start: p, base: src }; return; }
     const handle = t.getAttribute('data-handle'), end = t.getAttribute('data-end');
     if (handle || end || t.hasAttribute('data-seg')) lastClick.current = { id: '', t: 0 }; // a press on a handle never counts towards a double-click
     if (handle && sel.length === 1) {
@@ -600,6 +600,22 @@ export function App() {
     const k = Math.min(4, Math.max(0.1, v.k * f)), mx = window.innerWidth / 2, my = window.innerHeight / 2;
     return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
   });
+
+  // The source with a new shape of `styleName` drawn from `a` to `b`: a drag sets its size, a click uses the style's own.
+  // Shared by the live preview and the final drop so what is shown while dragging is what gets placed.
+  const placeShape = (base: string, styleName: string, a: Pt, b: Pt) => {
+    const style = scene.look.styles.get(styleName);
+    if (!style || style.kind === 'text') return null;
+    const big = Math.abs(b.x - a.x) > 8 && Math.abs(b.y - a.y) > 8;
+    const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(style.props.size ?? '');
+    const dw = m ? +m[1] : 120, dh = m ? +m[2] : 64;
+    const box = big
+      ? { x: snap(Math.min(a.x, b.x)), y: snap(Math.min(a.y, b.y)), w: snap(Math.abs(b.x - a.x)), h: snap(Math.abs(b.y - a.y)) }
+      : { x: snap(a.x - dw / 2), y: snap(a.y - dh / 2), w: dw, h: dh };
+    const table = style.props.shape === 'table';
+    const chart = style.props.shape === 'chart';
+    return ops.addShape(base, styleName, (table || chart) && !big ? { ...box, x: snap(a.x - (chart ? 160 : 80)), y: snap(a.y - (chart ? 90 : 40)) } : box, table || chart ? big : big || !m, table, chart);
+  };
 
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -662,9 +678,16 @@ export function App() {
       setDraft(d.type === 'seg' ? (d.index < 0 ? ops.setBend(d.base, e0.el, p) : ops.dragSegment(d.base, d.scene, e0.el, d.index, p)) : ops.setLabelPos(d.base, e0.el, { x: p.x + d.dx, y: p.y + d.dy }));
       return;
     }
-    if (d.type === 'marquee' || d.type === 'draw') {
+    if (d.type === 'draw') {
+      // show the real shape in the look's own drawing while dragging, not just its outline
+      const r = placeShape(d.base, d.style, d.start, p);
+      if (r) setDraft(r.src);
+      else setGhost({ kind: 'box', box: { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) } });
+      return;
+    }
+    if (d.type === 'marquee') {
       const box = { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) };
-      setGhost({ kind: 'box', box, dashed: d.type === 'marquee' });
+      setGhost({ kind: 'box', box, dashed: true });
       return;
     }
     if (d.type === 'conn') setGhost({ kind: 'line', a: d.start, b: p });
@@ -689,21 +712,14 @@ export function App() {
     if (d.type === 'draw') {
       const style = scene.look.styles.get(d.style);
       if (!style) return;
-      const big = Math.abs(p.x - d.start.x) > 8 && Math.abs(p.y - d.start.y) > 8;
       if (style.kind === 'text') {
         const r = ops.addText(src, snap(d.start.x), snap(d.start.y), d.style);
         commit(r.src, [r.id]); doneDrawing();
         window.setTimeout(() => setEditing({ id: r.id, value: 'Text', box: { x: snap(d.start.x) - 4, y: snap(d.start.y) - 18, w: 200, h: 26 } }), 0);
         return;
       }
-      const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(style.props.size ?? '');
-      const dw = m ? +m[1] : 120, dh = m ? +m[2] : 64;
-      const box = big
-        ? { x: snap(Math.min(d.start.x, p.x)), y: snap(Math.min(d.start.y, p.y)), w: snap(Math.abs(p.x - d.start.x)), h: snap(Math.abs(p.y - d.start.y)) }
-        : { x: snap(d.start.x - dw / 2), y: snap(d.start.y - dh / 2), w: dw, h: dh };
-      const table = style.props.shape === 'table';
-      const chart = style.props.shape === 'chart';
-      const r = ops.addShape(src, d.style, (table || chart) && !big ? { ...box, x: snap(d.start.x - (chart ? 160 : 80)), y: snap(d.start.y - (chart ? 90 : 40)) } : box, table || chart ? big : big || !m, table, chart);
+      const r = placeShape(src, d.style, d.start, p);
+      if (!r) { setDraft(null); return; }
       commit(r.src, [r.id]); doneDrawing();
       return;
     }
