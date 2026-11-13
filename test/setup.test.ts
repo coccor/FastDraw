@@ -37,7 +37,7 @@ test('setup refuses to write through a link that leads out of the repository', (
   const dir2 = mkdtempSync(join(tmpdir(), 'fdsetup-'));
   symlinkSync(outside, join(dir2, '.claude'));
   assert.throws(() => setup(root, dir2, ['claude']), /not writing/);
-  assert.ok(!existsSync(join(outside, 'skills/fastdraw/SKILL.md')));
+  assert.ok(!existsSync(join(outside, 'skills')), 'nothing is created through the link either');
 });
 
 test('llms.txt carries the guide, every kind and the built-in look', () => {

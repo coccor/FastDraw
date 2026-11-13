@@ -16,12 +16,24 @@ function snippet(root: string): string {
 
 // Make the file's folder and check the file stays inside `base`: a repository could carry a link
 // (AGENTS.md -> ~/.bashrc) that would otherwise send the write somewhere else.
+// Every part below `base` is checked before anything is created, then made one folder at a time.
 function prepare(base: string, file: string): void {
-  mkdirSync(dirname(file), { recursive: true });
-  const top = realpathSync(base), folder = realpathSync(dirname(file));
-  let linked = false;
-  try { linked = lstatSync(file).isSymbolicLink(); } catch { /* not there yet */ }
-  if (linked || (folder !== top && !folder.startsWith(top + sep))) throw new Error(`not writing ${file}: it is a link, or leads outside ${base}`);
+  const refuse = () => { throw new Error(`not writing ${file}: it is a link, or leads outside ${base}`); };
+  const top = realpathSync(base);
+  const parts = relative(base, file).split(sep);
+  if (!parts.length || parts.includes('..')) refuse();
+  let at = base;
+  for (let i = 0; i < parts.length; i++) {
+    at = join(at, parts[i]);
+    let st;
+    try { st = lstatSync(at); } catch { st = null; }
+    if (st?.isSymbolicLink()) refuse();
+    if (st && i < parts.length - 1) {
+      const real = realpathSync(at);
+      if (!st.isDirectory() || (real !== top && !real.startsWith(top + sep))) refuse();
+    }
+    if (!st && i < parts.length - 1) mkdirSync(at);
+  }
 }
 
 // Put the section into a markdown file: replace the one written before, or add it at the end.
