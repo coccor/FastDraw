@@ -409,7 +409,7 @@ export function renderBody(sc: Scene): string {
   const out: string[] = [];
   R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
   out.push(`<rect width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
-  if (cv.dots) {
+  if (cv.dots && cv.dots !== 'none') {
     const gap = num(cv.dotgap, 22);
     out.push(`<defs><pattern id="fd-dots" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="${col(look, cv.dots)}"/></pattern></defs>`);
     out.push(`<rect width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
