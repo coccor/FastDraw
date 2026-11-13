@@ -3,7 +3,7 @@ import type { Issue, Look } from './look.ts';
 import { color } from './look.ts';
 import { textWidth } from './scene.ts';
 import { segHits } from './router.ts';
-import { iconBox } from './render.ts';
+import { iconBox, tagLayout, textBlock } from './render.ts';
 import type { Scene, Box, Pt, Conn, Shape } from './scene.ts';
 
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -93,11 +93,11 @@ export function check(sc: Scene): Issue[] {
       if (tw > s.w - 12) warn(s.line, `sub text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${s.w - 12}px of room)`);
     }
     if (p.tag && (s.text || p.sub) && p['title.pos'] !== 'top' && !s.rows && s.shape !== 'chart') {
-      // the same sums the renderer does: the corner tag ends 20px down, the text block is centred 8px low
-      const size = num(p['title.size'], 12), subSize = num(p['sub.size'], 9), subs = p.sub ? p.sub.split('\n').length : 0;
-      const block = (s.text ? s.text.split('\n').length : 0) * Math.round(size * 1.17) + (subs ? subSize + 7 + (subs - 1) * Math.round(subSize * 1.3) : 0);
-      const need = Math.ceil((block + 20) / 4) * 4; // text top must clear the tag: h/2 - block/2 + 8 >= 18
-      if (s.h < need) warn(s.line, `the tag "${p.tag}" sits on the text of ${s.id}; make it at least ${need}px tall or drop the tag`);
+      // the same layout the renderer uses; short of room, say how tall the box would need to be
+      const size = num(p['title.size'], 12), block = textBlock(s, size);
+      const fits = (h: number) => tagLayout({ ...s, h }, sc.look, block, size, s.y + h / 2).fits;
+      let need = Math.ceil(s.h / 4) * 4; while (!fits(need) && need < s.h + 400) need += 4;
+      if (!fits(s.h)) warn(s.line, `the tag "${p.tag}" sits on the text of ${s.id}; make it at least ${need}px tall or drop the tag`);
     }
   }
 

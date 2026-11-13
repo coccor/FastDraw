@@ -441,6 +441,19 @@ test('sub text can run over several lines, and a tag on a short box is reported'
   const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
   assert.match(msgs('r: focal "Row-level permissions" sub="RPT-114" tag="RISK" at 40,40 176x48\n'), /the tag "RISK" sits on the text of r; make it at least 52px tall/);
   assert.doesNotMatch(msgs('r: focal "Orders API" sub="REST" tag="API" at 40,40\n'), /sits on the text/);
+  // in every look a corner tag stays clear of the outline and of the title under it, even on a short box
+  for (const name of ['headline', 'reference', 'sketch', 'whiteboard']) {
+    const lk = loadLook(`looks/${name}.look`);
+    const sc = buildScene(`look "${name}.look"\nd: external "DB Connection" sub="CDC · SQL · API" tag="EXT" at 72,316 160x56\n`, lk);
+    assert.ok(!check(sc).some((i) => /sits on the text/.test(i.msg)), name);
+    const svg = renderSvg(sc);
+    const tag = /<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" rx="2" fill="none"/.exec(svg)!.slice(1).map(Number);
+    const size = Number(sc.shapes[0].p['title.size'] ?? 12);
+    const titleY = Number(new RegExp(`<text x="[\\d.]+" y="([\\d.]+)"[^>]*>DB Connection<`).exec(svg)![1]);
+    assert.ok(tag[0] - 72 >= 8 && tag[1] - 316 >= 6, `${name}: tag inset ${tag[0] - 72},${tag[1] - 316}`);
+    assert.ok(titleY - size * 0.72 >= tag[1] + tag[2] + 2, `${name}: title top ${titleY - size * 0.72} vs tag bottom ${tag[1] + tag[2]}`);
+    assert.ok(/CDC · SQL · API/.test(svg) && Number(/<text x="[\d.]+" y="([\d.]+)"[^>]*>CDC · SQL · API</.exec(svg)![1]) <= 316 + 56 - 2, name);
+  }
 });
 
 test('tinted legend swatches, lines in front of shapes, and no alignment hints between free-form shapes', () => {

@@ -288,13 +288,14 @@ function drawShape(look: Look, s: Shape): string {
     const t = textAttrs(look, p, 'ghost.', { font: 'mono', size: 32, weight: 600, color: 'ink/0.06' });
     out.push(`<text x="${s.x + s.w - 8}" y="${s.y + s.h - 4}" text-anchor="end" ${t.a}>${esc(p.ghost)}</text>`);
   }
-  if (p.tag) {
+  const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
+  const tb = p.tag ? tagLayout(s, look, textBlock(s, title.size), title.size, cym + (iconBox(s)?.dy ?? 0)) : null;
+  if (tb) {
     const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
     const tw = Math.ceil((textWidth(p.tag, t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
-    out.push(`<rect x="${s.x + 8}" y="${s.y + 8}" width="${tw}" height="12" rx="2" fill="none" stroke="${col(look, p['tag.border'] ?? 'muted/0.4')}" stroke-width="0.8"/>`);
-    out.push(`<text x="${s.x + 8 + tw / 2}" y="${s.y + 17}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
+    out.push(`<rect x="${s.x + tb.x}" y="${s.y + tb.y}" width="${tw}" height="${tb.h}" rx="2" fill="none" stroke="${col(look, p['tag.border'] ?? 'muted/0.4')}" stroke-width="0.8"/>`);
+    out.push(`<text x="${s.x + tb.x + tw / 2}" y="${r2(s.y + tb.y + tb.h / 2 + t.size * 0.36)}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
   }
-  const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
   const ib = iconBox(s), iconCol = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
   if (ib) { cxm += ib.dx; cym += ib.dy; }
   if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p.icon, ib.x, ib.y, ib.size, iconCol));
@@ -311,7 +312,8 @@ function drawShape(look: Look, s: Shape): string {
     const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
     const subs = p.sub ? p.sub.split('\n') : [], slh = Math.round(sub.size * 1.3);
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
-    const top = cym - block / 2 + (p.tag ? 8 : 0);
+    // centred a little low under a corner tag, and never closer than 4px below it
+    const top = tb ? tb.top : cym - block / 2;
     if (ib && ib.dy > 0) out.push(drawIcon(look, p.icon, ib.x, top - ib.size - 6, ib.size, iconCol));
     const al = p['title.align'], tx = al === 'left' ? s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
@@ -339,6 +341,28 @@ function pathD(pts: Pt[], radius: number, trimEnd: number, trimStart: number): s
     d += ` L ${r2(a.x)},${r2(a.y)} Q ${cur.x},${cur.y} ${r2(b.x)},${r2(b.y)}`;
   }
   return d;
+}
+
+// How tall a shape's title and sub lines are together.
+export function textBlock(s: Shape, titleSize: number): number {
+  const p = s.p, subSize = num(p['sub.size'], 9), subs = p.sub ? p.sub.split('\n').length : 0;
+  const lines = s.text ? s.text.split('\n').length : 0;
+  return lines * Math.round(titleSize * 1.17) + (subs ? subSize + 7 + (subs - 1) * Math.round(subSize * 1.3) : 0);
+}
+
+// Where a corner tag and the text under it sit on a shape. The tag keeps clear of the outline (further
+// from a hand-drawn one, whose wobble would touch it) and is as tall as its text needs; the text block
+// sits a little below centre, moved down to start 3px under the tag. A box short of room first gives up
+// some margin (the tag 2px higher, the text 2px nearer the bottom); fits says whether that was enough.
+export function tagLayout(s: Shape, look: Look, block: number, titleSize: number, cym: number) {
+  const p = s.p, rough = p.sketch === '0' ? 0 : Math.max(0, Math.min(num(look.canvas.sketch, 0), 4));
+  const x = 8 + (rough ? 2 : 0), h = Math.max(12, Math.ceil(num(p['tag.size'], 7) + 4)), glyph = titleSize * 0.14;
+  const at = (y: number, pad: number) => {
+    const clear = s.y + y + h + 3 - glyph, floor = s.y + s.h - pad - block;
+    return { y, top: Math.min(Math.max(cym - block / 2 + 8, clear), Math.max(floor, cym - block / 2)), fits: clear <= floor + 0.5 };
+  };
+  const roomy = at(8, 4), tight = roomy.fits ? roomy : at(6, 2);
+  return { x, h, ...(tight.fits ? tight : roomy) };
 }
 
 // An end marker drawn at tip, pointing away from `from`. trim is how much of the line to cut back so it
