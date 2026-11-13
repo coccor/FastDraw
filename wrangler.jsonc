@@ -7,6 +7,8 @@
     "directory": "./dist-editor",
     "not_found_handling": "single-page-application"
   },
+  // branch builds run `wrangler preview`, which needs this block (empty is enough)
+  "previews": {},
   // matches the Worker's settings in the Cloudflare dashboard, so builds do not see a mismatch
   "observability": {
     "enabled": false,
