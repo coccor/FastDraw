@@ -200,6 +200,7 @@ if (cmd === 'check') {
   const wrong = named.filter((a) => !TARGETS.includes(a as Target));
   if (wrong.length) { console.log(`unknown agent: ${wrong.join(', ')}. Choose from: ${TARGETS.join(', ')}`); process.exit(1); }
   const targets = named.length ? (named as Target[]) : global ? ['claude' as Target] : detect(process.cwd());
-  for (const l of setup(root, process.cwd(), targets, global)) console.log(l);
+  try { for (const l of setup(root, process.cwd(), targets, global)) console.log(l); }
+  catch (e) { console.log((e as Error).message); process.exit(1); }
   console.log('\nAsk your agent for a diagram, for example: "Draw this repo\'s architecture as docs/architecture.fdraw".');
 } else usage();

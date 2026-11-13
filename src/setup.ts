@@ -1,7 +1,7 @@
 // `fastdraw setup`: tell the coding agents in a repo about FastDraw, by writing the same thin
 // instruction files kept in agents/. Running it again updates them in place.
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync, lstatSync } from 'node:fs';
+import { dirname, join, relative, sep } from 'node:path';
 import { homedir } from 'node:os';
 
 export type Target = 'claude' | 'agents' | 'copilot';
@@ -14,10 +14,21 @@ function snippet(root: string): string {
   return readFileSync(join(root, 'agents', 'AGENTS-snippet.md'), 'utf8').replace(/^<!--.*?-->\s*/s, '').trim();
 }
 
+// Make the file's folder and check the file stays inside `base`: a repository could carry a link
+// (AGENTS.md -> ~/.bashrc) that would otherwise send the write somewhere else.
+function prepare(base: string, file: string): void {
+  mkdirSync(dirname(file), { recursive: true });
+  const top = realpathSync(base), folder = realpathSync(dirname(file));
+  let linked = false;
+  try { linked = lstatSync(file).isSymbolicLink(); } catch { /* not there yet */ }
+  if (linked || (folder !== top && !folder.startsWith(top + sep))) throw new Error(`not writing ${file}: it is a link, or leads outside ${base}`);
+}
+
 // Put the section into a markdown file: replace the one written before, or add it at the end.
-function upsert(file: string, body: string): 'created' | 'updated' | 'added to' {
+function upsert(base: string, file: string, body: string): 'created' | 'updated' | 'added to' {
   const block = `${START}\n${body}\n${END}`;
-  if (!existsSync(file)) { mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, block + '\n'); return 'created'; }
+  prepare(base, file);
+  if (!existsSync(file)) { writeFileSync(file, block + '\n'); return 'created'; }
   const text = readFileSync(file, 'utf8');
   const a = text.indexOf(START), b = text.indexOf(END);
   if (a >= 0 && b > a) { writeFileSync(file, text.slice(0, a) + block + text.slice(b + END.length)); return 'updated'; }
@@ -40,14 +51,16 @@ export function setup(root: string, dir: string, targets: Target[], global = fal
   const show = (f: string) => (f.startsWith(dir) ? relative(dir, f) : f.replace(homedir(), '~'));
   for (const t of targets) {
     if (t === 'claude') {
-      const file = join(global ? join(homedir(), '.claude') : join(dir, '.claude'), 'skills', 'fastdraw', 'SKILL.md');
+      const base = global ? join(homedir(), '.claude') : dir;
+      const file = join(global ? base : join(dir, '.claude'), 'skills', 'fastdraw', 'SKILL.md');
       const was = existsSync(file);
-      mkdirSync(dirname(file), { recursive: true });
+      if (global) mkdirSync(base, { recursive: true });
+      prepare(base, file);
       writeFileSync(file, readFileSync(join(root, 'agents', 'claude-skill', 'fastdraw', 'SKILL.md'), 'utf8'));
       lines.push(`${was ? 'updated' : 'wrote'} ${show(file)}  (Claude Code skill)`);
     } else {
       const file = t === 'agents' ? join(dir, 'AGENTS.md') : join(dir, '.github', 'copilot-instructions.md');
-      lines.push(`${upsert(file, snippet(root))} ${show(file)}  (${t === 'agents' ? 'Codex, OpenCode and other agents that read AGENTS.md' : 'GitHub Copilot'})`);
+      lines.push(`${upsert(dir, file, snippet(root))} ${show(file)}  (${t === 'agents' ? 'Codex, OpenCode and other agents that read AGENTS.md' : 'GitHub Copilot'})`);
     }
   }
   return lines;
