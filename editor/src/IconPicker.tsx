@@ -28,7 +28,7 @@ export function IconPicker({ look, value, onPick }: { look: Look; value: string 
     if (g && on) g.scrollTop = on.offsetTop - g.offsetTop - g.clientHeight / 2 + on.clientHeight / 2;
   }, [value]);
   const tile = (n: string) => (
-    <button key={n} type="button" className={'icontile' + (value === n ? ' on' : '')} title={n} role="radio" aria-label={n} aria-checked={value === n} onClick={() => onPick(n)}>
+    <button key={n} type="button" className={'icontile' + (value === n ? ' on' : '')} title={value === n ? `${n} (click again to remove)` : n} role="radio" aria-label={n} aria-checked={value === n} onClick={() => onPick(value === n ? null : n)}>
       <IconGlyph look={look} name={n} />
     </button>
   );
@@ -41,7 +41,6 @@ export function IconPicker({ look, value, onPick }: { look: Look; value: string 
             if (e.key === 'Enter' && first) onPick(first);
             if (e.key === 'Escape' && q) { e.stopPropagation(); setQ(''); }
           }} />
-        {value && value !== 'none' && <button type="button" className="iconnone" title="No icon" onClick={() => onPick(null)}>Remove</button>}
       </div>
       <div className="icongrid" ref={grid} role="radiogroup" aria-label="Icons">
         {folder.length > 0 && <div className="iconhead">From the look's folder</div>}
@@ -50,7 +49,6 @@ export function IconPicker({ look, value, onPick }: { look: Look; value: string 
         {builtIn.map(tile)}
         {!folder.length && !builtIn.length && <p className="muted small">No icon is called anything like “{q.trim()}”.</p>}
       </div>
-      {value && value !== 'none' && <p className="muted small iconname">{value}</p>}
     </div>
   );
 }

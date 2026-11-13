@@ -548,7 +548,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain('icon.width=2');
   await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Regular' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.width');
-  await page.getByRole('button', { name: 'Remove' }).click();
+  await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
   expect(lineOf(await source(page), 'db')).not.toContain('icon=');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Look styles' }).click();

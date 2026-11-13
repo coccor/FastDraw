@@ -82,14 +82,12 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .iconpicker { display: flex; flex-direction: column; gap: 6px; }
 .iconsearch { display: flex; gap: 4px; }
 .iconsearch input { flex: 1; min-width: 0; }
-.iconsearch .iconnone { padding: 0 8px; font-size: 12px; background: var(--hover); }
 .icongrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 2px; max-height: 172px; overflow-y: auto; padding: 3px; border: 1px solid var(--line); border-radius: 7px; }
 .icongrid .iconhead { grid-column: 1 / -1; font-size: 11px; color: var(--mute); padding: 4px 2px 0; }
 .icongrid .muted { grid-column: 1 / -1; padding: 6px 4px; }
 .icontile { width: 100%; aspect-ratio: 1; padding: 0; border-radius: 6px; color: var(--ink); }
 .icontile img { object-fit: contain; }
 .icontile.on { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
-.iconname { font-family: 'Geist Mono', monospace; }
 .panel .sublabel { font-size: 11px; color: var(--mute); margin: 10px 0 4px; }
 
 /* look styles gallery */
