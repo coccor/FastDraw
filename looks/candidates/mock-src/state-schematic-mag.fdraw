@@ -1,5 +1,4 @@
 look "../schematic-mag.look"
-canvas 1252x520
 
 text "Life of a support ticket" at 60,56 style=h1
 text "Most tickets close in four steps; one in five comes back after it is resolved." at 60,88 style=dek

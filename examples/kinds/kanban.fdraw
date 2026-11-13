@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1136x520
 text "Platform team board, week 14" at 40,52 style=h1
 
 c1: zone at 40,96 240x324 stroke=none

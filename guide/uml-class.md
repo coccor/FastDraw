@@ -49,7 +49,7 @@ The line end carries the meaning, so use exactly these:
 
 ## Legend
 
-`legend at 40,Y focal="…"` for the accent class. Under it, draw the six relationships as 40px samples with a `caption` each, on a row at Y+73 (text baseline Y+76), even the ones the diagram does not use: the reader needs the whole vocabulary to tell the ends apart. Each sample starts at the previous start plus `88 + 6 * (characters of the previous caption)`: 154 after "Inheritance", 196 after "Composition · owns". Six samples take about 1000px; on a narrower canvas use two rows of three, 24px apart. The canvas is 40px below the last row.
+`legend at 40,Y focal="…"` for the accent class. Under it, draw the six relationships as 40px samples with a `caption` each, on a row at Y+73 (text baseline Y+76), even the ones the diagram does not use: the reader needs the whole vocabulary to tell the ends apart. Each sample starts at the previous start plus `88 + 6 * (characters of the previous caption)`: 154 after "Inheritance", 196 after "Composition · owns". Six samples take about 1000px; in a narrower diagram use two rows of three, 24px apart.
 
 ```
 40,685 -> 80,685 head=triangle

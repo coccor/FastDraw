@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x552
 
 // rings: each one 32px in from the last on the left and right, 36px at top and bottom
 // ring names: 16px in from the ring's left edge, baseline 22px under its top edge

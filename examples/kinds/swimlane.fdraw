@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x670
 
 // lanes: 112px tall, y = 96, 208, 320, 432 (ends 544); label column x = 40..160; steps from x = 184
 // steps 48px tall, 32px inside the lane top

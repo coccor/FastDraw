@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1040x712
 
 title: text "Every release teaches the next one" at 40,52 style=h1
 

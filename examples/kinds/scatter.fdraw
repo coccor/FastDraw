@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x560
 
 title: text "Teams that deploy often wait least" at 40,52 style=h1
 

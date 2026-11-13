@@ -25,7 +25,7 @@ t1: rect at 232,160 128x24 radius=4 fill=muted/0.15 stroke=muted // weeks 1 and 
 
 ## Composition
 
-- Fix the scale first and write it in a comment: the x where time starts and the px per unit. A bar starts at `start + (first unit - 1) * pitch` and is `units * pitch` wide. Pick a pitch that is a multiple of 4 (64px per week). Canvas width = start + n * pitch + 80, so the phase zones (x=40, width = start + n * pitch - 40) end 40px short of the right edge.
+- Fix the scale first and write it in a comment: the x where time starts and the px per unit. A bar starts at `start + (first unit - 1) * pitch` and is `units * pitch` wide. Pick a pitch that is a multiple of 4 (64px per week). The phase zones are at x=40 with width = start + n * pitch - 40, so they end where the scale ends.
 - Names are in a column on the left, x=56 to 232, on the zones' inner side. Time runs from x=232 to the right.
 - Rows are 40px apart. A bar is 24px high. The task name's baseline is 16px below the top of its bar.
 - A phase is a `zone` across the full width with `title.align=left`; write `dash=none stroke=ink/0.1` (the built-in zone is dashed). Its first bar starts 24px below the zone's top and the zone ends 8px below its last bar: height = 40 * rows + 16. The first zone starts at y=136; each next one 8px below the previous.
@@ -45,4 +45,4 @@ None, as a rule. Bar positions already show order. Add a dependency arrow only w
 
 ## Legend
 
-The bars are not styles of the look, so use tinted swatches, 24px under the last phase: `legend at 40,Y swatch.accent/0.2="The gate" swatch.muted/0.2="Task" swatch.ink/0.06="Phase"` (add `line.accent="Today"` if there is a marker). Canvas height = bottom of the last phase + 80.
+The bars are not styles of the look, so use tinted swatches, 24px under the last phase: `legend at 40,Y swatch.accent/0.2="The gate" swatch.muted/0.2="Task" swatch.ink/0.06="Phase"` (add `line.accent="Today"` if there is a marker).

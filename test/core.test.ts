@@ -17,7 +17,7 @@ import { fontMeta } from '../src/fontmeta.ts';
 import { lookFonts } from '../src/node.ts';
 
 const look = parseLook(readFileSync(new URL('../looks/reference.look', import.meta.url), 'utf8'));
-const scene = (body: string) => buildScene(`look "x.look"\ncanvas 800x400\n${body}`, look);
+const scene = (body: string) => buildScene(`look "x.look"\n${body}`, look);
 const warns = (body: string) => check(scene(body)).filter((i) => i.level !== 'hint').map((i) => i.msg);
 
 test('sketch look: hand-drawn strokes, steady from one render to the next, off unless the look asks', () => {
@@ -111,7 +111,7 @@ test('a line hanging off a box and a message attached to it follow the box', () 
 test('errors name the problem and the line', () => {
   const sc = scene('a: nodee at 0,0\nb: node at 40,40\nb -> zz\nb: node at 40,200');
   const errs = sc.issues.filter((i) => i.level === 'error');
-  assert.match(errs[0].msg, /unknown style "nodee"/); assert.equal(errs[0].line, 3);
+  assert.match(errs[0].msg, /unknown style "nodee"/); assert.equal(errs[0].line, 2);
   assert.match(errs.map((e) => e.msg).join('|'), /"zz", which does not exist/);
   assert.match(errs.map((e) => e.msg).join('|'), /id "b" is already used/);
 });
@@ -154,10 +154,11 @@ test('a diagram with no look statement is drawn with the built-in look', () => {
 });
 
 test('legend: one statement lays out entries, wraps rows and stays inside its width', () => {
-  const sc = scene('lg: legend at 40,300 focal="The subject" store="Holds data" primary="Main path" return="Reply" decision="Question" nosuch="x" fill=#fff');
+  const sc = scene('lg: legend at 40,300 focal="The subject" store="Holds data" primary="Main path" return="Reply" decision="Question" nosuch="x" fill=#fff\nwide: node at 40,40 720x40');
   const lg = sc.shapes[0];
   assert.deepEqual(lg.legend!.map((i) => i.style), ['focal', 'store', 'primary', 'return', 'decision']);
-  assert.equal(lg.w, 720); // canvas 800 minus the left margin twice
+  assert.equal(lg.w, 720); // as wide as the rest of the drawing, written after it or not
+  assert.equal(scene('lg: legend at 40,300 focal="The subject"').shapes[0].w, 920); // nothing else drawn
   for (const i of lg.legend!) assert.ok(i.x >= 40 && i.x < 760);
   assert.equal(new Set(lg.legend!.map((i) => i.baseline)).size, 1);
   const narrow = scene('lg: legend at 40,300 200x10 focal="The subject of it all" store="Holds data" primary="Main path"').shapes[0];
@@ -556,38 +557,52 @@ test('an edit keeps the quotes a property was written with, and adds them only w
   assert.equal(again, 'key: legend at 40,300 title="Key" external="Buyer" focal="The service"\n');
 });
 
+test('no page: the picture is what is drawn plus a margin, anywhere, and an old canvas size is only a hint', () => {
+  const sc = scene('a: node at -200,-120 120x40\nb: node at 300,200 120x40\n-80,-60 -> a');
+  assert.deepEqual([sc.x, sc.y, sc.w, sc.h], [-240, -160, 700, 440]);
+  assert.deepEqual(sc.conns[0].pts[0], { x: -80, y: -60 }); // two minus signs are a point, not an offset
+  assert.match(renderSvg(sc), /viewBox="-240 -160 700 440"/);
+  assert.ok(!check(sc).some((i) => /outside/.test(i.msg)));
+  const empty = scene('');
+  assert.deepEqual([empty.x, empty.y, empty.w, empty.h], [0, 0, 400, 240]);
+  const old = buildScene('canvas 800x400\na: node at 40,40', look);
+  assert.equal(old.issues.filter((i) => i.level === 'error').length, 0);
+  assert.notEqual(old.w, 800); // the size comes from the content
+  assert.match(check(old).map((i) => i.msg).join('|'), /canvas has no size any more/);
+});
+
 test('export without a background leaves out the page and its dots, and keeps everything drawn on it', () => {
   const sc = scene('a: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n');
   const full = renderSvg(sc), bare = renderSvg(sc, undefined, { background: false });
-  assert.match(full, /<rect width="800" height="400" fill=/);
+  assert.match(full, /<rect class="fd-page" x="0" y="0" width="\d+" height="\d+" fill=/);
   assert.match(full, /fd-dots/);
-  assert.doesNotMatch(bare, /<rect width="800" height="400"/);
+  assert.doesNotMatch(bare, /fd-page/);
   assert.doesNotMatch(bare, /fd-dots/);
   assert.match(bare, /<rect x="40" y="40"/);
-  assert.match(bare, /viewBox="0 0 800 400"/);
+  assert.match(bare, new RegExp(`viewBox="0 0 ${sc.w} ${sc.h}"`));
 });
 
 test('fastdraw render: --transparent and --no-embed', async () => {
   const { execFileSync } = await import('node:child_process');
   const dir = mkdtempSync(join(tmpdir(), 'fd-export-'));
-  const f = join(dir, 'd.fdraw'), body = 'canvas 300x160\na: node "A" at 40,40\n';
+  const f = join(dir, 'd.fdraw'), body = 'a: node "A" at 40,40\n';
   writeFileSync(f, body);
   const cli = (...a: string[]) => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', new URL('../src/cli.ts', import.meta.url).pathname, 'render', f, ...a], { encoding: 'utf8' });
   assert.match(cli('-o', join(dir, 'a.svg'), '--transparent', '--no-embed'), /no background, no diagram inside/);
   const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
   assert.equal(extractSvg(svg), null);
-  assert.doesNotMatch(svg, /<rect width="300" height="160"/);
+  assert.doesNotMatch(svg, /fd-page/);
   cli('-o', join(dir, 'b.png'), '--scale', '1', '--transparent');
   const png = new Uint8Array(readFileSync(join(dir, 'b.png')));
-  assert.equal(new DataView(png.buffer, png.byteOffset).getUint32(16), 300); // IHDR width, at 1x
+  assert.equal(new DataView(png.buffer, png.byteOffset).getUint32(16), buildScene(body, defaultLook()).w); // IHDR width, at 1x: the drawing plus its margin
   assert.equal(png[25], 6); // RGBA: the page is see-through
   assert.equal(extractPng(png)?.diagram, body);
   cli('-o', join(dir, 'c.png'), '--no-embed');
   assert.equal(extractPng(new Uint8Array(readFileSync(join(dir, 'c.png')))), null);
 });
 
-test('a diagram\'s canvas line can override the look\'s background; the editor keeps it when resizing', async () => {
-  const sc = buildScene('look "x.look"\ncanvas 400x200 paper=#ffffff dots=none\na: node "A" at 20,20', look);
+test('a diagram\'s canvas line can override the look\'s background, with or without an old size on it', async () => {
+  const sc = buildScene('look "x.look"\ncanvas paper=#ffffff dots=none\na: node "A" at 20,20', look);
   assert.equal(sc.issues.length, 0);
   assert.equal(sc.look.canvas.paper, '#ffffff');
   assert.equal(sc.baseCanvas!.paper, 'paper');
@@ -595,16 +610,15 @@ test('a diagram\'s canvas line can override the look\'s background; the editor k
   const svg = renderSvg(sc);
   assert.match(svg, /fill="#ffffff"/);
   assert.doesNotMatch(svg, /fd-dots/);
-  assert.match(buildScene('look "x.look"\ncanvas 400x200 fill=#fff', look).issues[0].msg, /canvas only takes a size/);
+  assert.equal(buildScene('look "x.look"\ncanvas 400x200 paper=#ffffff\na: node "A" at 20,20', look).look.canvas.paper, '#ffffff');
+  assert.match(buildScene('look "x.look"\ncanvas fill=#fff', look).issues[0].msg, /canvas only takes paper=/);
 
   const { setCanvas } = await import('../editor/src/ops.ts');
-  const src = 'look "x.look"\ncanvas 400x200 paper=#eef2f7\na: node "A" at 20,20';
-  const resized = setCanvas(src, buildScene(src, look), 500, 300);
-  assert.match(resized, /^canvas 500x300 paper=#eef2f7$/m);
-  const dotsOff = setCanvas(resized, buildScene(resized, look), 500, 300, { dots: 'none' });
-  assert.match(dotsOff, /^canvas 500x300 paper=#eef2f7 dots=none$/m);
-  const reset = setCanvas(dotsOff, buildScene(dotsOff, look), 500, 300, { paper: null, dots: null });
-  assert.match(reset, /^canvas 500x300$/m);
+  const src = 'look "x.look"\ncanvas paper=#eef2f7\na: node "A" at 20,20';
+  const dotsOff = setCanvas(src, buildScene(src, look), { dots: 'none' });
+  assert.match(dotsOff, /^canvas paper=#eef2f7 dots=none$/m);
+  const reset = setCanvas(dotsOff, buildScene(dotsOff, look), { paper: null, dots: null });
+  assert.doesNotMatch(reset, /canvas/); // nothing left on the line, so it goes
   const noLine = 'look "x.look"\na: node "A" at 20,20';
-  assert.match(setCanvas(noLine, buildScene(noLine, look), 600, 400, { paper: '#ffffff' }), /^look "x.look"\ncanvas 600x400 paper=#ffffff\n/);
+  assert.match(setCanvas(noLine, buildScene(noLine, look), { paper: '#ffffff' }), /^look "x.look"\ncanvas paper=#ffffff\n/);
 });

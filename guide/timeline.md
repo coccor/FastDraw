@@ -24,7 +24,7 @@ text "Design v1" at 240,164 anchor=middle weight=600 color=ink
 ## Composition
 
 - Work out the scale first and write it in a comment: the x of the first date and the px per day, month or year. Every event's x comes from that sum. Never space events evenly because it looks tidier; if two are close in time they are close on the axis.
-- The axis is one horizontal line, 80px in from each side of the canvas (x 80 to 920 on 1000). A canvas 1000 wide and `Y + 248` = 480 high holds five to seven events.
+- The axis is one horizontal line from x=80 to 920. That length holds five to seven events.
 - A dot is an `ellipse` 8x8 placed at `x-4, Y-4`. A major milestone is 12x12 at `x-6, Y-6` in the accent colour. At most two are major.
 - Labels alternate: one event below the axis, the next above. This is what stops neighbours from colliding. If two events are still closer than their labels are wide (about 110px), give one of them a longer stem (+40px) so its label sits on a second level.
 - Every label is centred on the event's x with `anchor=middle`, three lines on a 16px pitch:
@@ -41,7 +41,7 @@ text "Design v1" at 240,164 anchor=middle weight=600 color=ink
 
 ## Legend
 
-The dots are not styles of the look, but `legend` takes dot entries: `legend at 40,408 dot.ink="Event" dot.accent="Major milestone"` (rule at `Y+176`, so the canvas is `Y+248` tall).
+The dots are not styles of the look, but `legend` takes dot entries: `legend at 40,408 dot.ink="Event" dot.accent="Major milestone"` (rule at `Y+176`).
 
 ## Traps
 

@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x592
 
 // centre 500,300, radius 160 = 100%, so 1.6px per point. Eight windows, the first straight up, then clockwise.
 title: text "Request demand by UTC window" at 40,52 style=h1

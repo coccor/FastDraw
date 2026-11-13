@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 936x520
 text "Checkout service, production" at 40,52 style=h1
 
 prod: zone "Prod / eu-west-1" at 40,96 232x304 dash=4,4 stroke=ink/0.2

@@ -1,5 +1,4 @@
 look "../../../looks/sketch.look"
-canvas 1112x760
 
 text "Marketing analytics pipeline" at 40,52 style=h1
 

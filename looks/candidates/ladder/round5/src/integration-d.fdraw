@@ -1,5 +1,4 @@
 look "../d.look"
-canvas 1200x688
 
 text "Hospital integration hub" at 40,56 style=h1
 

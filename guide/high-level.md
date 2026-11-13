@@ -4,7 +4,7 @@ Shows a whole data stack on one page: phases across the top (sources, ingestion,
 
 ## Composition
 
-- Title at 40,52 (`style=h1`); the banner below it. Columns: four to six phases, each 224 wide, from x=40. Column n (from 0) has its centre at `152 + 224*n`. The canvas is `80 + 224*phases` wide: 1200 for five.
+- Title at 40,52 (`style=h1`); the banner below it. Columns: four to six phases, each 224 wide, from x=40. Column n (from 0) has its centre at `152 + 224*n`. The columns end at `x = 40 + 224*phases`: 1160 for five.
 - Phase banner at y=88: one chevron per column, drawn as a polygon 232 wide and 32 high so that each tip reaches into the notch of the next.
 
 ```
@@ -17,7 +17,7 @@ p2: polygon "INGESTION"    at 264,88 points=0,0;216,0;232,16;216,32;0,32;16,16 f
 - Sources are outside the cluster: a dashed zone under the first chevron, `zone "Sources" at 48,136 208xH dash=4,3`, holding a column of `external` boxes 160x56 at x=72 (zone x + 24), 16 apart, the first 36px below the zone's top: `y = 172 + 72*i`. Size the zone to the last box plus 36.
 - The cluster is a zone over the other columns, `dash=none` to make it solid: `zone "Kubernetes cluster" at 272,136 888xH dash=none`, `W = 224*(phases-1) - 8`, the same height as the sources zone (the taller of the two sets).
 - An orchestrator or scheduler is a wide `cloud` box across the top of the cluster, 24px below its top edge and 16px in from its sides, 48 high. Components start 32px below it. With no orchestrator they start 40px below the zone's top (y=176).
-- A service that applies to everything (identity, monitoring) is a `cloud` box of the full canvas width (`WxH` 1120x48 on 1200), 24px under the zones. It is outside the cluster and has no arrows. One row per service, 24px apart.
+- A service that applies to everything (identity, monitoring) is a `cloud` box as wide as all the columns (`WxH` 1120x48 for five), 24px under the zones. It is outside the cluster and has no arrows. One row per service, 24px apart.
 - Place the main row so that the busiest arrows are straight: the ingestion box level with the box it feeds, and a box fed by two others half-way between them.
 
 ## Arrows

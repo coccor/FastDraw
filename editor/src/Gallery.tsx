@@ -17,18 +17,18 @@ function Thumb({ look, style }: { look: Look; style: Style }) {
       if (sw < 40) { sw = Math.max(sw, 8); sh = Math.min(sh, 64); } // narrow things (bars) keep their shape
       w = Math.max(176, sw + 24); h = sh + 24;
       const label = sw < 40 ? '' : p['title.pos'] === 'top' ? '"Group"' : '"Name"';
-      src = `canvas ${w}x${h}\ns: ${style.name} ${label} at ${(w - sw) / 2},${(h - sh) / 2} ${sw}x${sh}`;
-      if (style.name === 'icon') src = `canvas ${w}x${h}\ns: icon at ${w / 2 - 20},${h / 2 - 20} 40x40 icon=server`;
-      if (p.shape === 'chart') { h = 104; src = `canvas ${w}x${h}\ns: ${style.name} at 36,12 120x68 x="A,B,C,D" yaxis=0\n  | bars "" 30 50 40 70`; }
-      if (p.shape === 'table') { h = 104; src = `canvas ${w}x${h}\ns: ${style.name} "Name" at 24,12 128x0\n  | "first" "value"\n  | "second" "value"`; }
+      src = `s: ${style.name} ${label} at ${(w - sw) / 2},${(h - sh) / 2} ${sw}x${sh}`;
+      if (style.name === 'icon') src = `s: icon at ${w / 2 - 20},${h / 2 - 20} 40x40 icon=server`;
+      if (p.shape === 'chart') { h = 104; src = `s: ${style.name} at 36,12 120x68 x="A,B,C,D" yaxis=0\n  | bars "" 30 50 40 70`; }
+      if (p.shape === 'table') { h = 104; src = `s: ${style.name} "Name" at 24,12 128x0\n  | "first" "value"\n  | "second" "value"`; }
     } else if (style.kind === 'line') {
-      src = `canvas ${w}x${h}\n20,${h / 2 + 6} ${p.head === 'none' || p.route === 'straight' ? '--' : '->'} ${w - 20},${h / 2 + 6} "label" style=${style.name}`;
+      src = `20,${h / 2 + 6} ${p.head === 'none' || p.route === 'straight' ? '--' : '->'} ${w - 20},${h / 2 + 6} "label" style=${style.name}`;
     } else {
-      src = `canvas ${w}x${h}\ntext "Sample text" at ${w / 2},${h / 2 + 4} style=${style.name} anchor=middle`;
+      src = `text "Sample text" at ${w / 2},${h / 2 + 4} style=${style.name} anchor=middle`;
     }
     const sc = buildScene(src, look);
     // drop the paper and dot layers so the thumbnail sits on the card
-    const body = renderBody(sc).split('\n').filter((l) => !l.startsWith(`<rect width="${sc.w}"`) && !l.startsWith('<defs>')).join('\n');
+    const body = renderBody(sc).split('\n').filter((l) => !l.startsWith('<rect class="fd-page"') && !l.startsWith('<defs>')).join('\n');
     return { body, w, h };
   }, [look, style]);
   return <svg viewBox={`0 0 ${view.w} ${view.h}`} className="thumb" dangerouslySetInnerHTML={{ __html: view.body }} />;

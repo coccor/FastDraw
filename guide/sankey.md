@@ -7,7 +7,7 @@ FastDraw has no Sankey element. Bars are thin rects and each band is a `rect` wi
 ## Building blocks
 
 ```
-// canvas 1000x624, title at y=52. Scale: 0.02px per minute (12,000 min = 240px) · bars 12 wide at x = 120, 500, 880
+// title at y=52. Scale: 0.02px per minute (12,000 min = 240px) · bars 12 wide at x = 120, 500, 880
 title: text "Where the CI minutes go" at 40,52 style=h1
 text "TEST STAGE" at 506,108 style=eyebrow anchor=middle
 
@@ -23,7 +23,7 @@ legend at 40,552 swatch.muted/0.18="Flow" swatch.accent/0.28="The story" swatch.
 
 - Exactly three columns of bars, left to right, at most eight bars and twelve bands. For a fourth stage, draw a second diagram.
 - Choose one scale for the whole diagram (px per unit) and write it in a comment. Every bar height and band width is `amount * scale`. Choose it so heights land on multiples of 4, and round nothing by more than 4px: a bar that disagrees with the number beside it destroys the diagram's one claim.
-- Bars: `rect ... 12xH fill=ink stroke=none radius=0`, at x=120, 500 and 880. The middle column has the most bars, so lay it out first: first bar top at y=168, 40px between bars (the label patch goes there; 8px in the last column). Then centre the other columns on the same line: `top = middle top + (middle stack height - stack height) / 2`. A single total bar in column 1 is the simple case: its stack is just its height. Canvas height = bottom of the middle stack + 96 (legend 24px under it, 70px for the legend): 624 for four middle bars of 240px.
+- Bars: `rect ... 12xH fill=ink stroke=none radius=0`, at x=120, 500 and 880. The middle column has the most bars, so lay it out first: first bar top at y=168, 40px between bars (the label patch goes there; 8px in the last column). Then centre the other columns on the same line: `top = middle top + (middle stack height - stack height) / 2`. A single total bar in column 1 is the simple case: its stack is just its height. The legend goes 24px under the middle stack.
 - Every column adds up to the same total. If not, the data has a leak; fix the data, not the picture.
 - A bar's bands leave it stacked top to bottom with no gaps, in the order of the bars they go to; they arrive stacked in the order of the bars they come from. Work out each band's top and bottom y at both ends before writing anything (a short script is the safe way).
 - Order the bars in each column so bands cross as little as possible. A band thinner than 4px cannot be seen: merge it into an "other" band.

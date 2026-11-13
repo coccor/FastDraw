@@ -1,4 +1,3 @@
-canvas 1000x520
 text "Monthly active users, last twelve months" at 40,40 style=h1
 mau: chart at 96,88 864x316 x="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec" y=0..140 step=20 key=0 ytitle="Monthly active users (thousands)"
   | line "Calendar" 44 46 45 47 48 47 49 50 49 51 50 52 stroke=soft sw=1.5

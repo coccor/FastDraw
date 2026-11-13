@@ -5,7 +5,7 @@ Compares one number per category: velocity per sprint, revenue per month. The du
 ## Building blocks
 
 ```
-// title at 40,52; plot area 96,112 to 960,404 on a 1000x528 canvas
+// title at 40,52; plot area 96,112 to 960,404
 text "Velocity per sprint" at 40,52 style=h1
 vel: chart at 96,112 864x292 x="S1,S2,S3,S4,S5" y=0..120 step=20 labels=1 key=0 ytitle="Story points per sprint"
   | bars "Velocity" 72 88 95 78 110 fill=soft fill.5=accent
@@ -17,7 +17,7 @@ legend at 40,456 swatch.accent="Sprint 5 · record high" swatch.soft="Other spri
 
 ## Composition
 
-- Title at 40,52 (`style=h1`). Canvas 1000x528. Plot area `at 96,112 864x292`: that leaves room for the axis title above the plot (it sits about 28px over the top edge), tick labels on the left, category names below (to y=432) and the legend at y=456, with 70px of canvas under it.
+- Title at 40,52 (`style=h1`). Plot area `at 96,112 864x292`: that leaves room for the axis title above the plot (it sits about 28px over the top edge), tick labels on the left, category names below (to y=432) and the legend at y=456.
 - Four to eight bars. With more, group them into longer periods or draw two charts.
 - The y axis starts at 0. Always write `y=0..N` with N a round number just above the largest value; a cut axis makes small differences look large.
 - `step=` gives four to six grid lines.
@@ -50,7 +50,7 @@ legend at 40,484 dot.muted="2024" dot.accent="2025" title="Rows ordered by 2025 
 ```
 
 - `step=10` (larger than the y range) and `yaxis=0` remove the horizontal grid and the row axis numbers; `grid=both` draws the vertical lines.
-- Title at 40,52. Leave 200px on the left for row names, right-aligned 12px before the plot, baseline 4px below the row centre. The legend goes 24px under the axis title (y=484 here), canvas 560 high. With fewer than five rows keep `y=0..n` and shrink the plot height (64px per row) so it does not end in empty space.
+- Title at 40,52. Leave 200px on the left for row names, right-aligned 12px before the plot, baseline 4px below the row centre. The legend goes 24px under the axis title (y=484 here). With fewer than five rows keep `y=0..n` and shrink the plot height (64px per row) so it does not end in empty space.
 - Four to eight rows, 48 to 88px apart. Sort them and say by what in the legend heading.
 - The scale starts at 0, as for bars. Write both values beside each pair, outside it: the smaller one right-aligned 12px left of the left dot, the larger 12px right of the right dot. A value at 0 would land on the row name; write it above its dot instead.
 - The accent marks the same end on every row (the newer or the actual value). Do not also highlight one row.

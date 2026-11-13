@@ -8,7 +8,7 @@ FastDraw has no 3D. You keep a plan in model units (x, y on the floor, z up), pr
 
 `screen x = ox + x - y` and `screen y = oy + (x + y)/2 - z`, where `ox,oy` is where the plan's corner 0,0,0 lands. x runs right and down, y left and down, z straight up. Keep model numbers even so every point is a whole pixel. Write the origin and the formula in a comment at the top.
 
-For a plan of `X` by `Y` units: `ox = (1000 - (X + Y)) / 2 + Y` (centres it), `oy = 96 + 6 + wall height` (the back corner's top then sits at y=96, under the title at y=52), canvas height = `oy + (X + Y) / 2 + 76`, caption at the canvas height minus 28. A plan of 300x200 with 40-high walls: `ox=450, oy=142`, canvas 1000x468. Keep `X + Y` at 600 or less. Below 300x200 two furnished rooms no longer fit their tags (see Text).
+For a plan of `X` by `Y` units: `ox = 500 - (X + Y) / 2 + Y` (centres it on x=500, under the title row), `oy = 96 + 6 + wall height` (the back corner's top then sits at y=96, under the title at y=52), caption baseline at `oy + (X + Y) / 2 + 48`. A plan of 300x200 with 40-high walls: `ox=450, oy=142`, caption at y=440. Keep `X + Y` at 600 or less. Below 300x200 two furnished rooms no longer fit their tags (see Text).
 
 ## A box
 

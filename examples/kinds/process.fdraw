@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1416x624
 text "From order to closed ticket" at 40,52 style=h1
 zone at 40,148 1336x96 radius=0 stroke=none
 zone at 40,340 1336x96 radius=0 stroke=none

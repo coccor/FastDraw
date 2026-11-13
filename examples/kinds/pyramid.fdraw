@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x534
 text "What the blog publishes" at 40,52 style=h1
 text "Layer width is honest: narrower = shipped less often." at 40,74 style=caption
 rank: 100,416 -> 100,104 stroke=ink/0.3 sw=1

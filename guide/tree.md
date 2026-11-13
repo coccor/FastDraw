@@ -6,7 +6,7 @@ Shows a hierarchy of things: a taxonomy, a dependency tree, a breakdown of one i
 
 - Title at `40,52` (`style=h1`). The root's top edge is y=96. Write `WxH` on every box (the default 144x64 is wrong here).
 - The root sits at the top, centred. Each level is one row; all boxes in a row share a top edge and a height of 48. Rows are 120px apart (48px box, 72px gap): y = 96, 216, 336, 456.
-- Plan from the bottom. Place the leaves first: 144 wide, 24px apart. A row of n leaves is `168n - 24` wide; with canvas width W the first leaf is at `x = (W - (168n - 24)) / 2`, and the canvas is at least `168n + 80` wide. Then centre each parent over its own children (its centre x is the mean of its first and last child's centre x), and the root over the canvas centre.
+- Plan from the bottom. Place the leaves first: 144 wide, 24px apart. A row of n leaves is `168n - 24` wide; start it at x=40. Then centre each parent over its own children (its centre x is the mean of its first and last child's centre x), and the root over the centre of the leaf row.
 - Use two box widths at most: 160 for the root and branches, 144 for leaves.
 - When the order of branches means nothing, order them so the tree is symmetrical (for children counts 2, 1, 2 rather than 2, 2, 1).
 - Limits: four levels including the root, and five children under one parent. A bigger tree is split into an overview and one diagram per branch.
@@ -30,4 +30,4 @@ root.bottom@0.5 -- eng.top style=relation
 
 ## Legend
 
-One `legend at 40,Y` statement, 32px under the leaf row, with an entry for each box style used. The canvas is Y + 70 tall.
+One `legend at 40,Y` statement, 32px under the leaf row, with an entry for each box style used.

@@ -31,7 +31,7 @@ All of them also take `radius=4 title.size=10 stroke=ink/0.12`.
 ## Composition
 
 - Two to six roles, two to fourteen components. More roles: split (people and service accounts). More components: split by area.
-- The grid above fits five roles in a 1000px canvas. For another count keep the 8px gap and share the width: role width = `(720 - 8*(n-1)) / n`, rounded down to a multiple of 4, role j at `x = 248 + (w+8)*j`. Six roles need a wider canvas or a 168px label column. Canvas height = `252 + 40*rows` (rows from y=160, 40 apart; the legend rule 24px under the last).
+- The grid above fits five roles in 720px (x=248 to 968). For another count keep the 8px gap and share the width: role width = `(720 - 8*(n-1)) / n`, rounded down to a multiple of 4, role j at `x = 248 + (w+8)*j`. Six roles need a wider grid or a 168px label column. Rows start at y=160, 40 apart; the legend rule goes 24px under the last.
 - Order roles from most to least trusted, or the way the organisation lists them; order components the way data moves through them. Rows that read alike should be neighbours.
 - A role header is its name with the group id as `sub=`. A component may carry a short hint (protocol, product) as `small` text right-aligned 12px inside its label cell, baseline 21px below the row top.
 - Fill every cell. A cell with no access says "None"; an empty cell reads as unknown.

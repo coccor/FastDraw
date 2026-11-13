@@ -1,5 +1,4 @@
 look "../../../looks/sketch.look"
-canvas 1192x624
 
 text "Image processing leaves the monolith" at 40,56 style=h1
 

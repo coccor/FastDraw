@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x580
 
 // whole = 916x380 at 40,96 (8.09B people). Asia takes a full-height column of 59% of the width;
 // the rest is split into two rows, each cell's area in proportion to its share; 4px between cells

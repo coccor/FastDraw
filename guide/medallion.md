@@ -17,12 +17,12 @@ agg: table "Aggregated" at 736,176 208x0 stroke=accent fill=accent/0.08
   | ""       "revenue by channel"
 ```
 
-- Title at 40,52 (`style=h1`). Three to five tiers in one row, left to right in the order data is promoted. All tops at y=176, all 208 wide, 24 apart: `x = 40 + 232*n` for tier n from 0. The canvas is `56 + 232*tiers` wide: 752 for three, 984 for four, 1216 for five.
+- Title at 40,52 (`style=h1`). Three to five tiers in one row, left to right in the order data is promoted. All tops at y=176, all 208 wide, 24 apart: `x = 40 + 232*n` for tier n from 0. The tiers end at `x = 16 + 232*tiers`: 712 for three, 944 for four, 1176 for five.
 - Keep every value to 21 characters or fewer. A longer cell makes that table wider than the 208 you gave and it runs into its neighbour (`check` reports the overlap).
 - Always end with a "Holds" block under a `| ---` line: two concrete examples of what is in the tier. Without it the diagram is abstract.
 - One tier, the one consumers query, is the focus: `stroke=accent fill=accent/0.08` on its table. An archive or retention tier is dashed and greyed: `dash=4,3 fill=ink/0.05`. No other tier is styled.
 - A table is 32 high for its header plus 24 per row (the `| ---` line adds none): four facts and two "Holds" rows make 32 + 6*24 = 176, so the tiers end at y=352. Tiers with the same row count end together.
-- Optional row of one or two wide boxes under the tiers, 48px below their bottom edge (y=400 for the table above), 64 high, for the ways data is written between tiers: `cloud "Trino INSERT INTO … SELECT" sub="filter · join · aggregate" tag="SQL" at 40,400 WxH`. For m boxes the width is `(canvas - 80 - 24*(m-1)) / m`: 440 each on a 984 canvas for two. They describe methods, not tiers.
+- Optional row of one or two wide boxes under the tiers, 48px below their bottom edge (y=400 for the table above), 64 high, for the ways data is written between tiers: `cloud "Trino INSERT INTO … SELECT" sub="filter · join · aggregate" tag="SQL" at 40,400 WxH`. For m boxes the width is `(T - 24*(m-1)) / m`, where T = `232*tiers - 24` is the width of the tier row: 440 each for two under four tiers. They describe methods, not tiers.
 
 ## Arrows
 
@@ -34,4 +34,4 @@ agg: table "Aggregated" at 736,176 208x0 stroke=accent fill=accent/0.08
 
 ## Legend
 
-`legend at 40,Y` 24px under the lowest element (y=488 under the method boxes, 376 under the tiers): `swatch.accent/0.1=` for the focal tier (its tint matches the table; `focal=` would show a solid swatch), `optional=` for the archive tier, `arrow=`, `primary=`, `return=`, and `cloud=` if you drew method boxes. Give the canvas 70px under the legend's y.
+`legend at 40,Y` 24px under the lowest element (y=488 under the method boxes, 376 under the tiers): `swatch.accent/0.1=` for the focal tier (its tint matches the table; `focal=` would show a solid swatch), `optional=` for the archive tier, `arrow=`, `primary=`, `return=`, and `cloud=` if you drew method boxes.

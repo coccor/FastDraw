@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x536
 
 // grid: 6 columns from x=184, 120px apart; 5 rows from y=136, 60px apart; cells 116x56 with a 4px gap
 // fill = ink at (value / 9 * 0.65), at least 0.07: 9% is the largest value outside the focal cell

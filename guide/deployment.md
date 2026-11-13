@@ -30,7 +30,7 @@ text "v2.4.1" at 240,336 style=small anchor=end
 
 ## Composition
 
-- Title at 40,52; zones start at y=96. Zones stand side by side in the order traffic passes through them, 80px apart (x = 40, 352, 664: 312 each), tops level. Canvas width = 312 × zones. A zone is 16px larger than its hosts on the sides and bottom and 32px at the top for its name (hosts start at y=128). A zone with one host is shorter than its neighbours; that is fine.
+- Title at 40,52; zones start at y=96. Zones stand side by side in the order traffic passes through them, 80px apart (x = 40, 352, 664: 312 each), tops level. A zone is 16px larger than its hosts on the sides and bottom and 32px at the top for its name (hosts start at y=128). A zone with one host is shorter than its neighbours; that is fine.
 - Hosts in a zone stack vertically, at least 56px apart. Choose which goes on top so that each path between zones is a straight horizontal line: the two hosts it joins sit level (same centre y).
 - Three zones, six hosts, nine chips, eight paths at most. More: one diagram per environment. Never two environments in one diagram without a zone between them.
 
@@ -43,4 +43,4 @@ text "v2.4.1" at 240,336 style=small anchor=end
 
 ## Legend
 
-One `legend at 40,Y` 24px under the lowest path (or zone), with each host style and each path style used; canvas height = Y + 64. Say what the focal host is ("Single point of failure").
+One `legend at 40,Y` 24px under the lowest path (or zone), with each host style and each path style used. Say what the focal host is ("Single point of failure").

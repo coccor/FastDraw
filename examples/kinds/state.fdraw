@@ -1,5 +1,4 @@
 look "../../looks/reference.look"
-canvas 1000x540
 
 // grid: states 160x80, row y = 160 (centre 200), columns x = 232, 456, 680 (64px gaps)
 

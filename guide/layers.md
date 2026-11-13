@@ -5,7 +5,7 @@ Shows layers that build on each other: a protocol stack, a tech stack, levels of
 ## Composition
 
 - Title at `40,52` (`style=h1`). Four to six layers (n). Each is a full-width band: same x, same width, same height, touching the next one with no gap.
-- Leave 96px free on the left for the direction marker: the stack starts at x = 136 and runs to the right margin (824 wide on a 1000px canvas). Bands are 64px tall; band k from the top (from 0) is at `y = 96 + 64k`, so the stack ends at `96 + 64n`.
+- Leave 96px free on the left for the direction marker: the stack starts at x = 136 and runs to x=960 (824 wide). Bands are 64px tall; band k from the top (from 0) is at `y = 96 + 64k`, so the stack ends at `96 + 64n`.
 - A band is a plain `rect` with a faint outline; all ordinary bands look the same. Different colours per layer hide the order.
 - One layer, the one the diagram is about, is a `focal` box with `radius=0`. Write it after the other bands so its outline is drawn on top of its neighbours'. Here the second band from the top is focal:
 
@@ -46,4 +46,4 @@ No other arrows. Position in the stack is the relationship. Icons add nothing he
 ## Note and legend
 
 - One sentence in `style=note` may sit 48px under the stack (baseline), starting at the stack's left edge, saying why the focal layer matters.
-- Finish with `legend at 40,Y focal="..."`, 24px under the note (Y = 96 + 64n + 72). The canvas is Y + 70 tall.
+- Finish with `legend at 40,Y focal="..."`, 24px under the note (Y = 96 + 64n + 72).

@@ -73,7 +73,7 @@ function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k:
     textAlign: l.anchor === 'middle' ? 'center' : l.anchor === 'end' ? 'right' : 'left',
   };
 }
-const BLANK = 'canvas 1000x700\n';
+const BLANK = '\n';
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
 const ICONS: Record<string, React.ReactNode> = {
   hand: <Hand size={17} />, select: <MousePointer2 size={17} />, rect: <Square size={17} />, ellipse: <Circle size={17} />, diamond: <Diamond size={17} />,
@@ -209,7 +209,8 @@ export function App() {
   const cur = draft ?? src ?? '';
   const scene = useMemo(() => buildScene(cur, look), [cur, look]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
-  const body = useMemo(() => renderBody(scene), [scene]);
+  // the page layers are left out: the paper and dots fill the whole view instead
+  const body = useMemo(() => renderBody(scene).split('\n').filter((l) => !l.startsWith('<rect class="fd-page"')).join('\n'), [scene]);
 
   // ---- saving and history -------------------------------------------------
   const save = useCallback((text: string) => {
@@ -229,6 +230,7 @@ export function App() {
     const prev = srcRef.current;
     setDraft(null);
     if (prev === null || next === prev) return;
+    next = ops.dropCanvasSize(next); // an edit also clears the page size older files carry
     hist.current.past.push(prev);
     if (hist.current.past.length > 200) hist.current.past.shift();
     hist.current.future = [];
@@ -272,7 +274,7 @@ export function App() {
     if (cur && !reuse) stash();
     const d: Doc = {
       id: reuse ? cur!.id : ws.newId(), name: unique, src: text, lookSrc: lookText, carried: opt.carried ?? {}, io: io.current, hist: { past: [], future: [] },
-      view: { x: Math.round((vw - sc.w * k) / 2 + 80), y: Math.round((vh - sc.h * k) / 2 + 16), k }, folderFiles: io.current.folder?.files ?? [],
+      view: { x: Math.round((vw - sc.w * k) / 2 + 80 - sc.x * k), y: Math.round((vh - sc.h * k) / 2 + 16 - sc.y * k), k }, folderFiles: io.current.folder?.files ?? [],
     };
     docs.current.set(d.id, d);
     if (!reuse) setTabs((t) => [...t, d.id]);
@@ -915,7 +917,7 @@ export function App() {
     align: (m: ops.AlignMode) => src !== null && commit(ops.align(src, scene, sel, m)),
     remove: () => src !== null && sel.length > 0 && commit(ops.deleteElements(src, scene, sel), []),
     duplicate: () => { if (src === null || !sel.length) return; const r = ops.duplicateElements(src, scene, sel); commit(r.src, r.ids); },
-    setCanvas: (w: number, h: number, bg?: Record<string, string | null>) => src !== null && commit(ops.setCanvas(src, scene, w, h, bg)),
+    setCanvas: (bg?: Record<string, string | null>) => src !== null && commit(ops.setCanvas(src, scene, bg)),
     group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
     ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
@@ -1059,10 +1061,10 @@ export function App() {
 
   return (
     <div className="app" onPointerDown={closePopups}>
-      <svg ref={svgRef} className="canvas" style={{ cursor }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
+      <svg ref={svgRef} className="canvas" style={{ cursor, background: col(scene.look, scene.look.canvas.paper ?? 'paper') }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
         onPointerLeave={() => setHover(null)} onContextMenu={onContext}>
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
-          <rect x={-1} y={-1} width={scene.w + 2} height={scene.h + 2} fill="none" stroke="#cfd2da" strokeWidth={1 / view.k} />
+          {scene.look.canvas.dots && scene.look.canvas.dots !== 'none' && <rect x={-view.x / view.k} y={-view.y / view.k} width={window.innerWidth / view.k} height={window.innerHeight / view.k} fill="url(#fd-dots)" pointerEvents="none" />}
           <g ref={bodyRef} dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
           <g fill="transparent" stroke="transparent">
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
@@ -1153,12 +1155,7 @@ export function App() {
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
             <hr />
-            <div className="canvassize">
-              <span>Canvas size</span>
-              <TextField label="Width" value={String(scene.w)} onCommit={(v) => +v > 0 && act.setCanvas(+v, scene.h)} />
-              <TextField label="Height" value={String(scene.h)} onCommit={(v) => +v > 0 && act.setCanvas(scene.w, +v)} />
-            </div>
-            <BackgroundMenu scene={scene} set={(bg) => act.setCanvas(scene.w, scene.h, bg)} />
+            <BackgroundMenu scene={scene} set={(bg) => act.setCanvas(bg)} />
           </div>
         )}
         <Panel sc={scene} src={cur} sel={sel} act={act} />

@@ -1,4 +1,3 @@
-canvas 1000x520
 text "Household energy use" at 40,48 size=12 weight=600
 text "KWH PER TWO-HOUR WINDOW, ONE DAY" at 40,64 style=eyebrow
 ellipse at 468,200 64x64 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0
