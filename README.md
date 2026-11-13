@@ -1,55 +1,162 @@
+<div align="center">
+
+<img src="assets/fastdraw-icon.svg" alt="FastDraw" width="96" height="96">
+
 # FastDraw
 
-Diagrams that an AI agent writes and a person can edit.
+**Diagrams that an AI agent writes and a person can edit.**
 
-- An agent writes a diagram as a small text file (`.fdraw`), placing every element itself.
-- A look file (`.look`) holds named styles, so each team decides how its diagrams are drawn.
-- A browser editor opens the same file, lets a person change anything on a free canvas, and saves
-  the change back as a minimal edit to the text.
+An agent writes a diagram as a small text file and places every element itself. A person opens
+the same file in a browser editor, changes anything on a free canvas, and the change is saved
+back as a small edit to the text. Neither side has to redo the other's work.
 
-Status: proof of concept. The design document lives outside this repo, in the planning folder.
+[A first diagram](#a-first-diagram) · [Getting started](#getting-started) · [Commands](#the-command-line-tool) · [Agents](#using-it-with-an-agent) · [Editor](#the-editor) · [Looks](#looks) · [Gallery](#gallery)
 
-## Layout
+<img src="assets/how-it-works.png" alt="An AI agent writes diagram.fdraw; a person edits the same file in the browser editor; a look file sets the styles" width="860">
 
-| Path | What it is |
-|---|---|
-| `src/` | Core: parser, look loader, arrow router, SVG renderer, checker, text-edit operations |
-| `src/cli.ts`, `bin/fastdraw` | Command-line tool for agents: `check`, `render`, `sizes`, `guide` |
-| `guide/` | What an agent reads to learn the language and how to compose each kind of diagram |
-| `src/defaultLook.ts` | The built-in look, used when a diagram names none; `fastdraw init-look` writes it out as a starting point |
-| `agents/` | Thin instruction files that point Claude Code, Codex, OpenCode and Copilot at `fastdraw guide` |
-| `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison. Not the look FastDraw will ship with |
-| `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
-| `editor/` | The browser editor (Vite + React), built as a static site |
-| `examples/test/` | Three diagrams written by agents from the guide alone |
-| `compare/` | Those three next to the diagram-design originals, plus editor screenshots |
-| `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included). A look can bring more with `fontdir` |
-| `test/` | Core tests |
+</div>
 
-## Commands
+> **Status: proof of concept.** The language, the tool and the editor all work, but nothing is
+> published as a package yet and details may change.
+
+## What you get
+
+- **A text format agents can get right.** A `.fdraw` file has one statement per line, with exact
+  coordinates. There is no automatic layout to fight, so what the agent writes is what is drawn.
+- **A checker that reads the picture.** `fastdraw check` reports overlapping boxes, arrows that
+  cross a box, labels that collide and text that does not fit, each with a line number.
+- **Looks.** A `.look` file holds named styles, colours, fonts and icons, so a team decides once
+  how its diagrams are drawn. The same diagram can be drawn with another look.
+- **A visual editor.** A static site with no server. It edits the same text file and keeps the
+  changes minimal, so diffs stay readable.
+- **Guides for over forty kinds of diagram.** Architecture, flowchart, sequence, database schema,
+  Gantt, Sankey, swimlane and more. Each guide tells an agent how to compose that kind well.
+- **Pictures you can reopen.** Exported PNG and SVG files carry the diagram and its look inside
+  them. Drop one on the editor to keep editing.
+
+## A first diagram
 
 ```
+canvas 760x260
+
+shopper: external "Shopper" at 40,60
+api:     focal "Orders API" sub="REST" at 296,60
+db:      store "Orders DB" at 552,56
+
+shopper -> api "HTTPS" style=link
+api -> db "writes" style=primary
+
+legend at 40,172 external="Outside what you own" focal="The service this is about" store="Holds data"
+```
+
+<p align="center">
+  <img src="assets/example.png" alt="The diagram drawn from the text above: Shopper, Orders API and Orders DB joined by two arrows, with a legend" width="760">
+</p>
+
+This file is [`assets/example.fdraw`](assets/example.fdraw). It names no look, so it is drawn
+with the built-in one.
+
+## Getting started
+
+FastDraw needs Node 22.18 or later, because the tool runs its TypeScript sources directly.
+
+```
+git clone https://github.com/coccor/fastdraw.git
+cd fastdraw
 npm install
-npm test                  # core tests
-npm run typecheck
-bin/fastdraw guide        # the language guide
-bin/fastdraw check examples/test/architecture.fdraw
-bin/fastdraw render examples/test/architecture.fdraw
-bin/fastdraw init-look team.look   # start your own look from the built-in one
-npm run dev               # editor at http://localhost:5199
-npm run build:editor      # static site in dist-editor/
+
+bin/fastdraw check  assets/example.fdraw     # report problems, with line numbers
+bin/fastdraw render assets/example.fdraw     # write a PNG next to the file
+npm run dev                                  # the editor, at http://localhost:5199
 ```
 
-Needs Node 22.18 or later (the tool runs its TypeScript sources directly).
+## The command-line tool
 
-## Editor and files
+| Command | What it does |
+|---|---|
+| `fastdraw check <file.fdraw>` | Report problems, with line numbers |
+| `fastdraw render <file.fdraw> [-o out.png\|.svg] [--scale 2]` | Draw the diagram (PNG by default) |
+| `fastdraw guide [topic]` | Print the language guide, or the guide for one kind of diagram |
+| `fastdraw guide list` | List the kinds of diagram that have a guide |
+| `fastdraw sizes [file]` | List a look's styles and their sizes (the built-in look when no file is given) |
+| `fastdraw icons [file.look] [word]` | List the icons a look offers, or search them |
+| `fastdraw init-look [path]` | Write the built-in look to a file, to start your own |
+| `fastdraw preview-look [file.look]` | Draw every style of a look on one sheet |
+
+## Using it with an agent
+
+An agent needs only the `fastdraw` command. `fastdraw guide` teaches it the language and the way
+of working: write the file, run `check` until it is clean, then render and look at the picture.
+
+| Agent | What to do |
+|---|---|
+| Claude Code | Copy `agents/claude-skill/fastdraw/` into `.claude/skills/` in your repo |
+| Codex, OpenCode | Paste `agents/AGENTS-snippet.md` into your repo's `AGENTS.md` |
+| GitHub Copilot | Paste `agents/AGENTS-snippet.md` into `.github/copilot-instructions.md` |
+| Chat assistants with no tools | Paste the output of `fastdraw guide` into the chat, then paste the reply into the editor with "Paste diagram text" |
+
+More detail is in [`agents/README.md`](agents/README.md).
+
+## The editor
+
+<p align="center">
+  <img src="compare/editor-default-look.png" alt="The FastDraw editor with a three-box diagram open, a style panel on the left and a toolbar on top" width="860">
+</p>
 
 In Chrome and Edge the editor saves in place and re-reads the file about once a second, so an
 agent and a person can work on the same diagram at the same time. Other browsers keep changes in
 memory and download the result. Nothing is uploaded; there is no server.
 
-Exported PNG and SVG files carry the diagram and its look inside them. Drop one on the editor
-(or open it) to keep editing, for example an image taken from a wiki page.
+`npm run build:editor` writes the editor to `dist-editor/` as a static site you can host anywhere.
+
+## Looks
+
+A look is a text file of named styles. Start from the built-in one and change anything:
+
+```
+bin/fastdraw init-look team.look
+bin/fastdraw preview-look team.look
+```
+
+A diagram picks its look with one line, `look "./team.look"`. A look can also bring its own fonts
+(`fontdir`) and colour icons (`icondir`). `fastdraw guide look` explains the format.
+
+## Gallery
+
+All of these were written by agents from the guides alone. Sources are in
+[`examples/kinds/`](examples/kinds); they are drawn here with `looks/reference.look`.
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="compare/kinds/sankey.png" alt="Sankey diagram" width="270"><br>Sankey | <img src="compare/kinds/db-schema.png" alt="Database schema" width="270"><br>Database schema | <img src="compare/kinds/swimlane.png" alt="Swimlane diagram" width="270"><br>Swimlane |
+| <img src="compare/kinds/uml-class.png" alt="UML class diagram" width="270"><br>UML class | <img src="compare/kinds/deployment.png" alt="Deployment diagram" width="270"><br>Deployment | <img src="compare/kinds/exploded.png" alt="Exploded layer diagram" width="270"><br>Exploded layers |
+
+## Repository layout
+
+| Path | What it is |
+|---|---|
+| `src/` | Core: parser, look loader, arrow router, SVG renderer, checker, text-edit operations |
+| `src/cli.ts`, `bin/fastdraw` | The command-line tool |
+| `guide/` | What an agent reads to learn the language and how to compose each kind of diagram |
+| `src/defaultLook.ts` | The built-in look, used when a diagram names none |
+| `agents/` | Thin instruction files that point coding agents at `fastdraw guide` |
+| `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison |
+| `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
+| `editor/` | The browser editor (Vite + React) |
+| `examples/` | Diagrams written by agents from the guides, and looks used in tests |
+| `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
+| `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
+| `assets/` | The icon, and the diagrams shown on this page with their sources |
+| `test/`, `e2e/` | Core tests and editor tests |
+
+## Development
+
+```
+npm test              # core tests
+npm run typecheck
+npm run test:e2e      # editor tests (Playwright)
+npm run build:editor  # static site in dist-editor/
+```
 
 ## Credits
 
