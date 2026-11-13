@@ -709,6 +709,35 @@ test('a legend entry is edited in place: double-click its label, type, Enter; em
   expect(errors).toEqual([]);
 });
 
+test('a second line and a corner tag are edited in place, each on its own; emptied, it goes', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL.replace('sub="REST" at 280,160', 'sub="REST" tag="v2" at 280,160 200x80'));
+  const label = (t: string) => page.locator('svg.canvas text', { hasText: new RegExp(`^${t}$`, 'i') }).first();
+  const centre = async (t: string) => { const b = (await label(t).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+  await doubleClick(page, await centre('REST'));
+  await expect(page.locator('.textedit')).toHaveValue('REST');
+  await expect(page.locator('.textedit')).toHaveClass(/inplace/);
+  await page.locator('.textedit').fill('gRPC and REST');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'api')).toContain('sub="gRPC and REST"');
+  expect(lineOf(await source(page), 'api')).toContain('"Orders API"');
+  await doubleClick(page, await centre('v2'));
+  await expect(page.locator('.textedit')).toHaveValue('v2');
+  await expect(page.locator('.textedit')).toHaveClass(/inplace/);
+  await page.locator('.textedit').fill('beta');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'api')).toContain('tag="beta"');
+  // the main text is still the main text
+  await doubleClick(page, await centre('Orders API'));
+  await expect(page.locator('.textedit')).toHaveValue('Orders API');
+  await page.keyboard.press('Escape');
+  await doubleClick(page, await centre('beta'));
+  await page.locator('.textedit').fill('');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'api')).not.toContain('tag=');
+  expect(errors).toEqual([]);
+});
+
 test('a legend moved sideways keeps its width', async ({ page }) => {
   await paste(page, SMALL + 'key: legend at 40,300 external="Shopper" focal="The service"\n');
   const width = async () => (await page.locator('rect[data-id="key"]').first().boundingBox())!.width;
