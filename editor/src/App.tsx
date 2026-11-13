@@ -9,8 +9,9 @@ import * as ops from './ops.ts';
 import * as files from './files.ts';
 import { Panel, TextField } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
+import { TemplateDialog } from './Templates.tsx';
 import {
-  BringToFront, Check, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, ImageDown, Lock, LockOpen,
+  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, ImageDown, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
@@ -59,6 +60,7 @@ function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k:
     textAlign: l.anchor === 'middle' ? 'center' : l.anchor === 'end' ? 'right' : 'left',
   };
 }
+const BLANK = 'canvas 1000x700\n';
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
 const ICONS: Record<string, React.ReactNode> = {
   hand: <Hand size={17} />, select: <MousePointer2 size={17} />, rect: <Square size={17} />, ellipse: <Circle size={17} />, diamond: <Diamond size={17} />,
@@ -86,6 +88,7 @@ export function App() {
   const [status, setStatus] = useState('');
   const [showIssues, setShowIssues] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [folderFiles, setFolderFiles] = useState<string[]>([]);
   const [, force] = useState(0);
   const [locked, setLocked] = useState(false);
@@ -267,6 +270,19 @@ export function App() {
       setLookSrc(r.text);
     } catch { /* cancelled */ }
   }, []);
+
+  // A blank canvas in the built-in look, kept in memory until downloaded.
+  // A template is a finished example in the built-in look, opened the same way.
+  const newDiagram = (text = BLANK, label = 'untitled') => {
+    const h = hist.current;
+    if (srcRef.current !== null && !io.current.file && h.past.length && !window.confirm('Start a new diagram? Changes to this one have not been downloaded.')) return;
+    io.current = { fileMod: 0, lookMod: 0, written: '' };
+    setFolderFiles([]);
+    setCarriedIcons({});
+    setTemplatesOpen(false);
+    load(text, null, label);
+  };
+  const templateDialog = templatesOpen && <TemplateDialog onClose={() => setTemplatesOpen(false)} onPick={(t) => newDiagram(t.text, t.kind)} />;
 
   const openDemo = (text: string, label: string) => {
     io.current = { fileMod: 0, lookMod: 0, written: '' };
@@ -710,6 +726,8 @@ export function App() {
           <h1>FastDraw</h1>
           <p className="lede">Open a diagram an agent wrote, change anything on the canvas, and it is saved back to the same file.</p>
           <div className="choices">
+            <button className="choice" onClick={() => newDiagram()}><FilePlus size={20} /><span><b>New diagram</b><i>Start from a blank canvas and draw with the toolbar</i></span></button>
+            <button className="choice" onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={20} /><span><b>New from a template</b><i>Flowchart, sequence, swimlane, Gantt and 40 more kinds to change</i></span></button>
             {files.hasFileAccess && (
               <button className="choice" onClick={openFolder}><FolderOpen size={20} /><span><b>Open a folder</b><i>Finds the diagrams and their look, saves in place, follows an agent live</i></span></button>
             )}
@@ -725,6 +743,7 @@ export function App() {
           {status && <p className="muted warn">{status}</p>}
         </div>
         {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, null, 'pasted diagram'); }} />}
+        {templateDialog}
       </div>
     );
   }
@@ -807,6 +826,8 @@ export function App() {
         <button className="iconbtn island" title="Menu" aria-label="Menu" aria-expanded={menuOpen} onClick={() => { setMenuOpen((o) => !o); setGalleryOpen(false); setCtx(null); }}><Menu size={18} /></button>
         {menuOpen && (
           <div className="dropdown island" role="menu">
+            <button role="menuitem" onClick={() => { closePopups(); newDiagram(); }}><FilePlus size={16} />New diagram</button>
+            <button role="menuitem" onClick={() => { closePopups(); setTemplatesOpen(true); }}><LayoutTemplate size={16} />New from a template</button>
             {files.hasFileAccess && <button role="menuitem" onClick={() => { closePopups(); openFolder(); }}><FolderOpen size={16} />Open folder</button>}
             <button role="menuitem" onClick={() => { closePopups(); openFile(); }}><FileText size={16} />Open file</button>
             <button role="menuitem" onClick={() => { closePopups(); setPasteOpen(true); }}><ClipboardPaste size={16} />Paste diagram text</button>
@@ -904,6 +925,7 @@ export function App() {
       )}
 
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; setFolderFiles([]); load(t, lookSrc, 'pasted diagram'); }} />}
+      {templateDialog}
     </div>
   );
 }
