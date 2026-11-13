@@ -1,5 +1,5 @@
 // Cloudflare deploy for fastdraw.dev: the editor is a static site.
-// Build: npm run build:editor   Deploy: npx wrangler deploy
+// Build: npm run build   Deploy: npx wrangler deploy
 {
   "name": "fastdraw",
   "compatibility_date": "2026-10-01",
