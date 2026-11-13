@@ -640,6 +640,42 @@ test('a new diagram from a template: search the kinds, open one in the built-in 
   expect(errors).toEqual([]);
 });
 
+test('a legend entry is edited in place: double-click its label, type, Enter; emptied, the entry goes', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL + 'key: legend at 40,300 title="Key" external="Shopper" focal="The service" store="Data" link="Request"\n');
+  const label = (t: string) => page.locator('svg.canvas text', { hasText: new RegExp(`^${t}$`) }).first();
+  const centre = async (t: string) => { const b = (await label(t).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+  // rename one entry: only that entry's label changes, and the field takes its place
+  await doubleClick(page, await centre('The service'));
+  await expect(page.locator('.textedit')).toHaveValue('The service');
+  await page.locator('.textedit').fill('Orders API, the subject');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'key')).toBe('key: legend at 40,300 title="Key" external="Shopper" focal="Orders API, the subject" store="Data" link="Request"');
+  // an entry emptied is taken out
+  await doubleClick(page, await centre('Data'));
+  await page.locator('.textedit').fill('');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'key')).not.toContain('store=');
+  // the heading too
+  await doubleClick(page, await centre('KEY'));
+  await expect(page.locator('.textedit')).toHaveValue('Key');
+  await page.locator('.textedit').fill('What it means');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'key')).toContain('title="What it means"');
+  expect(errors).toEqual([]);
+});
+
+test('a legend moved sideways keeps its width', async ({ page }) => {
+  await paste(page, SMALL + 'key: legend at 40,300 external="Shopper" focal="The service"\n');
+  const width = async () => (await page.locator('rect[data-id="key"]').first().boundingBox())!.width;
+  const before = await width();
+  const k = await zoom(page);
+  const b = (await page.locator('rect[data-id="key"]').first().boundingBox())!;
+  await drag(page, { x: b.x + 4, y: b.y + 4 }, 120 * k, 0);
+  expect(lineOf(await source(page), 'key')).toMatch(/^key: legend at 160,300 \d+x\d+ /);
+  expect(await width()).toBeCloseTo(before, 1);
+});
+
 test('`fastdraw open` lends a folder: the diagram opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
   const dir = mkdtempSync(join(tmpdir(), 'fdopen-'));
   cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });

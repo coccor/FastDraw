@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { parseLook } from '../../src/look.ts';
-import { buildScene, lookPath } from '../../src/scene.ts';
+import { buildScene, lookPath, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
@@ -37,7 +37,8 @@ type Drag =
   | { type: 'vertex'; id: string; index: number; base: string; scene: Scene }
   | { type: 'label'; id: string; base: string; scene: Scene; dx: number; dy: number };
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
-type Editing = { id: string; value: string; box: Box } | null;
+// entry: on a legend, the key of the one entry being edited (a style name, swatch.colour, ...) or 'title'
+type Editing = { id: string; value: string; box: Box; entry?: string } | null;
 type EdLook = { family: string; size: number; weight: string; style: string; color: string; spacing: string; transform: string; anchor: string; ax: number; top: number; pitch: number; wrap: number };
 // pending: handles kept from before a reload, used once the browser lets the page write them again
 type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string; pending?: { file: files.Handle; look?: files.Handle } };
@@ -125,7 +126,7 @@ export function App() {
   const saveTimer = useRef<number | undefined>(undefined);
   const clip = useRef<string[]>([]);
   const lastClick = useRef<{ id: string; t: number }>({ id: '', t: 0 });
-  const pendingEdit = useRef<string | null>(null);
+  const pendingEdit = useRef<{ id: string; p: Pt } | null>(null);
   srcRef.current = src;
   // read by the browser tests
   useEffect(() => { (window as unknown as { __fastdraw: unknown }).__fastdraw = { source: () => srcRef.current }; }, []);
@@ -523,9 +524,13 @@ export function App() {
   };
 
   // the area an edit covers: the element, a line's label (or where a new one would go), a free text
-  const editBox = (sc: Scene, id: string): Box | null => {
+  const editBox = (sc: Scene, id: string, entry?: string): Box | null => {
     const e = ops.find(sc, id);
     if (!e) return null;
+    if (entry !== undefined && e.kind === 'shape') {
+      const lg = legendParts(e.el).find((x) => x.key === entry);
+      return lg ? lg.box : null;
+    }
     if (e.kind === 'conn') {
       const l = (e.el as Conn).label;
       const mid = e.el.pts[Math.floor((e.el.pts.length - 1) / 2)], nx = e.el.pts[Math.floor((e.el.pts.length - 1) / 2) + 1];
@@ -534,18 +539,45 @@ export function App() {
     const box = ops.boxOf(e);
     return e.kind === 'text' ? { x: box.x - 4, y: box.y - 4, w: Math.max(box.w + 40, 160), h: box.h + 10 } : box;
   };
-  const startEdit = (id: string) => {
+  // A legend's editable texts: its heading and each entry's label, with the box each is drawn in.
+  const legendParts = (s: Shape): { key: string; value: string; box: Box }[] => {
+    const p = s.p, size = Number(p['item.size']) || 8.5, font = p['item.font'] ?? 'sans';
+    const out = (s.legend ?? []).map((it) => {
+      const w = measure(it.label, size, font, 400, 0);
+      return { key: it.style, value: it.label, box: { x: it.x + it.sample + 2, y: it.baseline - size - 4, w: Math.max(w + 8, 48), h: size + 9 } };
+    });
+    if ((p.title ?? 'none') !== 'none') out.unshift({ key: 'title', value: p.title, box: { x: s.x - 4, y: s.y + 4, w: Math.max(measure(p.title, 8, 'mono', 400, 0.18) + 16, 64), h: 16 } });
+    return out;
+  };
+  const startEdit = (id: string, at?: Pt) => {
     const e = ops.find(scene, id);
     if (!e || src === null) return;
-    if (e.kind === 'shape' && e.el.shape === 'legend') return; // its entries are edited in the panel
+    if (e.kind === 'shape' && e.el.shape === 'legend') {
+      // one entry at a time: the one under the pointer, or the nearest to it
+      const parts = legendParts(e.el);
+      if (!parts.length) return;
+      const q = at ?? { x: parts[0].box.x, y: parts[0].box.y };
+      const dist = (b: Box) => Math.hypot(Math.max(b.x - q.x, 0, q.x - b.x - b.w), Math.max(b.y - q.y, 0, q.y - b.y - b.h));
+      const pick = parts.reduce((a, b) => (dist(b.box) < dist(a.box) ? b : a));
+      setEditing({ id, entry: pick.key, value: pick.value, box: pick.box });
+      return;
+    }
     setEditing({ id, value: ops.rawText(src, e), box: editBox(scene, id)! });
+  };
+  // the source with the text being edited put in: a legend entry is a property, anything else its text
+  const withEdit = (ed: NonNullable<Editing>, value: string, final: boolean): string | null => {
+    const e = ops.find(scene, ed.id);
+    if (!e || src === null) return null;
+    if (ed.entry === undefined) return ops.editText(src, e, value);
+    if (ed.entry === 'title') return ops.setProps(src, scene, [ed.id], 'title', value.trim() || 'none');
+    return ops.setProps(src, scene, [ed.id], ed.entry, final && !value.trim() ? null : value); // emptied: the entry goes
   };
   // while typing, the diagram is redrawn with the new text, so the element grows around it
   const typeEdit = (value: string) => {
     if (!editing || src === null) return;
     setEditing({ ...editing, value });
-    const e = ops.find(scene, editing.id);
-    if (e) setDraft(ops.editText(src, e, value));
+    const next = withEdit(editing, value, false);
+    if (next !== null) setDraft(next);
   };
   const finishEdit = (ok: boolean) => {
     const ed = editing;
@@ -555,7 +587,7 @@ export function App() {
     const e = ops.find(scene, ed.id);
     if (!e) return;
     if (e.kind === 'text' && ed.value.trim() === '') commit(ops.deleteElements(src, scene, [ed.id]), []);
-    else commit(ops.editText(src, e, ed.value));
+    else { const next = withEdit(ed, ed.value, true); if (next !== null) commit(next); }
   };
 
   // ---- pointer handling ---------------------------------------------------
@@ -601,7 +633,7 @@ export function App() {
     if (id) {
       // second press on the same element: edit its text once the button is released
       const now = performance.now();
-      if (lastClick.current.id === id && now - lastClick.current.t < 450 && !e.shiftKey) { lastClick.current = { id: '', t: 0 }; pendingEdit.current = id; setSel([id]); return; }
+      if (lastClick.current.id === id && now - lastClick.current.t < 450 && !e.shiftKey) { lastClick.current = { id: '', t: 0 }; pendingEdit.current = { id, p }; setSel([id]); return; }
       lastClick.current = { id, t: now };
       const grp = e.altKey ? [id] : ops.withGroups(scene, [id]);
       let ids = sel;
@@ -754,7 +786,7 @@ export function App() {
     const d = drag.current;
     drag.current = null;
     setGhost(null); setGuides({}); setInk(null);
-    if (pendingEdit.current) { const id = pendingEdit.current; pendingEdit.current = null; startEdit(id); return; }
+    if (pendingEdit.current) { const { id, p } = pendingEdit.current; pendingEdit.current = null; startEdit(id, p); return; }
     if (!d || src === null) return;
     const p = world(e);
     if (d.type === 'move' || d.type === 'resize' || d.type === 'end' || d.type === 'seg' || d.type === 'label' || d.type === 'vertex') { if (draft !== null) commit(draft); else setDraft(null); return; }
@@ -838,7 +870,7 @@ export function App() {
   // Edit text in place: find the label as the look drew it, hide it, and lay the text field over
   // it in the same font, size, weight, colour and alignment, so the element keeps its look.
   // It runs again after every redraw while typing, so the field follows the label as it wraps or moves.
-  const editKey = editing ? editing.id + '|' + editing.box.x + ',' + editing.box.y : '';
+  const editKey = editing ? editing.id + '|' + (editing.entry ?? '') + '|' + editing.box.x + ',' + editing.box.y : '';
   const lastEditKey = useRef('');
   useLayoutEffect(() => {
     if (lastEditKey.current !== editKey) setEdLook(null);
@@ -846,7 +878,7 @@ export function App() {
     const g = bodyRef.current, ed = stateRef.current.editing;
     if (!g || !ed) return;
     const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
-    const want = norm(ed.value), b = editBox(stateRef.current.scene, ed.id) ?? ed.box;
+    const want = norm(ed.value), b = editBox(stateRef.current.scene, ed.id, ed.entry) ?? ed.box;
     const hits: SVGTextElement[] = [];
     if (want) for (const t of Array.from(g.querySelectorAll('text'))) {
       const s = norm(t.textContent ?? '');
@@ -865,7 +897,7 @@ export function App() {
     const anchor = (hits[0].getAttribute('text-anchor') ?? cs.textAnchor ?? 'start') as string;
     const ax = parseFloat(hits[0].getAttribute('x') ?? '0');
     const top = boxes[0].y - (pitch - boxes[0].height) / 2;
-    const isShape = ops.find(stateRef.current.scene, ed.id)?.kind === 'shape';
+    const isShape = ed.entry === undefined && ops.find(stateRef.current.scene, ed.id)?.kind === 'shape';
     setEdLook({
       family: cs.fontFamily, size, weight: cs.fontWeight, style: cs.fontStyle, color: cs.fill, spacing: cs.letterSpacing,
       transform: hits.every((t) => { const s = t.textContent ?? ''; return s === s.toUpperCase() && s !== s.toLowerCase(); }) && ed.value !== ed.value.toUpperCase() ? 'uppercase' : cs.textTransform, anchor, ax, top, pitch, wrap: isShape ? b.w - 12 : 0,

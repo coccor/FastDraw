@@ -13,7 +13,7 @@ function quote(v: string): string {
 
 export function fmtTok(t: Tok): string {
   if (t.t === 'str') return quote(t.v);
-  if (t.t === 'prop') return `${t.k}=${t.v === '' || /[\s"]/.test(t.v) ? quote(t.v) : t.v}`;
+  if (t.t === 'prop') return `${t.k}=${t.q || t.v === '' || /[\s"]/.test(t.v) ? quote(t.v) : t.v}`;
   return t.v;
 }
 // A table row ("|" or "|=") starts its own indented line, so tables stay readable after an edit.
@@ -115,7 +115,7 @@ export function setProp(toks: Tok[], k: string, v: string | null): Tok[] {
   const r0 = toks.findIndex(isRowStart), lim = r0 >= 0 ? r0 : toks.length; // a table's own properties come before its rows
   const i = toks.findIndex((t, n) => n < lim && t.t === 'prop' && t.k === k);
   if (v === null) { if (i >= 0) toks.splice(i, 1); return toks; }
-  if (i >= 0) toks[i] = { t: 'prop', k, v };
+  if (i >= 0) toks[i] = { t: 'prop', k, v, q: toks[i].q }; // written back quoted if it was
   else { const r = toks.findIndex(isRowStart); toks.splice(r >= 0 ? r : toks.length, 0, { t: 'prop', k, v }); }
   return toks;
 }

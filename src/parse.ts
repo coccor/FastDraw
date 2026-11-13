@@ -2,7 +2,8 @@
 // A statement is one line plus any following indented lines.
 // Comments: a line starting with "# " (or a bare "#"), or anything after "//".
 
-export type Tok = { t: 'str' | 'word' | 'prop'; v: string; k?: string };
+// q: a property whose value was written in quotes, so an edit can write it back the same way
+export type Tok = { t: 'str' | 'word' | 'prop'; v: string; k?: string; q?: boolean };
 export type Stmt = { line: number; end: number; toks: Tok[] };
 
 export function stripComment(s: string): string {
@@ -24,6 +25,7 @@ function tokenize(s: string): Tok[] {
     while (i < n && /\s/.test(s[i])) i++;
     if (i >= n) break;
     const startsQuoted = s[i] === '"';
+    const start = i;
     let buf = '';
     let inQ = false;
     while (i < n && (inQ || !/\s/.test(s[i]))) {
@@ -35,7 +37,7 @@ function tokenize(s: string): Tok[] {
     }
     if (startsQuoted) { out.push({ t: 'str', v: buf }); continue; }
     const m = /^([A-Za-z][\w./#-]*)=([\s\S]*)$/.exec(buf); // "/" and "#" so a legend key can carry a tint or a hex colour: swatch.muted/0.2=  swatch.#4a7c59=
-    if (m) out.push({ t: 'prop', k: m[1], v: m[2] });
+    if (m) out.push(s[start + m[1].length + 1] === '"' ? { t: 'prop', k: m[1], v: m[2], q: true } : { t: 'prop', k: m[1], v: m[2] });
     else out.push({ t: 'word', v: buf });
   }
   return out;

@@ -64,7 +64,13 @@ export function moveElements(src: string, sc: Scene, ids: string[], dx: number, 
   const moved = new Set(ids);
   for (const r of riders(sc, moved)) moved.add(r);
   const patches = new Map<number, Patch>();
-  for (const s of sc.shapes) if (moved.has(s.id)) patches.set(s.line, (t) => setAt(t, s.x + dx, s.y + dy));
+  for (const s of sc.shapes) if (moved.has(s.id)) patches.set(s.line, (t) => {
+    // a legend with no size spans the canvas less its offset on both sides, so moving it sideways
+    // would change its width: write down the width it has now, and it keeps it wherever it goes
+    const freeze = s.shape === 'legend' && dx !== 0 && !t.some((k) => k.t === 'word' && /^\d+(\.\d+)?x\d+(\.\d+)?$/.test(k.v));
+    const at = setAt(t, s.x + dx, s.y + dy);
+    return freeze ? setSize(at, s.w, s.h) : at;
+  });
   for (const t of sc.texts) if (moved.has(t.id)) patches.set(t.line, (k) => setAt(k, t.ax + dx, t.ay + dy));
   const connById = new Map(sc.conns.map((c) => [c.id, c]));
   const owner = (e: End): string | undefined => {
