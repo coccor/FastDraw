@@ -71,6 +71,9 @@ style table shape=table radius=8 fill=#ffffff stroke=ink sw=1.4 head.fill=blue r
     use="an entity, class or database table: a header and rows. One line per row: | id \"name\" \"type\" \"key\". Arrows can end on a row: orders.user_id -> users.id"
 style matrix extends table align=center grid=1 cell.font=sans
     use="a grid of values: first row with |= for the column headings, first cell of each row is its name"
+style chart shape=chart fill=none stroke=ink/0.6 sw=1.2 mask=0 bar.radius=3 grid.color=ink/0.08
+    tick.font=sans tick.size=10 tick.color=muted
+    use="axes with your numbers drawn for you: chart at x,y WxH x=\"Q1,Q2,Q3\" y=0..100, then a line per series: | bars \"Revenue\" 42 61 75"
 
 // ---- lines ----------------------------------------------------------------
 style arrow line stroke=ink sw=1.6 route=curve radius=10 label.font=sans label.size=10.5 label.color=muted label.spacing=0 label.caps=0

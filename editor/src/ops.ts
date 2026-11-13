@@ -362,6 +362,15 @@ export function align(src: string, sc: Scene, ids: string[], mode: AlignMode): s
   return cur;
 }
 
+// Point the diagram at a look: a bundled name (`look sketch`), a path, or null for the built-in look,
+// which removes the line. Only the look line changes; a new one goes at the top.
+export function setLook(src: string, look: string | null): string {
+  const st = parseStatements(src).find((x) => x.toks[0]?.t === 'word' && x.toks[0].v === 'look');
+  const toks: Tok[] | null = look === null ? null : [{ t: 'word', v: 'look' }, { t: /^[a-z][a-z0-9-]*$/i.test(look) ? 'word' : 'str', v: look }];
+  if (st) return patchSource(src, new Map([[st.line, () => toks]]));
+  return toks ? fmtStmt(toks) + '\n' + src : src;
+}
+
 // There is no page size any more: an old `canvas WxH` loses its size, and the line goes if nothing else is on it.
 export function dropCanvasSize(src: string): string {
   const st = parseStatements(src).find((x) => x.toks[0]?.t === 'word' && x.toks[0].v === 'canvas' && x.toks.some((t) => /^\d+x\d+$/.test(t.v ?? '')));

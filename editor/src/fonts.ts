@@ -1,4 +1,4 @@
-// The fonts the built-in look and the reference look use, bundled with the editor so the canvas
+// The fonts the built-in look and the bundled named looks use, bundled with the editor so the canvas
 // and exports match the command-line renderer.
 import { fontMeta } from '../../src/fontmeta.ts';
 import franklin400 from '../../fonts/LibreFranklin-Regular.ttf?url';
@@ -16,6 +16,7 @@ import mono400 from '../../fonts/GeistMono-Regular.ttf?url';
 import mono500 from '../../fonts/GeistMono-Medium.ttf?url';
 import serif from '../../fonts/InstrumentSerif-Regular.ttf?url';
 import serifItalic from '../../fonts/InstrumentSerif-Italic.ttf?url';
+import sketchHand from '../../fonts/SketchHand-Regular.ttf?url';
 
 const FACES: [string, number, string, string][] = [
   ['Libre Franklin', 400, 'normal', franklin400], ['Libre Franklin', 500, 'normal', franklin500],
@@ -25,6 +26,7 @@ const FACES: [string, number, string, string][] = [
   ['Geist', 400, 'normal', geist400], ['Geist', 500, 'normal', geist500], ['Geist', 600, 'normal', geist600],
   ['Geist Mono', 400, 'normal', mono400], ['Geist Mono', 500, 'normal', mono500],
   ['Instrument Serif', 400, 'normal', serif], ['Instrument Serif', 400, 'italic', serifItalic],
+  ['Sketch Hand', 400, 'normal', sketchHand],
 ];
 
 const face = (f: [string, number, string, string], src: string) =>
@@ -58,7 +60,7 @@ export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
   }
   return families;
 }
-export const BUNDLED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif'];
+export const BUNDLED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif', 'Sketch Hand'];
 
 const bundled = new Map<string, Promise<string>>();
 // @font-face rules, as data URLs, for the families an SVG actually uses, so exports stand alone

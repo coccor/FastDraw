@@ -1,7 +1,7 @@
 // Turns a diagram file into a resolved scene: shapes, texts and routed connectors.
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
-import { emptyLook, defaultLook } from './look.ts';
+import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
 import { crosses, routeAround } from './router.ts';
@@ -294,14 +294,15 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const warn = (line: number, msg: string) => issues.push({ line, level: 'warn', msg });
   const stmts: Stmt[] = parseStatements(src);
 
-  const hasLookStmt = stmts.some((s) => s.toks[0]?.t === 'word' && s.toks[0].v === 'look');
-  let look: Look = lookIn ?? (hasLookStmt ? emptyLook() : defaultLook());
-  const baseCanvas = look.canvas;
   const lookStmt = stmts.find((s) => s.toks[0]?.v === 'look' && s.toks[0].t === 'word');
+  // a bare name is one of the looks that ship with FastDraw, whatever file a caller may have read
+  const named = bundledLook(lookStmt?.toks[1]?.v ?? '');
+  let look: Look = named ?? lookIn ?? (lookStmt ? emptyLook() : defaultLook());
+  const baseCanvas = look.canvas;
   if (lookStmt) {
     const p = lookStmt.toks[1]?.v;
-    if (!p) err(lookStmt.line, 'look needs a path, e.g. look "./team.look"');
-    else if (!lookIn) err(lookStmt.line, `look file not found: ${p}`);
+    if (!p) err(lookStmt.line, `look needs a name or a path, e.g. look sketch or look "./team.look" (named looks: ${BUNDLED_LOOK_NAMES.join(', ')})`);
+    else if (!named && !lookIn) err(lookStmt.line, /[\\/]|\.look$/i.test(p) ? `look file not found: ${p}` : `no look named ${p}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file`);
     else for (const i of look.issues) issues.push({ ...i, line: lookStmt.line, msg: `${i.msg} (in look, line ${i.line})` });
   }
 

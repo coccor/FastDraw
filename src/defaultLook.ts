@@ -32,6 +32,10 @@ style external extends node fill=muted/0.10 stroke=soft tag.color=soft tag.borde
     use="a person or system outside what you own"
 style optional extends node fill=ink/0.02 stroke=ink/0.22 dash=4,3 tag.color=soft tag.border=ink/0.22
     use="optional or asynchronous participant"
+style sticky extends node size=120x120 fill=#fff3a3 stroke=#c9ad2e sw=1 tag.color=ink tag.border=ink/0.3
+    use="a yellow sticky note: an idea, comment or open question"
+style sticky-orange extends sticky fill=#ffd9b0 stroke=#d9822b use="an orange sticky note: a risk or issue"
+style sticky-violet extends sticky fill=#e3dbff stroke=#8a72d6 use="a violet sticky note: a decision or note"
 
 // ---- flowchart shapes -----------------------------------------------------
 style step extends node size=160x48 use="flowchart action"
@@ -54,6 +58,9 @@ style table shape=table radius=2 fill=#ffffff stroke=ink sw=1 head.fill=ink/0.06
     use="an entity, class or database table: a header and rows. One line per row: | id \\"name\\" \\"type\\" \\"key\\". Arrows can end on a row: orders.user_id -> users.id"
 style matrix extends table align=center grid=1 cell.font=sans
     use="a grid of values: first row with |= for the column headings, first cell of each row is its name"
+style chart shape=chart fill=none stroke=ink/0.5 sw=1 mask=0 bar.radius=1 grid.color=ink/0.08
+    tick.font=mono tick.size=9 tick.color=muted
+    use="axes with your numbers drawn for you: chart at x,y WxH x=\\"Q1,Q2,Q3\\" y=0..100, then a line per series: | bars \\"Revenue\\" 42 61 75"
 
 // ---- lines ----------------------------------------------------------------
 style arrow line stroke=muted sw=1.2 route=ortho radius=8 label.font=sans label.size=10 label.spacing=0 label.caps=0

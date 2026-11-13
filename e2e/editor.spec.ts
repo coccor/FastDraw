@@ -182,7 +182,7 @@ test('panel: restyle, switch style, and the look styles gallery places shapes an
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^optional: optional at \d+,\d+$/);
-  await page.locator('.toolbar .wide').click();
+  await page.locator('.toolbar .wide.lookstyles').click();
   await page.locator('.thumbcard', { hasText: 'return' }).first().click();
   const from = await corner(page, 'optional'), to = await corner(page, 'db');
   await drag(page, from, to.x - from.x, to.y - from.y);
@@ -804,4 +804,65 @@ test('the menu changes the background for this diagram and resets to the look', 
   await expect(page.locator('svg.canvas rect[fill="url(#fd-dots)"]')).toHaveCount(0);
   await page.getByRole('button', { name: "Use the look's background" }).click();
   expect(lineOf(await source(page), 'canvas')).toBe('');
+});
+
+test('the look picker: hover or click a look to see the diagram in it, Apply writes the look line, Esc puts it back', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const PLAIN = SMALL.replace('canvas 900x420\n', '');
+  await paste(page, PLAIN);
+  const canvas = page.locator('svg.canvas');
+  const title = canvas.locator('text', { hasText: 'Orders API' }).first();
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  const cards = page.locator('.lookcard');
+  const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
+  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Headline', 'Reference', 'Sketch', 'Whiteboard']);
+  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(5); // every card shows this diagram
+  // hovering tries a look on the canvas without touching the source
+  await card('Sketch').hover();
+  await expect(title).toHaveAttribute('font-family', /Sketch Hand/);
+  expect(await source(page)).toBe(PLAIN);
+  // leaving the strip goes back to the look in use; a click keeps one shown
+  await page.mouse.move(5, 880);
+  await expect(title).not.toHaveAttribute('font-family', /Sketch Hand/);
+  await card('Whiteboard').click();
+  await page.mouse.move(5, 880);
+  await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
+  await page.getByRole('button', { name: 'Apply' }).click();
+  await expect(page.locator('.lookpicker')).toHaveCount(0);
+  expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
+  await page.locator('.problems').click();
+  await expect(page.locator('.issuelist')).not.toContainText(/style|look/);
+  await page.locator('.problems').click();
+  // Esc leaves the look in use as it was
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await expect(card('Whiteboard')).toContainText('in use');
+  await card('Headline').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.lookpicker')).toHaveCount(0);
+  await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
+  expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
+  // back to the built-in look removes the line; undo brings it back
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  await card('Built-in').dblclick();
+  expect(await source(page)).toBe(PLAIN);
+  await page.keyboard.press('Control+z');
+  expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
+  expect(errors).toEqual([]);
+});
+
+test("the look picker keeps a diagram's own look file as a choice, and a bundled look saves as its name", async ({ page }) => {
+  await openFolder(page, folder());
+  await page.getByRole('button', { name: 'Look', exact: true }).click();
+  const cards = page.locator('.lookcard');
+  const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
+  await expect(cards).toHaveCount(6);
+  await expect(page.locator('.lookcard > span').last()).toHaveText('This diagram’s look file · in use');
+  await card('Sketch').click();
+  await page.getByRole('button', { name: 'Apply' }).click();
+  await saved(page);
+  const text = await diskText(page, SEQ);
+  expect(text.split('\n')[0]).toBe('look sketch');
+  expect(text.split('\n').slice(1)).toEqual(repoText(SEQ).split('\n').slice(1));
+  await expect(page.locator('.banner')).toHaveCount(0); // a bundled look needs no file, fonts or folder
+  await expect(page.locator('.problems')).toHaveText('No problems');
 });
