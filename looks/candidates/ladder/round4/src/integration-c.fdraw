@@ -1,0 +1,42 @@
+look "../c.look"
+canvas 1200x688
+
+text "Hospital integration hub" at 40,56 style=h1
+
+plat: zone "Integration hub" at 280,136 640x360
+
+lab:   external "Laboratory (LIS)" at 40,232 160x64
+pharm: external "Pharmacy" at 40,320 160x64
+reg:   external "Registration (ADT)" at 40,408 160x64
+
+ehr:   external "Patient record" at 1000,232 160x64
+bill:  external "Billing" at 1000,320 160x64
+rep:   external "Reporting" at 1000,408 160x64
+
+orch: cloud "Workflow orchestrator" at 296,168 608x56
+eng:  focal "Interface engine" at 344,316 160x72
+api:  focal "FHIR API" at 696,316 160x72
+
+idp:  cloud "Identity" at 40,544 262x48
+aud:  cloud "Audit log" at 326,544 262x48
+sec:  cloud "Secrets" at 612,544 262x48
+mon:  cloud "Monitoring" at 898,544 262x48
+
+lab.right -> eng.left@336 "HL7 v2" via=312,264;312,336 lpos=240,254
+pharm.right -> eng.left@352 "HL7 v2" lpos=240,342
+reg.right -> eng.left@368 "ADT" via=312,440;312,368 lpos=240,430
+
+eng.right -> api.left "FHIR" style=primary
+
+api.right@336 -> ehr.left "FHIR R4" style=link via=888,336;888,264 lpos=960,254
+api.right@352 -> bill.left "EDI 837" style=link lpos=960,342
+api.right@368 -> rep.left "SQL" style=link via=888,368;888,440 lpos=960,430
+
+orch.bottom@424 -> eng.top@424 style=return
+orch.bottom@776 -> api.top@776 style=return
+
+idp.top@290 -> plat.bottom@290 "auth" style=return
+aud.top@440 -> plat.bottom@440 "events" style=return
+
+legend at 40,616 external="Source or consumer" focal="Hub surface" cloud="Shared service" arrow="Inbound wire" primary="Between surfaces" link="Outbound wire" return="Control or service"
+text "Integration" at 40,22 style=kicker
