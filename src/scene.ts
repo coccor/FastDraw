@@ -507,7 +507,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       };
       if (size0) layout(sh.w); else legends.push(() => {
         // as wide as the rest of the drawing, measured from the legend's own left edge
-        const rights = [...shapes.filter((o) => o.shape !== 'legend').map((o) => o.x + o.w), ...texts.map((t) => t.x + t.w)];
+        const rights = [...shapes.filter((o) => o.shape !== 'legend').map((o) => o.x + o.w), ...texts.map((t) => t.x + t.w),
+          ...conns.flatMap((c) => [c.a, c.b].filter((e) => e.kind === 'point').map((e) => e.pt.x))]; // rules and axes drawn between free points
         layout(rights.length ? Math.max(200, Math.round((Math.max(...rights) - sh.x) / 4) * 4) : 920);
       });
       if (!entries.length) warn(st.line, 'this legend has no entries; add style="what it means" for each style, e.g. focal="The main service"');
