@@ -11,6 +11,7 @@ import { Illustration } from './Illustration.tsx';
 import { ThemeToggle } from '../ThemeToggle.tsx';
 import { useTheme } from '../theme.ts';
 import { inTheme } from './inTheme.ts';
+import layersSource from './layers.fdraw?raw';
 
 const REPO = 'https://github.com/coccor/fastdraw';
 
@@ -145,6 +146,35 @@ function useReveal() {
   }, []);
 }
 
+// How a diagram gets made, as an exploded stack: the prompt at the bottom, the files on top.
+// Drawn live from layers.fdraw, in the built-in look or, on a dark page, in Night.
+function HowItWorks() {
+  const theme = useTheme();
+  const view = useMemo(() => {
+    const sc = buildScene(inTheme(layersSource, theme), null);
+    return { body: renderBody(sc, false), box: `${sc.x} ${sc.y} ${sc.w} ${sc.h}` };
+  }, [theme]);
+  return (
+    <section id="how" className="block how" aria-labelledby="how-title">
+      <div className="howtext" data-reveal="">
+        <h2 id="how-title">From a sentence to a finished diagram</h2>
+        <p className="lede">
+          You ask in plain words. The skill points the agent at the guide for that kind of diagram and at your look.
+          The agent writes the diagram as text and runs <code>fastdraw check</code> until it is clean.
+        </p>
+        <p>
+          What comes out is a PNG or SVG with the diagram inside it, and the <code>.fdraw</code> file itself. Any of
+          them opens in the editor, so you can carry on by hand.
+        </p>
+      </div>
+      <div className="howart" data-reveal="">
+        <svg viewBox={view.box} role="img" aria-label="Five layers, bottom to top: your prompt; SKILL.md, which picks one of 44 kinds; the kind's guide and the look, with layout rules and named styles; the diagram text, a .fdraw file checked until clean, highlighted; and the result, PNG, SVG and .fdraw, each of which reopens in the editor."
+          dangerouslySetInnerHTML={{ __html: view.body }} />
+      </div>
+    </section>
+  );
+}
+
 export function Landing() {
   useReveal();
   return (
@@ -152,6 +182,7 @@ export function Landing() {
       <header className="top">
         <a className="brand" href="./"><img src="favicon.svg" alt="" width="28" height="28" />FastDraw</a>
         <nav>
+          <a href="#how">How it works</a>
           <a href="#setup">Set up</a>
           <a href="#kinds">Kinds</a>
           <a href={REPO}>GitHub</a>
@@ -180,6 +211,8 @@ export function Landing() {
         <Illustration />
 
         <Showcase />
+
+        <HowItWorks />
 
         <section id="setup" className="block">
           <h2 data-reveal="">Set up your agent</h2>
