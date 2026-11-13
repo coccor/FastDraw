@@ -34,7 +34,9 @@ export type Conn = {
   text?: string; label?: Label;
 };
 export type Scene = {
-  file: string; w: number; h: number; look: Look; canvasLine?: number;
+  // the picture's extent: everything drawn, plus a margin all round (there is no fixed page)
+  file: string; x: number; y: number; w: number; h: number; look: Look; canvasLine?: number;
+  canvasSize?: boolean; // the canvas line still carries a WxH, which is no longer used
   fontFiles?: string[]; // extra font files the look brings (command line only)
   shapes: Shape[]; texts: TextEl[]; conns: Conn[]; issues: Issue[];
 };
@@ -260,8 +262,9 @@ function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => v
 
 function parseEnd(raw: string): End | null {
   const base = { raw, pt: { x: 0, y: 0 }, dir: null };
-  // relative end: starts with "+", or both numbers carry a sign (+0,260  +40,-20  -40,+0)
-  let m = /^(\+\d+(?:\.\d+)?),([+-]?\d+(?:\.\d+)?)$/.exec(raw) ?? /^([+-]\d+(?:\.\d+)?),([+-]\d+(?:\.\d+)?)$/.exec(raw);
+  // relative end: one of the numbers carries a "+" (+0,260  +40,-20  -40,+0). Two minus signs are a
+  // plain point (-40,-20), since the canvas runs on past 0 in every direction
+  let m = /^(\+\d+(?:\.\d+)?),([+-]?\d+(?:\.\d+)?)$/.exec(raw) ?? /^(-\d+(?:\.\d+)?),(\+\d+(?:\.\d+)?)$/.exec(raw);
   if (m) return { ...base, kind: 'rel', rel: { x: +m[1], y: +m[2] } };
   m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(raw);
   if (m) return { ...base, kind: 'point', pt: { x: +m[1], y: +m[2] } };
@@ -300,8 +303,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
 
   const shapes: Shape[] = [], texts: TextEl[] = [], conns: Conn[] = [];
   const ids = new Map<string, 'shape' | 'text' | 'conn'>();
-  let canvas: { w: number; h: number } | null = null;
-  let canvasLine: number | undefined;
+  let canvasLine: number | undefined, canvasSize = false;
+  const legends: (() => void)[] = []; // legends with no size of their own, laid out once the content's width is known
   const unplaced: Shape[] = [];
   const styleNames = () => [...look.styles.values()];
 
@@ -310,9 +313,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     const first = toks[0];
     if (first.t === 'word' && first.v === 'look') continue;
     if (first.t === 'word' && first.v === 'canvas') {
-      const m = /^(\d+)x(\d+)$/.exec(toks[1]?.v ?? '');
-      if (!m) err(st.line, 'canvas needs a size, e.g. canvas 1000x480');
-      else { canvas = { w: +m[1], h: +m[2] }; canvasLine = st.line; }
+      // the canvas has no size: the picture is as big as what is drawn. A WxH left from older files is ignored
+      canvasLine = st.line;
+      canvasSize = toks.slice(1).some((t) => /^\d+x\d+$/.test(t.v ?? ''));
       continue;
     }
     let i = 0;
@@ -471,8 +474,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       const adhoc = (k: string) => /^(swatch|dot|line)\.(.+)$/.exec(k);
       const entries = Object.entries(over).filter(([k]) => k !== 'style' && (look.styles.has(k) || adhoc(k)));
       const fs = num(p['item.size'], 8.5), font = p['item.font'] ?? 'sans';
-      const W = size0 ? sh.w : canvas ? Math.max(200, canvas.w - 2 * sh.x) : 920;
       const titled = (p.title ?? 'none') !== 'none';
+      const layout = (W: number) => {
       const items: LegendItem[] = entries.map(([k, label]): LegendItem => {
         const m = adhoc(k);
         if (m) {
@@ -501,11 +504,19 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       });
       sh.w = W; sh.h = (titled ? 40 : 20) + (rows.length - 1) * 20 + 12;
       sh.legend = items;
-      if (!items.length) warn(st.line, 'this legend has no entries; add style="what it means" for each style, e.g. focal="The main service"');
+      };
+      if (size0) layout(sh.w); else legends.push(() => {
+        // as wide as the rest of the drawing, measured from the legend's own left edge
+        const rights = [...shapes.filter((o) => o.shape !== 'legend').map((o) => o.x + o.w), ...texts.map((t) => t.x + t.w)];
+        layout(rights.length ? Math.max(200, Math.max(...rights) - sh.x) : 920);
+      });
+      if (!entries.length) warn(st.line, 'this legend has no entries; add style="what it means" for each style, e.g. focal="The main service"');
     }
     if (!at) unplaced.push(sh);
     shapes.push(sh);
   }
+
+  for (const l of legends) l();
 
   // Fallback placement for shapes with no position: a row under everything else.
   if (unplaced.length) {
@@ -671,11 +682,18 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   resolvePass(second.filter((c) => !bad.has(c)));
   const finalConns = conns.filter((c) => done.has(c));
 
-  let w = canvas?.w, h = canvas?.h;
-  if (!canvas) {
-    const xs = [...shapes.map((s) => s.x + s.w), ...texts.map((t) => t.x + t.w), ...finalConns.flatMap((c) => c.pts.map((p) => p.x))];
-    const ys = [...shapes.map((s) => s.y + s.h), ...texts.map((t) => t.y + t.h), ...finalConns.flatMap((c) => c.pts.map((p) => p.y))];
-    w = Math.ceil((Math.max(0, ...xs) + 40) / 4) * 4; h = Math.ceil((Math.max(0, ...ys) + 40) / 4) * 4;
-  }
-  return { file, w: w!, h: h!, look, canvasLine, shapes, texts, conns: finalConns, issues };
+  const ext = extent(shapes, texts, finalConns);
+  return { file, ...ext, look, canvasLine, canvasSize, shapes, texts, conns: finalConns, issues };
+}
+
+// The picture's extent: the box around every shape, text, line and line label, 40px clear on all sides,
+// on the 4px grid. An empty drawing still gets a small picture.
+export const MARGIN = 40;
+export function extent(shapes: Box[], texts: Box[], conns: Conn[]): Box {
+  const boxes: Box[] = [...shapes, ...texts, ...conns.flatMap((c) => [...c.pts.map((p) => ({ x: p.x, y: p.y, w: 0, h: 0 })), ...(c.label ? [c.label] : [])])];
+  if (!boxes.length) return { x: 0, y: 0, w: 400, h: 240 };
+  const x0 = Math.min(...boxes.map((b) => b.x)), y0 = Math.min(...boxes.map((b) => b.y));
+  const x1 = Math.max(...boxes.map((b) => b.x + b.w)), y1 = Math.max(...boxes.map((b) => b.y + b.h));
+  const x = Math.floor((x0 - MARGIN) / 4) * 4, y = Math.floor((y0 - MARGIN) / 4) * 4;
+  return { x, y, w: Math.ceil((x1 + MARGIN) / 4) * 4 - x, h: Math.ceil((y1 + MARGIN) / 4) * 4 - y };
 }

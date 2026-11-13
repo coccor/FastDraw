@@ -209,8 +209,8 @@ An end can be:
 | `api.right` | a side: `top`, `bottom`, `left`, `right` |
 | `api.right@0.25` | a point along that side, as a fraction (0 = top or left end) |
 | `api.right@172` | a point along that side at absolute coordinate 172 (y for left/right, x for top/bottom) |
-| `400,300` | a free point |
-| `+0,260` | a point relative to the other end (only one end may be relative) |
+| `400,300` | a free point; either number may be negative (`-40,-20`) |
+| `+0,260` | a point relative to the other end: one of the numbers carries a `+` (`+40,-20`, `-40,+0`); only one end may be relative |
 | `users.email` | a row of a table: the edge of the table level with that row. `users.email.left` picks the side |
 | `life1@176` | a point on another line: where line `life1` has coordinate 176 (y on a vertical line, x on a horizontal one); a value ≤ 1 is a fraction along it |
 

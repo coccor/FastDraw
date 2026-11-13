@@ -17,7 +17,7 @@ import { fontMeta } from '../src/fontmeta.ts';
 import { lookFonts } from '../src/node.ts';
 
 const look = parseLook(readFileSync(new URL('../looks/reference.look', import.meta.url), 'utf8'));
-const scene = (body: string) => buildScene(`look "x.look"\ncanvas 800x400\n${body}`, look);
+const scene = (body: string) => buildScene(`look "x.look"\n${body}`, look);
 const warns = (body: string) => check(scene(body)).filter((i) => i.level !== 'hint').map((i) => i.msg);
 
 test('sketch look: hand-drawn strokes, steady from one render to the next, off unless the look asks', () => {
@@ -111,7 +111,7 @@ test('a line hanging off a box and a message attached to it follow the box', () 
 test('errors name the problem and the line', () => {
   const sc = scene('a: nodee at 0,0\nb: node at 40,40\nb -> zz\nb: node at 40,200');
   const errs = sc.issues.filter((i) => i.level === 'error');
-  assert.match(errs[0].msg, /unknown style "nodee"/); assert.equal(errs[0].line, 3);
+  assert.match(errs[0].msg, /unknown style "nodee"/); assert.equal(errs[0].line, 2);
   assert.match(errs.map((e) => e.msg).join('|'), /"zz", which does not exist/);
   assert.match(errs.map((e) => e.msg).join('|'), /id "b" is already used/);
 });
@@ -154,10 +154,11 @@ test('a diagram with no look statement is drawn with the built-in look', () => {
 });
 
 test('legend: one statement lays out entries, wraps rows and stays inside its width', () => {
-  const sc = scene('lg: legend at 40,300 focal="The subject" store="Holds data" primary="Main path" return="Reply" decision="Question" nosuch="x" fill=#fff');
+  const sc = scene('lg: legend at 40,300 focal="The subject" store="Holds data" primary="Main path" return="Reply" decision="Question" nosuch="x" fill=#fff\nwide: node at 40,40 720x40');
   const lg = sc.shapes[0];
   assert.deepEqual(lg.legend!.map((i) => i.style), ['focal', 'store', 'primary', 'return', 'decision']);
-  assert.equal(lg.w, 720); // canvas 800 minus the left margin twice
+  assert.equal(lg.w, 720); // as wide as the rest of the drawing, written after it or not
+  assert.equal(scene('lg: legend at 40,300 focal="The subject"').shapes[0].w, 920); // nothing else drawn
   for (const i of lg.legend!) assert.ok(i.x >= 40 && i.x < 760);
   assert.equal(new Set(lg.legend!.map((i) => i.baseline)).size, 1);
   const narrow = scene('lg: legend at 40,300 200x10 focal="The subject of it all" store="Holds data" primary="Main path"').shapes[0];
@@ -554,4 +555,18 @@ test('an edit keeps the quotes a property was written with, and adds them only w
   assert.equal(out, 'key: legend at 40,300 title="Key" external="Shopper" focal="The service"\n');
   const again = patchSource(out, new Map([[1, (t) => setProp(t, 'external', 'Buyer')]]));
   assert.equal(again, 'key: legend at 40,300 title="Key" external="Buyer" focal="The service"\n');
+});
+
+test('no page: the picture is what is drawn plus a margin, anywhere, and an old canvas size is only a hint', () => {
+  const sc = scene('a: node at -200,-120 120x40\nb: node at 300,200 120x40\n-80,-60 -> a');
+  assert.deepEqual([sc.x, sc.y, sc.w, sc.h], [-240, -160, 700, 440]);
+  assert.deepEqual(sc.conns[0].pts[0], { x: -80, y: -60 }); // two minus signs are a point, not an offset
+  assert.match(renderSvg(sc), /viewBox="-240 -160 700 440"/);
+  assert.ok(!check(sc).some((i) => /outside/.test(i.msg)));
+  const empty = scene('');
+  assert.deepEqual([empty.x, empty.y, empty.w, empty.h], [0, 0, 400, 240]);
+  const old = buildScene('canvas 800x400\na: node at 40,40', look);
+  assert.equal(old.issues.filter((i) => i.level === 'error').length, 0);
+  assert.notEqual(old.w, 800); // the size comes from the content
+  assert.match(check(old).map((i) => i.msg).join('|'), /canvas has no size any more/);
 });

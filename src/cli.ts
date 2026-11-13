@@ -163,7 +163,7 @@ if (cmd === 'check') {
   y += 32;
   const entries = all.filter((s) => s.kind !== 'text').slice(0, 8).map((s) => `${s.name}=${JSON.stringify(s.name)}`).join(' ');
   L.push(`legend at 40,${y} ${W}x10 ${entries}`);
-  const sc = buildScene(`canvas ${W + 80}x${y + 110}\n` + L.join('\n'), look);
+  const sc = buildScene(L.join('\n'), look);
   const bad = sc.issues.filter((i) => i.level === 'error');
   if (bad.length) { for (const i of bad) console.log(`preview: ${i.msg}`); process.exit(1); }
   const svg = renderSvg(sc);

@@ -408,11 +408,11 @@ export function renderBody(sc: Scene): string {
   const look = sc.look, cv = look.canvas;
   const out: string[] = [];
   R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
-  out.push(`<rect width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
+  out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
   if (cv.dots) {
     const gap = num(cv.dotgap, 22);
     out.push(`<defs><pattern id="fd-dots" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="${col(look, cv.dots)}"/></pattern></defs>`);
-    out.push(`<rect width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
   }
   for (const s of sc.shapes) if (s.back) out.push(drawShape(look, s));
   // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
@@ -429,6 +429,6 @@ export function renderBody(sc: Scene): string {
 
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.
 export function renderSvg(sc: Scene, css?: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sc.w} ${sc.h}" width="${sc.w}" height="${sc.h}">\n` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sc.x} ${sc.y} ${sc.w} ${sc.h}" width="${sc.w}" height="${sc.h}">\n` +
     (css ? `<style>${css.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</style>\n` : '') + renderBody(sc) + '\n</svg>';
 }
