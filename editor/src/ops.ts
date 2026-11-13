@@ -372,6 +372,22 @@ export function dropCanvasSize(src: string): string {
   }]]));
 }
 
+// Rewrite the diagram's canvas line with background keys (paper=, dots=, dotgap=).
+// `bg` maps a key to its new value, or to null to drop it so the look's own value applies;
+// keys it does not mention keep what the line had. A line left with nothing on it goes.
+export function setCanvas(src: string, sc: Scene, bg: Record<string, string | null> = {}): string {
+  const old = sc.canvasLine ? stmtToks(src, sc.canvasLine) ?? [] : [];
+  const keep = new Map(old.filter((t) => t.t === 'prop').map((t) => [t.k!, t.v]));
+  for (const [k, v] of Object.entries(bg)) if (v === null) keep.delete(k); else keep.set(k, v);
+  const toks: Tok[] | null = keep.size ? [{ t: 'word', v: 'canvas' }, ...[...keep].map(([k, v]) => ({ t: 'prop', k, v }) as Tok)] : null;
+  if (sc.canvasLine) return patchSource(src, new Map([[sc.canvasLine, () => toks]]));
+  if (!toks) return src;
+  const lines = src.split('\n');
+  const li = lines.findIndex((l) => /^look\b/.test(l));
+  lines.splice(li + 1, 0, fmtStmt(toks));
+  return lines.join('\n');
+}
+
 // Everything that shares a group name with the given elements.
 export function withGroups(sc: Scene, ids: string[]): string[] {
   const all = [...sc.shapes, ...sc.texts, ...sc.conns];

@@ -32,7 +32,9 @@ back as a small edit to the text. Neither side has to redo the other's work.
 - **Guides for over forty kinds of diagram.** Architecture, flowchart, sequence, database schema,
   Gantt, Sankey, swimlane and more. Each guide tells an agent how to compose that kind well.
 - **Pictures you can reopen.** Exported PNG and SVG files carry the diagram and its look inside
-  them. Drop one on the editor to keep editing.
+  them. Drop one on the editor to keep editing. The editor's Export dialog (Ctrl+Shift+E) picks
+  PNG or SVG, a scale from 1x to 4x, a see-through background, and whether the diagram goes
+  inside; it downloads the image or copies it to the clipboard.
 
 ## A first diagram
 
@@ -73,7 +75,7 @@ npm run dev                                  # the editor, at http://localhost:5
 | Command | What it does |
 |---|---|
 | `fastdraw check <file.fdraw>` | Report problems, with line numbers |
-| `fastdraw render <file.fdraw> [-o out.png\|.svg] [--scale 2]` | Draw the diagram (PNG by default) |
+| `fastdraw render <file.fdraw> [-o out.png\|.svg] [--scale 2] [--transparent] [--no-embed]` | Draw the diagram (PNG by default). `--transparent` leaves out the page colour and dots; `--no-embed` leaves the diagram out of the image |
 | `fastdraw guide [topic]` | Print the language guide, or the guide for one kind of diagram |
 | `fastdraw guide list` | List the kinds of diagram that have a guide |
 | `fastdraw sizes [file]` | List a look's styles and their sizes (the built-in look when no file is given) |

@@ -21,6 +21,7 @@ One statement per line. An indented line continues the statement above it. `//` 
 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
+canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
 
 // shape:   id: style "text" at x,y WxH key=value ...
 api: node "Orders API" sub="REST · :8080" tag="API" at 200,120

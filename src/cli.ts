@@ -18,7 +18,7 @@ function usage(): never {
   console.log(`fastdraw <command>
 
   check  <file.fdraw>                     report problems, with line numbers
-  render <file.fdraw> [-o out.png|.svg] [--scale 2]
+  render <file.fdraw> [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
                                           draw the diagram (PNG by default)
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
@@ -61,16 +61,19 @@ if (cmd === 'check') {
     console.log('\nnot rendered: fix the errors first');
     process.exit(1);
   }
-  const svg = renderSvg(sc);
+  if (!(scale > 0)) { console.log('--scale takes a number above 0, like 1, 2 or 3'); process.exit(1); }
+  const transparent = args.includes('--transparent'), embed = !args.includes('--no-embed');
+  const svg = renderSvg(sc, undefined, { background: !transparent });
   const payload = { v: 1 as const, ...readSources(file, sc) };
-  if (out.endsWith('.svg')) writeFileSync(out, embedSvg(svg, payload));
+  if (out.endsWith('.svg')) writeFileSync(out, embed ? embedSvg(svg, payload) : svg);
   else {
     const { Resvg } = await import('@resvg/resvg-js');
     const fontFiles = [...bundledFonts(), ...(sc.fontFiles ?? [])];
-    const png = new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng();
-    writeFileSync(out, embedPng(new Uint8Array(png), payload));
+    const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng());
+    writeFileSync(out, embed ? embedPng(png, payload) : png);
   }
-  console.log(`wrote ${out} (${sc.w}x${sc.h}${out.endsWith('.svg') ? '' : ` at ${scale}x`})`);
+  const notes = [out.endsWith('.svg') ? '' : `at ${scale}x`, transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
+  console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
 } else if (cmd === 'sizes') {
   const look = !args[0] ? defaultLook() : args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
   for (const i of look.issues) console.log(`look:${i.line}  ${i.level}  ${i.msg}`);

@@ -1,27 +1,28 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { parseLook } from '../../src/look.ts';
+import { parseLook, color } from '../../src/look.ts';
 import { buildScene, lookPath, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
-import { renderBody, renderSvg, col } from '../../src/render.ts';
+import { renderBody, col } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
 import * as served from './served.ts';
-import { Panel, TextField } from './Panel.tsx';
+import { Panel, TextField, Swatches } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import {
-  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
+  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
-import { fontCss, setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
-import { embedSvg, embedPng, extractSvg, extractPng } from '../../src/embed.ts';
+import { setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
+import { extractSvg, extractPng } from '../../src/embed.ts';
+import { ExportDialog } from './ExportDialog.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 
 type Drag =
@@ -83,6 +84,36 @@ const TOOLS: [string, string, string][] = [
   ['arrow', 'Arrow', 'A'], ['line', 'Line', 'L'], ['freehand', 'Draw', 'P'], ['text', 'Text', 'T'],
 ];
 
+// Background colours offered besides the look's own: plain white and a few light, cool tints.
+const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
+
+// The page's colour and dot grid. Choices are written to the diagram's canvas line (paper=, dots=),
+// so they override the look for this diagram only; picking the look's own colour drops the override.
+function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string, string | null>) => void }) {
+  const base = scene.baseCanvas ?? {}, cv = scene.look.canvas;
+  const basePaper = base.paper ?? 'paper', paper = cv.paper ?? 'paper';
+  const dotsOn = !!cv.dots && cv.dots !== 'none';
+  const overridden = ['paper', 'dots', 'dotgap'].some((k) => cv[k] !== base[k]);
+  const hex = color(scene.look, paper);
+  return (
+    <div className="canvasbg">
+      <span>Background</span>
+      <div className="row">
+        <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
+          onPick={(v) => set({ paper: v === basePaper ? null : v })} />
+        <label className="custom" title="Any colour">
+          <input type="color" aria-label="Custom background colour" value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#ffffff'} onChange={(e) => set({ paper: e.target.value })} />
+        </label>
+      </div>
+      <label className="check">
+        <input type="checkbox" checked={dotsOn} onChange={() => set({ dots: dotsOn ? 'none' : base.dots && base.dots !== 'none' ? null : 'ink/0.1' })} />
+        Dot grid
+      </label>
+      {overridden && <button className="link" onClick={() => set({ paper: null, dots: null, dotgap: null })}>Use the look's background</button>}
+    </div>
+  );
+}
+
 export function App() {
   const [src, setSrcState] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
@@ -101,6 +132,7 @@ export function App() {
   const [status, setStatus] = useState('');
   const [showIssues, setShowIssues] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [folderFiles, setFolderFiles] = useState<string[]>([]);
   const [, force] = useState(0);
@@ -858,6 +890,7 @@ export function App() {
     align: (m: ops.AlignMode) => src !== null && commit(ops.align(src, scene, sel, m)),
     remove: () => src !== null && sel.length > 0 && commit(ops.deleteElements(src, scene, sel), []),
     duplicate: () => { if (src === null || !sel.length) return; const r = ops.duplicateElements(src, scene, sel); commit(r.src, r.ids); },
+    setCanvas: (bg?: Record<string, string | null>) => src !== null && commit(ops.setCanvas(src, scene, bg)),
     group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
     ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
@@ -924,6 +957,7 @@ export function App() {
       if (text === null) return;
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); return; }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
       if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); setSel([...sc.shapes, ...sc.texts, ...sc.conns].map((x) => x.id)); return; }
@@ -949,20 +983,10 @@ export function App() {
   }, [commit, undo]);
   const startEditRef = useRef(startEdit); startEditRef.current = startEdit;
 
-  const exportAs = async (kind: 'png' | 'svg') => {
+  // What an exported image carries so it can be opened and edited again: the diagram, its look, the icons it uses.
+  const exportPayload = () => {
     const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter(Boolean));
-    const payload = { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
-    const svg = renderSvg(scene, await fontCss(renderSvg(scene)));
-    const base = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
-    if (kind === 'svg') { files.download(base + '.svg', embedSvg(svg, payload), 'image/svg+xml'); return; }
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = scene.w * 2; c.height = scene.h * 2;
-      c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob(async (b) => { if (b) files.download(base + '.png', new Blob([embedPng(new Uint8Array(await b.arrayBuffer()), payload).buffer as ArrayBuffer], { type: 'image/png' })); });
-    };
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    return { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
   };
 
   // ---- render -------------------------------------------------------------
@@ -1013,7 +1037,7 @@ export function App() {
       <svg ref={svgRef} className="canvas" style={{ cursor, background: col(scene.look, scene.look.canvas.paper ?? 'paper') }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
         onPointerLeave={() => setHover(null)} onContextMenu={onContext}>
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
-          {scene.look.canvas.dots && <rect x={-view.x / view.k} y={-view.y / view.k} width={window.innerWidth / view.k} height={window.innerHeight / view.k} fill="url(#fd-dots)" pointerEvents="none" />}
+          {scene.look.canvas.dots && scene.look.canvas.dots !== 'none' && <rect x={-view.x / view.k} y={-view.y / view.k} width={window.innerWidth / view.k} height={window.innerHeight / view.k} fill="url(#fd-dots)" pointerEvents="none" />}
           <g ref={bodyRef} dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
           <g fill="transparent" stroke="transparent">
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
@@ -1099,11 +1123,12 @@ export function App() {
             <button role="menuitem" onClick={() => { closePopups(); openFile(); }}><FileText size={16} />Open file</button>
             <button role="menuitem" onClick={() => { closePopups(); setPasteOpen(true); }}><ClipboardPaste size={16} />Paste diagram text</button>
             <hr />
-            <button role="menuitem" onClick={() => { closePopups(); exportAs('png'); }}><ImageDown size={16} />Export as PNG</button>
-            <button role="menuitem" onClick={() => { closePopups(); exportAs('svg'); }}><FileCode size={16} />Export as SVG</button>
+            <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export image…<kbd>Ctrl ⇧ E</kbd></button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
+            <hr />
+            <BackgroundMenu scene={scene} set={(bg) => act.setCanvas(bg)} />
           </div>
         )}
         <Panel sc={scene} src={cur} sel={sel} act={act} />
@@ -1209,6 +1234,7 @@ export function App() {
       )}
 
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
+      {exportOpen && <ExportDialog scene={scene} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
       {templateDialog}
     </div>
   );

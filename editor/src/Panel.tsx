@@ -18,12 +18,13 @@ export type PanelActions = {
   align: (mode: AlignMode) => void;
   remove: () => void;
   duplicate: () => void;
+  setCanvas: (bg?: Record<string, string | null>) => void;
   resetRoute: () => void;
   setRows: (rows: RowSpec[]) => void;
   setRoute: (route: string) => void;
 };
 
-function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
+export function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
   return (
     <div className="swatches">
       {values.map((v) => {

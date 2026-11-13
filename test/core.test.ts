@@ -570,3 +570,55 @@ test('no page: the picture is what is drawn plus a margin, anywhere, and an old 
   assert.notEqual(old.w, 800); // the size comes from the content
   assert.match(check(old).map((i) => i.msg).join('|'), /canvas has no size any more/);
 });
+
+test('export without a background leaves out the page and its dots, and keeps everything drawn on it', () => {
+  const sc = scene('a: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n');
+  const full = renderSvg(sc), bare = renderSvg(sc, undefined, { background: false });
+  assert.match(full, /<rect class="fd-page" x="0" y="0" width="\d+" height="\d+" fill=/);
+  assert.match(full, /fd-dots/);
+  assert.doesNotMatch(bare, /fd-page/);
+  assert.doesNotMatch(bare, /fd-dots/);
+  assert.match(bare, /<rect x="40" y="40"/);
+  assert.match(bare, new RegExp(`viewBox="0 0 ${sc.w} ${sc.h}"`));
+});
+
+test('fastdraw render: --transparent and --no-embed', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'fd-export-'));
+  const f = join(dir, 'd.fdraw'), body = 'a: node "A" at 40,40\n';
+  writeFileSync(f, body);
+  const cli = (...a: string[]) => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', new URL('../src/cli.ts', import.meta.url).pathname, 'render', f, ...a], { encoding: 'utf8' });
+  assert.match(cli('-o', join(dir, 'a.svg'), '--transparent', '--no-embed'), /no background, no diagram inside/);
+  const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
+  assert.equal(extractSvg(svg), null);
+  assert.doesNotMatch(svg, /fd-page/);
+  cli('-o', join(dir, 'b.png'), '--scale', '1', '--transparent');
+  const png = new Uint8Array(readFileSync(join(dir, 'b.png')));
+  assert.equal(new DataView(png.buffer, png.byteOffset).getUint32(16), buildScene(body, defaultLook()).w); // IHDR width, at 1x: the drawing plus its margin
+  assert.equal(png[25], 6); // RGBA: the page is see-through
+  assert.equal(extractPng(png)?.diagram, body);
+  cli('-o', join(dir, 'c.png'), '--no-embed');
+  assert.equal(extractPng(new Uint8Array(readFileSync(join(dir, 'c.png')))), null);
+});
+
+test('a diagram\'s canvas line can override the look\'s background, with or without an old size on it', async () => {
+  const sc = buildScene('look "x.look"\ncanvas paper=#ffffff dots=none\na: node "A" at 20,20', look);
+  assert.equal(sc.issues.length, 0);
+  assert.equal(sc.look.canvas.paper, '#ffffff');
+  assert.equal(sc.baseCanvas!.paper, 'paper');
+  assert.equal(look.canvas.paper, 'paper', 'the shared look is not changed');
+  const svg = renderSvg(sc);
+  assert.match(svg, /fill="#ffffff"/);
+  assert.doesNotMatch(svg, /fd-dots/);
+  assert.equal(buildScene('look "x.look"\ncanvas 400x200 paper=#ffffff\na: node "A" at 20,20', look).look.canvas.paper, '#ffffff');
+  assert.match(buildScene('look "x.look"\ncanvas fill=#fff', look).issues[0].msg, /canvas only takes paper=/);
+
+  const { setCanvas } = await import('../editor/src/ops.ts');
+  const src = 'look "x.look"\ncanvas paper=#eef2f7\na: node "A" at 20,20';
+  const dotsOff = setCanvas(src, buildScene(src, look), { dots: 'none' });
+  assert.match(dotsOff, /^canvas paper=#eef2f7 dots=none$/m);
+  const reset = setCanvas(dotsOff, buildScene(dotsOff, look), { paper: null, dots: null });
+  assert.doesNotMatch(reset, /canvas/); // nothing left on the line, so it goes
+  const noLine = 'look "x.look"\na: node "A" at 20,20';
+  assert.match(setCanvas(noLine, buildScene(noLine, look), { paper: '#ffffff' }), /^look "x.look"\ncanvas paper=#ffffff\n/);
+});

@@ -37,12 +37,15 @@ export type Scene = {
   // the picture's extent: everything drawn, plus a margin all round (there is no fixed page)
   file: string; x: number; y: number; w: number; h: number; look: Look; canvasLine?: number;
   canvasSize?: boolean; // the canvas line still carries a WxH, which is no longer used
+  baseCanvas?: Props; // the look's own canvas statement, before the diagram's canvas line overrides any of it
   fontFiles?: string[]; // extra font files the look brings (command line only)
   shapes: Shape[]; texts: TextEl[]; conns: Conn[]; issues: Issue[];
 };
 
 // What can sit on the end of a line. The last six are the entity-relationship cardinalities.
 export const SERIES = ['bars', 'line', 'area', 'dots'];
+// The background keys a diagram's canvas line may set, overriding the look's canvas statement.
+export const CANVAS_KEYS = ['paper', 'dots', 'dotgap'];
 export const MARKERS = ['none', 'arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many'];
 
 const DIRS: Record<Side, Pt> = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
@@ -292,7 +295,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const stmts: Stmt[] = parseStatements(src);
 
   const hasLookStmt = stmts.some((s) => s.toks[0]?.t === 'word' && s.toks[0].v === 'look');
-  const look: Look = lookIn ?? (hasLookStmt ? emptyLook() : defaultLook());
+  let look: Look = lookIn ?? (hasLookStmt ? emptyLook() : defaultLook());
+  const baseCanvas = look.canvas;
   const lookStmt = stmts.find((s) => s.toks[0]?.v === 'look' && s.toks[0].t === 'word');
   if (lookStmt) {
     const p = lookStmt.toks[1]?.v;
@@ -315,7 +319,14 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     if (first.t === 'word' && first.v === 'canvas') {
       // the canvas has no size: the picture is as big as what is drawn. A WxH left from older files is ignored
       canvasLine = st.line;
-      canvasSize = toks.slice(1).some((t) => /^\d+x\d+$/.test(t.v ?? ''));
+      // paper=, dots= and dotgap= on the diagram's canvas line override the look's background for this diagram
+      const bg: Props = {};
+      for (const t of toks.slice(1)) {
+        if (/^\d+x\d+$/.test(t.v ?? '')) canvasSize = true;
+        else if (t.t === 'prop' && CANVAS_KEYS.includes(t.k!)) bg[t.k!] = t.v;
+        else err(st.line, `canvas only takes ${CANVAS_KEYS.map((k) => k + '=').join(', ')}; remove ${t.t === 'prop' ? t.k + '=' : t.v}`);
+      }
+      if (Object.keys(bg).length) look = { ...look, canvas: { ...look.canvas, ...bg } };
       continue;
     }
     let i = 0;
@@ -684,7 +695,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const finalConns = conns.filter((c) => done.has(c));
 
   const ext = extent(shapes, texts, finalConns);
-  return { file, ...ext, look, canvasLine, canvasSize, shapes, texts, conns: finalConns, issues };
+  return { file, ...ext, look, canvasLine, canvasSize, baseCanvas, shapes, texts, conns: finalConns, issues };
 }
 
 // The picture's extent: the box around every shape, text, line and line label, 40px clear on all sides,

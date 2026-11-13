@@ -404,12 +404,13 @@ function drawText(look: Look, t: TextEl): string {
   return rot === 90 || rot === -90 ? `<g transform="rotate(${rot} ${t.ax} ${t.ay})">${body}</g>` : body;
 }
 
-export function renderBody(sc: Scene): string {
+// background: false leaves the page out (no paper, no dots), for an image laid over something else
+export function renderBody(sc: Scene, background = true): string {
   const look = sc.look, cv = look.canvas;
   const out: string[] = [];
   R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
-  out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
-  if (cv.dots) {
+  if (background) out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
+  if (background && cv.dots && cv.dots !== 'none') {
     const gap = num(cv.dotgap, 22);
     out.push(`<defs><pattern id="fd-dots" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="${col(look, cv.dots)}"/></pattern></defs>`);
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
@@ -428,7 +429,7 @@ export function renderBody(sc: Scene): string {
 }
 
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.
-export function renderSvg(sc: Scene, css?: string): string {
+export function renderSvg(sc: Scene, css?: string, opts: { background?: boolean } = {}): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sc.x} ${sc.y} ${sc.w} ${sc.h}" width="${sc.w}" height="${sc.h}">\n` +
-    (css ? `<style>${css.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</style>\n` : '') + renderBody(sc) + '\n</svg>';
+    (css ? `<style>${css.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</style>\n` : '') + renderBody(sc, opts.background ?? true) + '\n</svg>';
 }
