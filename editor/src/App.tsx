@@ -1237,14 +1237,6 @@ export function App() {
       </div>
 
       <div className="topright" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="island filechip">
-          {folderFiles.length > 1
-            ? <select aria-label="Diagram" value={io.current.path} onChange={(e) => io.current.folder && openPath(io.current.folder, e.target.value, true)}>{folderFiles.map((f) => <option key={f}>{f}</option>)}</select>
-            : <b title={name}>{name}</b>}
-          <span className={'dot ' + saveState} />
-          <span className="status">{status}</span>
-          {io.current.pending && <button className="reconnect" title={`Let the editor write to ${io.current.pending.file.name} again`} onClick={() => reconnect(true)}>Reconnect</button>}
-        </div>
         <Sidebar side={side}
           components={<Gallery look={scene.look} current={tool} onPick={setTool} />}
           look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} />} />
@@ -1282,6 +1274,12 @@ export function App() {
 
       <div className="bottomcenter" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island tabs" role="tablist" aria-label="Open diagrams">
+          {folderFiles.length > 1 && (
+            <label className="folderpick" title="Open another diagram from this folder">
+              <FolderOpen size={14} />
+              <select aria-label="Diagram" value={io.current.path} onChange={(e) => io.current.folder && openPath(io.current.folder, e.target.value, true)}>{folderFiles.map((f) => <option key={f}>{f}</option>)}</select>
+            </label>
+          )}
           {tabs.map((id) => {
             const d = id === docId ? live.current : docs.current.get(id);
             const where = d?.io.file || d?.io.pending ? `Saved to ${d.io.path ?? d.io.file?.name ?? d.io.pending?.file.name}` : 'Kept in this browser';
@@ -1293,6 +1291,14 @@ export function App() {
                       onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') rename(id, e.currentTarget.value); else if (e.key === 'Escape') setRenaming(null); }} />
                   : <button role="tab" aria-selected={id === docId} title={`${d?.name} — ${where}${d?.io.file || d?.io.pending ? '' : '. Double-click to rename'}`}
                       onClick={() => switchTo(id)} onDoubleClick={() => d && !d.io.file && !d.io.pending && setRenaming(id)}>{tabName(id)}</button>}
+                {/* every tab keeps room for the dot, so switching tabs does not shift them */}
+                {id === docId
+                  ? <span className="savestate" title={status || undefined}>
+                      <span className={'dot ' + saveState} aria-hidden="true" />
+                      <span className="status">{status}</span>
+                      {io.current.pending && <button className="reconnect" title={`Let the editor write to ${io.current.pending.file.name} again`} onClick={() => reconnect(true)}>Reconnect</button>}
+                    </span>
+                  : <span className="savestate" aria-hidden="true"><span className="dot off" /></span>}
                 <button className="tabx" aria-label={`Close ${tabName(id)}`} title="Close" onClick={() => closeTab(id)}><X size={13} /></button>
               </div>
             );

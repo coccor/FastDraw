@@ -249,7 +249,7 @@ test('an exported PNG reopens as the same diagram; a foreign image is refused wi
   await drop('from-wiki.png', bytes);
   await page.waitForSelector('svg.canvas');
   expect(await source(page)).toBe(SMALL);
-  await expect(page.locator('.filechip b')).toHaveText('from-wiki.fdraw');
+  await expect(page.locator('.tab.on > button[role=tab]')).toHaveText('from-wiki.fdraw');
   await drop('photo.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
   await expect(page.locator('.status')).toContainText('was not exported from FastDraw');
 });
