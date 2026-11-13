@@ -547,3 +547,11 @@ test('legend swatches take hex colours; an unfilled badge on a filled box is jud
   assert.ok(renderSvg(sc).includes('fill="#4a7c59"'));  // the same white badge with no dark box under it is on paper, and is reported
   assert.match(check(dflt('b: rect "4 in" at 152,44 48x16 fill=none stroke=ink title.color=#ffffff title.size=8\n')).map((i) => i.msg).join(), /the text of b is almost the same colour as its background/);
 });
+
+test('an edit keeps the quotes a property was written with, and adds them only where needed', () => {
+  const src = 'key: legend at 40,300 title="Key" external="Shopper" focal=Plain\n';
+  const out = patchSource(src, new Map([[1, (t) => setProp(t, 'focal', 'The service')]]));
+  assert.equal(out, 'key: legend at 40,300 title="Key" external="Shopper" focal="The service"\n');
+  const again = patchSource(out, new Map([[1, (t) => setProp(t, 'external', 'Buyer')]]));
+  assert.equal(again, 'key: legend at 40,300 title="Key" external="Buyer" focal="The service"\n');
+});
