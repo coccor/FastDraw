@@ -36,6 +36,23 @@ test('double-click edits the text of a box and of an arrow label', async ({ page
   expect(await diskText(page, SEQ)).toContain('"fetch page"');
 });
 
+test('text is edited in place: the field takes the label\'s type and position, and the drawn label hides', async ({ page }) => {
+  await paste(page, SMALL);
+  const label = page.locator('svg.canvas text', { hasText: 'Orders API' }).first();
+  const drawn = await label.evaluate((t) => { const cs = getComputedStyle(t); return { weight: cs.fontWeight, colour: cs.fill }; });
+  const before = (await label.boundingBox())!;
+  await doubleClick(page, { x: before.x + before.width / 2, y: before.y + before.height / 2 });
+  const field = page.locator('.textedit.inplace');
+  await expect(field).toBeVisible();
+  const look = await field.evaluate((t) => { const cs = getComputedStyle(t); return { weight: cs.fontWeight, colour: cs.color, bg: cs.backgroundColor, border: cs.borderTopWidth }; });
+  expect(look).toEqual({ weight: drawn.weight, colour: drawn.colour, bg: 'rgba(0, 0, 0, 0)', border: '0px' });
+  await expect(label).toHaveCSS('visibility', 'hidden');
+  const box = (await field.boundingBox())!;
+  expect(Math.abs(box.y + box.height / 2 - (before.y + before.height / 2))).toBeLessThan(4);
+  await page.keyboard.press('Escape');
+  await expect(label).toHaveCSS('visibility', 'visible');
+});
+
 test('an outside change to the file appears on the canvas, and undo brings the old text back', async ({ page }) => {
   await openFolder(page, folder());
   const text = await diskText(page, SEQ);

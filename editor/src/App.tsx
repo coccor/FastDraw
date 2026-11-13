@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { parseLook } from '../../src/look.ts';
 import { buildScene, lookPath } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn } from '../../src/scene.ts';
@@ -34,9 +34,31 @@ type Drag =
   | { type: 'label'; id: string; base: string; scene: Scene; dx: number; dy: number };
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 type Editing = { id: string; value: string; box: Box } | null;
+type EdLook = { family: string; size: number; weight: string; style: string; color: string; spacing: string; transform: string; anchor: string; ax: number; top: number; pitch: number; wrap: number };
 type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string };
 
 const snap = (v: number) => Math.round(v / 4) * 4;
+
+let measurer: CanvasRenderingContext2D | null = null;
+const textWidth = (s: string, font: string) => {
+  measurer ??= document.createElement('canvas').getContext('2d');
+  if (!measurer) return s.length * 8;
+  measurer.font = font;
+  return measurer.measureText(s).width;
+};
+// Where and how the in-place text field sits: over the drawn label, in its type.
+function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k: number }): React.CSSProperties {
+  const k = view.k, size = l.size * k, font = `${l.style} ${l.weight} ${size}px ${l.family}`;
+  const caps = l.transform === 'uppercase';
+  const longest = Math.max(...value.split('\n').map((s) => textWidth(caps ? s.toUpperCase() : s, font)));
+  const w = l.wrap ? l.wrap * k : longest + size * 1.2;
+  const left = l.anchor === 'middle' ? l.ax * k - w / 2 : l.anchor === 'end' ? l.ax * k - w : l.ax * k;
+  return {
+    left: view.x + left, top: view.y + l.top * k, width: w,
+    font, lineHeight: `${l.pitch * k}px`, color: l.color, letterSpacing: l.spacing, textTransform: l.transform as React.CSSProperties['textTransform'],
+    textAlign: l.anchor === 'middle' ? 'center' : l.anchor === 'end' ? 'right' : 'left',
+  };
+}
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
 const ICONS: Record<string, React.ReactNode> = {
   hand: <Hand size={17} />, select: <MousePointer2 size={17} />, rect: <Square size={17} />, ellipse: <Circle size={17} />, diamond: <Diamond size={17} />,
@@ -58,6 +80,9 @@ export function App() {
   const [ghost, setGhost] = useState<Ghost>(null);
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [editing, setEditing] = useState<Editing>(null);
+  const [edLook, setEdLook] = useState<EdLook | null>(null);
+  const bodyRef = useRef<SVGGElement>(null);
+  const edRef = useRef<HTMLTextAreaElement>(null);
   const [status, setStatus] = useState('');
   const [showIssues, setShowIssues] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -563,6 +588,49 @@ export function App() {
   const actRef = useRef(act); actRef.current = act;
   const stateRef = useRef({ sel, scene, src, editing }); stateRef.current = { sel, scene, src, editing };
 
+  // Edit text in place: find the label as the look drew it, hide it, and lay the text field over
+  // it in the same font, size, weight, colour and alignment, so the element keeps its look.
+  const editKey = editing ? editing.id + '|' + editing.box.x + ',' + editing.box.y : '';
+  useLayoutEffect(() => {
+    setEdLook(null);
+    const g = bodyRef.current, ed = stateRef.current.editing;
+    if (!g || !ed) return;
+    const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+    const want = norm(ed.value), b = ed.box;
+    const hits: SVGTextElement[] = [];
+    if (want) for (const t of Array.from(g.querySelectorAll('text'))) {
+      const s = norm(t.textContent ?? '');
+      if (!s || !want.includes(s)) continue;
+      const bb = t.getBBox(), cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
+      if (cx < b.x - 4 || cx > b.x + b.w + 4 || cy < b.y - 4 || cy > b.y + b.h + 4) continue;
+      const cs = getComputedStyle(t), first = hits[0] && getComputedStyle(hits[0]);
+      if (first && (cs.fontSize !== first.fontSize || cs.fontWeight !== first.fontWeight || cs.fontFamily !== first.fontFamily)) continue;
+      hits.push(t);
+    }
+    if (!hits.length) return;
+    const cs = getComputedStyle(hits[0]), size = parseFloat(cs.fontSize) || 12;
+    const boxes = hits.map((t) => t.getBBox());
+    const ys = hits.map((t) => parseFloat(t.getAttribute('y') ?? '0'));
+    const pitch = hits.length > 1 ? (ys[ys.length - 1] - ys[0]) / (hits.length - 1) : size * 1.3;
+    const anchor = (hits[0].getAttribute('text-anchor') ?? cs.textAnchor ?? 'start') as string;
+    const ax = parseFloat(hits[0].getAttribute('x') ?? '0');
+    const top = boxes[0].y - (pitch - boxes[0].height) / 2;
+    const isShape = ops.find(stateRef.current.scene, ed.id)?.kind === 'shape';
+    setEdLook({
+      family: cs.fontFamily, size, weight: cs.fontWeight, style: cs.fontStyle, color: cs.fill, spacing: cs.letterSpacing,
+      transform: hits.every((t) => { const s = t.textContent ?? ''; return s === s.toUpperCase() && s !== s.toLowerCase(); }) && ed.value !== ed.value.toUpperCase() ? 'uppercase' : cs.textTransform, anchor, ax, top, pitch, wrap: isShape ? b.w - 12 : 0,
+    });
+    for (const t of hits) t.style.visibility = 'hidden';
+    return () => { for (const t of hits) t.style.visibility = ''; };
+  }, [editKey]);
+  // the in-place field grows with its text, a line at a time
+  useLayoutEffect(() => {
+    const ta = edRef.current;
+    if (!ta || !edLook) return;
+    ta.style.height = '0px';
+    ta.style.height = ta.scrollHeight + 'px';
+  }, [editing?.value, edLook, view.k]);
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -658,7 +726,7 @@ export function App() {
         onPointerLeave={() => setHover(null)} onContextMenu={onContext}>
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
           <rect x={-1} y={-1} width={scene.w + 2} height={scene.h + 2} fill="none" stroke="#cfd2da" strokeWidth={1 / view.k} />
-          <g dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
+          <g ref={bodyRef} dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
           <g fill="transparent" stroke="transparent">
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
             {scene.conns.map((c) => <polyline key={c.id} data-id={c.id} points={c.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" strokeWidth={12} pointerEvents="stroke" />)}
@@ -709,8 +777,8 @@ export function App() {
       </svg>
 
       {editing && (
-        <textarea className="textedit" autoFocus value={editing.value}
-          style={{ left: view.x + editing.box.x * view.k, top: view.y + editing.box.y * view.k, width: Math.max(120, editing.box.w * view.k), height: Math.max(28, editing.box.h * view.k), fontSize: Math.max(11, 12 * view.k) }}
+        <textarea className={edLook ? 'textedit inplace' : 'textedit'} autoFocus value={editing.value} spellCheck={false} wrap={edLook && !edLook.wrap ? 'off' : 'soft'}
+          ref={edRef} style={edLook ? inplaceStyle(edLook, editing.value, view) : { left: view.x + editing.box.x * view.k, top: view.y + editing.box.y * view.k, width: Math.max(120, editing.box.w * view.k), height: Math.max(28, editing.box.h * view.k), fontSize: Math.max(11, 12 * view.k) }}
           onChange={(e) => setEditing({ ...editing, value: e.target.value })}
           onFocus={(e) => e.target.select()}
           onBlur={() => finishEdit(true)}
