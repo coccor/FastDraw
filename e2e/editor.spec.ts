@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { mkdtempSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { serveFolder } from '../src/serve.ts';
 import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh } from './helpers.ts';
 
 const SEQ = 'examples/test/sequence.fdraw';
@@ -634,4 +638,31 @@ test('a new diagram from a template: search the kinds, open one in the built-in 
   expect(seq).toBe(repoText('examples/test/sequence.fdraw').replace(/^look .*\n/, ''));
   await expect(page.locator('.problems')).toHaveText('No problems');
   expect(errors).toEqual([]);
+});
+
+test('`fastdraw open` lends a folder: the diagram opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
+  const dir = mkdtempSync(join(tmpdir(), 'fdopen-'));
+  cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
+  const file = join(dir, 'team-icons.fdraw');
+  const s = await serveFolder(dir, { editor: baseURL!, open: 'team-icons.fdraw' });
+  try {
+    const errors = noPageErrors(page);
+    await page.goto(s.url);
+    await page.waitForSelector('svg.canvas');
+    await saved(page);
+    expect(new URL(page.url()).search).toBe(''); // the link is not kept for a reload
+    expect(lineOf(await source(page), 'vm')).toContain('at 40,96');
+    // an icon from the look's folder is drawn as an image
+    expect(await page.locator('svg.canvas image').count()).toBeGreaterThan(0);
+    // an edit in the editor is written to the file on this computer
+    const k = await zoom(page);
+    await drag(page, await corner(page, 'vm'), 40 * k, 0);
+    await saved(page);
+    expect(lineOf(readFileSync(file, 'utf8'), 'vm')).toContain('at 80,96');
+    // a change made to the file outside the editor shows up
+    writeFileSync(file, readFileSync(file, 'utf8').replace('"Web VM"', '"Web VM 2"'));
+    await expect(page.locator('.status')).toHaveText('updated from disk');
+    expect(lineOf(await source(page), 'vm')).toContain('"Web VM 2"');
+    expect(errors).toEqual([]);
+  } finally { await s.close(); }
 });

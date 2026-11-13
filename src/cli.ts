@@ -8,6 +8,8 @@ import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
 import { check } from './check.ts';
+import { serveFolder, DEFAULT_EDITOR } from './serve.ts';
+import { spawn } from 'node:child_process';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const [cmd, ...args] = process.argv.slice(2);
@@ -23,6 +25,10 @@ function usage(): never {
   init-look [path]                        write the built-in look to a file to make your own
   preview-look [file.look] [-o out.png]   draw every style of a look on one sheet
   icons  [file.look] [word]               list the icons a look offers, or search them
+  open   <file.fdraw> [--editor URL] [--no-browser]
+                                          open the diagram in the web editor (${DEFAULT_EDITOR}) with its
+                                          look, fonts and icons; edits there save back to the file.
+                                          Keeps running while you edit; Ctrl-C stops it
   guide  [topic]                          print the language guide, or the guide for one kind of diagram
   guide  list                             list the kinds of diagram that have a guide`);
   process.exit(2);
@@ -183,4 +189,17 @@ if (cmd === 'check') {
   if (topic === 'list') { console.log(topics.join('\n')); process.exit(0); }
   if (!existsSync(file) || /[\\/]/.test(topic ?? '')) { console.log(`no guide called "${topic}". Topics: ${topics.join(', ')}`); process.exit(1); }
   console.log(readFileSync(file, 'utf8'));
+} else if (cmd === 'open') {
+  const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--editor');
+  if (!file || !file.endsWith('.fdraw') || !existsSync(file)) usage();
+  const ei = args.indexOf('--editor');
+  const editor = ei >= 0 ? args[ei + 1] : process.env.FASTDRAW_EDITOR ?? DEFAULT_EDITOR;
+  const s = await serveFolder(dirname(resolve(file)), { editor, open: basename(file) });
+  console.log(`serving ${dirname(resolve(file))} to the editor until this stops (Ctrl-C)\n${s.url}`);
+  if (!args.includes('--no-browser')) {
+    const [prog, ...pre] = process.platform === 'darwin' ? ['open'] : process.platform === 'win32' ? ['rundll32', 'url.dll,FileProtocolHandler'] : ['xdg-open'];
+    spawn(prog, [...pre, s.url], { stdio: 'ignore', detached: true }).on('error', () => console.log('open the link above in your browser')).unref();
+  }
+  const stop = () => { s.close().then(() => process.exit(0)); };
+  process.on('SIGINT', stop); process.on('SIGTERM', stop);
 } else usage();
