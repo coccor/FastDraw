@@ -1,6 +1,6 @@
-// The ladder pick: diagram-design's style with graphite greys, 2px corners, Newsreader titles, grey page kept, green accent.
+// The ladder pick: diagram-design's style with graphite greys, 2px corners, Newsreader titles, grey dotted page, green accent, sans second lines.
 
-canvas paper=paper
+canvas paper=paper dots=ink/0.09 dotgap=22
 
 color paper  #f5f5f5
 color ink    #1f2328
@@ -14,7 +14,7 @@ font mono  "Geist Mono"
 font serif "Newsreader"
 
 // ---- boxes ----------------------------------------------------------------
-style node shape=rect radius=2 size=144x64 fill=#ffffff stroke=ink sw=1
+style node shape=rect radius=2 size=144x64 fill=#ffffff stroke=ink sw=1 sub.font=sans
     tag.color=ink tag.border=ink/0.4
     use="default box: a backend, service, component or step"
 style focal extends node fill=accent/0.08 stroke=accent
@@ -66,6 +66,6 @@ style dek text font=sans size=14 color=muted use="optional: one line under the t
 
 guidance "focal, terminal-focal and primary are the accent. Use the accent on at most two things in one diagram."
 guidance "tag= is a 3 or 4 letter type marker in the corner of a box (EXT, EDGE, API, DB). Use it on architecture boxes, not flowchart shapes."
-guidance "sub= is for technical detail in mono type: a product name, path, port or protocol. Names of things go in the main text."
+guidance "sub= is a short second line of detail: a product name, path, port or protocol. Names of things go in the main text."
 guidance "kicker and dek are optional. Add a kicker only when the diagram belongs to a named category, and a dek only when there is one clear message; most diagrams need neither."
 guidance "Finish with a legend: one statement, 'legend at x,y' followed by style=\"what it means\" for each style you used."
