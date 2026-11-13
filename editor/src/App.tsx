@@ -148,7 +148,8 @@ export function App() {
   // the right sidebar (components, looks), and the look being tried on the canvas (undefined: none, null: the built-in look)
   const side = useSidebar();
   const lookOpen = !side.collapsed && side.tab === 'look';
-  const sideOpenRef = useRef(!side.collapsed); sideOpenRef.current = !side.collapsed;
+  const sideOpenRef = useRef(side.pinned); sideOpenRef.current = side.pinned;
+  const sideRef = useRef(side); sideRef.current = side;
   const pickerFile = useRef<FileLook>(null);
   const [lookPreview, setLookPreview] = useState<LookChoice | undefined>(undefined);
   const lockedRef = useRef(false); lockedRef.current = locked;
@@ -1032,7 +1033,7 @@ export function App() {
       if (mod && e.key.toLowerCase() === 'v') { if (clip.current.length) { const r = ops.duplicateElements(text, sc, clip.current.filter((id) => ops.find(sc, id))); commit(r.src, r.ids); } return; }
       if (mod) return;
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); actRef.current.remove(); return; }
-      if (e.key === 'Escape') { setSel([]); setTool('select'); setMenuOpen(false); setLookPreview(undefined); setCtx(null); return; }
+      if (e.key === 'Escape') { setSel([]); setTool('select'); setMenuOpen(false); setLookPreview(undefined); setCtx(null); sideRef.current.dismiss(); return; }
       if (e.key === 'Enter' && s.length === 1) { e.preventDefault(); startEditRef.current(s[0]); return; }
       if (e.key.startsWith('Arrow') && s.length) {
         e.preventDefault();
@@ -1057,7 +1058,7 @@ export function App() {
   };
 
   // ---- render -------------------------------------------------------------
-  const closePopups = () => { setMenuOpen(false); setLookPreview(undefined); setCtx(null); };
+  const closePopups = () => { setMenuOpen(false); setLookPreview(undefined); setCtx(null); side.dismiss(); };
   const applyLook = (v: LookChoice) => {
     setLookPreview(undefined);
     if (src === null) return;

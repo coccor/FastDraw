@@ -99,7 +99,7 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .sidehead { display: flex; align-items: center; gap: 2px; padding: 5px; border-bottom: 1px solid var(--line); flex: none; }
 .sidehead [role=tab] { padding: 6px 10px; color: var(--mute); }
 .sidehead [role=tab].on { color: var(--accent-ink); }
-.sidehead .collapse { margin-left: auto; color: var(--mute); }
+.sideacts { margin-left: auto; display: flex; color: var(--mute); }
 .sidebody { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
 .siderail { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px; }
 .siderail .sep { width: 20px; height: 1px; background: var(--line); margin: 3px 0; }

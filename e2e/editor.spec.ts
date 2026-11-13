@@ -5,6 +5,15 @@ import { join, resolve } from 'node:path';
 import { serveFolder } from '../src/serve.ts';
 import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh } from './helpers.ts';
 
+// open the right sidebar on a tab, from the rail or from its own tabs
+async function sidebar(page: import('@playwright/test').Page, name: 'Components' | 'Look') {
+  const rail = page.locator('.siderail').getByRole('button', { name });
+  if (await rail.count()) await rail.click(); else await page.getByRole('tab', { name }).click();
+}
+// start with the sidebar kept open, as when placing many components, so the diagram is fitted beside it
+const pinSidebar = (page: import('@playwright/test').Page) =>
+  page.addInitScript(() => localStorage.setItem('fastdraw.sidebar', JSON.stringify({ tab: 'components', pinned: true })));
+
 const SEQ = 'examples/test/sequence.fdraw';
 const folder = () => ({ [SEQ]: repoText(SEQ), 'looks/reference.look': repoText('looks/reference.look') });
 const SMALL = 'canvas 900x420\nuser: external "Shopper" at 40,160\napi: focal "Orders API" sub="REST" at 280,160\ndb: store "Orders DB" at 560,156\nuser -> api "HTTPS" style=link\nr: api -> db "writes" style=primary\n';
@@ -167,6 +176,7 @@ test('resize from an edge, and Shift keeps the proportions', async ({ page }) =>
 });
 
 test('panel: restyle, switch style, and the components gallery places shapes and lines', async ({ page }) => {
+  await pinSidebar(page);
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
   await page.locator('.panel .swatch[title="accent/0.08"]').click();
@@ -175,7 +185,7 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await page.locator('.panel select').first().selectOption('cloud');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');
-  await page.getByRole('tab', { name: 'Components' }).click();
+  await sidebar(page, 'Components');
   await expect(page.locator('.thumbcard').first()).toBeVisible();
   await page.locator('.thumbcard', { hasText: 'optional' }).first().click();
   await expect(page.locator('.hintbar')).toContainText('Click or drag');
@@ -398,8 +408,9 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
 });
 
 test('a table can be placed from the components gallery', async ({ page }) => {
+  await pinSidebar(page);
   await paste(page, SMALL);
-  await page.getByRole('tab', { name: 'Components' }).click();
+  await sidebar(page, 'Components');
   await page.locator('.thumbcard', { hasText: 'table' }).first().click();
   const spot = await at(page, 700, 320);
   await page.mouse.click(spot.x, spot.y);
@@ -475,9 +486,10 @@ test('polygon: drag a corner, move and resize it', async ({ page }) => {
 });
 
 test('chart: place one from the gallery, change its numbers and add a series', async ({ page }) => {
+  await pinSidebar(page);
   const errors = noPageErrors(page);
   await paste(page, 'canvas 900x500\nt: h1 "Numbers" at 40,52\n');
-  await page.getByRole('tab', { name: 'Components' }).click();
+  await sidebar(page, 'Components');
   await page.locator('.thumbcard', { hasText: 'chart' }).first().click();
   const spot = await at(page, 400, 260);
   await page.mouse.click(spot.x, spot.y);
@@ -494,6 +506,7 @@ test('chart: place one from the gallery, change its numbers and add a series', a
 });
 
 test('icons: choose one for a box in the panel, move it above the text, and place an icon on its own', async ({ page }) => {
+  await pinSidebar(page);
   const errors = noPageErrors(page);
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
@@ -550,7 +563,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
   expect(lineOf(await source(page), 'db')).not.toContain('icon=');
   await page.keyboard.press('Escape');
-  await page.getByRole('tab', { name: 'Components' }).click();
+  await sidebar(page, 'Components');
   await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
@@ -876,7 +889,7 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await paste(page, PLAIN);
   const canvas = page.locator('svg.canvas');
   const title = canvas.locator('text', { hasText: 'Orders API' }).first();
-  await page.getByRole('tab', { name: 'Look' }).click();
+  await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
   await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Headline', 'Night', 'Reference', 'Sketch', 'Whiteboard']);
@@ -895,22 +908,20 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await expect(card('Whiteboard')).toContainText('in use');
   await page.mouse.move(5, 880);
   await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
-  // Esc leaves the sidebar where it is; collapsing it hides the picker and is remembered
+  // Esc folds a sidebar that was opened from the rail
   await page.keyboard.press('Escape');
-  await expect(page.locator('.lookpicker')).toBeVisible();
-  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
   await expect(page.locator('.lookpicker')).toHaveCount(0);
   await page.locator('.problems').click();
   await expect(page.locator('.issuelist')).not.toContainText(/style|look/);
   await page.locator('.problems').click();
-  // hovering then Esc leaves the look in use as it was; the rail opens the sidebar on the Look tab
-  await page.locator('.siderail').getByRole('button', { name: 'Look' }).click();
+  // hovering then Esc leaves the look in use as it was
+  await sidebar(page, 'Look');
   await card('Headline').hover();
   await page.keyboard.press('Escape');
   await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
   expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
   // back to the built-in look removes the line; undo brings it back
-  await page.getByRole('tab', { name: 'Look' }).click();
+  await sidebar(page, 'Look');
   await card('Built-in').click();
   expect(await source(page)).toBe(PLAIN);
   await page.keyboard.press('Escape');
@@ -919,22 +930,40 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   expect(errors).toEqual([]);
 });
 
-test('the right sidebar collapses to a rail, remembers it, and opens again on the tab picked', async ({ page }) => {
+test('the right sidebar: the rail opens it for a moment, the open button keeps it open and remembers it', async ({ page }) => {
   await paste(page, SMALL);
-  await expect(page.getByRole('tab', { name: 'Components' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.thumbcard').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
-  await expect(page.locator('.sidebar')).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
+  const side = page.locator('.sidebar'), canvasAt = async () => { const p = await at(page, 300, 380); await page.mouse.click(p.x, p.y); };
+  await expect(side).toHaveCount(0); // starts as the rail
+  // from the rail: open for a moment, a canvas click folds it
   await page.locator('.siderail').getByRole('button', { name: 'Look' }).click();
   await expect(page.getByRole('tab', { name: 'Look' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.lookcard').first()).toBeVisible();
+  await page.getByRole('tab', { name: 'Components' }).click(); // clicks inside keep it open
+  await expect(page.locator('.thumbcard').first()).toBeVisible();
+  await canvasAt();
+  await expect(side).toHaveCount(0);
+  // pinned from a peek: a canvas click leaves it open
+  await page.locator('.siderail').getByRole('button', { name: 'Components' }).click();
+  await page.getByRole('button', { name: 'Keep sidebar open' }).click();
+  await canvasAt();
+  await expect(side).toBeVisible();
+  // the open-sidebar button pins it too, and a pinned sidebar comes back after a reload
+  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+  await page.getByRole('button', { name: 'Open sidebar' }).click();
+  await canvasAt();
+  await page.keyboard.press('Escape');
+  await expect(side).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Keep sidebar open' })).toHaveCount(0);
+  await page.reload();
+  await expect(side).toBeVisible();
+  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Open sidebar' })).toBeVisible();
 });
 
 test("the look picker keeps a diagram's own look file as a choice, and a bundled look saves as its name", async ({ page }) => {
   await openFolder(page, folder());
-  await page.getByRole('tab', { name: 'Look' }).click();
+  await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
   await expect(cards).toHaveCount(7);
