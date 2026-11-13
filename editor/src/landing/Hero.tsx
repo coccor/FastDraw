@@ -10,9 +10,9 @@ const PROMPT = 'Draw our checkout flow as docs/checkout.fdraw';
 const LINES = [
   'text "Checkout" at 40,56 style=h1',
   'shop: external "Web shop" sub="browser" icon=desktop at 40,104 152x64',
-  'api:  focal "Checkout API" sub="prices, validates" at 304,104 168x64',
-  'pay:  cloud "Payments" sub="card provider" at 560,104 152x64',
-  'db:   store "Orders DB" sub="Postgres" at 304,232 168x64',
+  'api:  focal "Checkout API" sub="prices, validates" icon=cart at 304,104 168x64',
+  'pay:  cloud "Payments" sub="card provider" icon=payment at 560,104 152x64',
+  'db:   store "Orders DB" sub="Postgres" icon=database at 304,232 168x64',
   'shop -> api "places order" style=primary',
   'api -> pay "charges"',
   'api -> db "writes"',
