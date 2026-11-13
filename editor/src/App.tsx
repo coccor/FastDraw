@@ -1245,20 +1245,6 @@ export function App() {
           <span className="status">{status}</span>
           {io.current.pending && <button className="reconnect" title={`Let the editor write to ${io.current.pending.file.name} again`} onClick={() => reconnect(true)}>Reconnect</button>}
         </div>
-        <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
-          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
-          {issues.length ? <TriangleAlert size={15} /> : <Check size={15} />}
-          {issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}
-        </button>
-        {showIssues && issues.length > 0 && (
-          <ul className="island issuelist">
-            {issues.map((i, n) => (
-              <li key={n} className={i.level} onClick={() => { const hit = [...scene.shapes, ...scene.texts, ...scene.conns].find((x) => x.line === i.line); if (hit) setSel([hit.id]); }}>
-                {i.msg}
-              </li>
-            ))}
-          </ul>
-        )}
         <Sidebar side={side}
           components={<Gallery look={scene.look} current={tool} onPick={setTool} />}
           look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} />} />
@@ -1275,6 +1261,23 @@ export function App() {
           <button className="iconbtn" title="Redo — Ctrl+Shift+Z" aria-label="Redo" disabled={!hist.current.future.length} onClick={() => undo(true)}><Redo2 size={16} /></button>
         </div>
         <div className="island group"><ThemeToggle className="iconbtn" /></div>
+      </div>
+
+      <div className="bottomright" onPointerDown={(e) => e.stopPropagation()}>
+        {showIssues && issues.length > 0 && (
+          <ul className="island issuelist">
+            {issues.map((i, n) => (
+              <li key={n} className={i.level} onClick={() => { const hit = [...scene.shapes, ...scene.texts, ...scene.conns].find((x) => x.line === i.line); if (hit) setSel([hit.id]); }}>
+                {i.msg}
+              </li>
+            ))}
+          </ul>
+        )}
+        <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
+          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
+          {issues.length ? <TriangleAlert size={15} /> : <Check size={15} />}
+          {issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}
+        </button>
       </div>
 
       <div className="bottomcenter" onPointerDown={(e) => e.stopPropagation()}>
