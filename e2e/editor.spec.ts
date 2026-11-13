@@ -238,7 +238,7 @@ test('legend from the menu, editable entries, grouping selects together', async 
 test('an exported PNG reopens as the same diagram; a foreign image is refused with a reason', async ({ page }) => {
   await paste(page, SMALL);
   await page.getByRole('button', { name: 'Menu' }).click();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: 'Export as PNG' }).click()]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /Export image/ }).click().then(() => page.getByRole('button', { name: 'Download' }).click())]);
   expect(dl.suggestedFilename()).toBe('pasted-diagram.png');
   const bytes = (await import('node:fs')).readFileSync(await dl.path()).toString('base64');
   const drop = (name: string, b64: string) => page.evaluate(({ name, b64 }) => {
@@ -253,6 +253,44 @@ test('an exported PNG reopens as the same diagram; a foreign image is refused wi
   await expect(page.locator('.filechip b')).toHaveText('from-wiki.fdraw');
   await drop('photo.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
   await expect(page.locator('.status')).toContainText('was not exported from FastDraw');
+});
+
+test('export options: scale, see-through background, leaving the diagram out, SVG, and they are remembered', async ({ page }) => {
+  const fs = await import('node:fs');
+  await paste(page, SMALL);
+  await page.keyboard.press('Control+Shift+E');
+  const dlg = page.getByRole('dialog', { name: 'Export image' });
+  await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 1800 × 840 px');
+  await dlg.getByRole('button', { name: '3×' }).click();
+  await dlg.getByLabel(/Page colour and dots/).uncheck();
+  await dlg.getByLabel(/Carry the diagram/).uncheck();
+  await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 2700 × 1260 px');
+  await expect(dlg.locator('.exportpreview')).toHaveClass(/checker/);
+  const [png] = await Promise.all([page.waitForEvent('download'), dlg.getByRole('button', { name: 'Download' }).click()]);
+  const b = fs.readFileSync(await png.path());
+  expect([b.readUInt32BE(16), b.readUInt32BE(20)]).toEqual([2700, 1260]);
+  expect(b.includes('fastdraw-source')).toBe(false);
+  // the corner of the page is see-through, not the paper colour
+  const alpha = await page.evaluate(async (b64) => {
+    const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d')!; g.drawImage(img, 0, 0); return g.getImageData(2, 2, 1, 1).data[3];
+  }, b.toString('base64'));
+  expect(alpha).toBe(0);
+  await expect(page.locator('.status')).toContainText('exported pasted-diagram.png');
+
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  await expect(dlg.getByRole('button', { name: '3×' })).toHaveAttribute('aria-pressed', 'true'); // the last choices come back
+  await dlg.getByLabel(/Carry the diagram/).check();
+  await dlg.getByRole('button', { name: 'SVG' }).click();
+  await expect(dlg.getByRole('button', { name: '3×' })).toBeDisabled();
+  const [svg] = await Promise.all([page.waitForEvent('download'), dlg.getByRole('button', { name: 'Download' }).click()]);
+  expect(svg.suggestedFilename()).toBe('pasted-diagram.svg');
+  const text = fs.readFileSync(await svg.path(), 'utf8');
+  expect(text).toContain('<metadata id="fastdraw-source">');
+  expect(text).not.toContain('<rect width="900" height="420"');
+  await expect(dlg).toHaveCount(0);
 });
 
 test('routing by hand: drag a run, slide an end, drag the label, reset, and stale routes are dropped', async ({ page }) => {
@@ -490,7 +528,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=sample-screen');
   // an exported image carries the icons it uses, so it still shows them when opened with no folder
   await page.getByRole('button', { name: 'Menu' }).click();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: 'Export as PNG' }).click()]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /Export image/ }).click().then(() => page.getByRole('button', { name: 'Download' }).click())]);
   const bytes = (await import('node:fs')).readFileSync(await dl.path()).toString('base64');
   await fresh(page);
   await page.evaluate((b64) => {

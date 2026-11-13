@@ -4,7 +4,7 @@ import { buildScene, lookPath, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
-import { renderBody, renderSvg, col } from '../../src/render.ts';
+import { renderBody, col } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
@@ -13,15 +13,16 @@ import { Panel, TextField, Swatches } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import {
-  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileCode, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
+  BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
-import { fontCss, setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
-import { embedSvg, embedPng, extractSvg, extractPng } from '../../src/embed.ts';
+import { setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
+import { extractSvg, extractPng } from '../../src/embed.ts';
+import { ExportDialog } from './ExportDialog.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 
 type Drag =
@@ -131,6 +132,7 @@ export function App() {
   const [status, setStatus] = useState('');
   const [showIssues, setShowIssues] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [folderFiles, setFolderFiles] = useState<string[]>([]);
   const [, force] = useState(0);
@@ -953,6 +955,7 @@ export function App() {
       if (text === null) return;
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); return; }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
       if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); setSel([...sc.shapes, ...sc.texts, ...sc.conns].map((x) => x.id)); return; }
@@ -978,20 +981,10 @@ export function App() {
   }, [commit, undo]);
   const startEditRef = useRef(startEdit); startEditRef.current = startEdit;
 
-  const exportAs = async (kind: 'png' | 'svg') => {
+  // What an exported image carries so it can be opened and edited again: the diagram, its look, the icons it uses.
+  const exportPayload = () => {
     const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter(Boolean));
-    const payload = { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
-    const svg = renderSvg(scene, await fontCss(renderSvg(scene)));
-    const base = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
-    if (kind === 'svg') { files.download(base + '.svg', embedSvg(svg, payload), 'image/svg+xml'); return; }
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = scene.w * 2; c.height = scene.h * 2;
-      c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob(async (b) => { if (b) files.download(base + '.png', new Blob([embedPng(new Uint8Array(await b.arrayBuffer()), payload).buffer as ArrayBuffer], { type: 'image/png' })); });
-    };
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    return { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
   };
 
   // ---- render -------------------------------------------------------------
@@ -1128,8 +1121,7 @@ export function App() {
             <button role="menuitem" onClick={() => { closePopups(); openFile(); }}><FileText size={16} />Open file</button>
             <button role="menuitem" onClick={() => { closePopups(); setPasteOpen(true); }}><ClipboardPaste size={16} />Paste diagram text</button>
             <hr />
-            <button role="menuitem" onClick={() => { closePopups(); exportAs('png'); }}><ImageDown size={16} />Export as PNG</button>
-            <button role="menuitem" onClick={() => { closePopups(); exportAs('svg'); }}><FileCode size={16} />Export as SVG</button>
+            <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export image…<kbd>Ctrl ⇧ E</kbd></button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
@@ -1245,6 +1237,7 @@ export function App() {
       )}
 
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
+      {exportOpen && <ExportDialog scene={scene} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
       {templateDialog}
     </div>
   );
