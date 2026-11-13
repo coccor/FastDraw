@@ -108,10 +108,10 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 /* the illustration: a full-width band that is the Atlas look's own page, the diagram drawn onto it */
 .art {
   margin: 48px calc(50% - 50vw) 0; padding: 88px max(24px, calc(50vw - 660px)) 64px;
-  background-color: #f3f2fb;
-  background-image: radial-gradient(circle at 1px 1px, rgba(109, 74, 255, .10) 0.9px, transparent 1.2px);
-  background-size: 20px 20px;
-  border-top: 1px solid rgba(109, 74, 255, .10);
+  background-color: #f6f7fb;
+  background-image: radial-gradient(circle at 1px 1px, rgba(15, 23, 42, .07) 0.9px, transparent 1.2px);
+  background-size: 24px 24px;
+  border-top: 1px solid rgba(15, 23, 42, .06);
 }
 .arthead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 56px; align-items: end; padding: 0 20px; }
 .arthead .lede { margin: 0; }
@@ -360,8 +360,6 @@ footer .muted { color: #9a95c4; }
     animation: glint 6s 2s ease-in-out infinite;
   }
 
-  /* the order travelling through the illustration */
-  .token circle:first-child { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 }
 @keyframes rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
 @keyframes drift {
@@ -370,4 +368,4 @@ footer .muted { color: #9a95c4; }
   100% { transform: translate(2%, -2%) scale(.97); }
 }
 @keyframes glint { 0%, 70% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
-@keyframes pulse { 0%, 100% { transform: scale(.8); opacity: .25; } 50% { transform: scale(1.35); opacity: .08; } }
+

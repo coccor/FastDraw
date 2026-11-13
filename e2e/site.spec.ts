@@ -30,13 +30,13 @@ test('the showcase redraws the same file in each look, and the page does not scr
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
-test('the illustration draws with its own look and its colour pictures', async ({ page }) => {
+test('the feature diagram draws in its own look, with zones, steps and a chart', async ({ page }) => {
   await page.goto('/');
   const svg = page.locator('.artframe svg');
-  await svg.scrollIntoViewIfNeeded(); // it builds itself once it comes into view
-  await expect(svg).toContainText('The life of an order');
-  await expect.poll(() => svg.locator('image').count(), { timeout: 10_000 }).toBeGreaterThanOrEqual(10);
-  await expect(page.locator('.token')).toHaveCount(1); // and then the order starts travelling
+  await svg.scrollIntoViewIfNeeded();
+  await expect(svg).toContainText('How an order is placed');
+  await expect(svg).toContainText('Private network 10.0.0.0/16');
+  await expect(svg).toContainText('Observability');
 });
 
 test('the guide is served for agents: llms.txt and each kind', async ({ request }) => {
