@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { parseLook } from '../../src/look.ts';
+import { parseLook, color } from '../../src/look.ts';
 import { buildScene, lookPath, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
@@ -9,7 +9,7 @@ import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
 import * as served from './served.ts';
-import { Panel, TextField } from './Panel.tsx';
+import { Panel, TextField, Swatches } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import {
@@ -83,6 +83,36 @@ const TOOLS: [string, string, string][] = [
   ['hand', 'Hand (pan)', 'H'], ['select', 'Select', 'V'], ['rect', 'Rectangle', 'R'], ['ellipse', 'Ellipse', 'O'], ['diamond', 'Diamond', 'D'],
   ['arrow', 'Arrow', 'A'], ['line', 'Line', 'L'], ['freehand', 'Draw', 'P'], ['text', 'Text', 'T'],
 ];
+
+// Background colours offered besides the look's own: plain white and a few light, cool tints.
+const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
+
+// The page's colour and dot grid. Choices are written to the diagram's canvas line (paper=, dots=),
+// so they override the look for this diagram only; picking the look's own colour drops the override.
+function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string, string | null>) => void }) {
+  const base = scene.baseCanvas ?? {}, cv = scene.look.canvas;
+  const basePaper = base.paper ?? 'paper', paper = cv.paper ?? 'paper';
+  const dotsOn = !!cv.dots && cv.dots !== 'none';
+  const overridden = ['paper', 'dots', 'dotgap'].some((k) => cv[k] !== base[k]);
+  const hex = color(scene.look, paper);
+  return (
+    <div className="canvasbg">
+      <span>Background</span>
+      <div className="row">
+        <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
+          onPick={(v) => set({ paper: v === basePaper ? null : v })} />
+        <label className="custom" title="Any colour">
+          <input type="color" aria-label="Custom background colour" value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#ffffff'} onChange={(e) => set({ paper: e.target.value })} />
+        </label>
+      </div>
+      <label className="check">
+        <input type="checkbox" checked={dotsOn} onChange={() => set({ dots: dotsOn ? 'none' : base.dots && base.dots !== 'none' ? null : 'ink/0.1' })} />
+        Dot grid
+      </label>
+      {overridden && <button className="link" onClick={() => set({ paper: null, dots: null, dotgap: null })}>Use the look's background</button>}
+    </div>
+  );
+}
 
 export function App() {
   const [src, setSrcState] = useState<string | null>(null);
@@ -858,7 +888,7 @@ export function App() {
     align: (m: ops.AlignMode) => src !== null && commit(ops.align(src, scene, sel, m)),
     remove: () => src !== null && sel.length > 0 && commit(ops.deleteElements(src, scene, sel), []),
     duplicate: () => { if (src === null || !sel.length) return; const r = ops.duplicateElements(src, scene, sel); commit(r.src, r.ids); },
-    setCanvas: (w: number, h: number) => src !== null && commit(ops.setCanvas(src, scene, w, h)),
+    setCanvas: (w: number, h: number, bg?: Record<string, string | null>) => src !== null && commit(ops.setCanvas(src, scene, w, h, bg)),
     group: () => src !== null && sel.length > 1 && commit(ops.groupElements(src, scene, sel)),
     ungroup: () => src !== null && commit(ops.setProps(src, scene, sel, 'group', null)),
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
@@ -1101,6 +1131,7 @@ export function App() {
               <TextField label="Width" value={String(scene.w)} onCommit={(v) => +v > 0 && act.setCanvas(+v, scene.h)} />
               <TextField label="Height" value={String(scene.h)} onCommit={(v) => +v > 0 && act.setCanvas(scene.w, +v)} />
             </div>
+            <BackgroundMenu scene={scene} set={(bg) => act.setCanvas(scene.w, scene.h, bg)} />
           </div>
         )}
         <Panel sc={scene} src={cur} sel={sel} act={act} />

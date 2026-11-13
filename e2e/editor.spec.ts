@@ -740,3 +740,19 @@ test('`fastdraw open` lends a folder: the diagram opens with its look and icons,
     expect(errors).toEqual([]);
   } finally { await s.close(); }
 });
+
+test('the menu changes the background for this diagram, keeps it on resize, and resets to the look', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.locator('.canvasbg [aria-label="#ffffff"]').click();
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas 900x420 paper=#ffffff');
+  await page.locator('.canvasbg').getByLabel('Dot grid').click();
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas 900x420 paper=#ffffff dots=none');
+  await expect(page.locator('svg.canvas rect[fill="url(#fd-dots)"]')).toHaveCount(0);
+  const width = page.locator('.canvassize input').first();
+  await width.fill('1000');
+  await width.press('Enter');
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas 1000x420 paper=#ffffff dots=none');
+  await page.getByRole('button', { name: "Use the look's background" }).click();
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas 1000x420');
+});

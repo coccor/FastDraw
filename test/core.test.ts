@@ -585,3 +585,26 @@ test('fastdraw render: --transparent and --no-embed', async () => {
   cli('-o', join(dir, 'c.png'), '--no-embed');
   assert.equal(extractPng(new Uint8Array(readFileSync(join(dir, 'c.png')))), null);
 });
+
+test('a diagram\'s canvas line can override the look\'s background; the editor keeps it when resizing', async () => {
+  const sc = buildScene('look "x.look"\ncanvas 400x200 paper=#ffffff dots=none\na: node "A" at 20,20', look);
+  assert.equal(sc.issues.length, 0);
+  assert.equal(sc.look.canvas.paper, '#ffffff');
+  assert.equal(sc.baseCanvas!.paper, 'paper');
+  assert.equal(look.canvas.paper, 'paper', 'the shared look is not changed');
+  const svg = renderSvg(sc);
+  assert.match(svg, /fill="#ffffff"/);
+  assert.doesNotMatch(svg, /fd-dots/);
+  assert.match(buildScene('look "x.look"\ncanvas 400x200 fill=#fff', look).issues[0].msg, /canvas only takes a size/);
+
+  const { setCanvas } = await import('../editor/src/ops.ts');
+  const src = 'look "x.look"\ncanvas 400x200 paper=#eef2f7\na: node "A" at 20,20';
+  const resized = setCanvas(src, buildScene(src, look), 500, 300);
+  assert.match(resized, /^canvas 500x300 paper=#eef2f7$/m);
+  const dotsOff = setCanvas(resized, buildScene(resized, look), 500, 300, { dots: 'none' });
+  assert.match(dotsOff, /^canvas 500x300 paper=#eef2f7 dots=none$/m);
+  const reset = setCanvas(dotsOff, buildScene(dotsOff, look), 500, 300, { paper: null, dots: null });
+  assert.match(reset, /^canvas 500x300$/m);
+  const noLine = 'look "x.look"\na: node "A" at 20,20';
+  assert.match(setCanvas(noLine, buildScene(noLine, look), 600, 400, { paper: '#ffffff' }), /^look "x.look"\ncanvas 600x400 paper=#ffffff\n/);
+});
