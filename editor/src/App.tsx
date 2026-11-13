@@ -8,6 +8,7 @@ import { renderBody, renderSvg, col } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
+import * as served from './served.ts';
 import { Panel, TextField } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { TemplateDialog } from './Templates.tsx';
@@ -375,6 +376,28 @@ export function App() {
       else setStatus('no .fdraw files in that folder');
     } catch { /* picker cancelled */ }
   }, [openPath]);
+
+  // Opened by `fastdraw open` on this computer: the folder it lends, at the diagram it names.
+  // The link is taken out of the address bar so a reload does not open a second tab of it.
+  const servedOnce = useRef(false);
+  useEffect(() => {
+    if (!ready || servedOnce.current) return;
+    servedOnce.current = true;
+    const link = served.servedLink(location.search);
+    if (!link) return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    (async () => {
+      try {
+        const folder = await files.scanFolder(await served.openServed(link.base));
+        const path = folder.files.includes(link.open) ? link.open : folder.files[0];
+        if (!path) { setStatus('no .fdraw files in that folder'); return; }
+        io.current = { fileMod: 0, lookMod: 0, written: '', folder };
+        await openPath(folder, path);
+      } catch {
+        setStatus('could not reach `fastdraw open` on this computer; run it again');
+      }
+    })();
+  }, [ready, openPath]);
 
   const openFile = useCallback(async () => {
     try {

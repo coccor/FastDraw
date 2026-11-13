@@ -11,6 +11,7 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 5. Write the file.
 6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
 7. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 6 until it is clean and looks good.
+8. To hand the diagram to a person for changes, run `fastdraw open <file>` in the background. It opens the web editor at the diagram, with its look, and saves their edits into the same file. Read the file again before you change it after that.
 
 When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
 
