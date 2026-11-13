@@ -559,6 +559,11 @@ export function App() {
   const editBox = (sc: Scene, id: string, entry?: string): Box | null => {
     const e = ops.find(sc, id);
     if (!e) return null;
+    if (entry !== undefined && e.kind === 'shape' && e.el.shape !== 'legend') {
+      // a tag sits in the top band; a second line anywhere in the shape, as it moves while the text grows
+      const s = e.el;
+      return entry === 'tag' ? { x: s.x, y: s.y, w: s.w, h: 24 } : { x: s.x, y: s.y, w: s.w, h: s.h };
+    }
     if (entry !== undefined && e.kind === 'shape') {
       const lg = legendParts(e.el).find((x) => x.key === entry);
       return lg ? lg.box : null;
@@ -594,7 +599,29 @@ export function App() {
       setEditing({ id, entry: pick.key, value: pick.value, box: pick.box });
       return;
     }
+    if (e.kind === 'shape' && at) {
+      // a corner tag or a second line under the pointer is edited on its own, as the property it is
+      const part = shapePartAt(e.el, at);
+      if (part) { setEditing({ id, entry: part, value: e.el.p[part], box: editBox(scene, id, part)! }); return; }
+    }
     setEditing({ id, value: ops.rawText(src, e), box: editBox(scene, id)! });
+  };
+  // Which of a shape's extra texts (its corner tag, its second line) is drawn under the point, if any.
+  const shapePartAt = (s: Shape, at: Pt): 'tag' | 'sub' | null => {
+    const g = bodyRef.current;
+    if (!g || s.shape === 'legend') return null;
+    const norm = (v: string) => v.replace(/\s+/g, ' ').trim().toLowerCase();
+    const tag = s.p.tag ? norm(s.p.tag) : '', subs = s.p.sub ? s.p.sub.split('\n').map(norm).filter(Boolean) : [];
+    if (!tag && !subs.length) return null;
+    for (const t of Array.from(g.querySelectorAll('text'))) {
+      const bb = t.getBBox();
+      if (at.x < bb.x - 3 || at.x > bb.x + bb.width + 3 || at.y < bb.y - 3 || at.y > bb.y + bb.height + 3) continue;
+      if (bb.x < s.x - 2 || bb.x + bb.width > s.x + s.w + 2 || bb.y < s.y - 2 || bb.y + bb.height > s.y + s.h + 2) continue;
+      const v = norm(t.textContent ?? '');
+      if (tag && v === tag && bb.y < s.y + 24) return 'tag';
+      if (subs.includes(v)) return 'sub';
+    }
+    return null;
   };
   // the source with the text being edited put in: a legend entry is a property, anything else its text
   const withEdit = (ed: NonNullable<Editing>, value: string, final: boolean): string | null => {
