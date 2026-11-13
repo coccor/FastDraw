@@ -41,7 +41,7 @@ export function Showcase() {
 
   return (
     <section className="showcase" ref={ref} aria-labelledby="showcase-title">
-      <div className="showhead">
+      <div className="showhead" data-reveal="">
         <h2 id="showcase-title">One text file. Any look your team wants.</h2>
         <p className="lede">
           An agent wrote this diagram from the guide. Pick a look and the same file is drawn again: a team keeps its
@@ -57,7 +57,7 @@ export function Showcase() {
         ))}
         <span className="lookabout">{LOOKS[i].about}</span>
       </div>
-      <figure className="showframe">
+      <figure className="showframe" data-reveal="">
         <svg key={i} viewBox={view.box} role="img" aria-label={`The shop platform architecture, drawn in the ${LOOKS[i].name} look`}
           dangerouslySetInnerHTML={{ __html: view.body }} />
       </figure>

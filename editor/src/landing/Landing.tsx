@@ -80,7 +80,7 @@ function Setup() {
   };
   const agent = AGENTS.find((a) => a.id === tab)!;
   return (
-    <div className="setup">
+    <div className="setup" data-reveal="">
       <div className="tabs" role="tablist" aria-label="Your agent" ref={ref} onKeyDown={move}>
         {AGENTS.map((a) => (
           <button key={a.id} id={`tab-${a.id}`} role="tab" aria-selected={a.id === tab} aria-controls="setup-panel"
@@ -99,7 +99,7 @@ const ASKS = [
 ];
 
 // A kind's example, drawn once it scrolls into view.
-function Tile({ t }: { t: Template }) {
+function Tile({ t, i }: { t: Template; i: number }) {
   const ref = useRef<HTMLAnchorElement>(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
@@ -115,7 +115,7 @@ function Tile({ t }: { t: Template }) {
     return { body: renderBody(sc), box: `${sc.x} ${sc.y} ${sc.w} ${sc.h}` };
   }, [seen, t]);
   return (
-    <a ref={ref} className="tile" href={`edit/?kind=${encodeURIComponent(t.kind)}`}>
+    <a ref={ref} className="tile" data-reveal="" style={{ ["--d" as string]: i % 4 }} href={`edit/?kind=${encodeURIComponent(t.kind)}`}>
       <span className="pic">
         {view && <svg viewBox={view.box} preserveAspectRatio="xMidYMid meet" aria-hidden="true" dangerouslySetInnerHTML={{ __html: view.body }} />}
       </span>
@@ -125,7 +125,24 @@ function Tile({ t }: { t: Template }) {
   );
 }
 
+// Things marked data-reveal rise into place the first time they scroll into view.
+function useReveal() {
+  useEffect(() => {
+    const els = [...document.querySelectorAll<HTMLElement>('[data-reveal]')];
+    if (typeof IntersectionObserver !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      els.forEach((el) => el.classList.add('in'));
+      return;
+    }
+    const io = new IntersectionObserver((es) => {
+      for (const e of es) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }, { rootMargin: '0px 0px -8% 0px' });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
 export function Landing() {
+  useReveal();
   return (
     <>
       <header className="top">
@@ -160,13 +177,13 @@ export function Landing() {
         <Showcase />
 
         <section id="setup" className="block">
-          <h2>Set up your agent</h2>
+          <h2 data-reveal="">Set up your agent</h2>
           <p className="lede">
             One command in your repository adds a short instruction file that points your agent at the guide. The tool
             runs through <code>npx</code>, so there is nothing else to install. It needs Node 20 or later.
           </p>
           <Setup />
-          <div className="next">
+          <div className="next" data-reveal="">
             <div>
               <h3>Then ask for a diagram</h3>
               <ul className="asks">{ASKS.map((a) => <li key={a}>{a}</li>)}</ul>
@@ -181,19 +198,19 @@ export function Landing() {
         </section>
 
         <section className="block why">
-          <h2>Why a text file</h2>
+          <h2 data-reveal="">Why a text file</h2>
           <dl>
-            <div><dt><span className="mark violet" aria-hidden="true"><GitPullRequest size={19} /></span>It is reviewed like code</dt><dd>Diagrams live in the repository next to what they describe. A change shows up as a few lines in a diff.</dd></div>
-            <div><dt><span className="mark coral" aria-hidden="true"><MousePointer2 size={19} /></span>Your edits are kept</dt><dd>Moving a box changes one line. The agent leaves what you arranged alone and places only what it adds.</dd></div>
-            <div><dt><span className="mark teal" aria-hidden="true"><Palette size={19} /></span>One look for the whole team</dt><dd>A <code>.look</code> file names the styles: what a service, a store or the main path looks like. Every diagram follows it.</dd></div>
-            <div><dt><span className="mark sky" aria-hidden="true"><ShieldCheck size={19} /></span>Nothing is uploaded</dt><dd>The editor runs in your browser and saves to your files. Exported PNG and SVG files carry the diagram inside, so they open for editing again.</dd></div>
+            <div data-reveal="" style={{ ["--d" as string]: 0 }}><dt><span className="mark violet" aria-hidden="true"><GitPullRequest size={19} /></span>It is reviewed like code</dt><dd>Diagrams live in the repository next to what they describe. A change shows up as a few lines in a diff.</dd></div>
+            <div data-reveal="" style={{ ["--d" as string]: 1 }}><dt><span className="mark coral" aria-hidden="true"><MousePointer2 size={19} /></span>Your edits are kept</dt><dd>Moving a box changes one line. The agent leaves what you arranged alone and places only what it adds.</dd></div>
+            <div data-reveal="" style={{ ["--d" as string]: 2 }}><dt><span className="mark teal" aria-hidden="true"><Palette size={19} /></span>One look for the whole team</dt><dd>A <code>.look</code> file names the styles: what a service, a store or the main path looks like. Every diagram follows it.</dd></div>
+            <div data-reveal="" style={{ ["--d" as string]: 3 }}><dt><span className="mark sky" aria-hidden="true"><ShieldCheck size={19} /></span>Nothing is uploaded</dt><dd>The editor runs in your browser and saves to your files. Exported PNG and SVG files carry the diagram inside, so they open for editing again.</dd></div>
           </dl>
         </section>
 
         <section id="kinds" className="block">
-          <h2>{TEMPLATES.length} kinds of diagram, each with a guide the agent follows</h2>
+          <h2 data-reveal="">{TEMPLATES.length} kinds of diagram, each with a guide the agent follows</h2>
           <p className="lede">Every example below was drawn by an agent from the guide alone. Open one to change it in the editor.</p>
-          <div className="tiles">{TEMPLATES.map((t) => <Tile key={t.kind} t={t} />)}</div>
+          <div className="tiles">{TEMPLATES.map((t, i) => <Tile key={t.kind} t={t} i={i} />)}</div>
         </section>
       </main>
 
