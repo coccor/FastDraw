@@ -7,13 +7,16 @@ import { renderBody } from '../../../src/render.ts';
 import { parseLook } from '../../../src/look.ts';
 import source from '../../../examples/showcase/options/1-cloud.fdraw?raw';
 import lookSource from '../../../examples/showcase/options/harbor.look?raw';
+import nightSource from '../../../examples/showcase/options/harbor-night.look?raw';
+import { useTheme } from '../theme.ts';
 
 export function Illustration() {
   const [showText, setShowText] = useState(false);
+  const theme = useTheme();
   const view = useMemo(() => {
-    const sc = buildScene(source, parseLook(lookSource, 'harbor.look'));
+    const sc = buildScene(source, theme === 'dark' ? parseLook(nightSource, 'harbor-night.look') : parseLook(lookSource, 'harbor.look'));
     return { body: renderBody(sc, false), box: `${sc.x} ${sc.y} ${sc.w} ${sc.h}` };
-  }, []);
+  }, [theme]);
 
   return (
     <section className="art" aria-labelledby="art-title">
@@ -32,7 +35,7 @@ export function Illustration() {
         <button className="linkish" aria-expanded={showText} onClick={() => setShowText((v) => !v)}>
           {showText ? 'Hide the file' : `Show the file (${source.trim().split('\n').length} lines)`}
         </button>
-        <span className="muted">Drawn with <code>harbor.look</code>, which sets the colours, the zones and the icons.</span>
+        <span className="muted">Drawn with <code>{theme === 'dark' ? 'harbor-night.look' : 'harbor.look'}</code>, which sets the colours, the zones and the icons.</span>
       </div>
       {showText && <pre className="showsrc">{source}</pre>}
     </section>

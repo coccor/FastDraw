@@ -26,6 +26,7 @@ import demoLook from '../../looks/reference.look?raw';
 import { setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
+import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 
 type Drag =
@@ -1277,6 +1278,7 @@ export function App() {
           <button className="iconbtn" title="Undo — Ctrl+Z" aria-label="Undo" disabled={!hist.current.past.length} onClick={() => undo(false)}><Undo2 size={16} /></button>
           <button className="iconbtn" title="Redo — Ctrl+Shift+Z" aria-label="Redo" disabled={!hist.current.future.length} onClick={() => undo(true)}><Redo2 size={16} /></button>
         </div>
+        <div className="island group"><ThemeToggle className="iconbtn" /></div>
       </div>
 
       <div className="bottomcenter" onPointerDown={(e) => e.stopPropagation()}>

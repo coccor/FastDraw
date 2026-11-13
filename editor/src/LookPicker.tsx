@@ -11,7 +11,7 @@ import { setLook } from './ops.ts';
 export type LookChoice = string | null;
 export type FileLook = { path: string; look: Look } | null;
 
-const LABEL: Record<string, string> = { headline: 'Headline', reference: 'Reference', sketch: 'Sketch', whiteboard: 'Whiteboard' };
+const LABEL: Record<string, string> = { headline: 'Headline', night: 'Night', reference: 'Reference', sketch: 'Sketch', whiteboard: 'Whiteboard' };
 export const lookLabel = (v: LookChoice, file: FileLook) => (v === null ? 'Built-in' : file && v === file.path ? 'This diagram’s look file' : LABEL[v] ?? v);
 
 function Thumb({ src, value, file }: { src: string; value: LookChoice; file: FileLook }) {

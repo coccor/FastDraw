@@ -2,7 +2,7 @@
 
 A look is one text file (`.look`) that decides how every style is drawn: colours, fonts, shapes, lines and text. Diagrams point to it with `look "./team.look"`. Change the look and every diagram that uses it changes.
 
-Four looks ship with FastDraw and need no file: `look headline`, `look reference`, `look sketch` and `look whiteboard` (a bare name, no quotes or `.look`). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
+Five looks ship with FastDraw and need no file: `look headline`, `look night`, `look reference`, `look sketch` and `look whiteboard` (a bare name, no quotes or `.look`). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
 
 ## How to work
 
@@ -43,7 +43,7 @@ guidance "Use focal on at most two things in one diagram."
 
 ### Colours
 
-A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names.
+A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names. `card` is the fill of a plain box (white unless a look sets it; a dark look sets it to its box colour), so a diagram that writes `fill=card` stays right in every look.
 
 ### Fonts
 

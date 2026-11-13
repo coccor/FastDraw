@@ -7,11 +7,14 @@ import { buildScene } from '../../../src/scene.ts';
 import { bundledLook } from '../../../src/look.ts';
 import { withIconImages } from '../../../src/iconfiles.ts';
 import { renderBody } from '../../../src/render.ts';
+import { useTheme } from '../theme.ts';
 
 // drawn in the Whiteboard look: sticky-note colours, so the first picture on the page is a lively one
 // with the colour pictures from the illustration's look folder, so its boxes carry colour icons
 const PICTURES = import.meta.glob('../../../examples/showcase/icons/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
-const LOOK = withIconImages(bundledLook('whiteboard')!, Object.entries(PICTURES).map(([path, svg]) => ({ name: path.replace(/^.*\//, ''), bytes: new TextEncoder().encode(svg) })));
+const ICONS = Object.entries(PICTURES).map(([path, svg]) => ({ name: path.replace(/^.*\//, ''), bytes: new TextEncoder().encode(svg) }));
+const LOOK = withIconImages(bundledLook('whiteboard')!, ICONS);
+const NIGHT = withIconImages(bundledLook('night')!, ICONS);
 
 const PROMPT = 'Draw our checkout flow as docs/checkout.fdraw';
 const LINES = [
@@ -79,8 +82,9 @@ export function Hero() {
   }, [run, reduced]);
 
   const text = LINES.slice(0, s.lines).map((l, i) => (i === PAY ? payLine(s.payY) : l)).join('\n');
-  const final = useMemo(() => buildScene(LINES.join('\n'), LOOK), []);
-  const body = useMemo(() => renderBody(buildScene(text, LOOK), false), [text]);
+  const look = useTheme() === 'dark' ? NIGHT : LOOK;
+  const final = useMemo(() => buildScene(LINES.join('\n'), look), [look]);
+  const body = useMemo(() => renderBody(buildScene(text, look), false), [text, look]);
   const hs = 7; // handle size, in diagram units
   const corners = [[0, 0], [0.5, 0], [1, 0], [1, 0.5], [1, 1], [0.5, 1], [0, 1], [0, 0.5]];
 

@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-export const NAMES = ['headline', 'reference', 'sketch', 'whiteboard'];
+export const NAMES = ['headline', 'night', 'reference', 'sketch', 'whiteboard'];
 
 export function generate(root = new URL('..', import.meta.url)) {
   const body = NAMES.map((n) => `  ${n}: ${JSON.stringify(readFileSync(new URL(`looks/${n}.look`, root), 'utf8'))},`).join('\n');

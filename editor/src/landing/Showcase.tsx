@@ -1,21 +1,23 @@
-// One rich diagram, large, redrawn live in each look that ships with FastDraw: the same text, four
+// One rich diagram, large, redrawn live in each look that ships with FastDraw: the same text, five
 // different pictures. Looks step on their own while the section is in view, until a person picks one.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { buildScene } from '../../../src/scene.ts';
 import { renderBody } from '../../../src/render.ts';
 import source from './showcase.fdraw?raw';
+import { currentTheme } from '../theme.ts';
 
 const LOOKS: { id: string; name: string; about: string }[] = [
   { id: 'whiteboard', name: 'Whiteboard', about: 'Sticky-note colours, rounded boxes, curved lines' },
   { id: 'sketch', name: 'Sketch', about: 'Drawn by hand, for early ideas' },
   { id: 'headline', name: 'Headline', about: 'Flat blocks and one strong colour, for print' },
   { id: '', name: 'Built-in', about: 'Rounded cards, tinted zones and one indigo, the default' },
+  { id: 'night', name: 'Night', about: 'The built-in look after dark' },
 ];
 
 const withLook = (look: string) => source.replace(/^look .*\n/, look ? `look ${look}\n` : '');
 
 export function Showcase() {
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(() => (currentTheme() === 'dark' ? LOOKS.findIndex((l) => l.id === 'night') : 0));
   const [picked, setPicked] = useState(false);
   const [showText, setShowText] = useState(false);
   const ref = useRef<HTMLElement>(null);

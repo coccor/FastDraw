@@ -59,7 +59,7 @@ const BUILTIN: Style[] = [
 
 export function emptyLook(): Look {
   const look: Look = {
-    colors: new Map([['ink', '#222222'], ['muted', '#666666'], ['paper', '#ffffff']]),
+    colors: new Map([['ink', '#222222'], ['muted', '#666666'], ['paper', '#ffffff'], ['card', '#ffffff']]),
     fonts: new Map([['sans', 'Helvetica'], ['mono', 'monospace'], ['serif', 'serif']]),
     fontDirs: [],
     canvas: {},

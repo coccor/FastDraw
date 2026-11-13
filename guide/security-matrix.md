@@ -9,12 +9,12 @@ Title at 40,52 (`style=h1`); the header row starts at y=96. A `table`/`matrix` w
 ```
 // columns: labels at x=40 (200 wide), then one per role: x = 248 + 144*j, 136 wide
 // rows: header at y=96 (52 high), then y = 160 + 40*k, 36 high
-corner: rect "Component" sub="vs. AD group" at 40,96 200x52 radius=6 fill=#ffffff stroke=ink/0.12 title.size=11
+corner: rect "Component" sub="vs. AD group" at 40,96 200x52 radius=6 fill=card stroke=ink/0.12 title.size=11
 r1: rect "Data Engineer" sub="GRP-DATA-ENG" at 248,96 136x52 radius=6 fill=ink/0.07 stroke=none title.weight=700 sub.color=muted title.size=11
 
-c1: rect "Object storage" at 40,160 200x36 radius=4 fill=#ffffff stroke=ink/0.12 title.size=11 title.align=left
+c1: rect "Object storage" at 40,160 200x36 radius=4 fill=card stroke=ink/0.12 title.size=11 title.align=left
 text "S3" at 228,181 style=small anchor=end
-c11: rect "Write" at 248,160 136x36 radius=4 title.size=10 title.weight=400 stroke=ink/0.12 fill=#ffffff
+c11: rect "Write" at 248,160 136x36 radius=4 title.size=10 title.weight=400 stroke=ink/0.12 fill=card
 ```
 
 Four levels, and only four. The cell text is free ("SELECT", "Login", "R/W"); the look of the cell comes from the level it belongs to:
@@ -22,7 +22,7 @@ Four levels, and only four. The cell text is free ("SELECT", "Login", "R/W"); th
 | Level | Add to the cell |
 |---|---|
 | Full / admin | `fill=ink/0.12 title.weight=600` |
-| Read and write | `fill=#ffffff title.weight=400` |
+| Read and write | `fill=card title.weight=400` |
 | Read only | `fill=muted/0.08 title.color=muted title.weight=400` |
 | No access | `fill=none title.color=soft title.weight=400` |
 

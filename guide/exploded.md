@@ -10,7 +10,7 @@ FastDraw has no 3D. A plate is four `rect`s with the same `at` and size, each wi
 // title at y=52. One plate: a square slab with rounded corners, 384 wide and 208 high on screen (16 of that is its thickness).
 // This is the bottom one of three: y = 96 + 116 * 2
 title: text "What the thermostat is made of" at 40,52 style=h1
-data: rect at 208,328 384x208 fill=#ffffff stroke=ink sw=1.2 overlap=ok shape=path
+data: rect at 208,328 384x208 fill=card stroke=ink sw=1.2 overlap=ok shape=path
     path="M0,0.462 Q0.003,0.442 0.013,0.433 L0.469,0.029 Q0.5,0 0.531,0.029 L0.987,0.433 Q0.997,0.442 1,0.462 L1,0.538 Q0.997,0.558 0.987,0.567 L0.531,0.971 Q0.5,1 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z"
 rect at 208,328 384x208 fill=ink/0.07 stroke=none overlap=ok mask=0 shape=path     // left face, lit
     path="M0,0.462 Q0.003,0.481 0.013,0.49 L0.469,0.894 Q0.484,0.909 0.5,0.909 L0.5,0.986 Q0.484,0.986 0.469,0.971 L0.013,0.567 Q0.003,0.558 0,0.538 Z"
