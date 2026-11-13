@@ -503,8 +503,26 @@ export function App() {
       const s = e0.el;
       let x1 = s.x, y1 = s.y, x2 = s.x + s.w, y2 = s.y + s.h;
       const q = e.altKey ? { x: p.x + d.dx, y: p.y + d.dy } : { x: snap(p.x + d.dx), y: snap(p.y + d.dy) };
-      if (d.corner.includes('w')) x1 = Math.min(q.x, x2 - 8); else x2 = Math.max(q.x, x1 + 8);
-      if (d.corner.includes('n')) y1 = Math.min(q.y, y2 - 8); else y2 = Math.max(q.y, y1 + 8);
+      // a corner moves both sides, an edge handle only its own side
+      const hx = /[we]/.test(d.corner), hy = /[ns]/.test(d.corner);
+      if (hx) { if (d.corner.includes('w')) x1 = Math.min(q.x, x2 - 8); else x2 = Math.max(q.x, x1 + 8); }
+      if (hy) { if (d.corner.includes('n')) y1 = Math.min(q.y, y2 - 8); else y2 = Math.max(q.y, y1 + 8); }
+      if (e.shiftKey && s.w > 0 && s.h > 0) {
+        // Shift keeps the shape's proportions: a corner scales from the opposite corner by whichever side
+        // moved further, an edge scales the other side to match, keeping the shape centred on that axis
+        const ar = s.w / s.h;
+        let w = x2 - x1, h = y2 - y1;
+        if (hx && hy) { if (w / s.w >= h / s.h) h = w / ar; else w = h * ar; }
+        else if (hx) h = w / ar; else w = h * ar;
+        if (w < 8) { w = 8; h = w / ar; }
+        if (h < 8) { h = 8; w = h * ar; }
+        w = Math.round(w); h = Math.round(h);
+        if (hx && hy) {
+          if (d.corner.includes('w')) x1 = x2 - w; else x2 = x1 + w;
+          if (d.corner.includes('n')) y1 = y2 - h; else y2 = y1 + h;
+        } else if (hx) { y1 = Math.round(s.y + s.h / 2 - h / 2); y2 = y1 + h; }
+        else { x1 = Math.round(s.x + s.w / 2 - w / 2); x2 = x1 + w; }
+      }
       setDraft(ops.resizeShape(d.base, s, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }));
       return;
     }
@@ -788,8 +806,17 @@ export function App() {
           </g>
           {single?.kind === 'shape' && tool === 'select' && !editing && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
-              {([['nw', single.el.x - 4, single.el.y - 4], ['ne', single.el.x + single.el.w + 4, single.el.y - 4], ['sw', single.el.x - 4, single.el.y + single.el.h + 4], ['se', single.el.x + single.el.w + 4, single.el.y + single.el.h + 4]] as [string, number, number][])
-                .map(([c, x, y]) => <rect key={c} data-handle={c} x={x - hs / 2} y={y - hs / 2} width={hs} height={hs} rx={1.5 / view.k} style={{ cursor: c === 'nw' || c === 'se' ? 'nwse-resize' : 'nesw-resize' }} />)}
+              {(() => {
+                const { x, y, w, h } = single.el, l = x - 4, r = x + w + 4, t = y - 4, b = y + h + 4, mx = (l + r) / 2, my = (t + b) / 2;
+                const cursor = (c: string) => c.length === 2 ? (c === 'nw' || c === 'se' ? 'nwse-resize' : 'nesw-resize') : (c === 'n' || c === 's' ? 'ns-resize' : 'ew-resize');
+                const tip = 'Drag to resize · Shift keeps proportions · Alt turns off snapping';
+                // invisible strips along each side, so a whole edge can be grabbed, not only its middle handle
+                const strips = ([['n', l, t, r - l, 0], ['s', l, b, r - l, 0], ['w', l, t, 0, b - t], ['e', r, t, 0, b - t]] as [string, number, number, number, number][])
+                  .map(([c, sx, sy, sw, sh]) => <rect key={'strip-' + c} data-handle={c} data-strip="" x={sx - hs / 2} y={sy - hs / 2} width={sw + hs} height={sh + hs} fill="transparent" stroke="none" style={{ cursor: cursor(c) }}><title>{tip}</title></rect>);
+                const knobs = ([['nw', l, t], ['n', mx, t], ['ne', r, t], ['e', r, my], ['se', r, b], ['s', mx, b], ['sw', l, b], ['w', l, my]] as [string, number, number][])
+                  .map(([c, hx, hy]) => <rect key={c} data-handle={c} x={hx - hs / 2} y={hy - hs / 2} width={hs} height={hs} rx={1.5 / view.k} style={{ cursor: cursor(c) }}><title>{tip}</title></rect>);
+                return [...strips, ...knobs];
+              })()}
             </g>
           )}
           {single?.kind === 'shape' && single.el.poly && tool === 'select' && !editing && (

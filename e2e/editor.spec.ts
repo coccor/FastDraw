@@ -117,6 +117,30 @@ test('resize, nudge, duplicate and delete', async ({ page }) => {
   expect(text).toContain('db: store');
 });
 
+test('resize from an edge, and Shift keeps the proportions', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
+  const k = await zoom(page);
+  const mid = async (c: string) => { const b = (await page.locator(`[data-handle="${c}"]:not([data-strip])`).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+  // the east handle only widens the box
+  await drag(page, await mid('e'), 40 * k, 20 * k);
+  expect(lineOf(await source(page), 'user')).toContain('at 40,160 184x64');
+  // anywhere along the bottom edge, not only its middle handle, makes it taller
+  const strip = (await page.locator('[data-handle="s"][data-strip]').boundingBox())!;
+  await drag(page, { x: strip.x + strip.width * 0.2, y: strip.y + strip.height / 2 }, 0, 28 * k);
+  expect(lineOf(await source(page), 'user')).toContain('at 40,160 184x92');
+  // Shift on a corner scales both sides by the same factor (184x92 -> 200x100), anchored at the top-left
+  await page.keyboard.down('Shift');
+  await drag(page, await mid('se'), 16 * k, 0);
+  await page.keyboard.up('Shift');
+  expect(lineOf(await source(page), 'user')).toContain('at 40,160 200x100');
+  // Shift on an edge scales the other side to match, keeping the box centred across it
+  await page.keyboard.down('Shift');
+  await drag(page, await mid('s'), 0, 20 * k);
+  await page.keyboard.up('Shift');
+  expect(lineOf(await source(page), 'user')).toContain('at 20,160 240x120');
+});
+
 test('panel: restyle, switch style, and the look styles gallery places shapes and lines', async ({ page }) => {
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
@@ -265,7 +289,7 @@ test('markup in pasted text is drawn as text, and problems are listed and select
   await expect(page.locator('.problems')).toContainText('problem');
   await page.locator('.problems').click();
   await page.locator('.issuelist li', { hasText: 'overlaps' }).click();
-  await expect(page.locator('[data-handle]')).toHaveCount(4);
+  await expect(page.locator('[data-handle]:not([data-strip])')).toHaveCount(8);
   expect(errors).toEqual([]);
 });
 
