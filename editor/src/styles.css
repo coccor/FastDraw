@@ -142,6 +142,8 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .welcome { width: min(520px, 100%); display: flex; flex-direction: column; gap: 14px; }
 .welcome h1 { font: 400 46px/1 'Instrument Serif', serif; margin: 0; letter-spacing: -.01em; }
 .lede { font-size: 15px; margin: 0; max-width: 46ch; }
+.agentnote { max-width: 46ch; margin: 10px 0 0; }
+.agentnote a { color: var(--accent-ink); }
 .choices { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
 .choice { justify-content: flex-start; gap: 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); text-align: left; }
 .choice:hover { border-color: var(--accent); background: #fff; }

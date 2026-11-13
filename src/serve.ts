@@ -8,7 +8,7 @@ import { readdirSync, readFileSync, writeFileSync, statSync, lstatSync, realpath
 import { join, resolve, sep, extname, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 
-export const DEFAULT_EDITOR = 'https://fastdraw.dev/';
+export const DEFAULT_EDITOR = 'https://fastdraw.dev/edit/';
 
 const SKIP = new Set(['node_modules', '.git', 'dist', 'bin', 'obj', '.next', 'target']);
 const MAX_FILES = 2000;

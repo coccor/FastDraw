@@ -10,7 +10,7 @@ export const repoBase64 = (p: string) => readFileSync(resolve(root, p)).toString
 // The editor's folder mode, driven against the browser's private file store: the code after
 // the folder picker is the same, and the picker itself cannot be automated.
 export async function openFolder(page: Page, files: Record<string, string | { base64: string }>) {
-  await page.goto('/?opfs=1');
+  await page.goto('/edit/?opfs=1');
   await page.waitForSelector('.welcome');
   await page.evaluate(async (entries) => {
     const rootDir = await navigator.storage.getDirectory();
@@ -53,13 +53,13 @@ export async function writeDisk(page: Page, path: string, edit: string) {
 // Reload to an empty start screen: forget the diagrams the editor keeps in the browser.
 export async function fresh(page: Page) {
   await page.evaluate(() => { indexedDB.deleteDatabase('fastdraw'); }); // finishes once this page's connection closes
-  await page.goto('/');
+  await page.goto('/edit/');
   await page.waitForSelector('.welcome');
 }
 
 // Open pasted text in memory (drawn with the built-in look unless it names one).
 export async function paste(page: Page, text: string) {
-  await page.goto('/');
+  await page.goto('/edit/');
   await page.waitForSelector('.welcome');
   await page.getByRole('button', { name: /Paste diagram text/ }).click();
   await page.locator('.modal textarea').fill(text);

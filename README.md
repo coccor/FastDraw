@@ -58,16 +58,26 @@ with the built-in one.
 
 ## Getting started
 
-FastDraw needs Node 22.18 or later, because the tool runs its TypeScript sources directly.
+FastDraw needs Node 20 or later. The command-line tool runs through `npx`, so nothing needs installing:
+
+```
+npx fastdraw setup                          # tell this repo's coding agents about FastDraw
+npx fastdraw check  docs/example.fdraw      # report problems, with line numbers
+npx fastdraw render docs/example.fdraw      # write a PNG next to the file
+npx fastdraw open   docs/example.fdraw      # edit it in the browser; changes save back
+```
+
+The editor is at https://fastdraw.dev/edit/. Agents that read the web can learn the language from
+https://fastdraw.dev/llms.txt with no setup at all.
+
+To work on FastDraw itself (needs Node 22.18 or later, because the sources run as TypeScript directly):
 
 ```
 git clone https://github.com/coccor/fastdraw.git
 cd fastdraw
 npm install
-
-bin/fastdraw check  assets/example.fdraw     # report problems, with line numbers
-bin/fastdraw render assets/example.fdraw     # write a PNG next to the file
-npm run dev                                  # the editor, at http://localhost:5199
+bin/fastdraw check assets/example.fdraw
+npm run dev                                  # the website and editor, at http://localhost:5199
 ```
 
 ## The command-line tool
@@ -82,6 +92,7 @@ npm run dev                                  # the editor, at http://localhost:5
 | `fastdraw icons [file.look] [word]` | List the icons a look offers, or search them by name or meaning (`email` finds `mail`) |
 | `fastdraw init-look [path]` | Write the built-in look to a file, to start your own |
 | `fastdraw preview-look [file.look]` | Draw every style of a look on one sheet |
+| `fastdraw setup [claude\|agents\|copilot] [--global]` | Tell a repo's coding agents about FastDraw: a Claude Code skill, a section in `AGENTS.md`, or in Copilot's instructions. With no name, sets up the agents the repo already uses. Running it again updates them |
 | `fastdraw open <file.fdraw> [--editor URL]` | Open the diagram in the web editor with its look, fonts and icons; edits there save back to the file. Runs until Ctrl-C |
 
 ## Using it with an agent
@@ -91,10 +102,10 @@ of working: write the file, run `check` until it is clean, then render and look 
 
 | Agent | What to do |
 |---|---|
-| Claude Code | Copy `agents/claude-skill/fastdraw/` into `.claude/skills/` in your repo |
-| Codex, OpenCode | Paste `agents/AGENTS-snippet.md` into your repo's `AGENTS.md` |
-| GitHub Copilot | Paste `agents/AGENTS-snippet.md` into `.github/copilot-instructions.md` |
-| Chat assistants with no tools | Paste the output of `fastdraw guide` into the chat, then paste the reply into the editor with "Paste diagram text" |
+| Claude Code | `npx fastdraw setup claude` (adds `.claude/skills/fastdraw/`; `--global` for every repo) |
+| Codex, OpenCode | `npx fastdraw setup agents` (adds a section to `AGENTS.md`) |
+| GitHub Copilot | `npx fastdraw setup copilot` (adds a section to `.github/copilot-instructions.md`) |
+| Chat assistants | Ask it to read https://fastdraw.dev/llms.txt first, or paste that file in; then paste the reply into the editor with "Paste diagram text" |
 
 More detail is in [`agents/README.md`](agents/README.md).
 
@@ -109,12 +120,13 @@ agent and a person can work on the same diagram at the same time. Other browsers
 memory and download the result. Nothing is uploaded; there is no server.
 
 `fastdraw open diagram.fdraw` is the one-step way in, in any browser: it lends the diagram's folder
-to the editor at https://fastdraw.dev from a small server on `127.0.0.1` (a random link, answered
+to the editor at https://fastdraw.dev/edit/ from a small server on `127.0.0.1` (a random link, answered
 only for the editor's own address), opens the browser at the diagram, and writes edits back to the
 `.fdraw` file. The files never leave the computer. Chrome may ask once to let the page reach apps
 on this device. `--editor http://localhost:5173/` points it at a local editor instead.
 
-`npm run build:editor` writes the editor to `dist-editor/` as a static site you can host anywhere.
+`npm run build:editor` writes the website to `dist-editor/` as a static site you can host anywhere: the
+landing page at `/`, the editor at `/edit/`, and the guide for agents at `/llms.txt` and `/guide/<kind>.md`.
 
 ## Looks
 

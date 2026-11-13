@@ -7,3 +7,4 @@ dist-editor/
 test-results/
 playwright-report/
 !assets/*.png
+dist/

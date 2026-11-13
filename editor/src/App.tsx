@@ -14,6 +14,7 @@ import { Gallery } from './Gallery.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
 import type { LookChoice, FileLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
+import { TEMPLATES } from './templates.ts';
 import {
   BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
   Group, ListTree, Menu, Palette, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
@@ -503,6 +504,18 @@ export function App() {
     load(text, null, label);
   };
   const templateDialog = templatesOpen && <TemplateDialog onClose={() => setTemplatesOpen(false)} onPick={(t) => newDiagram(t.text, t.kind)} />;
+
+  // `?kind=swimlane`, from the examples on the website: open that kind's template as a new diagram.
+  const kindOnce = useRef(false);
+  useEffect(() => {
+    if (!ready || kindOnce.current) return;
+    kindOnce.current = true;
+    const kind = new URLSearchParams(location.search).get('kind');
+    if (!kind) return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    const t = TEMPLATES.find((x) => x.kind === kind);
+    if (t) newDiagram(t.text, t.kind);
+  });
 
   const openDemo = (text: string, label: string) => {
     io.current = { fileMod: 0, lookMod: 0, written: '' };
@@ -1056,6 +1069,7 @@ export function App() {
         <div className="welcome">
           <h1>FastDraw</h1>
           <p className="lede">Open a diagram an agent wrote, change anything on the canvas, and it is saved back to the same file.</p>
+          <p className="muted agentnote">FastDraw diagrams usually start with your coding agent. <a href="../#setup">Set up Claude Code, Codex or Copilot</a> with one command, then ask it for a diagram.</p>
           <div className="choices">
             <button className="choice" onClick={() => newDiagram()}><FilePlus size={20} /><span><b>New diagram</b><i>Start from a blank canvas and draw with the toolbar</i></span></button>
             <button className="choice" onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={20} /><span><b>New from a template</b><i>Flowchart, sequence, swimlane, Gantt and 40 more kinds to change</i></span></button>

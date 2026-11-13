@@ -1,0 +1,69 @@
+look "./harbor.look"
+
+text "Production architecture" at 40,48 style=kicker
+text "How an order is placed" at 40,82 style=h1
+text "One request in eight steps, from a tap on Buy to a confirmed order and a receipt." at 40,108 style=dek
+
+// ---- zones: region > private network > subnets ------------------------------------
+region:  zone "Region eu-west-1" at 232,136 976x560
+net:     network "Private network 10.0.0.0/16" at 464,168 720x504
+app:     subnet "App tier" at 488,216 224x432
+data:    subnet "Data tier" at 744,216 416x432
+
+// ---- people and the edge ---------------------------------------------------------
+users:  external "Shoppers" sub="web and mobile" icon=users at 40,348 168x64
+cdn:    cloud "CDN" sub="static pages" icon=cdn tag="EDGE" at 256,240 176x64
+lb:     cloud "Load balancer" sub="TLS, health checks" icon=load-balancer tag="EDGE" at 256,348 176x64
+
+// ---- app tier: rows centre on y=272, 380, 488, 592 ----------------------------------
+checkout: focal "Checkout" sub="prices, reserves stock" icon=cart tag="API" at 512,240 176x64
+catalog:  node "Catalog" sub="products, stock" icon=list tag="API" at 512,348 176x64
+accounts: node "Accounts" sub="profiles, addresses" icon=user tag="API" at 512,456 176x64
+worker:   node "Order worker" sub="emails, invoices" icon=pod at 512,560 176x64
+
+// ---- data tier ---------------------------------------------------------------------
+orders:  store "Orders" sub="Postgres primary" icon=database tag="DB" at 768,232
+replica: store "Orders replica" sub="read only" icon=database at 968,232
+cache:   store "Cache" sub="Redis" icon=cache at 768,340
+backups: store "Backups" sub="nightly snapshots" icon=backup at 968,340
+search:  store "Search" sub="OpenSearch" icon=search at 768,448
+queue:   cloud "Order queue" sub="order.placed" icon=queue at 968,560 176x64
+
+// ---- outside --------------------------------------------------------------------------
+pay:   external "Payments" sub="card provider" icon=payment tag="EXT" at 1248,240 176x64
+email: external "Email" sub="delivery service" icon=mail tag="EXT" at 1248,560 176x64
+
+// observability panel
+obs:   zone "Observability" at 1248,332 176x204 radius=12 fill=#ffffff
+lat:   chart at 1272,372 136x76 x="9,10,11,12,13" y=0..2
+  | line "p95 seconds" 1.1 1.3 0.9 1.2 1.0 stroke=accent
+c1:    chip "99.95% up" at 1272,476 136x20
+c2:    chip "1.2 s at p95" at 1272,504 136x20
+
+// ---- the request ---------------------------------------------------------------------
+users.top -> cdn.left style=link
+users -> lb "HTTPS" style=link lpos=232,392
+lb.right@364 -> checkout.left style=primary via=472,364;472,272
+lb.right@388 -> catalog.left
+lb.right@404 -> accounts.left via=480,404;480,488
+checkout -> orders "writes" style=primary lside=below
+orders -> replica style=replicate
+replica -> backups "nightly" style=return
+checkout.top -> pay.top "charges" via=600,192;1336,192
+catalog -> cache "reads"
+catalog.right@396 -> search.left "queries" via=728,396;728,488 lpos=728,440
+checkout.right@296 -> queue.top via=736,296;736,536;1056,536 style=return
+queue.left -> worker.right "consumes" style=return
+worker.bottom -> email.bottom "sends receipt" via=600,660;1336,660 style=return lpos=980,660
+
+// step badges, each just beside its line
+s1: badge "1" at 220,332
+s2: badge "2" at 444,300
+s3: badge "3" at 1100,164
+s4: badge "4" at 716,244
+s5: badge "5" at 945,292
+s6: badge "6" at 1068,508
+s7: badge "7" at 820,604
+s8: badge "8" at 1196,628
+
+legend at 40,728 focal="The service this is about" cloud="Managed service" store="Holds data" external="Outside what we run" primary="The order's path" link="Request from a client" return="Asynchronous" replicate="Replication"

@@ -1,0 +1,44 @@
+look "./atlas.look"
+
+text "Shop platform" at 64,72 style=kicker
+text "The life of an order" at 64,128 style=h1
+text "Seven systems, four seconds, one happy customer." at 64,164 style=dek
+
+// soft colour shapes behind the groups (drawn first, behind everything)
+b-you:   blob at 40,256 points=44,0;200,12;236,120;224,300;240,420;154,488;24,470;4,300;12,110 smooth=1 fill=peach
+b-hub:   blob at 500,180 points=150,0;300,34;352,170;320,300;190,344;50,312;0,180;40,48 smooth=1 fill=lilac
+b-right: blob at 876,64 points=60,0;320,10;460,120;476,300;436,388;220,400;40,368;0,200;10,60 smooth=1 fill=ice
+b-out:   blob at 380,560 points=40,8;400,0;820,20;860,110;800,196;400,206;60,190;0,100 smooth=1 fill=mint
+
+// the customer, and the way in
+you:  icon "You tap Buy" at 96,292 112x112 icon=shopper title.size=14 title.weight=600 title.color=ink
+gw:   card "API gateway" sub="checks who you are" icon=shield at 276,288 184x128
+
+// the hub, with a ring and its one number
+ring: arc at 540,212 272x272 from=24 to=336 inner=0.96 fill=accent stroke=none
+hub:  focal "Checkout" sub="prices, stock, payment" icon=basket at 560,232 232x232
+p95:  chip "1.2 s at p95" at 616,196 120x28
+
+// partners and storage
+pay:  external "Payments" sub="card provider" icon=card at 920,88 184x128
+db:   store "Orders" sub="Postgres" icon=vault at 924,280 176x136
+evt:  event "order.placed" icon=spark at 1160,280 points=36,0;132,0;168,68;132,136;36,136;0,68 icon.size=40 title.size=12 fill=#fff6d6
+
+// what happens after: a bus with everything that listens to it
+1244,416 -- 1244,532 style=bus
+188,532 -- 1244,532 style=bus
+ship: card "Shipping" sub="at your door in 2 days" icon=van at 96,584 184x128
+dw:   card "Warehouse" sub="tonight's sales report" icon=graph at 444,584 184x128
+mail: card "Receipt" sub="in your inbox in 3 s" icon=letter at 708,584 184x128
+fan:  card "Loyalty" sub="+120 points" icon=stars at 972,584 184x128
+
+you -> gw "HTTPS" style=link
+gw -> hub "POST /orders" style=primary lpos=500,326
+hub -> db "saves" style=primary
+hub.right@288 -> pay.bottom@960 "charges the card"
+db -> evt style=return
+188,532 -> ship.top style=return
+536,532 -> dw.top style=return
+800,532 -> mail.top style=return
+1064,532 -> fan.top style=return
+ship.left -> you.left "delivered" style=link via=48,500 lpos=56,468

@@ -1,0 +1,75 @@
+look "./harbor.look"
+
+text "Data platform" at 40,48 style=kicker
+text "From raw events to tomorrow's numbers" at 40,82 style=h1
+text "Four sources land raw, get cleaned once and are served as tested tables by six in the morning." at 40,108 style=dek
+
+// ---- stages ------------------------------------------------------------------------
+sources:   zone "Sources" at 40,152 200x512
+ingest:    zone "Ingest" at 288,152 200x512
+lake:      network "Lakehouse" at 536,152 584x512
+bronze:    subnet "Bronze: raw" at 552,200 176x448
+silver:    subnet "Silver: clean" at 744,200 176x448
+gold:      subnet "Gold: served" at 936,200 168x448
+consumers: zone "Consumers" at 1168,152 216x512
+
+// ---- sources -------------------------------------------------------------------------
+web:  external "Web events" sub="clickstream" icon=browser at 56,192 168x64
+odb:  store "Orders DB" sub="Postgres" icon=database at 56,288 168x80
+pays: external "Payments API" sub="webhooks" icon=payment tag="EXT" at 56,400 168x64
+crm:  external "CRM" sub="nightly export" icon=csv tag="EXT" at 56,496 168x64
+
+// ---- ingest ----------------------------------------------------------------------------
+stream: cloud "Event stream" sub="Kafka" icon=queue at 304,192 168x64
+cdc:    node "Change capture" sub="row by row" icon=sync at 304,296 168x64
+batch:  node "Batch loader" sub="every hour" icon=scheduler at 304,448 168x64
+
+// ---- lakehouse tables -----------------------------------------------------------------
+raw_events: table "raw_events" at 568,240 144x0
+  | "event_id" "uuid"
+  | "ts" "time"
+  | "payload" "json"
+raw_orders: table "raw_orders" at 568,416 144x0
+  | "id" "int"
+  | "body" "json"
+  | "loaded" "time"
+orders_clean: focal "orders_clean" sub="deduped, typed" tag="DBT" at 760,240 144x64
+customers: table "customers" at 760,400 144x0
+  | id "id" "PK"
+  | "email" "text"
+  | "country" "text"
+  | "since" "date"
+revenue: table "daily_revenue" at 952,240 136x0
+  | "day" "date"
+  | "orders" "int"
+  | "revenue" "eur"
+ltv: table "customer_ltv" at 952,416 136x0
+  | "customer" "id"
+  | "ltv" "eur"
+tests: chip "312 tests passing" at 760,592 144x22
+sla:   chip "ready by 06:00" at 952,592 136x22
+
+// ---- consumers ----------------------------------------------------------------------------
+board: zone "Revenue dashboard" at 1184,192 184x176 radius=10 fill=#ffffff
+bars:  chart at 1204,232 152x96 x="M,T,W,T,F" y=0..80
+  | bars "k eur" 42 51 47 63 70 fill=accent/0.35 fill.5=accent
+model:  node "Churn model" sub="retrained weekly" icon=ai at 1184,400 184x64
+finance: external "Finance" sub="month-end export" icon=excel at 1184,496 184x64
+
+// ---- flows -----------------------------------------------------------------------------------
+web -> stream
+odb -> cdc
+pays.right -> batch.left@468
+crm.right -> batch.left@492
+stream -> raw_events style=link
+cdc.right -> raw_orders.left via=520,328;520,456 style=link
+batch.right -> raw_orders.left@480 via=528,480 style=link
+raw_events.right@272 -> orders_clean.left style=primary
+raw_orders.right -> customers.left
+orders_clean -> revenue style=primary
+customers.right -> ltv.left
+revenue.right@272 -> board.left@272 style=primary
+ltv.right@440 -> model.left@440
+ltv.right@472 -> finance.left via=1144,472;1144,528 style=return
+
+legend at 40,696 focal="The model everything depends on" table="A table in the lakehouse" external="Owned by someone else" cloud="Managed service" primary="The path to the dashboard" link="Landing raw data" return="Export"

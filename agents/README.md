@@ -1,10 +1,11 @@
 # Telling agents about FastDraw
 
 All three are thin pointers to `fastdraw guide`, so there is one place to maintain.
+`npx fastdraw setup` writes them into a repository; running it again updates them in place.
 
-| Agent | What to do |
-|---|---|
-| Claude Code | Copy `claude-skill/fastdraw/` into `.claude/skills/` in your repo (or `~/.claude/skills/` for all repos) |
-| Codex, OpenCode | Paste `AGENTS-snippet.md` into your repo's `AGENTS.md` |
-| GitHub Copilot | Paste `AGENTS-snippet.md` into `.github/copilot-instructions.md` |
-| Chat assistants with no tools (ChatGPT) | Paste the output of `fastdraw guide` into the chat, then paste the reply into the editor with "Paste diagram text" |
+| Agent | Command | What it writes |
+|---|---|---|
+| Claude Code | `npx fastdraw setup claude` (`--global` for every repo) | `claude-skill/fastdraw/` as `.claude/skills/fastdraw/` |
+| Codex, OpenCode | `npx fastdraw setup agents` | `AGENTS-snippet.md` as a section of `AGENTS.md` |
+| GitHub Copilot | `npx fastdraw setup copilot` | `AGENTS-snippet.md` as a section of `.github/copilot-instructions.md` |
+| Chat assistants | none | Ask it to read https://fastdraw.dev/llms.txt first (or paste that file in), then paste the reply into the editor with "Paste diagram text" |

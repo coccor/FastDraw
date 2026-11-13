@@ -1,0 +1,64 @@
+look "./harbor.look"
+
+text "Platform map" at 40,48 style=kicker
+text "Everything the shop runs on" at 40,82 style=h1
+text "Five layers, one path straight through them, and what every layer shares." at 40,108 style=dek
+
+// ---- layers: five bands, components in columns 208 apart -----------------------------
+exp:  zone "Experience" at 40,144 1072x120
+edge: zone "Edge" at 40,280 1072x120
+svc:  zone "Services" at 40,416 1072x120
+dat:  zone "Data" at 40,552 1072x120
+plat: zone "Platform" at 40,688 1072x120
+
+web:     node "Web shop" sub="React" icon=browser at 280,184
+mobile:  node "Mobile app" sub="iOS and Android" icon=phone at 72,184
+admin:   node "Back office" sub="staff only" icon=dashboard at 488,184
+partner: external "Partner API" sub="marketplaces" icon=api tag="EXT" at 696,184
+kiosk:   node "In-store kiosk" sub="tablets" icon=tablet at 904,184
+
+cdn:     cloud "CDN" sub="images, pages" icon=cdn at 72,320
+gw:      cloud "API gateway" sub="routing, limits" icon=gateway at 280,320
+auth:    node "Sign-in" sub="OAuth, passkeys" icon=key at 488,320
+waf:     cloud "Firewall" sub="bots, abuse" icon=firewall at 696,320
+dns:     cloud "DNS" sub="two providers" icon=dns at 904,320
+
+catalog:  node "Catalog" sub="products, stock" icon=list at 72,456
+checkout: focal "Checkout" sub="prices, reserves" icon=cart tag="API" at 280,456
+accounts: node "Accounts" sub="profiles" icon=user at 488,456
+search:   node "Search" sub="ranking" icon=search at 696,456
+pricing:  node "Pricing" sub="offers, tax" icon=money at 904,456
+
+cache:   store "Cache" sub="Redis" icon=cache at 72,588 176x72
+orders:  store "Orders" sub="Postgres" icon=database tag="DB" at 280,588 176x72
+events:  cloud "Event bus" sub="order.* topics" icon=queue at 488,592
+dw:      store "Warehouse" sub="BigQuery" icon=warehouse at 696,588 176x72
+files:   store "Files" sub="invoices, images" icon=bucket at 904,588 176x72
+
+k8s:     cloud "Kubernetes" sub="three zones" icon=container at 72,728
+ci:      node "CI/CD" sub="40 deploys a day" icon=pipeline at 280,728
+secrets: node "Secrets" sub="rotated monthly" icon=password at 488,728
+iac:     node "Infrastructure" sub="as code" icon=code at 696,728
+cost:    node "Cost reports" sub="per team" icon=chart at 904,728
+
+// ---- what every layer shares --------------------------------------------------------------
+sec: zone "Security" at 1136,144 136x664
+s1:  icon "Encryption" icon=lock at 1188,204 32x32 stroke=rose
+s2:  icon "Audit log" icon=audit at 1188,332 32x32 stroke=rose
+s3:  icon "Access review" icon=id at 1188,460 32x32 stroke=rose
+s4:  icon "Backups" icon=backup at 1188,588 32x32 stroke=rose
+s5:  icon "Pen tests" icon=bug at 1188,716 32x32 stroke=rose
+obs: zone "Observability" at 1288,144 136x664
+o1:  icon "Real users" icon=eye at 1340,204 32x32 stroke=teal
+o2:  icon "Traces" icon=route at 1340,332 32x32 stroke=teal
+o3:  icon "Metrics" icon=monitoring at 1340,460 32x32 stroke=teal
+o4:  icon "Logs" icon=log at 1340,588 32x32 stroke=teal
+o5:  icon "Alerts" icon=bell at 1340,716 32x32 stroke=teal
+
+// ---- one path through the layers ------------------------------------------------------------
+web -> gw style=primary
+gw -> checkout style=primary
+checkout -> orders style=primary
+orders.right -> events.left style=return
+
+legend at 40,840 focal="The service this map centres on" cloud="Managed service" store="Holds data" external="Outside what we run" primary="One order, top to bottom" return="Asynchronous"

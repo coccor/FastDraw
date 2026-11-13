@@ -625,7 +625,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
 
 test('a new diagram starts blank in the built-in look, from the start screen and from the menu', async ({ page }) => {
   const errors = noPageErrors(page);
-  await page.goto('/');
+  await page.goto('/edit/');
   await page.getByRole('button', { name: /New diagram/ }).click();
   await page.waitForSelector('svg.canvas');
   expect(await source(page)).toBe('\n');
@@ -730,7 +730,7 @@ test('after a reload a diagram from a folder reconnects to its file and keeps sa
 
 test('a new diagram from a template: search the kinds, open one in the built-in look, then pick another from the menu', async ({ page }) => {
   const errors = noPageErrors(page);
-  await page.goto('/');
+  await page.goto('/edit/');
   await page.getByRole('button', { name: /New from a template/ }).click();
   await expect(page.locator('.tpl')).toHaveCount(44);
   await page.getByPlaceholder(/Search/).fill('swimlane');

@@ -7,3 +7,4 @@ Diagrams in this repo are FastDraw files (`.fdraw`), drawn with the look in `.lo
 - Before writing or changing one, run `fastdraw guide` and follow it; it is the only reference for the language.
 - Finish with `fastdraw check <file>` clean, then run `fastdraw render <file>` and look at the PNG.
 - When changing an existing diagram, leave the position, size and styling of existing elements alone unless asked.
+- If `fastdraw` is not on the PATH, run it as `npx fastdraw`.

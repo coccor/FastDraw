@@ -1,0 +1,48 @@
+look whiteboard
+
+text "Shop platform: placing an order" at 40,56 style=h1
+text "From a tap on Buy to a charged card, a stored order and a receipt in the inbox." at 40,84 style=dek
+
+// one zone per layer; rows centre on y=224, 336, 448; gutters between zones are 96 wide
+edge:     zone "Edge" at 288,152 192x344 title.align=left
+services: zone "Services" at 576,152 216x344 title.align=left
+data:     zone "Data" at 888,152 192x344 title.align=left
+
+// clients
+web:    external "Web shop" sub="browser" icon=browser at 40,192 152x64
+mobile: external "Mobile app" sub="iOS and Android" icon=phone at 40,304 152x64
+note:   sticky-violet "Every order has\nits own key, so a\nretry never\ncharges twice" at 40,408 152x104
+
+// edge
+gw:     node "API gateway" sub="auth, rate limits" icon=gateway tag="API" at 304,192 160x176
+signin: node "Sign-in" sub="OAuth" icon=key at 304,416 160x64
+
+// services
+checkout: focal "Checkout" sub="prices, reserves stock" icon=cart tag="API" at 592,192 184x64
+catalog:  node "Catalog" sub="products, stock" icon=list at 592,304 184x64
+accounts: node "Accounts" sub="profiles, addresses" icon=user at 592,416 184x64
+
+// data
+orders: store "Orders DB" sub="Postgres" icon=database at 904,192 160x64
+cache:  store "Cache" sub="Redis" icon=cache at 904,304 160x64
+search: store "Search" sub="OpenSearch" icon=search at 904,416 160x64
+
+// outside, and after the order
+pay:  external "Payments" sub="card provider" icon=payment tag="EXT" at 1176,192 160x64
+bus:  node "Event bus" sub="order.placed" icon=queue at 1176,304 160x64
+mail: node "Email" sub="receipts" icon=mail at 1176,416 160x64
+
+web.right -> gw.left@224 "HTTPS" style=link
+mobile.right -> gw.left@336 "HTTPS" style=link
+gw -> signin
+gw.right@224 -> checkout.left "POST /orders" style=primary
+gw.right@336 -> catalog.left "browse"
+signin -> accounts "profile"
+checkout -> orders "writes" style=primary
+checkout.top -> pay.top "charges" via=684,128;1256,128 route=ortho
+catalog -> cache "reads"
+catalog.right@352 -> search.left "queries" lpos=840,400
+orders.right -> bus.left "publishes" style=return
+bus -> mail
+
+legend at 40,560 focal="The service this is about" external="Outside what we run" store="Holds data" primary="The order's path" link="Request from a client" return="Asynchronous event"
