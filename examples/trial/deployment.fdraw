@@ -8,44 +8,44 @@ us:   zone "US / us-east-1" at 672,92 232x304 dash=4,4 stroke=ink/0.2
 // EU
 euapi: node tag="POD" at 64,124 200x116
 text "API pods" at 164,164 weight=600 anchor=middle
-store at 72,176 184x24 radius=4
+rect at 72,176 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "stream-api" at 80,192
 text "v3.2.0" at 248,192 style=small anchor=end
-store at 72,208 184x24 radius=4
+rect at 72,208 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "envoy" at 80,224
 text "v1.31.0" at 248,224 style=small anchor=end
 rect "x6" at 228,132 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
 
 eudb: store tag="DB" at 64,296 200x84
 text "Catalogue DB" at 164,336 weight=600 anchor=middle
-store at 72,348 184x24 radius=4
+rect at 72,348 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "postgres" at 80,364
 text "v15.4" at 248,364 style=small anchor=end
 
 // Edge
 glb: focal tag="LB" at 376,124 200x116
 text "Global load balancer" at 476,164 weight=600 anchor=middle
-store at 384,176 184x24 radius=4
+rect at 384,176 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "anycast-lb" at 392,192
 text "v2.7.0" at 560,192 style=small anchor=end
-store at 384,208 184x24 radius=4
+rect at 384,208 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "waf-rules" at 392,224
 text "v2024.11" at 560,224 style=small anchor=end
 
 // US
 usapi: node tag="POD" at 688,124 200x116
 text "API pods" at 788,164 weight=600 anchor=middle
-store at 696,176 184x24 radius=4
+rect at 696,176 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "stream-api" at 704,192
 text "v3.2.0" at 872,192 style=small anchor=end
-store at 696,208 184x24 radius=4
+rect at 696,208 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "envoy" at 704,224
 text "v1.31.0" at 872,224 style=small anchor=end
 rect "x6" at 852,132 28x12 radius=2 fill=none stroke=ink/0.4 sw=0.8 title.font=mono title.size=8 title.weight=400
 
 usdb: store tag="DB" at 688,296 200x84
 text "Catalogue DB" at 788,336 weight=600 anchor=middle
-store at 696,348 184x24 radius=4
+rect at 696,348 184x24 radius=6 fill=ink/0.03 stroke=ink/0.12 sw=1
 text "postgres" at 704,364
 text "v15.4" at 872,364 style=small anchor=end
 

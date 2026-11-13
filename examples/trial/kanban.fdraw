@@ -32,9 +32,9 @@ c4: zone at 848,80 240x324 stroke=none
 text "Done" at 864,100 weight=600 color=ink
 w4: rect "3" at 1032,88 40x16 radius=2 fill=none stroke=ink/0.3 sw=0.8 title.font=mono title.size=8 title.weight=400 title.color=muted
 848,116 -- 1088,116 stroke=ink/0.2 sw=1
-e1: store "Login flow" sub="DSG-170 · mara" at 864,128 208x56 title.align=left
-e2: store "Design tokens v2" sub="DSG-165 · lee" at 864,196 208x56 title.align=left
-e3: store "Error pages" sub="DSG-160 · kim" at 864,264 208x56 title.align=left
+e1: node "Login flow" sub="DSG-170 · mara" at 864,128 208x56 title.align=left fill=ink/0.05 stroke=ink/0.3 title.color=muted
+e2: node "Design tokens v2" sub="DSG-165 · lee" at 864,196 208x56 title.align=left fill=ink/0.05 stroke=ink/0.3 title.color=muted
+e3: node "Error pages" sub="DSG-160 · kim" at 864,264 208x56 title.align=left fill=ink/0.05 stroke=ink/0.3 title.color=muted
 text "Older work moved to the archive board" at 864,344 style=caption
 
 32,428 -- 1088,428 style=rule
@@ -45,7 +45,7 @@ focal at 200,444 16x10 radius=2 dash=4,4 fill=accent/0.05
 text "Blocked (oldest)" at 224,453 style=caption
 optional at 340,444 16x10 radius=2
 text "Waiting on someone outside" at 364,453 style=caption
-store at 540,444 16x10 radius=2
+node at 540,444 16x10 radius=2 fill=ink/0.05 stroke=ink/0.3
 text "Done" at 564,453 style=caption
 rect at 620,444 16x10 radius=2 fill=none stroke=accent sw=0.8
 text "Over its limit" at 644,453 style=caption
