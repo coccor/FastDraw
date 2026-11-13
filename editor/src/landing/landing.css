@@ -1,9 +1,9 @@
 /* fastdraw.dev, drawn in FastDraw's own built-in look: a grey dotted page, white outlined boxes
-   with 2px corners, graphite text, one green for what matters, a Newsreader title. */
+   with 2px corners, graphite text, one indigo for what matters, a Newsreader title. */
 :root {
   --page: #f5f5f5; --dots: rgba(31, 35, 40, .09);
   --ink: #1f2328; --muted: #5f6670; --soft: #8b929c;
-  --accent: #2e8540; --accent-ink: #22652f; --accent-tint: #eaf2ec; --accent-tint-2: #dcebdf;
+  --accent: #4f46e5; --accent-ink: #3b33c4; --accent-tint: #ecebfd; --accent-tint-2: #dedcfb;
   --link: #45607e; --box: #ffffff; --stroke: rgba(31, 35, 40, .22); --hair: rgba(31, 35, 40, .12);
   --mono: 'Geist Mono', ui-monospace, monospace;
 }
@@ -99,7 +99,7 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 .diff > div:not(.diffhead) { padding: 1px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .diff span { display: inline-block; width: 14px; }
 .minus { background: #fbeeee; color: #8f3434; }
-.plus { background: var(--accent-tint); color: var(--accent-ink); }
+.plus { background: #e6f4ea; color: #1f6b3a; } /* green here means added, as in any diff */
 @media (prefers-reduced-motion: reduce) { .diff { transition: none; } .caret { animation: none; } }
 
 .replay { position: absolute; right: 0; bottom: 0; background: none; border: 0; color: var(--link); font-size: 14px; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
@@ -266,10 +266,10 @@ html, body { overflow-x: clip; }
 }
 .btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(31, 35, 40, .06), 0 12px 24px -10px rgba(31, 35, 40, .28); }
 .btn.focal {
-  background: linear-gradient(180deg, #36a04f, #2e8540); border-color: #276f36; color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 22px -10px rgba(46, 133, 64, .75);
+  background: linear-gradient(180deg, #5d55ef, #4f46e5); border-color: #4038c8; color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 22px -10px rgba(79, 70, 229, .7);
 }
-.btn.focal:hover { background: linear-gradient(180deg, #3aa955, #2b7b3c); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 16px 30px -12px rgba(46, 133, 64, .8); }
+.btn.focal:hover { background: linear-gradient(180deg, #655ef2, #4840d6); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 16px 30px -12px rgba(79, 70, 229, .8); }
 
 /* the scene's windows: rounded, lit from above, casting a real shadow */
 .win { border-radius: 12px; border-color: rgba(31, 35, 40, .10); box-shadow: 0 1px 2px rgba(36, 33, 74, .05), 0 8px 18px -10px rgba(36, 33, 74, .18), 0 40px 70px -30px rgba(36, 33, 74, .35); }
