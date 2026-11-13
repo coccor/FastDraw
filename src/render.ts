@@ -292,7 +292,7 @@ function drawShape(look: Look, s: Shape): string {
   const tb = p.tag ? tagLayout(s, look, textBlock(s, title.size), title.size, cym + (iconBox(s)?.dy ?? 0)) : null;
   if (tb) {
     const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
-    const tw = Math.ceil((textWidth(p.tag, t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
+    const tw = tagWidth(look, p);
     out.push(`<rect x="${s.x + tb.x}" y="${s.y + tb.y}" width="${tw}" height="${tb.h}" rx="2" fill="none" stroke="${col(look, p['tag.border'] ?? 'muted/0.4')}" stroke-width="0.8"/>`);
     out.push(`<text x="${s.x + tb.x + tw / 2}" y="${r2(s.y + tb.y + tb.h / 2 + t.size * 0.36)}" text-anchor="middle" ${t.a}>${esc(p.tag)}</text>`);
   }
@@ -357,12 +357,80 @@ export function textBlock(s: Shape, titleSize: number): number {
 export function tagLayout(s: Shape, look: Look, block: number, titleSize: number, cym: number) {
   const p = s.p, rough = p.sketch === '0' ? 0 : Math.max(0, Math.min(num(look.canvas.sketch, 0), 4));
   const x = 8 + (rough ? 2 : 0), h = Math.max(12, Math.ceil(num(p['tag.size'], 7) + 4)), glyph = titleSize * 0.14;
+  // on a shape that is not a box (a cylinder's cap, an ellipse, a diamond) the tag moves down off the outline
+  const below = outlineClear(s, x, tagWidth(look, p), h, 6, 3 + rough);
   const at = (y: number, pad: number) => {
     const clear = s.y + y + h + 3 - glyph, floor = s.y + s.h - pad - block;
     return { y, top: Math.min(Math.max(cym - block / 2 + 8, clear), Math.max(floor, cym - block / 2)), fits: clear <= floor + 0.5 };
   };
-  const roomy = at(8, 4), tight = roomy.fits ? roomy : at(6, 2);
+  const roomy = at(Math.max(8, below), 4), tight = roomy.fits ? roomy : at(Math.max(6, below), 2);
+  if (!roomy.fits && !tight.fits) {
+    // the centred lines level with the tag start right of it: the two never touch, so the text keeps its place
+    const y = Math.max(8, below), top = Math.min(cym - block / 2 + 8, Math.max(s.y + s.h - 4 - block, cym - block / 2));
+    if (besideTag(s, look, x + tagWidth(look, p), s.y + y - 2, s.y + y + h + 2, top)) return { x, h, y, top, fits: true };
+  }
   return { x, h, ...(tight.fits ? tight : roomy) };
+}
+
+// Whether every line of a shape's centred text that is level with y0..y1 starts at least 2px right of
+// `right` (measured from the shape's left), with the text block starting at `top`.
+function besideTag(s: Shape, look: Look, right: number, y0: number, y1: number, top: number): boolean {
+  const p = s.p;
+  if (p['title.align'] || p.icon) return false;
+  const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
+  const sub = textAttrs(look, p, 'sub.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
+  const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
+  const lh = Math.round(title.size * 1.17), slh = Math.round(sub.size * 1.3), subs = p.sub ? p.sub.split('\n') : [];
+  // each line's ink, from its cap top to just under its baseline
+  const rows = [
+    ...lines.map((l, i) => ({ w: textWidth(l, title.size, title.font, title.weight, title.spacing), a: top + i * lh + title.size * 0.14, b: top + i * lh + title.size * 1.05 })),
+    ...subs.map((l, i) => { const base = top + lines.length * lh + sub.size + 3 + i * slh; return { w: textWidth(l, sub.size, sub.font, 400, sub.spacing), a: base - sub.size * 0.75, b: base + sub.size * 0.2 }; }),
+  ];
+  return rows.every((r) => r.b < y0 || r.a > y1 || s.w / 2 - r.w / 2 >= right + 2);
+}
+
+// How wide a shape's corner tag is.
+export function tagWidth(look: Look, p: Props): number {
+  const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
+  return Math.ceil((textWidth(p.tag ?? '', t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
+}
+
+// Points along a shape's outline, relative to its top-left corner; null for a plain box.
+function outlinePts(s: Shape): Pt[] | null {
+  const { w, h } = s, out: Pt[] = [];
+  const line = (a: Pt, b: Pt) => { const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2)); for (let i = 0; i <= n; i++) out.push({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }); };
+  if (s.shape === 'ellipse') { for (let i = 0; i < 180; i++) { const t = (i / 180) * 2 * Math.PI; out.push({ x: w / 2 + (w / 2) * Math.cos(t), y: h / 2 + (h / 2) * Math.sin(t) }); } return out; }
+  if (s.shape === 'diamond') { const c = [{ x: w / 2, y: 0 }, { x: w, y: h / 2 }, { x: w / 2, y: h }, { x: 0, y: h / 2 }]; c.forEach((a, i) => line(a, c[(i + 1) % 4])); return out; }
+  if (s.shape === 'polygon' && s.poly) { const c = s.poly.map((q) => ({ x: q.x - s.x, y: q.y - s.y })); c.forEach((a, i) => line(a, c[(i + 1) % c.length])); return out; }
+  if (s.shape === 'path' && s.p.path) {
+    // path data in 0..1 of the box, absolute M L C Z, as looks write it
+    const tok = s.p.path.match(/[MLCZ]|-?\d*\.?\d+/gi) ?? [];
+    let cmd = 'M', cur: Pt = { x: 0, y: 0 }, start = cur, i = 0;
+    const pt = () => ({ x: +tok[i++] * w, y: +tok[i++] * h });
+    while (i < tok.length) {
+      if (/[a-z]/i.test(tok[i])) { cmd = tok[i++].toUpperCase(); if (cmd === 'Z') { line(cur, start); cur = start; } continue; }
+      if (cmd === 'M') { cur = start = pt(); cmd = 'L'; }
+      else if (cmd === 'L') { const b = pt(); line(cur, b); cur = b; }
+      else if (cmd === 'C') {
+        const c1 = pt(), c2 = pt(), b = pt();
+        for (let k = 1; k <= 24; k++) { const t = k / 24, m = 1 - t; const q = { x: m * m * m * cur.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x, y: m * m * m * cur.y + 3 * m * m * t * c1.y + 3 * m * t * t * c2.y + t * t * t * b.y }; line(out.length ? out[out.length - 1] : cur, q); }
+        cur = b;
+      } else i++;
+    }
+    return out;
+  }
+  return null;
+}
+
+// The smallest top offset, from `from`, at which a tag of w x h at left offset x keeps `gap` clear of
+// the shape's outline (0 for a plain box, which has nothing inside to avoid).
+function outlineClear(s: Shape, x: number, w: number, h: number, from: number, gap: number): number {
+  const pts = outlinePts(s);
+  if (!pts) return 0;
+  for (let y = from; y < s.h / 2; y++) {
+    if (!pts.some((q) => q.x > x - gap && q.x < x + w + gap && q.y > y - gap && q.y < y + h + gap)) return y;
+  }
+  return 0;
 }
 
 // An end marker drawn at tip, pointing away from `from`. trim is how much of the line to cut back so it
