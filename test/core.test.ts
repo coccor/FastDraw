@@ -15,6 +15,8 @@ import { embedSvg, extractSvg, embedPng, extractPng } from '../src/embed.ts';
 import { defaultLook } from '../src/look.ts';
 import { fontMeta } from '../src/fontmeta.ts';
 import { lookFonts } from '../src/node.ts';
+import { ICONS } from '../src/icons.ts';
+import { SOLID_ICONS } from '../src/solidIcons.ts';
 
 const look = parseLook(readFileSync(new URL('../looks/reference.look', import.meta.url), 'utf8'));
 const scene = (body: string) => buildScene(`look "x.look"\n${body}`, look);
@@ -520,6 +522,21 @@ test('icons: on a box, on their own, from the look, and with clear errors', () =
   assert.ok(look.icons.has('bolt') && !look.icons.has('bad') && look.icons.has('server'));
   assert.match(look.issues.map((i) => i.msg).join(), /icon bad needs its outline as SVG path data/);
   assert.ok(renderSvg(buildScene('look "x.look"\nh: hot "Fast" at 40,40 120x48\n', look)).includes('M13 3 L4 14'));
+});
+
+test('icon.style=solid draws the filled twin of a built-in icon in one colour', () => {
+  const sc = scene('a: node "Orders DB" icon=database icon.style=solid icon.color=#ff0000 at 40,40\nb: icon at 300,40 icon=cloud icon.style=solid stroke=#0000ff\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('fill="#ff0000"><path d="M128,24'), 'the box icon is filled in icon.color');
+  assert.ok(/scale\(0\.0[0-9]+\)" fill="#0000ff"/.test(svg), 'the icon shape is filled in its stroke colour, scaled from the 256 box');
+  assert.ok(!/stroke="#ff0000"/.test(svg));
+  // every built-in icon has a solid twin
+  for (const n of Object.keys(ICONS)) assert.ok(SOLID_ICONS[n]?.length, `solid ${n}`);
+  const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
+  assert.match(msgs('a: node "A" icon=server icon.style=filled at 40,40\n'), /icon.style=filled: an icon is drawn as an outline/);
+  const look = parseLook('icon bolt "M13 3 L4 14 H12 L11 21 L20 10 H12 Z"\n');
+  assert.match(check(buildScene('look "x.look"\na: rect "A" icon=bolt icon.style=solid at 40,40\n', look)).map((i) => i.msg).join(), /icon bolt has no solid version/);
 });
 
 test('an icon on its own is the shape: no box, fill/stroke/sw style the icon, its text is a caption underneath', async () => {

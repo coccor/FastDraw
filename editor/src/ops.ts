@@ -113,8 +113,14 @@ export function editText(src: string, e: El, text: string): string {
 }
 
 export function setProps(src: string, sc: Scene, ids: string[], k: string, v: string | null): string {
+  return setManyProps(src, sc, ids, { [k]: v });
+}
+
+// Several props in one edit (one undo step), e.g. an icon and its style.
+export function setManyProps(src: string, sc: Scene, ids: string[], kv: Record<string, string | null>): string {
   const patches = new Map<number, Patch>();
-  for (const id of ids) { const e = find(sc, id); if (e) patches.set(e.el.line, (t) => setProp(t, k, v)); }
+  const apply: Patch = (t) => Object.entries(kv).reduce((acc, [k, v]) => setProp(acc, k, v), t);
+  for (const id of ids) { const e = find(sc, id); if (e) patches.set(e.el.line, apply); }
   return patchSource(src, patches);
 }
 

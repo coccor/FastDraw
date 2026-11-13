@@ -948,6 +948,7 @@ export function App() {
   // ---- actions ------------------------------------------------------------
   const act = {
     setProp: (k: string, v: string | null) => src !== null && commit(ops.setProps(src, scene, sel, k, v)),
+    setProps: (kv: Record<string, string | null>) => src !== null && commit(ops.setManyProps(src, scene, sel, kv)),
     setStyle: (n: string) => src !== null && commit(ops.setStyle(src, scene, sel, n)),
     setOp: (o: string) => src !== null && commit(ops.setOperator(src, scene, sel, o)),
     reorder: (w: 'front' | 'back') => src !== null && commit(ops.reorder(src, scene, sel, w)),
