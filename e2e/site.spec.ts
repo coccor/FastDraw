@@ -48,3 +48,20 @@ test('the guide is served for agents: llms.txt and each kind', async ({ request 
   expect(kind.ok()).toBe(true);
   expect(await kind.text()).toMatch(/^# /);
 });
+
+test('the site follows a dark system setting, and the toggle switches and remembers the theme', async ({ browser }) => {
+  const ctx = await browser.newContext({ colorScheme: 'dark' });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  // a dark page, and the showcase starts on the Night look
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(11, 18, 38)');
+  await expect(page.getByRole('radio', { name: 'Night' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('button', { name: 'Light theme' }).click();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  // the choice outlives the system setting, on this page and in the editor
+  await page.goto('/edit/');
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await ctx.close();
+});

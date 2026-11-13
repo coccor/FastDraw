@@ -2,7 +2,7 @@
 
 A look is one text file (`.look`) that decides how every style is drawn: colours, fonts, shapes, lines and text. Diagrams point to it with `look "./team.look"`. Change the look and every diagram that uses it changes.
 
-Four looks ship with FastDraw and need no file: `look headline`, `look reference`, `look sketch` and `look whiteboard` (a bare name, no quotes or `.look`). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
+Five looks ship with FastDraw and need no file: `look headline`, `look night`, `look reference`, `look sketch` and `look whiteboard` (a bare name, no quotes or `.look`). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
 
 ## How to work
 

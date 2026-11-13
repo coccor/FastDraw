@@ -306,7 +306,7 @@ html, body { overflow-x: clip; }
 .mark { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; }
 .mark.violet { background: #ece7ff; color: #6d4aff; }
 .mark.coral { background: #ffe6de; color: #e5603f; }
-.mark.teal { background: #d6f5ee; color: #0e9c8c; }
+.mark.amber { background: #fef3c7; color: #d97706; }
 .mark.sky { background: #dcecff; color: #2a86e0; }
 .why dd { margin-left: 50px; }
 
@@ -369,3 +369,57 @@ footer .muted { color: #9a95c4; }
 }
 @keyframes glint { 0%, 70% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
 
+
+/* ---- dark theme: a deep navy page, the night look's colours; diagrams are drawn in Night --------- */
+.themetoggle {
+  display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border-radius: 10px;
+  background: none; border: 1px solid transparent; color: var(--muted);
+}
+.themetoggle:hover { color: var(--ink); border-color: var(--hair); }
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0b1226; --dots: rgba(226, 232, 240, .07);
+  --ink: #e2e8f0; --muted: #a3b0c4; --soft: #64748b;
+  --accent: #8b8cff; --accent-ink: #c7c8ff; --accent-tint: rgba(139, 140, 255, .14); --accent-tint-2: rgba(139, 140, 255, .22);
+  --link: #93c5fd; --box: #131c38; --stroke: rgba(226, 232, 240, .16); --hair: rgba(226, 232, 240, .09);
+}
+html[data-theme="dark"] code { background: rgba(226, 232, 240, .08); }
+html[data-theme="dark"] .top { background: rgba(11, 18, 38, .72); border-bottom-color: rgba(226, 232, 240, .07); }
+html[data-theme="dark"] .hero::before { opacity: .55; }
+
+html[data-theme="dark"] .btn { background: var(--box); border-color: rgba(226, 232, 240, .14); box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 14px -8px rgba(0, 0, 0, .6); }
+html[data-theme="dark"] .btn:hover { background: #1a2546; box-shadow: 0 2px 4px rgba(0, 0, 0, .3), 0 12px 24px -10px rgba(0, 0, 0, .7); }
+html[data-theme="dark"] .btn.focal { background: linear-gradient(180deg, #6a63f4, #554ce8); border-color: #6d66f5; color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 10px 26px -10px rgba(99, 91, 255, .8); }
+html[data-theme="dark"] .btn.focal:hover { background: linear-gradient(180deg, #756ff6, #5d55ef); }
+
+/* the opening scene's windows */
+html[data-theme="dark"] .win, html[data-theme="dark"] .diff { border-color: rgba(226, 232, 240, .1); box-shadow: 0 1px 0 rgba(226, 232, 240, .04) inset, 0 40px 70px -30px rgba(0, 0, 0, .8); }
+html[data-theme="dark"] .bar { background: linear-gradient(180deg, #18223f, #131c38); }
+html[data-theme="dark"] .board { background-color: #0b1226; background-image: radial-gradient(circle at 1px 1px, rgba(226, 232, 240, .08) 0.9px, transparent 1.2px); }
+html[data-theme="dark"] .tools { box-shadow: 0 4px 12px -6px rgba(0, 0, 0, .6); }
+html[data-theme="dark"] .tools svg.on { background: rgba(139, 140, 255, .18); color: #c7c8ff; }
+html[data-theme="dark"] .minus { background: rgba(248, 113, 113, .12); color: #fca5a5; }
+html[data-theme="dark"] .plus { background: rgba(74, 222, 128, .12); color: #86efac; }
+
+/* the feature band is Harbor night's page */
+html[data-theme="dark"] .art { background-color: #0b1226; background-image: radial-gradient(circle at 1px 1px, rgba(226, 232, 240, .08) 0.9px, transparent 1.2px); border-top-color: rgba(226, 232, 240, .06); }
+
+/* the showcase */
+html[data-theme="dark"] .showcase { background: linear-gradient(180deg, #121a36 0%, #0e1630 55%, var(--page) 100%); }
+html[data-theme="dark"] .looks button { box-shadow: none; }
+html[data-theme="dark"] .showframe { box-shadow: 0 0 0 1px rgba(226, 232, 240, .08), 0 50px 90px -40px rgba(0, 0, 0, .8); }
+
+/* setup, cards and tiles */
+html[data-theme="dark"] .setup { box-shadow: 0 0 0 1px rgba(226, 232, 240, .08), 0 20px 50px -28px rgba(0, 0, 0, .8); }
+html[data-theme="dark"] .tabs { background: linear-gradient(180deg, #18223f, #131c38); }
+html[data-theme="dark"] .command { background: #070c1c; box-shadow: inset 0 0 0 1px rgba(226, 232, 240, .08); }
+html[data-theme="dark"] .asks li { background: var(--box); box-shadow: 0 0 0 1px rgba(226, 232, 240, .06), 0 8px 18px -12px rgba(0, 0, 0, .7); }
+html[data-theme="dark"] .why dl > div { background: var(--box); box-shadow: 0 0 0 1px rgba(226, 232, 240, .07), 0 14px 34px -22px rgba(0, 0, 0, .8); }
+html[data-theme="dark"] .mark.violet { background: rgba(167, 139, 250, .16); color: #c4b5fd; }
+html[data-theme="dark"] .mark.coral { background: rgba(251, 146, 120, .15); color: #fdba9f; }
+html[data-theme="dark"] .mark.amber { background: rgba(251, 191, 36, .14); color: #fcd34d; }
+html[data-theme="dark"] .mark.sky { background: rgba(56, 189, 248, .15); color: #7dd3fc; }
+html[data-theme="dark"] .tile { box-shadow: 0 0 0 1px rgba(226, 232, 240, .07), 0 8px 20px -14px rgba(0, 0, 0, .7); }
+html[data-theme="dark"] .tile:hover { box-shadow: 0 0 0 1.5px var(--accent), 0 18px 34px -16px rgba(0, 0, 0, .8); }
+html[data-theme="dark"] footer { background: #070c1c; border-top: 1px solid rgba(226, 232, 240, .06); }

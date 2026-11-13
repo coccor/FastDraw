@@ -40,7 +40,7 @@ test('look <name> uses a bundled look; an unknown name or missing file is an err
     assert.equal(sc.look, bundledLook(n));
     assert.ok(renderSvg(sc).length > 0);
   }
-  assert.match(buildScene(`look nope\n${body}`, null).issues[0]!.msg, /no look named nope; named looks: headline, reference, sketch, whiteboard/);
+  assert.match(buildScene(`look nope\n${body}`, null).issues[0]!.msg, /no look named nope; named looks: headline, night, reference, sketch, whiteboard/);
   assert.match(buildScene(`look "./x.look"\n${body}`, null).issues[0]!.msg, /look file not found/);
   // a bare name wins over whatever look a caller passed in
   assert.equal(buildScene(`look sketch\n${body}`, defaultLook()).look, bundledLook('sketch'));

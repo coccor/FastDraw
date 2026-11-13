@@ -222,3 +222,27 @@ button.primary:hover { background: var(--accent-ink); }
 @media (max-width: 900px) {
   .bottomcenter { bottom: 64px; max-width: calc(100% - 24px); }
 }
+
+/* ---- dark theme: the panels go dark; the canvas keeps the diagram's own look -------------------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e2e8f0; --mute: #94a3b8; --line: #263253; --surface: #131c38; --bg: #0b1226;
+  --accent: #8b8cff; --accent-soft: rgba(139, 140, 255, .16); --accent-ink: #c7c8ff; --hover: rgba(226, 232, 240, .07);
+  --warn-bg: #3a2e12; --warn-line: #7a5d1c; --warn-ink: #fcd58a; --bad: #f87171; --good: #4ade80;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .35);
+}
+html[data-theme="dark"] select, html[data-theme="dark"] input,
+html[data-theme="dark"] .banner button, html[data-theme="dark"] .textedit,
+html[data-theme="dark"] .card { background: var(--surface); }
+html[data-theme="dark"] .hintbar { background: #e2e8f0; color: #0b1226; }
+html[data-theme="dark"] .seg button:hover { background: rgba(226, 232, 240, .1); }
+html[data-theme="dark"] .thumbcard, html[data-theme="dark"] .lookcard, html[data-theme="dark"] .tpl { background: #0f1730; }
+html[data-theme="dark"] .thumbcard:hover, html[data-theme="dark"] .lookcard:hover { border-color: #3b4870; background: #1a2546; }
+html[data-theme="dark"] .choice:hover, html[data-theme="dark"] .tpl:hover { background: #1a2546; }
+html[data-theme="dark"] .lookthumb, html[data-theme="dark"] .tplthumb { background: #fff; }
+html[data-theme="dark"] .modal { background: rgba(2, 6, 18, .6); }
+html[data-theme="dark"] .card { box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
+html[data-theme="dark"] button.primary { color: #0b1226; }
+html[data-theme="dark"] .exporterr { color: var(--bad); }
+html[data-theme="dark"] .tabx:hover { background: rgba(226, 232, 240, .1); }
+html[data-theme="dark"] .swatch, html[data-theme="dark"] .canvasbg .custom, html[data-theme="dark"] .swatches .custom { border-color: rgba(226, 232, 240, .2); }

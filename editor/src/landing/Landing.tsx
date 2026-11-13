@@ -8,6 +8,9 @@ import { TEMPLATES, type Template } from '../templates.ts';
 import { Hero } from './Hero.tsx';
 import { Showcase } from './Showcase.tsx';
 import { Illustration } from './Illustration.tsx';
+import { ThemeToggle } from '../ThemeToggle.tsx';
+import { useTheme } from '../theme.ts';
+import { inTheme } from './inTheme.ts';
 
 const REPO = 'https://github.com/coccor/fastdraw';
 
@@ -109,11 +112,12 @@ function Tile({ t, i }: { t: Template; i: number }) {
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  const theme = useTheme();
   const view = useMemo(() => {
     if (!seen) return null;
-    const sc = buildScene(t.text, null);
+    const sc = buildScene(inTheme(t.text, theme), null);
     return { body: renderBody(sc), box: `${sc.x} ${sc.y} ${sc.w} ${sc.h}` };
-  }, [seen, t]);
+  }, [seen, t, theme]);
   return (
     <a ref={ref} className="tile" data-reveal="" style={{ ["--d" as string]: i % 4 }} href={`edit/?kind=${encodeURIComponent(t.kind)}`}>
       <span className="pic">
@@ -151,6 +155,7 @@ export function Landing() {
           <a href="#setup">Set up</a>
           <a href="#kinds">Kinds</a>
           <a href={REPO}>GitHub</a>
+          <ThemeToggle className="themetoggle" />
           <a className="btn" href="edit/">Open the editor</a>
         </nav>
       </header>
@@ -202,7 +207,7 @@ export function Landing() {
           <dl>
             <div data-reveal="" style={{ ["--d" as string]: 0 }}><dt><span className="mark violet" aria-hidden="true"><GitPullRequest size={19} /></span>It is reviewed like code</dt><dd>Diagrams live in the repository next to what they describe. A change shows up as a few lines in a diff.</dd></div>
             <div data-reveal="" style={{ ["--d" as string]: 1 }}><dt><span className="mark coral" aria-hidden="true"><MousePointer2 size={19} /></span>Your edits are kept</dt><dd>Moving a box changes one line. The agent leaves what you arranged alone and places only what it adds.</dd></div>
-            <div data-reveal="" style={{ ["--d" as string]: 2 }}><dt><span className="mark teal" aria-hidden="true"><Palette size={19} /></span>One look for the whole team</dt><dd>A <code>.look</code> file names the styles: what a service, a store or the main path looks like. Every diagram follows it.</dd></div>
+            <div data-reveal="" style={{ ["--d" as string]: 2 }}><dt><span className="mark amber" aria-hidden="true"><Palette size={19} /></span>One look for the whole team</dt><dd>A <code>.look</code> file names the styles: what a service, a store or the main path looks like. Every diagram follows it.</dd></div>
             <div data-reveal="" style={{ ["--d" as string]: 3 }}><dt><span className="mark sky" aria-hidden="true"><ShieldCheck size={19} /></span>Nothing is uploaded</dt><dd>The editor runs in your browser and saves to your files. Exported PNG and SVG files carry the diagram inside, so they open for editing again.</dd></div>
           </dl>
         </section>
