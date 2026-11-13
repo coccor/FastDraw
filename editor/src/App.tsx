@@ -639,7 +639,7 @@ export function App() {
         const last = d.pts[d.pts.length - 1];
         if (Math.hypot(q.x - last.x, q.y - last.y) * view.k >= 1) d.pts.push(q);
       }
-      setInk([...d.pts]);
+      setInk(ops.smoothStroke(d.pts, view.k)); // what is shown while drawing is what will be kept
       return;
     }
     if (d.type === 'move') {
@@ -745,7 +745,7 @@ export function App() {
     }
     if (d.type === 'free') {
       // the pen stays in hand, and the stroke is not selected, so the next one can follow straight away
-      const r = ops.addFreehand(src, d.pts);
+      const r = ops.addFreehand(src, d.pts, view.k);
       if (r) commit(r.src, []);
       return;
     }

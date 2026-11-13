@@ -203,38 +203,111 @@ export function addShape(src: string, style: string, b: Box, sized: boolean, tab
   return { src: appendStatements(src, [line]), id };
 }
 
-// Fewer points that still follow the same path: drop every point closer than `eps` to the line between its neighbours.
-function simplify(pts: Pt[], eps: number): Pt[] {
-  if (pts.length < 3) return pts;
+// ---- drawing by hand ------------------------------------------------------
+const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+function segDist(p: Pt, a: Pt, b: Pt): number {
+  const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+  const t = l2 ? Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)) : 0;
+  return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+}
+
+// The pointer's path with the hand's tremor taken out: evenly spaced points along it, each moved to the
+// weighted middle of its neighbours. Sharp turns are kept as corners (a tick stays a tick), and the two ends
+// stay where the pen went down and came up. k is the zoom, so the result is the same on screen at any zoom.
+export function smoothStroke(path: Pt[], k = 1): Pt[] {
+  if (path.length < 3) return path;
+  const step = 1.5 / k;
+  const even: Pt[] = [path[0]];
+  let need = step;
+  for (let i = 1; i < path.length; i++) {
+    let a = path[i - 1];
+    const b = path[i];
+    let d = dist(a, b);
+    while (d >= need) {
+      const t = need / d;
+      a = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      even.push(a);
+      d -= need; need = step;
+    }
+    need -= d;
+  }
+  const end = path[path.length - 1];
+  if (dist(even[even.length - 1], end) > step / 4) even.push(end); else even[even.length - 1] = end;
+  // each point averaged with its neighbours, never reaching past a pinned point (an end or a corner)
+  const blur = (pts: Pt[], sigma: number, pins: number[]) => {
+    const r = Math.ceil((3 * sigma) / step);
+    const w = Array.from({ length: r + 1 }, (_, j) => Math.exp(-((j * step) ** 2) / (2 * sigma * sigma)));
+    const room = pts.map(() => r);
+    for (const c of pins) for (let j = Math.max(0, c - r); j <= Math.min(pts.length - 1, c + r); j++) room[j] = Math.min(room[j], Math.abs(j - c));
+    return pts.map((p, i) => {
+      let x = p.x, y = p.y, sum = 1;
+      for (let j = 1; j <= room[i]; j++) { x += (pts[i - j].x + pts[i + j].x) * w[j]; y += (pts[i - j].y + pts[i + j].y) * w[j]; sum += 2 * w[j]; }
+      return { x: x / sum, y: y / sum };
+    });
+  };
+  const ends = [0, even.length - 1];
+  // a corner: where a lightly smoothed copy turns sharply within a few pixels, at the sharpest point of the turn
+  const light = blur(even, 2 / k, ends), d = 5, turn = light.map(() => 0);
+  for (let i = d; i < light.length - d; i++) {
+    const ax = light[i].x - light[i - d].x, ay = light[i].y - light[i - d].y, bx = light[i + d].x - light[i].x, by = light[i + d].y - light[i].y;
+    turn[i] = Math.abs(Math.atan2(ax * by - ay * bx, ax * bx + ay * by));
+  }
+  const corners = turn.map((t, i) => i).filter((i) => turn[i] > 1.2 && turn.slice(Math.max(0, i - d), i + d + 1).every((t, j) => t < turn[i] || j + Math.max(0, i - d) === i || (t === turn[i] && j + Math.max(0, i - d) > i)));
+  return blur(even, 6 / k, [...ends, ...corners]);
+}
+
+// Which points to keep so that straight lines between them stay within eps of the path.
+function keepers(pts: Pt[], eps: number): number[] {
   const keep = new Uint8Array(pts.length);
   keep[0] = keep[pts.length - 1] = 1;
   const stack: [number, number][] = [[0, pts.length - 1]];
   while (stack.length) {
     const [a, b] = stack.pop()!;
-    const A = pts[a], B = pts[b], dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy);
     let far = -1, max = eps;
-    for (let i = a + 1; i < b; i++) {
-      const d = len ? Math.abs((pts[i].x - A.x) * dy - (pts[i].y - A.y) * dx) / len : Math.hypot(pts[i].x - A.x, pts[i].y - A.y);
-      if (d > max) { max = d; far = i; }
-    }
+    for (let i = a + 1; i < b; i++) { const d = segDist(pts[i], pts[a], pts[b]); if (d > max) { max = d; far = i; } }
     if (far >= 0) { keep[far] = 1; stack.push([a, far], [far, b]); }
   }
-  return pts.filter((_, i) => keep[i]);
+  return [...keep.keys()].filter((i) => keep[i]);
 }
 
-// A stroke drawn by hand: the pointer's path, thinned so the file stays short, kept as one smooth open line.
-// Returns null for a press that did not travel.
-export function addFreehand(src: string, path: Pt[], eps = 1): { src: string; id: string } | null {
-  const pts: Pt[] = [];
-  for (const q of simplify(path, eps)) {
-    const p = { x: Math.round(q.x), y: Math.round(q.y) }, last = pts[pts.length - 1];
-    if (!last || last.x !== p.x || last.y !== p.y) pts.push(p);
+// The few points whose smooth line (drawn the way an open smooth polygon is drawn) stays within tol of the
+// whole path. Starts from the fewest that could do and adds one wherever the drawn curve strays.
+function fitCurve(D: Pt[], tol: number): Pt[] {
+  let idx = keepers(D, tol * 2);
+  for (let round = 0; round < 12; round++) {
+    const P = idx.map((i) => D[i]), at = (i: number) => P[Math.min(Math.max(i, 0), P.length - 1)];
+    const add: number[] = [];
+    for (let s = 0; s < idx.length - 1; s++) {
+      const lo = idx[s], hi = idx[s + 1];
+      if (hi - lo < 2) continue;
+      const p0 = at(s - 1), p1 = at(s), p2 = at(s + 1), p3 = at(s + 2);
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }, c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      let worst = 0;
+      for (let n = 1; n < 8 && worst <= tol; n++) {
+        const t = n / 8, u = 1 - t;
+        const q = { x: u * u * u * p1.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * p2.x, y: u * u * u * p1.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * p2.y };
+        let near = Infinity;
+        for (let i = lo; i < hi && near > tol; i++) near = Math.min(near, segDist(q, D[i], D[i + 1]));
+        worst = Math.max(worst, near);
+      }
+      if (worst > tol) add.push((lo + hi) >> 1);
+    }
+    if (!add.length) break;
+    idx = [...idx, ...add].sort((a, b) => a - b);
   }
-  if (pts.length < 2) return null;
-  const x0 = Math.min(...pts.map((q) => q.x)), y0 = Math.min(...pts.map((q) => q.y));
-  if (Math.max(...pts.map((q) => q.x)) - x0 < 3 && Math.max(...pts.map((q) => q.y)) - y0 < 3) return null;
+  return idx.map((i) => D[i]);
+}
+
+// A stroke drawn by hand: the pointer's path, smoothed, then kept as the few points a smooth open line needs
+// to follow it, so the file stays short. Returns null for a press that did not travel.
+export function addFreehand(src: string, path: Pt[], k = 1): { src: string; id: string } | null {
+  const xs = path.map((q) => q.x), ys = path.map((q) => q.y);
+  if (path.length < 2 || (Math.max(...xs) - Math.min(...xs) < 3 && Math.max(...ys) - Math.min(...ys) < 3)) return null;
+  const pts = fitCurve(smoothStroke(path, k), 0.5 / k);
+  const x0 = Math.floor(Math.min(...pts.map((q) => q.x))), y0 = Math.floor(Math.min(...pts.map((q) => q.y)));
+  const r1 = (v: number) => String(Math.round(v * 10) / 10);
   const id = freshId(src, 'stroke');
-  const line = `${id}: freehand at ${x0},${y0} points=${pts.map((q) => `${q.x - x0},${q.y - y0}`).join(';')}`;
+  const line = `${id}: freehand at ${x0},${y0} points=${pts.map((q) => `${r1(q.x - x0)},${r1(q.y - y0)}`).join(';')}`;
   return { src: appendStatements(src, [line]), id };
 }
 

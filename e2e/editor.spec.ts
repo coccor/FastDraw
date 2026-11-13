@@ -391,7 +391,7 @@ test('draw by hand: the pen leaves a short smooth stroke, stays in hand, and a s
   await page.mouse.up();
   await expect(page.locator('svg.canvas polyline.ink')).toHaveCount(0);
   const line = lineOf(await source(page), 'stroke');
-  expect(line).toMatch(/^stroke: freehand at 300,2\d points=(\d+,\d+;){3,}\d+,\d+$/);
+  expect(line).toMatch(/^stroke: freehand at 300,2\d points=([\d.]+,[\d.]+;){3,}[\d.]+,[\d.]+$/);
   expect(line.split(';').length).toBeLessThan(25); // 40 pointer positions, thinned to the few that carry the shape
   // the pen is still in hand: a second stroke needs no second trip to the toolbar
   await wave(300, 340);
