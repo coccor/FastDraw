@@ -752,10 +752,10 @@ export function App() {
             {scene.texts.map((t) => <rect key={t.id} data-id={t.id} x={t.x - 2} y={t.y - 2} width={t.w + 4} height={t.h + 4} />)}
           </g>
           <g fill="none" stroke="var(--accent)" strokeWidth={1.5 / view.k} pointerEvents="none">
-            {hovered && (hovered.kind === 'conn'
+            {hovered && !editing && (hovered.kind === 'conn'
               ? <polyline points={hovered.el.pts.map((p) => `${p.x},${p.y}`).join(' ')} strokeWidth={4 / view.k} opacity={0.25} />
               : <rect x={ops.boxOf(hovered).x - 2} y={ops.boxOf(hovered).y - 2} width={ops.boxOf(hovered).w + 4} height={ops.boxOf(hovered).h + 4} opacity={0.45} rx={3 / view.k} />)}
-            {sel.map((id) => {
+            {(editing ? [] : sel).map((id) => {
               const e = ops.find(scene, id);
               if (!e) return null;
               if (e.kind === 'conn') return <polyline key={id} points={e.el.pts.map((p) => `${p.x},${p.y}`).join(' ')} strokeWidth={3.5 / view.k} opacity={0.45} />;
@@ -767,18 +767,18 @@ export function App() {
             {ghost?.kind === 'box' && <rect x={ghost.box.x} y={ghost.box.y} width={ghost.box.w} height={ghost.box.h} fill={ghost.dashed ? 'rgba(84,72,214,0.07)' : 'none'} strokeDasharray={ghost.dashed ? `${4 / view.k}` : undefined} />}
             {ghost?.kind === 'line' && <line x1={ghost.a.x} y1={ghost.a.y} x2={ghost.b.x} y2={ghost.b.y} />}
           </g>
-          {single?.kind === 'shape' && tool === 'select' && (
+          {single?.kind === 'shape' && tool === 'select' && !editing && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
               {([['nw', single.el.x - 4, single.el.y - 4], ['ne', single.el.x + single.el.w + 4, single.el.y - 4], ['sw', single.el.x - 4, single.el.y + single.el.h + 4], ['se', single.el.x + single.el.w + 4, single.el.y + single.el.h + 4]] as [string, number, number][])
                 .map(([c, x, y]) => <rect key={c} data-handle={c} x={x - hs / 2} y={y - hs / 2} width={hs} height={hs} rx={1.5 / view.k} style={{ cursor: c === 'nw' || c === 'se' ? 'nwse-resize' : 'nesw-resize' }} />)}
             </g>
           )}
-          {single?.kind === 'shape' && single.el.poly && tool === 'select' && (
+          {single?.kind === 'shape' && single.el.poly && tool === 'select' && !editing && (
             <g fill="var(--accent)" stroke="#fff" strokeWidth={1 / view.k}>
               {single.el.poly.map((q, i) => <circle key={i} data-vertex={i} cx={q.x} cy={q.y} r={hs * 0.55} style={{ cursor: 'move' }}><title>Drag to move this corner</title></circle>)}
             </g>
           )}
-          {single?.kind === 'conn' && tool === 'select' && (
+          {single?.kind === 'conn' && tool === 'select' && !editing && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
               {single.el.ortho && single.el.pts.slice(0, -1).map((a, i) => {
                 const b = single.el.pts[i + 1], len = Math.abs(b.x - a.x) + Math.abs(b.y - a.y), h = a.y === b.y;
