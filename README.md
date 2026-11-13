@@ -141,6 +141,7 @@ All of these were written by agents from the guides alone. Sources are in
 | `src/defaultLook.ts` | The built-in look, used when a diagram names none |
 | `agents/` | Thin instruction files that point coding agents at `fastdraw guide` |
 | `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison |
+| `looks/whiteboard.look` | Whiteboard: an online-whiteboard look with pastel sticky notes, white rounded shapes, curved connectors and one blue accent. Samples in `examples/whiteboard/` |
 | `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
 | `editor/` | The browser editor (Vite + React) |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
