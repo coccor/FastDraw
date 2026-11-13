@@ -27,6 +27,8 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .topleft, .topcenter, .topright, .bottomleft { position: absolute; display: flex; pointer-events: none; }
 .topleft > *, .topcenter > *, .topright > *, .bottomleft > * { pointer-events: auto; }
 .topleft { top: 12px; left: 12px; bottom: 64px; flex-direction: column; align-items: flex-start; gap: 10px; }
+/* only the panel gives way (it scrolls) when the column is short; the menu button keeps its size */
+.topleft > :not(.panel) { flex-shrink: 0; }
 .topcenter { top: 12px; left: 50%; transform: translateX(-50%); flex-direction: column; align-items: center; gap: 8px; max-width: calc(100% - 560px); }
 .topright { top: 12px; right: 12px; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 340px; }
 .bottomleft { bottom: 12px; left: 12px; gap: 8px; }
@@ -53,8 +55,9 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .canvasbg { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 6px; }
 .canvasbg > span { color: var(--mute); font-size: 12px; }
 .canvasbg .row { display: flex; gap: 5px; align-items: center; }
-.canvasbg .custom { position: relative; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
-.canvasbg .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.canvasbg .custom, .swatches .custom { position: relative; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
+.swatches .custom.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.canvasbg .custom input, .swatches .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .canvasbg .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
 .dropdown .canvasbg button.link { padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 

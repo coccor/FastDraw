@@ -498,6 +498,8 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const errors = noPageErrors(page);
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  // the tall panel scrolls; it never squashes the menu button above it
+  expect((await page.getByRole('button', { name: 'Menu' }).boundingBox())!.height).toBe(38);
   const tiles = page.getByRole('radiogroup', { name: 'Icons' });
   await tiles.getByRole('radio', { name: 'database', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
@@ -523,6 +525,11 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const ink = await page.locator('.panel .swatch').last().getAttribute('aria-label');
   await page.locator('.panel .swatch').last().click();
   expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
+  // any colour, from the system colour picker
+  await page.getByLabel('Custom icon colour').fill('#e0457b');
+  expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
+  await expect(page.locator('svg.canvas g[stroke="#e0457b"]')).toHaveCount(1);
+  await expect(page.locator('.panel .swatches .custom.on')).toHaveCount(1);
   await page.getByRole('button', { name: 'Text colour' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
   await page.getByRole('button', { name: 'Remove' }).click();

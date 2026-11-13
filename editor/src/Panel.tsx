@@ -25,7 +25,9 @@ export type PanelActions = {
   setRoute: (route: string) => void;
 };
 
-export function Swatches({ sc, values, current, onPick }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void }) {
+// `custom` adds a last swatch that opens the system colour picker; it shows the chosen colour when that is not one of `values`.
+export function Swatches({ sc, values, current, onPick, custom }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom?: string }) {
+  const own = !!current && !values.includes(current) && /^#[0-9a-f]{6}$/i.test(current) ? current : null;
   return (
     <div className="swatches">
       {values.map((v) => {
@@ -35,6 +37,11 @@ export function Swatches({ sc, values, current, onPick }: { sc: Scene; values: s
             onClick={() => onPick(v)} style={{ background: c === 'none' ? undefined : c }} />
         );
       })}
+      {custom && (
+        <label className={'custom' + (own ? ' on' : '')} title={own ? `${own} (pick another)` : 'Any colour'} style={own ? { background: own } : undefined}>
+          <input type="color" aria-label={custom} value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : '#000000')} onChange={(e) => onPick(e.target.value)} />
+        </label>
+      )}
     </div>
   );
 }
@@ -251,7 +258,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
                   <div className="seg" style={{ marginBottom: 4 }}>
                     <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
                   </div>
-                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} />
+                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" />
                 </div>
               )}
             </>
