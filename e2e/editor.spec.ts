@@ -515,7 +515,7 @@ test('icons: the Solid tab picks the filled twin of an icon, and Outline takes i
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
   await expect(solid.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
   // drawn filled, from the 256 box, with no outline stroke
-  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] path[d^="M128,24"]')).toHaveCount(1);
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] path[d^="M32,60"]')).toHaveCount(1);
   // reopening the box shows the Solid tab; the same icon in Outline is not the chosen one
   await page.getByRole('tab', { name: 'Outline' }).click();
   const outline = page.getByRole('radiogroup', { name: 'Icons' });

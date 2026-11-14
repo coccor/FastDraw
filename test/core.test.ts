@@ -528,7 +528,10 @@ test('icon.style=solid draws the filled twin of a built-in icon in one colour', 
   const sc = scene('a: node "Orders DB" icon=database icon.style=solid icon.color=#ff0000 at 40,40\nb: icon at 300,40 icon=cloud icon.style=solid stroke=#0000ff\n');
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   const svg = renderSvg(sc);
-  assert.ok(svg.includes('fill="#ff0000"><path d="M128,24'), 'the box icon is filled in icon.color');
+  assert.ok(svg.includes('fill="#ff0000"><path d="M32,60'), 'the box icon is filled in icon.color');
+  // database and wifi are drawn as separate solid parts, the gaps between them standing in for the outline's lines
+  assert.equal(SOLID_ICONS.database.length, 3);
+  assert.equal(SOLID_ICONS.wifi.length, 3);
   assert.ok(/scale\(0\.0[0-9]+\)" fill="#0000ff"/.test(svg), 'the icon shape is filled in its stroke colour, scaled from the 256 box');
   assert.ok(!/stroke="#ff0000"/.test(svg));
   // every built-in icon has a solid twin
