@@ -17,6 +17,7 @@ import mono500 from '../../fonts/GeistMono-Medium.ttf?url';
 import serif from '../../fonts/InstrumentSerif-Regular.ttf?url';
 import serifItalic from '../../fonts/InstrumentSerif-Italic.ttf?url';
 import sketchHand from '../../fonts/SketchHand-Regular.ttf?url';
+import archivo from '../fonts/Archivo-Variable.ttf?url';
 
 const FACES: [string, number, string, string][] = [
   ['Libre Franklin', 400, 'normal', franklin400], ['Libre Franklin', 500, 'normal', franklin500],
@@ -35,7 +36,9 @@ const face = (f: [string, number, string, string], src: string) =>
 // Make the fonts available to the page.
 export function installFonts(): void {
   const el = document.createElement('style');
-  el.textContent = FACES.map((f) => face(f, f[3])).join('\n');
+  // Archivo is the site's and the editor's own typeface (one variable file: weight and width); diagrams do not use it
+  el.textContent = FACES.map((f) => face(f, f[3])).join('\n')
+    + `\n@font-face{font-family:'Archivo';font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap;src:url(${archivo}) format('truetype');}`;
   document.head.appendChild(el);
 }
 

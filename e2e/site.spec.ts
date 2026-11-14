@@ -4,7 +4,7 @@ test('the landing page says what FastDraw is, sets up an agent, and opens a kind
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your coding agent draws the diagram');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your agent draws the diagram');
   // the setup tabs switch the command
   await expect(page.locator('#setup-panel .command code').first()).toHaveText('npx fastdraw setup claude');
   await page.getByRole('tab', { name: 'GitHub Copilot' }).click();
@@ -19,7 +19,7 @@ test('the landing page says what FastDraw is, sets up an agent, and opens a kind
 test('the showcase redraws the same file in each look, and the page does not scroll sideways on a phone', async ({ page }) => {
   await page.goto('/');
   const svg = page.locator('.showframe svg');
-  await expect(svg).toHaveAttribute('aria-label', /Whiteboard look/);
+  await expect(svg).toHaveAttribute('aria-label', /Built-in look/);
   const before = await svg.innerHTML();
   await page.getByRole('radio', { name: 'Sketch' }).click();
   await expect(svg).toHaveAttribute('aria-label', /Sketch look/);
@@ -56,7 +56,7 @@ test('the site follows a dark system setting, and the toggle switches and rememb
   const html = page.locator('html');
   await expect(html).toHaveAttribute('data-theme', 'dark');
   // a dark page, and the showcase starts on the Night look
-  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(11, 18, 38)');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(13, 18, 69)');
   await expect(page.getByRole('radio', { name: 'Night' })).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: 'Light theme' }).click();
   await expect(html).toHaveAttribute('data-theme', 'light');

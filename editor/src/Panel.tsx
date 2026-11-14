@@ -36,7 +36,7 @@ export function Swatches({ sc, values, current, onPick, custom, label }: { sc: S
         const c = color(sc.look, v);
         return (
           <button key={v} title={v === 'none' ? 'None' : v} aria-label={v} className={'swatch' + (current === v ? ' on' : '') + (c === 'none' ? ' none' : '')}
-            onClick={() => onPick(v)} style={{ background: c === 'none' ? undefined : c }} />
+            onClick={() => onPick(v)} style={c === 'none' ? undefined : { '--c': c } as React.CSSProperties} />
         );
       })}
       {custom && (
