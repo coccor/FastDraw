@@ -48,7 +48,7 @@ export type Scene = {
 export const SERIES = ['bars', 'line', 'area', 'dots'];
 // The background keys a diagram's canvas line may set, overriding the look's canvas statement.
 export const CANVAS_KEYS = ['paper', 'dots', 'dotgap'];
-export const MARKERS = ['none', 'arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many'];
+export const MARKERS = ['none', 'arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'stop', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many'];
 
 const DIRS: Record<Side, Pt> = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
