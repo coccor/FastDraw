@@ -1149,7 +1149,7 @@ export function App() {
             })}
             {guides.x !== undefined && <line x1={guides.x} y1={-2000} x2={guides.x} y2={4000} stroke="#e0338a" strokeDasharray={`${4 / view.k}`} />}
             {guides.y !== undefined && <line x1={-2000} y1={guides.y} x2={4000} y2={guides.y} stroke="#e0338a" strokeDasharray={`${4 / view.k}`} />}
-            {ghost?.kind === 'box' && <rect x={ghost.box.x} y={ghost.box.y} width={ghost.box.w} height={ghost.box.h} fill={ghost.dashed ? 'var(--accent-soft)' : 'none'} strokeDasharray={ghost.dashed ? `${4 / view.k}` : undefined} />}
+            {ghost?.kind === 'box' && <rect x={ghost.box.x} y={ghost.box.y} width={ghost.box.w} height={ghost.box.h} fill={ghost.dashed ? 'rgba(84,72,214,0.07)' : 'none'} strokeDasharray={ghost.dashed ? `${4 / view.k}` : undefined} />}
             {ghost?.kind === 'line' && <line x1={ghost.a.x} y1={ghost.a.y} x2={ghost.b.x} y2={ghost.b.y} />}
           </g>
           {ink && (() => {

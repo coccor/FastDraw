@@ -38,13 +38,13 @@ export function ColorPicker({ value, onPick, label, className, style }: {
     <>
       <button ref={btn} type="button" className={className} style={style} aria-label={label} title={value ? `${value} (pick another)` : 'Any colour'}
         aria-expanded={open} onClick={() => setOpen((o) => !o)} />
-      {open && <Popover anchor={btn.current!} start={value ?? '#2a3be6'} label={label} onPick={onPick} onClose={() => setOpen(false)} />}
+      {open && <Popover anchor={btn.current!} start={value ?? '#4f46e5'} label={label} onPick={onPick} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
 function Popover({ anchor, start, label, onPick, onClose }: { anchor: HTMLElement; start: string; label: string; onPick: (hex: string) => void; onClose: () => void }) {
-  const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normHex(start) ?? '#2a3be6'));
+  const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normHex(start) ?? '#4f46e5'));
   const hex = hsvToHex(hsv);
   const [text, setText] = useState(hex.slice(1));
   const box = useRef<HTMLDivElement>(null);
