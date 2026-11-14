@@ -109,6 +109,25 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .icontile.on { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
 .panel .sublabel { font-size: 11px; color: var(--mute); margin: 10px 0 4px; }
 
+/* the sidebar's icon row: the chosen icon, and a button that opens the icon dialog */
+.iconfield { display: flex; gap: 4px; align-items: center; }
+.iconchoose { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; text-align: left; }
+.iconpreview { flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.iconpreview img, .iconpreview svg { width: 22px; height: 22px; }
+.iconname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iconopen { flex: none; font-size: 12px; color: var(--mute); }
+.iconclear { flex: none; width: 28px; padding: 0; }
+
+/* the icon dialog: every icon, searchable, in a large grid */
+.icondialog { width: min(860px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; }
+.icondialog h3 { margin: 0; }
+.icondialog .iconpicker { flex: 1; min-height: 0; }
+.icondialoghead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.icondialoghead p { margin: 4px 0 0; }
+.iconclose { flex: none; width: 32px; padding: 0; font-size: 18px; line-height: 1; }
+.icondialog .icongrid { flex: 1; min-height: 0; max-height: none; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; padding: 6px; }
+.icondialog .icontile svg, .icondialog .icontile img { width: 30px; height: 30px; }
+
 /* right sidebar: components and looks, collapsible to a rail */
 .sidebar { width: 300px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .sidehead { display: flex; align-items: center; gap: 2px; padding: 5px; border-bottom: 1px solid var(--line); flex: none; }

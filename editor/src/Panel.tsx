@@ -8,7 +8,7 @@ import { MARKERS } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
-import { IconPicker } from './IconPicker.tsx';
+import { IconField } from './IconPicker.tsx';
 import { ColorPicker } from './ColorPicker.tsx';
 import type { AlignMode, Layering } from './ops.ts';
 
@@ -276,7 +276,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Icon</h4>
-          <IconPicker look={sc.look} value={p.icon} solid={p['icon.style'] === 'solid'} onPick={(n, solid) => act.setProps({ icon: n, 'icon.style': n && solid ? 'solid' : null })} />
+          <IconField look={sc.look} value={p.icon} solid={p['icon.style'] === 'solid'} onPick={(n, solid) => act.setProps({ icon: n, 'icon.style': n && solid ? 'solid' : null })} />
           {p.icon && p.icon !== 'none' && !iconShape && (
             <>
               <div className="seg" style={{ marginTop: 6 }}>

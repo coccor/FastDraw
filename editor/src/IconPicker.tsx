@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import type { Look } from '../../src/look.ts';
 import { isIconUri } from '../../src/iconfiles.ts';
 import { iconMatches } from '../../src/icons.ts';
@@ -28,7 +29,7 @@ type IconSet = 'outline' | 'solid';
 
 // Every icon the look has, as tiles to click, with a search box, in two tabs: Outline (the look's folder
 // icons first, then the built-in outlines) and Solid (the built-in icons filled in one colour).
-export function IconPicker({ look, value, solid, onPick }: { look: Look; value: string | undefined; solid: boolean; onPick: (name: string | null, solid: boolean) => void }) {
+export function IconPicker({ look, value, solid, onPick, autoFocus = false }: { look: Look; value: string | undefined; solid: boolean; onPick: (name: string | null, solid: boolean) => void; autoFocus?: boolean }) {
   const [q, setQ] = React.useState('');
   // open on the tab of the chosen icon; with none chosen, on outline
   const [tab, setTab] = React.useState<IconSet>(solid ? 'solid' : 'outline');
@@ -59,7 +60,7 @@ export function IconPicker({ look, value, solid, onPick }: { look: Look; value: 
         ))}
       </div>
       <div className="iconsearch">
-        <input type="search" aria-label="Search icons" placeholder="Search icons" title={`${count} icons; search by name or meaning`} value={q}
+        <input type="search" autoFocus={autoFocus} aria-label="Search icons" placeholder="Search icons" title={`${count} icons; search by name or meaning`} value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && first) onPick(first, isSolid);
@@ -72,6 +73,42 @@ export function IconPicker({ look, value, solid, onPick }: { look: Look; value: 
         {folder.length > 0 && builtIn.length > 0 && <div className="iconhead">Built in</div>}
         {builtIn.map(tile)}
         {!folder.length && !builtIn.length && <p className="muted small">No icon is called anything like “{q.trim()}”.</p>}
+      </div>
+    </div>
+  );
+}
+
+// The icon row in the sidebar: the chosen icon and its name, and a button that opens every icon in a dialog
+// with search. The full grid is too long for the sidebar, so it only lives in the dialog.
+export function IconField({ look, value, solid, onPick }: { look: Look; value: string | undefined; solid: boolean; onPick: (name: string | null, solid: boolean) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const name = value && value !== 'none' ? value : undefined;
+  return (
+    <div className="iconfield">
+      <button type="button" className="iconchoose" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+        <span className="iconpreview">{name ? <IconGlyph look={look} name={name} solid={solid} /> : null}</span>
+        <span className="iconname">{name ?? 'No icon'}</span>
+        <span className="iconopen">Choose…</span>
+      </button>
+      {name && <button type="button" className="iconclear" aria-label="Remove icon" title="Remove icon" onClick={() => onPick(null, solid)}>×</button>}
+      {open && createPortal(<IconDialog look={look} value={value} solid={solid} onClose={() => setOpen(false)} onPick={(n, s) => { onPick(n, s); setOpen(false); }} />, document.body)}
+    </div>
+  );
+}
+
+// Every icon of the look in a dialog, with search: picking one applies it and closes the dialog.
+function IconDialog({ look, value, solid, onPick, onClose }: { look: Look; value: string | undefined; solid: boolean; onPick: (name: string | null, solid: boolean) => void; onClose: () => void }) {
+  return (
+    <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="card icondialog" role="dialog" aria-label="Choose an icon" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
+        <div className="icondialoghead">
+          <div>
+            <h3>Choose an icon</h3>
+            <p className="muted small">Search by name or meaning, then click one. Click the chosen icon again to remove it.</p>
+          </div>
+          <button type="button" className="iconclose" aria-label="Close" title="Close" onClick={onClose}>×</button>
+        </div>
+        <IconPicker look={look} value={value} solid={solid} onPick={onPick} autoFocus />
       </div>
     </div>
   );
