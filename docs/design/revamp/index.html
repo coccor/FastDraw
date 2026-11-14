@@ -130,6 +130,7 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <h1>FastDraw revamp: style directions</h1>
   <p>Design doc, 14 November 2026. Nothing here is decided. It exists so we pick a direction before more of the product changes.</p>
   <ul class="toc">
+    <li><a href="#outcome"><b>Where this stands</b></a></li>
     <li><a href="#brief">The brief</a></li>
     <li><a href="#learned">What your reactions told me</a></li>
     <li><a href="#fixed">What stays fixed</a></li>
@@ -158,6 +159,9 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   </ul>
 </header>
 
+<h2 id="outcome">Where this stands</h2>
+<p class="verdict" style="font-size:16px"><b>Decided on 14 November 2026:</b> the built-in look stays as it is on main. After three rounds, your verdict was that the baseline is still the best. Of the new ideas, Shade is the cleanest and Engraved, its louder sibling, the one closest to it. Those two, with Keys, Offset, Transit and Listing, are kept as candidates for extra selectable styles. Nothing in the product was changed by this exploration: the one build that was made (blue pen, yellow highlighter) was reverted.</p>
+
 <h2 id="brief">The brief</h2>
 <p>Make the UI look good enough that a visitor stops, and then uses the product. Everything is open: the website, the diagram looks, the logo, the editor. FastDraw takes diagram-design a step further: the diagrams can be edited and shared.</p>
 <p>Three surfaces share one identity, and a direction has to work on all of them:</p>
@@ -176,6 +180,7 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <tr><td>The four directions below (A to D)</td><td class="quote">"forget about the restrictions I gave you earlier"</td><td>The paper ground and black ink I was avoiding are allowed. Directions E, F and G.</td></tr>
   <tr><td>Round one of this document (A to G)</td><td class="quote">"the looks you created are just small variations from the base line. I asked for different styles ... miro vs excalidraw ... I want us to have our own original style"</td><td>A style is a way of drawing, not a palette. Round two.</td></tr>
   <tr><td>Round two (styles 1 to 5)</td><td class="quote">"wow, all these styles are very nice and worth keeping as styles for our diagrams. Unfortunately none of them are 'the one'. Draw some inspiration from diagram-design"</td><td>Keep all five as selectable styles later. The main style should have diagram-design's restraint. Round three.</td></tr>
+  <tr><td>Round three (Plates, Brackets, Shade, Tabs)</td><td class="quote">"the cleanest one would be shade, it is very similar to engraved. But I still think the baseline is the best"</td><td>The baseline stays. Shade and Engraved are the favourites among the alternatives.</td></tr>
   <tr><td>How I worked</td><td class="quote">"usually designers first create a design doc. you went straight to changing it"</td><td>Explore on paper first. This document.</td></tr>
 </table>
 <p>One thing I have not pinned down: what "Editorial" means to you. I have read it as magazine typography: serif headlines, rules, generous white space, one rich colour. If you have a reference in mind (a site, a magazine, a tool's preset called Editorial), it would settle a lot.</p>
@@ -506,14 +511,11 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <p class="verdict"><b>Kept from it:</b> the live workbench in the hero and the page structure, which do not depend on the style. <b>Dropped:</b> the palette, the wide grotesque type, the yellow band.</p>
 </section>
 
-<h2 id="decide">What I need from you</h2>
+<h2 id="decide">What is still open</h2>
 <ul>
-  <li><b>Is "the one" among Plates, Brackets, Shade and Tabs?</b> Or a mix: for example Tabs for the cards with Plates' edge, or Brackets for zones only.</li>
-  <li><b>If still not</b>, which is closest and what is it missing? Too quiet, too plain, wrong shape, wrong colour.</li>
+  <li><b>What the revamp should now change</b>, given that the diagrams themselves stay: the website, the editor, the logo, or none of them.</li>
+  <li><b>Whether and when the extra styles get built.</b> Shade is the cheapest (the hatching already exists in the renderer). Engraved, Keys, Transit, Offset and Listing each need the renderer to learn something new.</li>
 </ul>
-<p>My own pick is <b>Plates</b>: it is the nearest to diagram-design's calm, it gives FastDraw a silhouette no other tool has, and it ties the ordinary diagrams to the layer and exploded views that are already the best-looking things FastDraw draws. <b>Tabs</b> is my second, because its one idea also carries information.</p>
-<p>Agreed so far: the five styles of round two (Keys, Offset, Engraved, Transit, Listing) are kept, to become selectable styles once the main one is settled. That needs the renderer to learn new ways of drawing, not just new look files, so it is its own piece of work.</p>
-<p>What happens after you choose: one more page like this, taking the chosen style through eight kinds of diagram (including a table, a chart and a sequence diagram, which are the hard ones), light and dark, with the website and the editor drawn to match. Only when you approve that does the renderer change.</p>
 </div>
 </body>
 </html>
