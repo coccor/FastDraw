@@ -13,6 +13,7 @@ import type { AlignMode } from './ops.ts';
 
 export type PanelActions = {
   setProp: (k: string, v: string | null) => void;
+  setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
   setOp: (op: string) => void;
   reorder: (where: 'front' | 'back') => void;
@@ -140,6 +141,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const strokes = [...names, ...names.slice(0, 1).map((n) => `${n}/0.3`), 'none'];
   const iconFills = ['none', ...names.filter((n) => n !== 'ink').map((n) => `${n}/0.2`), ...names];
   const iconShape = same && kind === 'shape' && els.every((e) => e!.kind === 'shape' && e!.el.shape === 'icon');
+  const solidIcon = iconShape && p['icon.style'] === 'solid';
   const styles = [...sc.look.styles.values()].filter((s) => s.kind === (kind === 'conn' ? 'line' : kind));
   const dashOf = (v: string | undefined) => (!v || v === 'none' ? 'solid' : v.startsWith('1') || v.startsWith('2') ? 'dotted' : 'dashed');
   const sizeKey = kind === 'shape' ? 'title.size' : kind === 'text' ? 'size' : 'label.size';
@@ -164,12 +166,15 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {iconShape && (
         // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
         <>
-          <section><h4>Fill</h4><Swatches sc={sc} values={iconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>
-          <section><h4>Stroke</h4><Swatches sc={sc} values={names} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon stroke colours" /></section>
-          <section>
-            <h4>Stroke width</h4>
-            <IconWidths value={p.sw} onPick={(v) => act.setProp('sw', v)} />
-          </section>
+          {/* a solid icon is one filled shape: only its colour (stroke=) applies */}
+          {!solidIcon && <section><h4>Fill</h4><Swatches sc={sc} values={iconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
+          <section><h4>{solidIcon ? 'Colour' : 'Stroke'}</h4><Swatches sc={sc} values={names} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label={solidIcon ? 'Icon colours' : 'Icon stroke colours'} /></section>
+          {!solidIcon && (
+            <section>
+              <h4>Stroke width</h4>
+              <IconWidths value={p.sw} onPick={(v) => act.setProp('sw', v)} />
+            </section>
+          )}
         </>
       )}
       {same && kind === 'shape' && !stroke && !iconShape && (
@@ -264,7 +269,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Icon</h4>
-          <IconPicker look={sc.look} value={p.icon} onPick={(n) => act.setProp('icon', n)} />
+          <IconPicker look={sc.look} value={p.icon} solid={p['icon.style'] === 'solid'} onPick={(n, solid) => act.setProps({ icon: n, 'icon.style': n && solid ? 'solid' : null })} />
           {p.icon && p.icon !== 'none' && !iconShape && (
             <>
               <div className="seg" style={{ marginTop: 6 }}>

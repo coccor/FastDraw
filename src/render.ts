@@ -5,6 +5,7 @@ import { textWidth, ICON_CAPTION_GAP } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
+import { SOLID_BOX, SOLID_ICONS } from './solidIcons.ts';
 import { canSketch, sketchSvg, rectD, ellipseD } from './sketch.ts';
 
 // Per render: how rough the look draws (canvas sketch=, 0 for clean lines) and the fill patterns it needs.
@@ -261,6 +262,12 @@ function drawIcon(look: Look, p: Props, x: number, y: number, size: number): str
   const name = p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
   if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
+  const solid = p['icon.style'] === 'solid' ? SOLID_ICONS[name] : undefined;
+  if (solid) {
+    // a solid icon is one filled shape in icon.color; icon.fill and icon.width have nothing to act on
+    const ks = size / SOLID_BOX, ink = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
+    return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${+ks.toFixed(5)})" fill="${ink}">${solid.map((d) => `<path d="${esc(d)}"/>`).join('')}</g>`;
+  }
   const k = r2(size / 24);
   const stroke = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink'), fill = col(look, p['icon.fill'] ?? 'none');
   const px = num(p['icon.width'], 0), sw = px > 0 ? Math.min(px, 8) / k : Math.max(1.5, 1.2 / k);

@@ -505,6 +505,29 @@ test('chart: place one from the gallery, change its numbers and add a series', a
   expect(errors).toEqual([]);
 });
 
+test('icons: the Solid tab picks the filled twin of an icon, and Outline takes it back', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await page.getByRole('tab', { name: 'Solid' }).click();
+  const solid = page.getByRole('radiogroup', { name: 'Solid icons' });
+  await solid.getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
+  await expect(solid.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
+  // drawn filled, from the 256 box, with no outline stroke
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] path[d^="M128,24"]')).toHaveCount(1);
+  // reopening the box shows the Solid tab; the same icon in Outline is not the chosen one
+  await page.getByRole('tab', { name: 'Outline' }).click();
+  const outline = page.getByRole('radiogroup', { name: 'Icons' });
+  await expect(outline.getByRole('radio', { name: 'database', exact: true })).not.toBeChecked();
+  await outline.getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
+  await page.keyboard.press('Control+z');
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
 test('icons: choose one for a box in the panel, move it above the text, and place an icon on its own', async ({ page }) => {
   await pinSidebar(page);
   const errors = noPageErrors(page);
