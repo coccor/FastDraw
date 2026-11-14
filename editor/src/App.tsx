@@ -10,6 +10,7 @@ import * as files from './files.ts';
 import * as ws from './workspace.ts';
 import * as served from './served.ts';
 import { Panel, TextField, Swatches } from './Panel.tsx';
+import { ColorPicker } from './ColorPicker.tsx';
 import { Gallery } from './Gallery.tsx';
 import { Sidebar, useSidebar } from './Sidebar.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
@@ -17,8 +18,8 @@ import type { LookChoice, FileLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
-  ArrowDown, ArrowUp, BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
-  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
+  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
@@ -106,9 +107,7 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
       <div className="row">
         <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
           onPick={(v) => set({ paper: v === basePaper ? null : v })} />
-        <label className="custom" title="Any colour">
-          <input type="color" aria-label="Custom background colour" value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#ffffff'} onChange={(e) => set({ paper: e.target.value })} />
-        </label>
+        <ColorPicker className="custom" label="Custom background colour" value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#ffffff'} onPick={(v) => set({ paper: v })} />
       </div>
       <label className="check">
         <input type="checkbox" checked={dotsOn} onChange={() => set({ dots: dotsOn ? 'none' : base.dots && base.dots !== 'none' ? null : 'ink/0.1' })} />
@@ -1323,10 +1322,10 @@ export function App() {
           {sel.length > 1 && <button role="menuitem" onClick={() => { setCtx(null); act.group(); }}><Group size={15} />Group<kbd>Ctrl+G</kbd></button>}
           {sel.some((id) => ops.find(scene, id)?.el.p.group) && <button role="menuitem" onClick={() => { setCtx(null); act.ungroup(); }}><Ungroup size={15} />Ungroup<kbd>Ctrl+Shift+G</kbd></button>}
           <hr />
-          <button role="menuitem" onClick={() => { setCtx(null); act.reorder('front'); }}><BringToFront size={15} />Bring to front<kbd>Ctrl ⇧ ]</kbd></button>
+          <button role="menuitem" onClick={() => { setCtx(null); act.reorder('front'); }}><ArrowUpToLine size={15} />Bring to front<kbd>Ctrl ⇧ ]</kbd></button>
           <button role="menuitem" onClick={() => { setCtx(null); act.reorder('forward'); }}><ArrowUp size={15} />Bring forward<kbd>Ctrl ]</kbd></button>
           <button role="menuitem" onClick={() => { setCtx(null); act.reorder('backward'); }}><ArrowDown size={15} />Send backward<kbd>Ctrl [</kbd></button>
-          <button role="menuitem" onClick={() => { setCtx(null); act.reorder('back'); }}><SendToBack size={15} />Send to back<kbd>Ctrl ⇧ [</kbd></button>
+          <button role="menuitem" onClick={() => { setCtx(null); act.reorder('back'); }}><ArrowDownToLine size={15} />Send to back<kbd>Ctrl ⇧ [</kbd></button>
           <hr />
           <button role="menuitem" className="danger" onClick={() => { setCtx(null); act.remove(); }}><Trash2 size={15} />Delete<kbd>Del</kbd></button>
         </div>

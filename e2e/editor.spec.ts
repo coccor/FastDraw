@@ -3,7 +3,7 @@ import { mkdtempSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { serveFolder } from '../src/serve.ts';
-import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh } from './helpers.ts';
+import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex } from './helpers.ts';
 
 // open the right sidebar on a tab, from the rail or from its own tabs
 async function sidebar(page: import('@playwright/test').Page, name: 'Components' | 'Look') {
@@ -562,18 +562,18 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await strokes.locator('.swatch').last().click();
   expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
   // any colour, from the system colour picker
-  await page.getByLabel('Custom icon colour').fill('#e0457b');
+  await pickHex(page, 'Custom icon colour', '#e0457b');
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
   await expect(page.locator('svg.canvas g[stroke="#e0457b"]')).toHaveCount(1);
   await expect(strokes.locator('.custom.on')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Text colour' }).click();
+  await page.getByRole('button', { name: 'Text colour', exact: true }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
   // a fill inside the icon's closed parts: a tint, any colour, or none
   const fills = page.getByRole('group', { name: 'Icon fill colours' });
   const tint = await fills.locator('.swatch').nth(1).getAttribute('aria-label');
   await fills.locator('.swatch').nth(1).click();
   expect(lineOf(await source(page), 'db')).toContain(`icon.fill=${tint}`);
-  await page.getByLabel('Custom icon fill').fill('#ffd400');
+  await pickHex(page, 'Custom icon fill', '#ffd400');
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
   await expect(page.locator('svg.canvas g[fill="#ffd400"]')).toHaveCount(1);
   await fills.getByRole('button', { name: 'none', exact: true }).click();
@@ -599,7 +599,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const ifills = page.getByRole('group', { name: 'Icon fill colours' });
   const itint = await ifills.locator('.swatch').nth(1).getAttribute('aria-label');
   await ifills.locator('.swatch').nth(1).click();
-  await page.getByLabel('Custom icon colour').fill('#0369a1');
+  await pickHex(page, 'Custom icon colour', '#0369a1');
   await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Heavy' }).click();
   expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2\\.75$`));
   await expect(page.locator('svg.canvas g[stroke="#0369a1"]')).toHaveCount(1);

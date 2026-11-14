@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
-  ArrowDown, ArrowUp, BringToFront, Copy, SendToBack, Trash2,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2,
 } from 'lucide-react';
 import { color } from '../../src/look.ts';
 import { MARKERS } from '../../src/scene.ts';
@@ -9,6 +9,7 @@ import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
 import { IconPicker } from './IconPicker.tsx';
+import { ColorPicker } from './ColorPicker.tsx';
 import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
@@ -26,7 +27,7 @@ export type PanelActions = {
   setRoute: (route: string) => void;
 };
 
-// `custom` adds a last swatch that opens the system colour picker; it shows the chosen colour when that is not one of `values`.
+// `custom` adds a last swatch that opens a colour picker (hex first); it shows the chosen colour when that is not one of `values`.
 export function Swatches({ sc, values, current, onPick, custom, label }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom?: string; label?: string }) {
   const own = !!current && !values.includes(current) && /^#[0-9a-f]{6}$/i.test(current) ? current : null;
   return (
@@ -39,9 +40,8 @@ export function Swatches({ sc, values, current, onPick, custom, label }: { sc: S
         );
       })}
       {custom && (
-        <label className={'custom' + (own ? ' on' : '')} title={own ? `${own} (pick another)` : 'Any colour'} style={own ? { background: own } : undefined}>
-          <input type="color" aria-label={custom} value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : '#000000')} onChange={(e) => onPick(e.target.value)} />
-        </label>
+        <ColorPicker className={'custom' + (own ? ' on' : '')} style={own ? { background: own } : undefined} label={custom}
+          value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : null)} onPick={onPick} />
       )}
     </div>
   );
@@ -326,10 +326,10 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       <section>
         <h4>Layers</h4>
         <div className="seg">
-          <button title="Send to back (Ctrl+Shift+[)" aria-label="Send to back" onClick={() => act.reorder('back')}><SendToBack size={16} /></button>
+          <button title="Send to back (Ctrl+Shift+[)" aria-label="Send to back" onClick={() => act.reorder('back')}><ArrowDownToLine size={16} /></button>
           <button title="Send backward (Ctrl+[)" aria-label="Send backward" onClick={() => act.reorder('backward')}><ArrowDown size={16} /></button>
           <button title="Bring forward (Ctrl+])" aria-label="Bring forward" onClick={() => act.reorder('forward')}><ArrowUp size={16} /></button>
-          <button title="Bring to front (Ctrl+Shift+])" aria-label="Bring to front" onClick={() => act.reorder('front')}><BringToFront size={16} /></button>
+          <button title="Bring to front (Ctrl+Shift+])" aria-label="Bring to front" onClick={() => act.reorder('front')}><ArrowUpToLine size={16} /></button>
         </div>
       </section>
       <section>
