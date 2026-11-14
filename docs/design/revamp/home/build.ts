@@ -80,43 +80,43 @@ const map = (items: [string, string][]) => `<div class="maph">The rest of the pa
   }).join('');
   const body = `${TOP}
 <section class="hero">
-  <div class="say"><h1>Your agent writes the diagram.<br>You move the boxes.</h1>
-  <p>Drag anything on the canvas below. The one line that describes it changes, and nothing else does, so your agent picks up where you left off.</p></div>
-  <div class="go"><div class="cmd"><span><b>$</b> npx fastdraw setup claude</span><span class="copy">Copy</span></div><p>One command in your repository. Works with Claude Code, Codex and Copilot.</p></div>
+  <div class="say"><h1>FastDraw is a text format for diagrams</h1>
+  <p>Claude Code, Codex and Copilot write it from a guide and run a checker over the result. You can open the same file on a canvas. Below, the Payments box was dragged down: line 10 changed and the other fifteen lines did not.</p></div>
+  <div class="go"><div class="cmd"><span><b>$</b> npx fastdraw setup claude</span><span class="copy">Copy</span></div><p>Run this in your repository to add the skill for Claude Code. <code>setup agents</code> and <code>setup copilot</code> cover Codex and Copilot.</p></div>
 </section>
 <section class="bench card">
-  <div class="tabs"><span class="on">checkout.fdraw</span><span>Try: add a box</span><span>Try: change the look</span><em>This is the real editor. Nothing is uploaded.</em></div>
+  <div class="tabs"><span class="on">checkout.fdraw</span><span>Add a box</span><span>Change the look</span><em>The editor runs in this page. Files stay on your machine.</em></div>
   <div class="split"><div class="src">${src}</div><div class="canvas"><div class="tools"><b></b><b></b><b></b><b></b><b></b><b></b></div>${d.html}</div></div>
 </section>
-${map([['Looks', 'The same file redrawn in eleven looks: a strip of thumbnails, one click each.'], ['Kinds', 'An index of the 44 kinds as a list of names; hovering one draws it in the workbench above.'], ['Why a text file', 'Four short lines, no cards: reviewed like code, edits kept, one look per team, nothing uploaded.'], ['Set up', 'The command again, with the agent tabs and three prompts to try.']])}`;
-  const css = `.hero{display:grid;grid-template-columns:1.25fr .9fr;gap:56px;align-items:end;padding:34px 40px 30px}.hero h1{font-size:60px}.hero .say p{font-size:18px;max-width:620px;margin-top:18px}
+${map([['Looks', 'Eleven thumbnails of the diagram above, one per look. Clicking one adds the look line to the file.'], ['Kinds', 'The 44 kinds as a list of names. Clicking one loads its example into the editor above.'], ['Why text', 'A short paragraph: the file sits in the repository, shows up in diffs, and a hand edit changes only the lines it touches.'], ['Set up', 'The command for each agent, and three example requests.']])}`;
+  const css = `.hero{display:grid;grid-template-columns:1.25fr .9fr;gap:56px;align-items:end;padding:34px 40px 30px}.hero h1{font-size:56px;white-space:nowrap}.hero .say p{font-size:18px;max-width:620px;margin-top:18px}
 .hero .go p{font-size:14px;margin-top:10px}.bench{margin:0 40px;overflow:hidden}
 .tabs{display:flex;gap:6px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--hair);font-size:14px;color:var(--muted)}.tabs span{padding:6px 12px;border-radius:8px}.tabs .on{background:var(--tint);color:var(--accent);font-weight:500;font-family:var(--mono);font-size:13px}.tabs em{margin-left:auto;font-style:normal;font-size:13px;color:var(--soft)}
 .split{display:grid;grid-template-columns:590px 1fr;align-items:stretch}.src{font:12px/1.95 var(--mono);padding:16px 0;border-right:1px solid var(--hair);background:#fbfbfe;color:#334155;white-space:nowrap;overflow:hidden}
 .ln{padding:0 16px 0 0}.ln span{display:inline-block;width:38px;text-align:right;margin-right:14px;color:var(--soft)}.ln i{font-style:normal;color:var(--accent)}.ln q{quotes:none;color:#0f766e}
 .ln.hit{background:var(--tint);box-shadow:inset 3px 0 0 var(--accent)}del{color:#b4233c;background:#fde8ec;text-decoration:line-through;padding:1px 3px;border-radius:3px;margin-right:4px}ins{color:#166534;background:#dcfce7;text-decoration:none;padding:1px 3px;border-radius:3px}
 .canvas{position:relative;padding:44px 18px 18px;background:#f6f7fb;display:flex;align-items:center}.tools{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:10px;background:#fff;border:1px solid var(--hair);box-shadow:0 6px 18px -10px rgba(15,23,42,.4)}.tools b{width:26px;height:26px;border-radius:6px;background:#eef0f6}.tools b:nth-child(2){background:var(--tint);outline:1px solid var(--accent)}`;
-  writeFileSync(here + 'a.html', page('A. Workbench', 'The top of the page is the editor itself, with a real diagram in it. The pitch is something you do, not something you read.', body, css));
+  writeFileSync(here + 'a.html', page('A. Workbench', 'The top of the page is the editor with a diagram loaded. The headline says what FastDraw is; the visitor tries it underneath.', body, css));
 }
 
 // ---------- B. One diagram, told in scroll ----------
 {
   const partial = DEMO.split('\n').slice(0, 7).join('\n') + '\n';
   const frames: [string, string, string, string][] = [
-    ['You ask', 'Your agent reads the guide for this kind of diagram and starts writing a small text file.', `<div class="term"><b>&gt;</b> Draw our checkout flow as docs/checkout.fdraw<br><span>Reading the guide for architecture diagrams</span><br><span>Writing docs/checkout.fdraw</span></div>`, svg(partial).html],
-    ['It checks its own work', 'fastdraw check reports overlaps, text that does not fit and lines through boxes, with line numbers. The agent fixes them before you see anything.', `<div class="term"><b>$</b> fastdraw check docs/checkout.fdraw<br><span>ok: no problems found</span></div>`, svg(DEMO).html],
-    ['Your team\'s look', 'One line at the top of the file picks a look. The same diagram, drawn again.', `<div class="term"><ins>+ look engraved</ins></div>`, svg('look engraved\n' + DEMO).html],
+    ['Ask your agent for a diagram', 'It reads the guide for that kind of diagram (there are 44) and writes a .fdraw file into your repository.', `<div class="term"><b>&gt;</b> Draw our checkout flow as docs/checkout.fdraw<br><span>Reading the guide for architecture diagrams</span><br><span>Writing docs/checkout.fdraw</span></div>`, svg(partial).html],
+    ['The agent runs the checker', 'fastdraw check lists overlapping boxes, text that overflows and lines that cross a box, each with a line number. The agent fixes those before it reports back.', `<div class="term"><b>$</b> fastdraw check docs/checkout.fdraw<br><span>ok: no problems found</span></div>`, svg(DEMO).html],
+    ['Change the look', 'Add look engraved as the first line. The rest of the file is unchanged.', `<div class="term"><ins>+ look engraved</ins></div>`, svg('look engraved\n' + DEMO).html],
   ];
   const body = `${TOP}
-<section class="lead"><h1>One diagram, from a sentence<br>to something you can share.</h1><p>Scroll. The diagram on the right stays put and changes as the story does.</p></section>
-${frames.map(([h, p, t, d], i) => `<section class="frame"><div class="step"><em>${['First', 'Then', 'Later'][i]}</em><h2>${h}</h2><p>${p}</p>${t}<div class="rail">${[0, 1, 2, 3, 4].map((k) => `<b class="${k === [0, 1, 3][i] ? 'on' : ''}"></b>`).join('')}</div></div><div class="pin card">${d}</div></section>`).join('<div class="gap">scroll</div>')}
-${map([['After the story', 'The pinned diagram becomes the live editor: change it yourself.'], ['Set up', 'The command, with agent tabs.'], ['Kinds', 'A compact gallery of the 44 kinds, three rows that scroll sideways.'], ['Footer', 'Open source, llms.txt, credits.']])}`;
-  const css = `.lead{padding:44px 40px 26px}.lead h1{font-size:64px}.lead p{font-size:18px;margin-top:16px}
+<section class="lead"><h1>How a FastDraw diagram gets made</h1><p>The diagram on the right is one file, shown at each step as you scroll.</p></section>
+${frames.map(([h, p, t, d], i) => `<section class="frame"><div class="step"><em>Step ${[1, 2, 4][i]} of 5</em><h2>${h}</h2><p>${p}</p>${t}<div class="rail">${[0, 1, 2, 3, 4].map((k) => `<b class="${k === [0, 1, 3][i] ? 'on' : ''}"></b>`).join('')}</div></div><div class="pin card">${d}</div></section>`).join('<div class="gap">scroll</div>')}
+${map([['Try it', 'After step 5 the pinned diagram is the editor, with the same file loaded.'], ['Set up', 'The command, with agent tabs.'], ['Kinds', 'The 44 kinds in three rows that scroll sideways.'], ['Footer', 'Open source, llms.txt, credits.']])}`;
+  const css = `.lead{padding:44px 40px 26px}.lead h1{font-size:56px}.lead p{font-size:18px;margin-top:16px}
 .frame{display:grid;grid-template-columns:380px 1fr;gap:44px;padding:22px 40px;align-items:center}.step em{font-style:normal;font-size:14px;color:var(--accent);font-weight:500}.step h2{font-size:38px;margin:6px 0 12px}.step p{font-size:16px}
 .term{margin-top:18px;background:#14162b;color:#e8e9f7;font:12.5px/1.8 var(--mono);padding:14px 16px;border-radius:10px}.term b{color:#8f8af5;font-weight:400}.term span{color:#a9acc9}.term ins{color:#86efac;text-decoration:none}
 .pin{padding:20px 26px}.rail{display:flex;gap:6px;margin-top:22px}.rail b{width:34px;height:4px;border-radius:2px;background:var(--hair)}.rail b.on{background:var(--accent)}
 .gap{text-align:center;font-size:12px;color:var(--soft);padding:2px 0;border-top:1px dashed var(--hair);margin:10px 40px 0}`;
-  writeFileSync(here + 'b.html', page('B. One diagram, told in scroll', 'Three moments of the same scrolling screen are shown stacked. The left column changes; the diagram stays pinned and is redrawn.', body, css));
+  writeFileSync(here + 'b.html', page('B. One diagram, told in scroll', 'Three of the five steps are shown stacked. On the real page the diagram stays pinned while the left column scrolls.', body, css));
 }
 
 // ---------- C. Specimen wall ----------
@@ -128,17 +128,17 @@ ${map([['After the story', 'The pinned diagram becomes the live editor: change i
   const body = `${TOP}
 <section class="wall">
   ${pick.slice(0, 2).map((k) => cell(k)).join('')}
-  <div class="poster"><h1>44 kinds of diagram.<br>Your agent draws them.<br>You finish them by hand.</h1>
+  <div class="poster"><h1>44 kinds of diagram, each written by a coding agent from a guide</h1>
     <div class="cmd"><span><b>$</b> npx fastdraw setup claude</span><span class="copy">Copy</span></div>
-    <p>Every diagram on this page was written by an agent from the guide. Click one to open it in the editor.</p></div>
+    <p>These are the examples from the repository, as the agent wrote them. Click one to open it in the editor and change it.</p></div>
   ${pick.slice(2).map((k, i) => cell(k, i === 2 || i === 9 ? 'wide' : '')).join('')}
 </section>
-${map([['Looks', 'Pick a look and the whole wall is redrawn in it.'], ['How it works', 'Three lines and one small picture: ask, check, drag.'], ['Set up', 'The command with agent tabs.'], ['All 44', 'The wall continues with the rest, filterable by name.']])}`;
+${map([['Looks', 'A look switcher that redraws every diagram on the wall.'], ['How it works', 'One paragraph and one picture: the request, the check, the hand edit.'], ['Set up', 'The command with agent tabs.'], ['All 44', 'The remaining kinds, with a filter by name.']])}`;
   const css = `.wall{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-flow:dense;gap:14px;padding:10px 40px 0}
 figure{margin:0;background:#f6f7fb;border:1px solid var(--hair);border-radius:12px;overflow:hidden;position:relative;aspect-ratio:1.42;display:flex;align-items:center}figure.wide{grid-column:span 2;aspect-ratio:2.9}
 figure svg{max-height:100%}figcaption{position:absolute;left:10px;bottom:8px;font:500 12px 'Geist';background:rgba(255,255,255,.92);border:1px solid var(--hair);border-radius:6px;padding:2px 8px;}figcaption::first-letter{text-transform:uppercase}
 .poster{grid-column:span 2;grid-row:span 2;background:var(--accent);color:#fff;border-radius:12px;padding:38px 40px;display:flex;flex-direction:column;justify-content:space-between}
-.poster h1{font-size:54px;color:#fff}.poster p{color:#dcdcff;font-size:15px;max-width:440px}.poster .cmd{background:#fff;color:var(--ink);max-width:440px}.poster .cmd b{color:var(--accent)}.poster .cmd span.copy{color:var(--muted);border-color:var(--hair)}`;
-  writeFileSync(here + 'c.html', page('C. Specimen wall', 'The page opens on the diagrams themselves, the way a type foundry shows a specimen. Breadth is the pitch.', body, css));
+.poster h1{font-size:44px;color:#fff;line-height:1.1}.poster p{color:#dcdcff;font-size:15px;max-width:440px}.poster .cmd{background:#fff;color:var(--ink);max-width:440px}.poster .cmd b{color:var(--accent)}.poster .cmd span.copy{color:var(--muted);border-color:var(--hair)}`;
+  writeFileSync(here + 'c.html', page('C. Specimen wall', 'The page opens on the example diagrams, laid out like a type specimen. The headline is one tile among them.', body, css));
 }
 console.log('wrote a.html b.html c.html');
