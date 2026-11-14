@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FastDraw revamp: style directions</title>
+<style>
+@font-face { font-family: 'Geist'; font-weight: 400; src: url(../../../fonts/Geist-Regular.ttf); }
+@font-face { font-family: 'Geist'; font-weight: 500; src: url(../../../fonts/Geist-Medium.ttf); }
+@font-face { font-family: 'Geist'; font-weight: 600; src: url(../../../fonts/Geist-SemiBold.ttf); }
+@font-face { font-family: 'Geist Mono'; font-weight: 400; src: url(../../../fonts/GeistMono-Regular.ttf); }
+@font-face { font-family: 'Libre Franklin'; font-weight: 400; src: url(../../../fonts/LibreFranklin-Regular.ttf); }
+@font-face { font-family: 'Libre Franklin'; font-weight: 600; src: url(../../../fonts/LibreFranklin-SemiBold.ttf); }
+@font-face { font-family: 'Libre Franklin'; font-weight: 700; src: url(../../../fonts/LibreFranklin-Bold.ttf); }
+@font-face { font-family: 'Instrument Serif'; font-weight: 400; src: url(../../../fonts/InstrumentSerif-Regular.ttf); }
+@font-face { font-family: 'Instrument Serif'; font-weight: 400; font-style: italic; src: url(../../../fonts/InstrumentSerif-Italic.ttf); }
+@font-face { font-family: 'Newsreader'; font-weight: 500; src: url(../../../fonts/Newsreader-Medium.ttf); }
+
+:root { --bg: #fff; --fg: #1a1c21; --mute: #5d636e; --line: #dcdfe4; --soft: #f4f5f7; --mark: #4f46e5; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16181d; --fg: #e9ebef; --mute: #a2a8b3; --line: #353a45; --soft: #1e2128; --mark: #9a97ff; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 'Geist', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 120px; }
+header { padding: 56px 0 24px; border-bottom: 1px solid var(--line); }
+header p { color: var(--mute); margin: 8px 0 0; }
+h1 { font-size: 34px; line-height: 1.15; margin: 0; font-weight: 600; letter-spacing: -0.02em; }
+h2 { font-size: 24px; line-height: 1.2; margin: 72px 0 12px; font-weight: 600; letter-spacing: -0.01em; }
+h3 { font-size: 16px; margin: 28px 0 6px; font-weight: 600; }
+p, li { max-width: 72ch; }
+ul { padding-left: 20px; }
+li { margin: 4px 0; }
+code { font: .88em 'Geist Mono', monospace; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 20px 0 0; padding: 0; list-style: none; font-size: 15px; }
+.toc a { color: var(--mark); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px 10px 0; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; white-space: nowrap; }
+.quote { color: var(--mute); }
+
+/* a direction */
+.dir { margin-top: 56px; padding-top: 28px; border-top: 2px solid var(--fg); }
+.dir > h2 { margin: 0; }
+.dir .idea { font-size: 18px; color: var(--mute); margin: 6px 0 0; max-width: 70ch; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 32px; margin: 22px 0 6px; font-size: 15px; }
+.facts b { display: block; font-size: 13px; color: var(--mute); font-weight: 500; margin-bottom: 4px; }
+.sw { display: flex; gap: 6px; flex-wrap: wrap; }
+.sw i { width: 30px; height: 30px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(128,128,128,.35); }
+figure { margin: 22px 0 0; }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.verdict { margin-top: 18px; padding: 14px 18px; background: var(--soft); border-radius: 8px; font-size: 15px; max-width: none; }
+.verdict b { font-weight: 600; }
+
+/* the site mocks: each one sets its own colours and type, whatever the theme of this page */
+.mock { margin-top: 22px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.mock .in { padding: 22px 36px 0; }
+.mock nav { display: flex; align-items: center; gap: 22px; font-size: 13px; }
+.mock nav b { margin-right: auto; font-size: 19px; }
+.mock .hl { margin: 30px 0 0; }
+.mock .row { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-top: 18px; }
+.mock .row p { margin: 0; max-width: 52ch; font-size: 15px; line-height: 1.5; }
+.mock .cta { display: inline-block; padding: 9px 16px; font-size: 14px; white-space: nowrap; font-weight: 600; }
+.mock .fig { margin: 26px 0 0; height: 190px; overflow: hidden; }
+.mock .fig img { display: block; width: 100%; border: 0; border-radius: 0; }
+
+.mA { background: #fff; color: #0f172a; font-family: 'Geist', sans-serif; }
+.mA nav b { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 25px; }
+.mA .hl { font: 400 58px/1 'Instrument Serif', serif; letter-spacing: -0.02em; }
+.mA .row p { color: #55607a; }
+.mA .cta { background: #4f46e5; color: #fff; border-radius: 8px; }
+.mA .fig { border-radius: 12px 12px 0 0; box-shadow: 0 0 0 1px #d9dce6; }
+
+.mB { background: #fff; color: #16181d; font-family: 'Libre Franklin', sans-serif; border-top: 3px solid #16181d; }
+.mB nav { padding-bottom: 14px; border-bottom: 1px solid #d3d7dc; }
+.mB nav b { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 26px; }
+.mB .hl { font: 400 64px/.96 'Instrument Serif', serif; letter-spacing: -0.022em; }
+.mB .row p { color: #5b616b; }
+.mB .cta { background: #4338ca; color: #fff; border-radius: 2px; }
+.mB .fig { border: 1px solid #16181d; border-bottom: 0; }
+
+.mC { background: #f2f3f5; color: #16181d; font-family: 'Libre Franklin', sans-serif; }
+.mC nav b { font-weight: 700; }
+.mC .hl { font: 700 46px/1.02 'Libre Franklin', sans-serif; letter-spacing: -0.03em; }
+.mC .row p { color: #5b616b; }
+.mC .cta { background: #6d28a8; color: #fff; border-radius: 4px; }
+.mC .fig { border-radius: 6px 6px 0 0; }
+
+.mD { background: #fff; color: #16181d; font-family: 'Geist', sans-serif; background-image: radial-gradient(circle at 1px 1px, rgba(22,24,29,.1) 1px, transparent 1.3px); background-size: 16px 16px; }
+.mD nav { font: 11.5px 'Geist Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
+.mD nav b { font: 600 18px 'Geist', sans-serif; letter-spacing: -0.01em; text-transform: none; }
+.mD .hl { font: 600 44px/1.04 'Geist', sans-serif; letter-spacing: -0.035em; }
+.mD .row p { color: #5b616b; font: 13px/1.6 'Geist Mono', monospace; }
+.mD .cta { background: #0b5bd3; color: #fff; }
+.mD .fig { border: 1.5px solid #16181d; border-bottom: 0; background: #fff; }
+
+@media (max-width: 760px) { .facts, .pair { grid-template-columns: minmax(0, 1fr); } .mock .hl { font-size: 34px !important; } .mock .row { display: block; } .mock .cta { margin-top: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>FastDraw revamp: style directions</h1>
+  <p>Design doc, 14 November 2026. Nothing here is decided. It exists so we pick a direction before more of the product changes.</p>
+  <ul class="toc">
+    <li><a href="#brief">The brief</a></li>
+    <li><a href="#learned">What your reactions told me</a></li>
+    <li><a href="#fixed">What stays fixed</a></li>
+    <li><a href="#current">Baseline</a></li>
+    <li><a href="#a">A. Harbor, edited</a></li>
+    <li><a href="#b">B. Graphics desk</a></li>
+    <li><a href="#c">C. Colour blocks</a></li>
+    <li><a href="#d">D. Schematic</a></li>
+    <li><a href="#x">Tried and rejected</a></li>
+    <li><a href="#decide">What I need from you</a></li>
+  </ul>
+</header>
+
+<h2 id="brief">The brief</h2>
+<p>Make the UI look good enough that a visitor stops, and then uses the product. Everything is open: the website, the diagram looks, the logo, the editor. FastDraw takes diagram-design a step further: the diagrams can be edited and shared.</p>
+<p>Three surfaces share one identity, and a direction has to work on all of them:</p>
+<ul>
+  <li><b>The diagrams.</b> The built-in look is what every visitor sees first and what every user ships. If the diagram does not make someone think "that is a nice diagram", nothing around it will.</li>
+  <li><b>The website.</b> Its job is to show the diagram being made and edited, and get the visitor to set up their agent or open the editor.</li>
+  <li><b>The editor.</b> It should recede: the diagram is the content.</li>
+</ul>
+
+<h2 id="learned">What your reactions told me</h2>
+<table>
+  <tr><th>What I showed</th><th>What you said</th><th>What I take from it</th></tr>
+  <tr><td>Blue pen and yellow highlighter, on everything</td><td class="quote">"not sure how I feel about the color choices"; then "what doesn't look right is the whole style you chose. I want to go for the Editorial look"</td><td>Loud, saturated, poster-like is the wrong register. You want something composed and typographic.</td></tr>
+  <tr><td>First Editorial diagram: black outlines on white</td><td class="quote">"it doesn't look bad, but it doesn't make me think 'oh, that's a nice looking diagram', it's mid, meh"</td><td>Restraint alone is not enough. The diagram needs craft you can see.</td></tr>
+  <tr><td>Second Editorial diagram: hatching, italic notes, grey fields</td><td class="quote">"better, but it isn't better than the current look"</td><td>The look on main is the bar. A new look has to beat it, not just differ from it.</td></tr>
+  <tr><td>How I worked</td><td class="quote">"usually designers first create a design doc. you went straight to changing it"</td><td>Explore on paper first. This document.</td></tr>
+</table>
+<p>One thing I have not pinned down: what "Editorial" means to you. I have read it as magazine typography: serif headlines, rules, generous white space, one rich colour. If you have a reference in mind (a site, a magazine, a tool's preset called Editorial), it would settle a lot.</p>
+
+<h2 id="fixed">What stays fixed in every direction</h2>
+<ul>
+  <li>No cream or off-white "paper" grounds. No black or near-black as the highlight. Looks are not named after publications or brands. These are your standing rules.</li>
+  <li>The opening of the website is the product working: the diagram file beside the canvas, where a visitor can drag a box and watch one line of the file change. That part was built and works; only its styling changes with the direction.</li>
+  <li>Style names in the look (<code>focal</code>, <code>store</code>, <code>primary</code> and so on) do not change, so all 44 guides and every existing diagram keep working.</li>
+  <li>Light and dark versions of whatever we choose.</li>
+</ul>
+
+<section class="dir" id="current">
+  <h2>Baseline: the look on main today</h2>
+  <p class="idea">Rounded white cards with two-tone icons, softly tinted zones, slate greys, one indigo. This is the one to beat.</p>
+  <div class="pair">
+    <figure><img src="img/0-current-arch.png" alt="Shop platform architecture in the current built-in look"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/0-current-swim.png" alt="Hiring swimlane in the current built-in look"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <figure><img src="img/0-current-site.png" alt="The current fastdraw.dev hero"><figcaption>The current website</figcaption></figure>
+  <p class="verdict"><b>What works:</b> friendly, clear, the icons give it life. <b>What does not:</b> the title and labels are plain sans, so nothing about it is recognisably FastDraw; it could be any modern diagram tool. The website pairs a serif headline with soft cards and coloured window dots, which reads as a template.</p>
+</section>
+
+<section class="dir" id="a">
+  <h2>A. Harbor, edited</h2>
+  <p class="idea">Keep the look you prefer and change only its typography: a serif headline, italic serif notes on the lines and under the names, small tracked capitals on zones. One decision at a time, starting from what already works.</p>
+  <div class="facts">
+    <div><b>Type</b>Newsreader for titles and notes, Geist for names. Website headlines in Instrument Serif.</div>
+    <div><b>Shapes</b>Unchanged: rounded cards, cylinders, tinted rounded zones, two-tone icons.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#f6f7fb"></i><i style="background:#ffffff"></i><i style="background:#0f172a"></i><i style="background:#475569"></i><i style="background:#4f46e5"></i><i style="background:#0284c7"></i><i style="background:#7c3aed"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/a-harbor-edited-arch.png" alt="Architecture in direction A"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/a-harbor-edited-swim.png" alt="Swimlane in direction A"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mA"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/a-harbor-edited-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> lowest risk; it is your current look with a voice. Every existing diagram keeps its shape. <b>Against:</b> the smallest change of the four. If you wanted a visibly new FastDraw, this is a refinement, not a relaunch.</p>
+</section>
+
+<section class="dir" id="b">
+  <h2>B. Graphics desk</h2>
+  <p class="idea">A diagram as a magazine's graphics desk would draw it: white page, fine black outlines, hatched data stores, flat grey fields for zones, a lavender block on the subject, ochre for requests. This is the second Editorial version you saw.</p>
+  <div class="facts">
+    <div><b>Type</b>Newsreader for titles and italic notes, Libre Franklin for names. Website headlines in Instrument Serif over heavy rules.</div>
+    <div><b>Shapes</b>Nearly square corners, 1px outlines, pencil hatching, no dots on the page.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#ffffff"></i><i style="background:#f0f1f3"></i><i style="background:#16181d"></i><i style="background:#5b616b"></i><i style="background:#4338ca"></i><i style="background:#d8d5fb"></i><i style="background:#b0701a"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/b-graphics-desk-arch.png" alt="Architecture in direction B"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/b-graphics-desk-swim.png" alt="Swimlane in direction B"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mB"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/b-graphics-desk-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> the most "editorial" of the four, and unlike any other diagram tool. Strong on process diagrams like the swimlane. <b>Against:</b> you already judged it no better than the current look. Black outlines are heavier and less friendly, and the icons lose their two-tone charm.</p>
+</section>
+
+<section class="dir" id="c">
+  <h2>C. Colour blocks</h2>
+  <p class="idea">No outlines at all. White cards and flat blocks of muted colour on a pale grey page, the way a newspaper explainer is built: colour tells you what kind of thing a box is.</p>
+  <div class="facts">
+    <div><b>Type</b>Libre Franklin throughout, a heavy headline. No serif.</div>
+    <div><b>Shapes</b>Borderless blocks, slightly rounded. Stores are teal, platforms ochre, the subject plum.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#f2f3f5"></i><i style="background:#ffffff"></i><i style="background:#e3e6ea"></i><i style="background:#16181d"></i><i style="background:#6d28a8"></i><i style="background:#e4cdf5"></i><i style="background:#0f766e"></i><i style="background:#b0701a"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/c-colour-blocks-arch.png" alt="Architecture in direction C"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/c-colour-blocks-swim.png" alt="Swimlane in direction C"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mC"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/c-colour-blocks-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> the most colour, and it reads at a glance from across a room. <b>Against:</b> borderless white cards vanish on a white slide or README; it leans on its grey page. Three hues at once is the furthest from "one colour for what matters".</p>
+</section>
+
+<section class="dir" id="d">
+  <h2>D. Schematic</h2>
+  <p class="idea">A technical drawing: square boxes with a firm outline, capitals in a typewriter face riding on the lines, dashed zone borders, a dotted grid. Closest to where FastDraw started, with diagram-design.</p>
+  <div class="facts">
+    <div><b>Type</b>Geist for names, Geist Mono capitals for labels and details.</div>
+    <div><b>Shapes</b>Square corners, 1.5px outlines, right-angled arrows, dashed zones.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#ffffff"></i><i style="background:#f0f1f3"></i><i style="background:#16181d"></i><i style="background:#5b616b"></i><i style="background:#0b5bd3"></i><i style="background:#d3e4ff"></i><i style="background:#0e7490"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/d-schematic-arch.png" alt="Architecture in direction D"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/d-schematic-swim.png" alt="Swimlane in direction D"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mD"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/d-schematic-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> speaks to engineers; precise and serious. <b>Against:</b> not editorial at all, and you moved away from this family once already when you chose the Harbor look.</p>
+</section>
+
+<section class="dir" id="x">
+  <h2>Tried and rejected: blue pen, yellow highlighter</h2>
+  <p class="idea">Everything in one blue ink on a pale blue pad, yellow on the subject, a saturated blue website. Built this morning; kept here for the record.</p>
+  <div class="pair">
+    <figure><img src="img/x-blue-pen-arch.png" alt="Architecture in the rejected blue pen look"><figcaption>Diagram</figcaption></figure>
+    <figure><img src="img/x-blue-pen-site.png" alt="The rejected blue website hero"><figcaption>Website</figcaption></figure>
+  </div>
+  <p class="verdict"><b>Kept from it:</b> the live workbench in the hero and the page structure, which do not depend on the style. <b>Dropped:</b> the palette, the wide grotesque type, the yellow band.</p>
+</section>
+
+<h2 id="decide">What I need from you</h2>
+<ul>
+  <li><b>A direction</b>, or a mix: for example "A's diagrams with B's website". My own pick is A for the diagrams, because it starts from the look you already prefer and adds the editorial voice, with B's website: serif headlines, rules, square frames.</li>
+  <li><b>What "Editorial" means to you</b>, ideally a link or a screenshot.</li>
+  <li><b>Scope:</b> should the built-in look change at all, or should Editorial be an extra look in the picker while the website and editor are restyled around the current one?</li>
+</ul>
+<p>Once a direction is chosen, the next step is one more page like this at higher fidelity: the website hero, one inner section, the editor chrome and eight kinds of diagram, light and dark. Only after you approve that does the product change.</p>
+<p>Each direction is a real look file in <code>docs/design/revamp/looks/</code>; any diagram can be drawn in one with <code>look "path/to/file.look"</code> on its first line.</p>
+
+</div>
+</body>
+</html>
