@@ -739,17 +739,21 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<defs><pattern id="fd-dots" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="${col(look, cv.dots)}"/></pattern></defs>`);
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
   }
+  // The page dressing below is drawn as pattern fills, one element each: a diagram file is untrusted and can be
+  // any size, so nothing here may grow with the extent of the picture.
   if (background && cv.bars && cv.bars !== 'none') {
     // bars=colour: the page as listing paper, a band of colour every other bargap
-    const gap = Math.max(8, num(cv.bargap, 32)), c = col(look, cv.bars);
-    for (let y = Math.floor(sc.y / (gap * 2)) * gap * 2; y < sc.y + sc.h; y += gap * 2) out.push(`<rect class="fd-page" x="${sc.x}" y="${y}" width="${sc.w}" height="${gap}" fill="${c}"/>`);
+    const gap = Math.max(8, num(cv.bargap, 32));
+    out.push(`<defs><pattern id="fd-bars" width="${gap * 2}" height="${gap * 2}" patternUnits="userSpaceOnUse"><rect width="${gap * 2}" height="${gap}" fill="${col(look, cv.bars)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-bars)"/>`);
   }
   if (background && cv.feed && cv.feed !== 'none') {
     // feed=colour: sprocket holes down both edges, and the line where the strip tears off
     const c = col(look, cv.feed), paper = col(look, cv.paper ?? 'paper');
-    let holes = '';
-    for (let y = Math.floor(sc.y / 24) * 24 + 12; y < sc.y + sc.h; y += 24) holes += `<circle cx="${sc.x + 13}" cy="${y}" r="4.2"/><circle cx="${sc.x + sc.w - 13}" cy="${y}" r="4.2"/>`;
-    out.push(`<g class="fd-page" fill="${paper}" stroke="${c}" stroke-width="1">${holes}</g><path class="fd-page" d="M ${sc.x + 26},${sc.y} v ${sc.h} M ${sc.x + sc.w - 26},${sc.y} v ${sc.h}" stroke="${c}" stroke-width="1" stroke-dasharray="2 3" fill="none"/>`);
+    const hole = (id: string, x: number) => `<pattern id="${id}" x="${x}" y="0" width="26" height="24" patternUnits="userSpaceOnUse"><circle cx="13" cy="12" r="4.2" fill="${paper}" stroke="${c}" stroke-width="1"/></pattern>`;
+    out.push(`<defs>${hole('fd-feed-l', sc.x)}${hole('fd-feed-r', sc.x + sc.w - 26)}</defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-l)"/><rect class="fd-page" x="${sc.x + sc.w - 26}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-r)"/>`);
+    out.push(`<path class="fd-page" d="M ${sc.x + 26},${sc.y} v ${sc.h} M ${sc.x + sc.w - 26},${sc.y} v ${sc.h}" stroke="${c}" stroke-width="1" stroke-dasharray="2 3" fill="none"/>`);
   }
   for (const s of sc.shapes) if (s.back) out.push(drawShape(look, s));
   // lines go under the shapes, except those marked layer=front (an edge drawn on a face)

@@ -70,8 +70,11 @@ test('the style looks ship, and each draws the thing it is named for', () => {
   assert.match(draw('offset'), /<rect x="45" y="225" width="144" height="64" fill="[^"]+" stroke="none" style="mix-blend-mode:multiply"\/>/);
   assert.match(draw('offset'), /<filter id="fd-grain"/);
   // listing: striped paper with sprocket holes, and a plus on each corner of a box
-  assert.match(draw('listing'), /<rect class="fd-page" x="[-\d.]+" y="[-\d.]+" width="[\d.]+" height="32" fill="[^"]+"\/>/);
-  assert.match(draw('listing'), /<g class="fd-page" fill="[^"]+" stroke="[^"]+" stroke-width="1"><circle /);
+  assert.match(draw('listing'), /<pattern id="fd-bars" width="64" height="64" patternUnits="userSpaceOnUse"><rect width="64" height="32"/);
+  assert.match(draw('listing'), /<pattern id="fd-feed-l" [^>]*><circle cx="13" cy="12" r="4\.2"/);
+  // the page dressing does not grow with the picture: a diagram a million pixels tall draws no more elements
+  const tall = (y: number) => draw('listing', `a: node "A" at 40,40\nb: node "B" at 40,${y}\n`).split('<').length;
+  assert.equal(tall(1_000_000), tall(400));
   assert.match(draw('listing'), /<path d="M 36\.5,60 H 43\.5 M 40,56\.5 V 63\.5"/);
   // none of the page dressing is drawn on a transparent export
   for (const n of ['offset', 'listing']) assert.doesNotMatch(renderSvg(buildScene(`look ${n}\n${SAMPLE}`, null), undefined, { background: false }), /fd-page|fd-grain/);
