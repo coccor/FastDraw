@@ -1,0 +1,217 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B. One diagram, told in scroll</title><style>@font-face{font-family:'Geist';font-weight:400;src:url('../../../../fonts/Geist-Regular.ttf')}
+@font-face{font-family:'Geist';font-weight:500;src:url('../../../../fonts/Geist-Medium.ttf')}
+@font-face{font-family:'Geist';font-weight:600;src:url('../../../../fonts/Geist-SemiBold.ttf')}
+@font-face{font-family:'Geist Mono';font-weight:400;src:url('../../../../fonts/GeistMono-Regular.ttf')}
+@font-face{font-family:'Geist Mono';font-weight:500;src:url('../../../../fonts/GeistMono-Medium.ttf')}
+@font-face{font-family:'Newsreader';font-weight:400;src:url('../../../../fonts/Newsreader-Regular.ttf')}
+@font-face{font-family:'Newsreader';font-weight:500;src:url('../../../../fonts/Newsreader-Medium.ttf')}
+@font-face{font-family:'Instrument Serif';font-weight:400;src:url('../../../../fonts/InstrumentSerif-Regular.ttf')}
+@font-face{font-family:'Libre Franklin';font-weight:400;src:url('../../../../fonts/LibreFranklin-Regular.ttf')}
+@font-face{font-family:'Libre Franklin';font-weight:700;src:url('../../../../fonts/LibreFranklin-Bold.ttf')}
+:root{--page:#f6f7fb;--ink:#0f172a;--muted:#475569;--soft:#94a3b8;--accent:#4f46e5;--tint:#eef0ff;--hair:rgba(15,23,42,.12);--box:#fff;--mono:'Geist Mono',monospace}
+*{box-sizing:border-box}body{margin:0;font:16px/1.55 'Geist',sans-serif;color:var(--ink);background:var(--page);-webkit-font-smoothing:antialiased}
+svg{display:block;width:100%;height:auto}
+.top{display:flex;align-items:center;justify-content:space-between;padding:18px 40px}.brand{font-weight:600;font-size:17px;display:flex;gap:10px;align-items:center}
+.logo{width:26px;height:26px;border-radius:7px;background:var(--accent)}
+nav{display:flex;gap:26px;align-items:center;color:var(--muted);font-size:15px}
+.btn{display:inline-flex;align-items:center;padding:10px 18px;border-radius:9px;border:1px solid var(--hair);background:#fff;font-weight:500;font-size:15px;color:var(--ink)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#fff}
+h1,h2{font-family:'Newsreader',serif;font-weight:400;letter-spacing:-.015em;margin:0;line-height:1.05}
+p{margin:0;color:var(--muted)}code,.mono{font-family:var(--mono)}
+.cmd{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#14162b;color:#e8e9f7;font:14px var(--mono);padding:13px 16px;border-radius:10px}
+.cmd b{color:#8f8af5;font-weight:400}.cmd span.copy{font:12px 'Geist';color:#a9acc9;border:1px solid #3a3d63;border-radius:6px;padding:3px 9px}
+.card{background:#fff;border:1px solid var(--hair);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px -18px rgba(15,23,42,.25)}
+.note{background:#14162b;color:#cfd2ee;font:13px 'Geist';padding:9px 40px;z-index:9}.note b{color:#fff;font-weight:600}
+.map{display:flex;gap:8px;padding:14px 40px 40px;align-items:stretch}.map div{flex:1;border:1px dashed var(--soft);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);background:rgba(255,255,255,.5)}
+.map div b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:2px}.map i{font-style:normal;color:var(--accent)}
+.maph{padding:36px 40px 0;font:600 13px 'Geist';color:var(--soft)}
+.lead{padding:44px 40px 26px}.lead h1{font-size:64px}.lead p{font-size:18px;margin-top:16px}
+.frame{display:grid;grid-template-columns:380px 1fr;gap:44px;padding:22px 40px;align-items:center}.step em{font-style:normal;font-size:14px;color:var(--accent);font-weight:500}.step h2{font-size:38px;margin:6px 0 12px}.step p{font-size:16px}
+.term{margin-top:18px;background:#14162b;color:#e8e9f7;font:12.5px/1.8 var(--mono);padding:14px 16px;border-radius:10px}.term b{color:#8f8af5;font-weight:400}.term span{color:#a9acc9}.term ins{color:#86efac;text-decoration:none}
+.pin{padding:20px 26px}.rail{display:flex;gap:6px;margin-top:22px}.rail b{width:34px;height:4px;border-radius:2px;background:var(--hair)}.rail b.on{background:var(--accent)}
+.gap{text-align:center;font-size:12px;color:var(--soft);padding:2px 0;border-top:1px dashed var(--hair);margin:10px 40px 0}</style></head><body><div class="note"><b>B. One diagram, told in scroll.</b> Three moments of the same scrolling screen are shown stacked. The left column changes; the diagram stays pinned and is redrawn.</div><header class="top"><div class="brand"><span class="logo"></span>FastDraw</div><nav><span>Set up</span><span>Kinds</span><span>Looks</span><span>GitHub</span><span class="btn go">Open the editor</span></nav></header>
+<section class="lead"><h1>One diagram, from a sentence<br>to something you can share.</h1><p>Scroll. The diagram on the right stays put and changes as the story does.</p></section>
+<section class="frame"><div class="step"><em>First</em><h2>You ask</h2><p>Your agent reads the guide for this kind of diagram and starts writing a small text file.</p><div class="term"><b>&gt;</b> Draw our checkout flow as docs/checkout.fdraw<br><span>Reading the guide for architecture diagrams</span><br><span>Writing docs/checkout.fdraw</span></div><div class="rail"><b class="on"></b><b class=""></b><b class=""></b><b class=""></b><b class=""></b></div></div><div class="pin card"><svg class="" viewBox="0 -24 928 416" xmlns="http://www.w3.org/2000/svg"><rect class="fd-page" x="0" y="-24" width="928" height="416" fill="#f6f7fb"/>
+<defs><pattern id="fd-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(15,23,42,0.07)"/></pattern></defs>
+<rect class="fd-page" x="0" y="-24" width="928" height="416" fill="url(#fd-dots)"/>
+<rect x="216" y="80" width="192" height="272" rx="16" fill="rgba(15,23,42,0.025)" stroke="rgba(15,23,42,0.12)" stroke-width="1"/>
+<rect x="228" y="84" width="40" height="12" rx="2" fill="#f6f7fb"/>
+<text x="248" y="93" text-anchor="middle" font-family="'Geist', sans-serif" font-size="11" fill="#475569" font-weight="600">Edge</text>
+<rect x="696" y="80" width="192" height="272" rx="16" fill="rgba(15,23,42,0.025)" stroke="rgba(15,23,42,0.12)" stroke-width="1"/>
+<rect x="708" y="84" width="40" height="12" rx="2" fill="#f6f7fb"/>
+<text x="728" y="93" text-anchor="middle" font-family="'Geist', sans-serif" font-size="11" fill="#475569" font-weight="600">Data</text>
+<rect x="40" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="40" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.28)" stroke-width="1" stroke-dasharray="5,4"/>
+<g transform="translate(70.16 134) scale(0.83)" fill="rgba(15,23,42,0.06)" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 8l16 0"/><path d="M8 4l0 4"/></g>
+<text x="126" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Web shop</text>
+<text x="126" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">browser</text>
+<rect x="240" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="240" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+<g transform="translate(255.16 134) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 12v.01"/><path d="M3 21h18"/><path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5"/><path d="M21 7h-7m3 -3l-3 3l3 3"/></g>
+<text x="326" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">API gateway</text>
+<text x="326" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">auth, rate limits</text>
+<rect x="472" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="472" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+<g transform="translate(480 134) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></g>
+<text x="558" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#4f46e5" font-weight="600">Checkout</text>
+<text x="558" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">prices, reserves stock</text>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#f6f7fb"/>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#ffffff" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>
+<g transform="translate(746.68 134) scale(0.83)" fill="rgba(124,58,237,0.14)" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></g>
+<text x="806" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Orders DB</text>
+<text x="806" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">Postgres</text>
+<text x="40" y="44" font-family="'Geist', sans-serif" font-size="26" fill="#0f172a" font-weight="600">Checkout</text></svg></div></section><div class="gap">scroll</div><section class="frame"><div class="step"><em>Then</em><h2>It checks its own work</h2><p>fastdraw check reports overlaps, text that does not fit and lines through boxes, with line numbers. The agent fixes them before you see anything.</p><div class="term"><b>$</b> fastdraw check docs/checkout.fdraw<br><span>ok: no problems found</span></div><div class="rail"><b class=""></b><b class="on"></b><b class=""></b><b class=""></b><b class=""></b></div></div><div class="pin card"><svg class="" viewBox="0 -24 1120 416" xmlns="http://www.w3.org/2000/svg"><rect class="fd-page" x="0" y="-24" width="1120" height="416" fill="#f6f7fb"/>
+<defs><pattern id="fd-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(15,23,42,0.07)"/></pattern></defs>
+<rect class="fd-page" x="0" y="-24" width="1120" height="416" fill="url(#fd-dots)"/>
+<rect x="216" y="80" width="192" height="272" rx="16" fill="rgba(15,23,42,0.025)" stroke="rgba(15,23,42,0.12)" stroke-width="1"/>
+<rect x="228" y="84" width="40" height="12" rx="2" fill="#f6f7fb"/>
+<text x="248" y="93" text-anchor="middle" font-family="'Geist', sans-serif" font-size="11" fill="#475569" font-weight="600">Edge</text>
+<rect x="696" y="80" width="192" height="272" rx="16" fill="rgba(15,23,42,0.025)" stroke="rgba(15,23,42,0.12)" stroke-width="1"/>
+<rect x="708" y="84" width="40" height="12" rx="2" fill="#f6f7fb"/>
+<text x="728" y="93" text-anchor="middle" font-family="'Geist', sans-serif" font-size="11" fill="#475569" font-weight="600">Data</text>
+<path d="M 184,144 L 233,144" fill="none" stroke="#0284c7" stroke-width="1.4"/>
+<polygon points="240,144 230,148 230,140" fill="#0284c7"/>
+<path d="M 384,144 L 465,144" fill="none" stroke="#4f46e5" stroke-width="2"/>
+<polygon points="472,144 462,148 462,140" fill="#4f46e5"/>
+<path d="M 616,144 L 713,144" fill="none" stroke="#4f46e5" stroke-width="2"/>
+<polygon points="720,144 710,148 710,140" fill="#4f46e5"/>
+<path d="M 312,176 L 312,280 Q 312,288 320,288 L 465,288" fill="none" stroke="rgba(15,23,42,0.45)" stroke-width="1.4"/>
+<polygon points="472,288 462,292 462,284" fill="rgba(15,23,42,0.45)"/>
+<path d="M 616,288 L 713,288" fill="none" stroke="rgba(15,23,42,0.45)" stroke-width="1.4"/>
+<polygon points="720,288 710,292 710,284" fill="rgba(15,23,42,0.45)"/>
+<path d="M 544,112 L 544,84 Q 544,76 552,76 L 1000,76 Q 1008,76 1008,84 L 1008,105" fill="none" stroke="rgba(15,23,42,0.45)" stroke-width="1.4"/>
+<polygon points="1008,112 1004,102 1012,102" fill="rgba(15,23,42,0.45)"/>
+<rect x="388" y="122" width="80" height="14" rx="2" fill="#f6f7fb"/>
+<text x="428" y="134" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#4f46e5">POST /orders</text>
+<rect x="644" y="122" width="48" height="14" rx="2" fill="#f6f7fb"/>
+<text x="668" y="134" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#4f46e5">writes</text>
+<rect x="404" y="266" width="48" height="14" rx="2" fill="#f6f7fb"/>
+<text x="428" y="278" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#475569">browse</text>
+<rect x="648" y="266" width="40" height="14" rx="2" fill="#f6f7fb"/>
+<text x="668" y="278" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#475569">reads</text>
+<rect x="750" y="54" width="52" height="14" rx="2" fill="#f6f7fb"/>
+<text x="776" y="66" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#475569">charges</text>
+<rect x="40" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="40" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.28)" stroke-width="1" stroke-dasharray="5,4"/>
+<g transform="translate(70.16 134) scale(0.83)" fill="rgba(15,23,42,0.06)" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 8l16 0"/><path d="M8 4l0 4"/></g>
+<text x="126" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Web shop</text>
+<text x="126" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">browser</text>
+<rect x="240" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="240" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+<g transform="translate(255.16 134) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 12v.01"/><path d="M3 21h18"/><path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5"/><path d="M21 7h-7m3 -3l-3 3l3 3"/></g>
+<text x="326" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">API gateway</text>
+<text x="326" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">auth, rate limits</text>
+<rect x="472" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="472" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+<g transform="translate(480 134) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></g>
+<text x="558" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#4f46e5" font-weight="600">Checkout</text>
+<text x="558" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">prices, reserves stock</text>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#f6f7fb"/>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#ffffff" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>
+<g transform="translate(746.68 134) scale(0.83)" fill="rgba(124,58,237,0.14)" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></g>
+<text x="806" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Orders DB</text>
+<text x="806" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">Postgres</text>
+<rect x="472" y="256" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="472" y="256" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+<g transform="translate(492.2 278) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></g>
+<text x="558" y="283.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Catalog</text>
+<text x="558" y="299" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">products, stock</text>
+<path d="M720,262.4 C720,253.76 864,253.76 864,262.4 L864,313.6 C864,322.24 720,322.24 720,313.6 Z M720,262.4 C720,271.04 864,271.04 864,262.4 C864,271.04 720,271.04 720,262.4" fill="#f6f7fb"/>
+<path d="M720,262.4 C720,253.76 864,253.76 864,262.4 L864,313.6 C864,322.24 720,322.24 720,313.6 Z M720,262.4 C720,271.04 864,271.04 864,262.4 C864,271.04 720,271.04 720,262.4" fill="#ffffff" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>
+<g transform="translate(760.6 278) scale(0.83)" fill="rgba(124,58,237,0.14)" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></g>
+<text x="806" y="283.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Cache</text>
+<text x="806" y="299" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">Redis</text>
+<rect x="936" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="936" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.28)" stroke-width="1" stroke-dasharray="5,4"/>
+<g transform="translate(961.24 134) scale(0.83)" fill="rgba(15,23,42,0.06)" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 10l18 0"/><path d="M7 15l.01 0"/><path d="M11 15l2 0"/></g>
+<text x="1022" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Payments</text>
+<text x="1022" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">card provider</text>
+<text x="40" y="44" font-family="'Geist', sans-serif" font-size="26" fill="#0f172a" font-weight="600">Checkout</text></svg></div></section><div class="gap">scroll</div><section class="frame"><div class="step"><em>Later</em><h2>Your team's look</h2><p>One line at the top of the file picks a look. The same diagram, drawn again.</p><div class="term"><ins>+ look engraved</ins></div><div class="rail"><b class=""></b><b class=""></b><b class=""></b><b class="on"></b><b class=""></b></div></div><div class="pin card"><svg class="" viewBox="0 -32 1120 424" xmlns="http://www.w3.org/2000/svg"><rect class="fd-page" x="0" y="-32" width="1120" height="424" fill="#f3eee2"/>
+<defs><pattern id="fd-hatch-0" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="5" stroke="rgba(28,24,20,0.4)" stroke-width="0.45" stroke-linecap="round"/></pattern><pattern id="fd-hatch-1" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="3" stroke="#1c1814" stroke-width="0.7" stroke-linecap="round"/></pattern><pattern id="fd-hatch-2" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="2.2" stroke="#1c1814" stroke-width="0.9" stroke-linecap="round"/></pattern></defs>
+<rect x="216" y="80" width="192" height="272" fill="none" stroke="none" stroke-width="0.8"/>
+<rect x="216" y="80" width="192" height="272" fill="url(#fd-hatch-0)" stroke="none"/>
+<rect x="216" y="80" width="192" height="272" fill="none" stroke="#1c1814" stroke-width="0.8"/>
+<rect x="213.5" y="77.5" width="5" height="5" fill="#1c1814"/>
+<rect x="405.5" y="77.5" width="5" height="5" fill="#1c1814"/>
+<rect x="213.5" y="349.5" width="5" height="5" fill="#1c1814"/>
+<rect x="405.5" y="349.5" width="5" height="5" fill="#1c1814"/>
+<rect x="288" y="73" width="48" height="15" rx="2" fill="#f3eee2"/>
+<text x="312" y="84.46" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="11" fill="#1c1814" font-weight="500" letter-spacing="2.2">EDGE</text>
+<rect x="696" y="80" width="192" height="272" fill="none" stroke="none" stroke-width="0.8"/>
+<rect x="696" y="80" width="192" height="272" fill="url(#fd-hatch-0)" stroke="none"/>
+<rect x="696" y="80" width="192" height="272" fill="none" stroke="#1c1814" stroke-width="0.8"/>
+<rect x="693.5" y="77.5" width="5" height="5" fill="#1c1814"/>
+<rect x="885.5" y="77.5" width="5" height="5" fill="#1c1814"/>
+<rect x="693.5" y="349.5" width="5" height="5" fill="#1c1814"/>
+<rect x="885.5" y="349.5" width="5" height="5" fill="#1c1814"/>
+<rect x="768" y="73" width="48" height="15" rx="2" fill="#f3eee2"/>
+<text x="792" y="84.46" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="11" fill="#1c1814" font-weight="500" letter-spacing="2.2">DATA</text>
+<path d="M 184,144 L 231.95,144" fill="none" stroke="#1c1814" stroke-width="0.95"/>
+<polygon points="240,144 228.5,148.6 228.5,139.4" fill="#1c1814"/>
+<path d="M 384,144 L 461.5,144" fill="none" stroke="#b3261a" stroke-width="4.2"/>
+<path d="M 384,144 L 461.5,144" fill="none" stroke="#f3eee2" stroke-width="1.8"/>
+<polygon points="472,144 457,150 457,138" fill="#b3261a"/>
+<path d="M 616,144 L 709.5,144" fill="none" stroke="#b3261a" stroke-width="4.2"/>
+<path d="M 616,144 L 709.5,144" fill="none" stroke="#f3eee2" stroke-width="1.8"/>
+<polygon points="720,144 705,150 705,138" fill="#b3261a"/>
+<path d="M 312,176 L 312,288 L 463.95,288" fill="none" stroke="#1c1814" stroke-width="0.95"/>
+<polygon points="472,288 460.5,292.6 460.5,283.4" fill="#1c1814"/>
+<path d="M 616,288 L 711.95,288" fill="none" stroke="#1c1814" stroke-width="0.95"/>
+<polygon points="720,288 708.5,292.6 708.5,283.4" fill="#1c1814"/>
+<path d="M 544,112 L 544,76 L 1008,76 L 1008,103.95" fill="none" stroke="#1c1814" stroke-width="0.95"/>
+<polygon points="1008,112 1003.4,100.5 1012.6,100.5" fill="#1c1814"/>
+<rect x="388" y="122" width="80" height="14" rx="2" fill="#f3eee2"/>
+<text x="428" y="134" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="10" fill="#b3261a" font-style="italic">POST /orders</text>
+<rect x="644" y="122" width="48" height="14" rx="2" fill="#f3eee2"/>
+<text x="668" y="134" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="10" fill="#b3261a" font-style="italic">writes</text>
+<rect x="404" y="266" width="48" height="14" rx="2" fill="#f3eee2"/>
+<text x="428" y="278" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="10" fill="#1c1814" font-style="italic">browse</text>
+<rect x="648" y="266" width="40" height="14" rx="2" fill="#f3eee2"/>
+<text x="668" y="278" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="10" fill="#1c1814" font-style="italic">reads</text>
+<rect x="750" y="54" width="52" height="14" rx="2" fill="#f3eee2"/>
+<text x="776" y="66" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="10" fill="#1c1814" font-style="italic">charges</text>
+<rect x="40" y="112" width="144" height="64" fill="#f3eee2"/>
+<rect x="40" y="112" width="144" height="64" fill="#f3eee2" stroke="#1c1814" stroke-width="0.9" stroke-dasharray="1.2,3"/>
+<g transform="translate(69 134) scale(0.83)" fill="none" stroke="#1c1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 8l16 0"/><path d="M8 4l0 4"/></g>
+<text x="126" y="138" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#1c1814" font-weight="600">Web shop</text>
+<text x="126" y="156.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(28,24,20,0.8)" font-style="italic">browser</text>
+<rect x="245" y="117" width="144" height="64" fill="url(#fd-hatch-1)" stroke="none"/>
+<rect x="240" y="112" width="144" height="64" fill="#f3eee2"/>
+<rect x="240" y="112" width="144" height="64" fill="#fbf8f0" stroke="#1c1814" stroke-width="1.2"/>
+<rect x="243.5" y="115.5" width="137" height="57" fill="none" stroke="#1c1814" stroke-width="0.5"/>
+<g transform="translate(253.04 134) scale(0.83)" fill="none" stroke="#1c1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 12v.01"/><path d="M3 21h18"/><path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5"/><path d="M21 7h-7m3 -3l-3 3l3 3"/></g>
+<text x="326" y="138" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#1c1814" font-weight="600">API gateway</text>
+<text x="326" y="156.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(28,24,20,0.8)" font-style="italic">auth, rate limits</text>
+<rect x="477" y="117" width="144" height="64" fill="url(#fd-hatch-2)" stroke="none"/>
+<rect x="472" y="112" width="144" height="64" fill="#f3eee2"/>
+<rect x="472" y="112" width="144" height="64" fill="#1c1814" stroke="#1c1814" stroke-width="1.2"/>
+<rect x="475.5" y="115.5" width="137" height="57" fill="none" stroke="#f3eee2" stroke-width="0.5"/>
+<g transform="translate(480 134) scale(0.83)" fill="none" stroke="#f3eee2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></g>
+<text x="558" y="138" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#f3eee2" font-weight="600">Checkout</text>
+<text x="558" y="156.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(243,238,226,0.85)" font-style="italic">prices, reserves stock</text>
+<path d="M725,123.4 C725,114.76 869,114.76 869,123.4 L869,174.6 C869,183.24 725,183.24 725,174.6 Z M725,123.4 C725,132.04 869,132.04 869,123.4 C869,132.04 725,132.04 725,123.4" fill="url(#fd-hatch-1)" stroke="none"/>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#f3eee2"/>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#fbf8f0" stroke="#1c1814" stroke-width="1.2"/>
+<g transform="translate(745.38 134) scale(0.83)" fill="none" stroke="#1c1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></g>
+<text x="806" y="138" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#1c1814" font-weight="600">Orders DB</text>
+<text x="806" y="156.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(28,24,20,0.8)" font-style="italic">Postgres</text>
+<rect x="477" y="261" width="144" height="64" fill="url(#fd-hatch-1)" stroke="none"/>
+<rect x="472" y="256" width="144" height="64" fill="#f3eee2"/>
+<rect x="472" y="256" width="144" height="64" fill="#fbf8f0" stroke="#1c1814" stroke-width="1.2"/>
+<rect x="475.5" y="259.5" width="137" height="57" fill="none" stroke="#1c1814" stroke-width="0.5"/>
+<g transform="translate(490.33 278) scale(0.83)" fill="none" stroke="#1c1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></g>
+<text x="558" y="282" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#1c1814" font-weight="600">Catalog</text>
+<text x="558" y="300.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(28,24,20,0.8)" font-style="italic">products, stock</text>
+<path d="M725,267.4 C725,258.76 869,258.76 869,267.4 L869,318.6 C869,327.24 725,327.24 725,318.6 Z M725,267.4 C725,276.04 869,276.04 869,267.4 C869,276.04 725,276.04 725,267.4" fill="url(#fd-hatch-1)" stroke="none"/>
+<path d="M720,262.4 C720,253.76 864,253.76 864,262.4 L864,313.6 C864,322.24 720,322.24 720,313.6 Z M720,262.4 C720,271.04 864,271.04 864,262.4 C864,271.04 720,271.04 720,262.4" fill="#f3eee2"/>
+<path d="M720,262.4 C720,253.76 864,253.76 864,262.4 L864,313.6 C864,322.24 720,322.24 720,313.6 Z M720,262.4 C720,271.04 864,271.04 864,262.4 C864,271.04 720,271.04 720,262.4" fill="#fbf8f0" stroke="#1c1814" stroke-width="1.2"/>
+<g transform="translate(759.88 278) scale(0.83)" fill="none" stroke="#1c1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></g>
+<text x="806" y="282" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#1c1814" font-weight="600">Cache</text>
+<text x="806" y="300.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(28,24,20,0.8)" font-style="italic">Redis</text>
+<rect x="936" y="112" width="144" height="64" fill="#f3eee2"/>
+<rect x="936" y="112" width="144" height="64" fill="#f3eee2" stroke="#1c1814" stroke-width="0.9" stroke-dasharray="1.2,3"/>
+<g transform="translate(959.62 134) scale(0.83)" fill="none" stroke="#1c1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 10l18 0"/><path d="M7 15l.01 0"/><path d="M11 15l2 0"/></g>
+<text x="1022" y="138" text-anchor="middle" font-family="'Newsreader', sans-serif" font-size="12.5" fill="#1c1814" font-weight="600">Payments</text>
+<text x="1022" y="156.75" text-anchor="middle" font-family="'Instrument Serif', serif" font-size="11.5" fill="rgba(28,24,20,0.8)" font-style="italic">card provider</text>
+<text x="40" y="44" font-family="'Instrument Serif', serif" font-size="36" fill="#1c1814">Checkout</text></svg></div></section>
+<div class="maph">The rest of the page, top to bottom</div><div class="map"><div><b><i>2</i> After the story</b>The pinned diagram becomes the live editor: change it yourself.</div><div><b><i>3</i> Set up</b>The command, with agent tabs.</div><div><b><i>4</i> Kinds</b>A compact gallery of the 44 kinds, three rows that scroll sideways.</div><div><b><i>5</i> Footer</b>Open source, llms.txt, credits.</div></div></body></html>

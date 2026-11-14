@@ -1,0 +1,110 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A. Workbench</title><style>@font-face{font-family:'Geist';font-weight:400;src:url('../../../../fonts/Geist-Regular.ttf')}
+@font-face{font-family:'Geist';font-weight:500;src:url('../../../../fonts/Geist-Medium.ttf')}
+@font-face{font-family:'Geist';font-weight:600;src:url('../../../../fonts/Geist-SemiBold.ttf')}
+@font-face{font-family:'Geist Mono';font-weight:400;src:url('../../../../fonts/GeistMono-Regular.ttf')}
+@font-face{font-family:'Geist Mono';font-weight:500;src:url('../../../../fonts/GeistMono-Medium.ttf')}
+@font-face{font-family:'Newsreader';font-weight:400;src:url('../../../../fonts/Newsreader-Regular.ttf')}
+@font-face{font-family:'Newsreader';font-weight:500;src:url('../../../../fonts/Newsreader-Medium.ttf')}
+@font-face{font-family:'Instrument Serif';font-weight:400;src:url('../../../../fonts/InstrumentSerif-Regular.ttf')}
+@font-face{font-family:'Libre Franklin';font-weight:400;src:url('../../../../fonts/LibreFranklin-Regular.ttf')}
+@font-face{font-family:'Libre Franklin';font-weight:700;src:url('../../../../fonts/LibreFranklin-Bold.ttf')}
+:root{--page:#f6f7fb;--ink:#0f172a;--muted:#475569;--soft:#94a3b8;--accent:#4f46e5;--tint:#eef0ff;--hair:rgba(15,23,42,.12);--box:#fff;--mono:'Geist Mono',monospace}
+*{box-sizing:border-box}body{margin:0;font:16px/1.55 'Geist',sans-serif;color:var(--ink);background:var(--page);-webkit-font-smoothing:antialiased}
+svg{display:block;width:100%;height:auto}
+.top{display:flex;align-items:center;justify-content:space-between;padding:18px 40px}.brand{font-weight:600;font-size:17px;display:flex;gap:10px;align-items:center}
+.logo{width:26px;height:26px;border-radius:7px;background:var(--accent)}
+nav{display:flex;gap:26px;align-items:center;color:var(--muted);font-size:15px}
+.btn{display:inline-flex;align-items:center;padding:10px 18px;border-radius:9px;border:1px solid var(--hair);background:#fff;font-weight:500;font-size:15px;color:var(--ink)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#fff}
+h1,h2{font-family:'Newsreader',serif;font-weight:400;letter-spacing:-.015em;margin:0;line-height:1.05}
+p{margin:0;color:var(--muted)}code,.mono{font-family:var(--mono)}
+.cmd{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#14162b;color:#e8e9f7;font:14px var(--mono);padding:13px 16px;border-radius:10px}
+.cmd b{color:#8f8af5;font-weight:400}.cmd span.copy{font:12px 'Geist';color:#a9acc9;border:1px solid #3a3d63;border-radius:6px;padding:3px 9px}
+.card{background:#fff;border:1px solid var(--hair);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px -18px rgba(15,23,42,.25)}
+.note{background:#14162b;color:#cfd2ee;font:13px 'Geist';padding:9px 40px;z-index:9}.note b{color:#fff;font-weight:600}
+.map{display:flex;gap:8px;padding:14px 40px 40px;align-items:stretch}.map div{flex:1;border:1px dashed var(--soft);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);background:rgba(255,255,255,.5)}
+.map div b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:2px}.map i{font-style:normal;color:var(--accent)}
+.maph{padding:36px 40px 0;font:600 13px 'Geist';color:var(--soft)}
+.hero{display:grid;grid-template-columns:1.25fr .9fr;gap:56px;align-items:end;padding:34px 40px 30px}.hero h1{font-size:60px}.hero .say p{font-size:18px;max-width:620px;margin-top:18px}
+.hero .go p{font-size:14px;margin-top:10px}.bench{margin:0 40px;overflow:hidden}
+.tabs{display:flex;gap:6px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--hair);font-size:14px;color:var(--muted)}.tabs span{padding:6px 12px;border-radius:8px}.tabs .on{background:var(--tint);color:var(--accent);font-weight:500;font-family:var(--mono);font-size:13px}.tabs em{margin-left:auto;font-style:normal;font-size:13px;color:var(--soft)}
+.split{display:grid;grid-template-columns:590px 1fr;align-items:stretch}.src{font:12px/1.95 var(--mono);padding:16px 0;border-right:1px solid var(--hair);background:#fbfbfe;color:#334155;white-space:nowrap;overflow:hidden}
+.ln{padding:0 16px 0 0}.ln span{display:inline-block;width:38px;text-align:right;margin-right:14px;color:var(--soft)}.ln i{font-style:normal;color:var(--accent)}.ln q{quotes:none;color:#0f766e}
+.ln.hit{background:var(--tint);box-shadow:inset 3px 0 0 var(--accent)}del{color:#b4233c;background:#fde8ec;text-decoration:line-through;padding:1px 3px;border-radius:3px;margin-right:4px}ins{color:#166534;background:#dcfce7;text-decoration:none;padding:1px 3px;border-radius:3px}
+.canvas{position:relative;padding:44px 18px 18px;background:#f6f7fb;display:flex;align-items:center}.tools{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:10px;background:#fff;border:1px solid var(--hair);box-shadow:0 6px 18px -10px rgba(15,23,42,.4)}.tools b{width:26px;height:26px;border-radius:6px;background:#eef0f6}.tools b:nth-child(2){background:var(--tint);outline:1px solid var(--accent)}</style></head><body><div class="note"><b>A. Workbench.</b> The top of the page is the editor itself, with a real diagram in it. The pitch is something you do, not something you read.</div><header class="top"><div class="brand"><span class="logo"></span>FastDraw</div><nav><span>Set up</span><span>Kinds</span><span>Looks</span><span>GitHub</span><span class="btn go">Open the editor</span></nav></header>
+<section class="hero">
+  <div class="say"><h1>Your agent writes the diagram.<br>You move the boxes.</h1>
+  <p>Drag anything on the canvas below. The one line that describes it changes, and nothing else does, so your agent picks up where you left off.</p></div>
+  <div class="go"><div class="cmd"><span><b>$</b> npx fastdraw setup claude</span><span class="copy">Copy</span></div><p>One command in your repository. Works with Claude Code, Codex and Copilot.</p></div>
+</section>
+<section class="bench card">
+  <div class="tabs"><span class="on">checkout.fdraw</span><span>Try: add a box</span><span>Try: change the look</span><em>This is the real editor. Nothing is uploaded.</em></div>
+  <div class="split"><div class="src"><div class="ln"><span>1</span>text <q>"Checkout"</q> at 40,44 style=h1</div><div class="ln"><span>2</span><i>edge</i>: zone <q>"Edge"</q> at 216,80 192x272</div><div class="ln"><span>3</span><i>data</i>: zone <q>"Data"</q> at 696,80 192x272</div><div class="ln"><span>4</span><i>shop</i>: external <q>"Web shop"</q> sub=<q>"browser"</q> at 40,112 icon=browser</div><div class="ln"><span>5</span><i>gw</i>: node <q>"API gateway"</q> sub=<q>"auth, rate limits"</q> at 240,112 icon=gateway</div><div class="ln"><span>6</span><i>co</i>: focal <q>"Checkout"</q> sub=<q>"prices, reserves stock"</q> at 472,112 icon=cart</div><div class="ln"><span>7</span><i>db</i>: store <q>"Orders DB"</q> sub=<q>"Postgres"</q> at 720,112 icon=database</div><div class="ln"><span>8</span><i>cat</i>: node <q>"Catalog"</q> sub=<q>"products, stock"</q> at 472,256 icon=list</div><div class="ln"><span>9</span><i>cache</i>: store <q>"Cache"</q> sub=<q>"Redis"</q> at 720,256 icon=cache</div><div class="ln hit"><span>10</span><i>pay</i>: external <q>"Payments"</q> sub=<q>"card provider"</q> at <del>936,112</del><ins>936,256</ins> icon=payment</div><div class="ln"><span>11</span>shop -> gw style=link</div><div class="ln"><span>12</span>gw -> co <q>"POST /orders"</q> style=primary lpos=428,134</div><div class="ln"><span>13</span>co -> db <q>"writes"</q> style=primary</div><div class="ln"><span>14</span>gw.bottom -> cat.left <q>"browse"</q> lpos=428,278</div><div class="ln"><span>15</span>cat -> cache <q>"reads"</q></div><div class="ln"><span>16</span>co.top -> pay.top <q>"charges"</q></div></div><div class="canvas"><div class="tools"><b></b><b></b><b></b><b></b><b></b><b></b></div><svg class="" viewBox="0 -24 1120 416" xmlns="http://www.w3.org/2000/svg"><rect class="fd-page" x="0" y="-24" width="1120" height="416" fill="#f6f7fb"/>
+<defs><pattern id="fd-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(15,23,42,0.07)"/></pattern></defs>
+<rect class="fd-page" x="0" y="-24" width="1120" height="416" fill="url(#fd-dots)"/>
+<rect x="216" y="80" width="192" height="272" rx="16" fill="rgba(15,23,42,0.025)" stroke="rgba(15,23,42,0.12)" stroke-width="1"/>
+<rect x="228" y="84" width="40" height="12" rx="2" fill="#f6f7fb"/>
+<text x="248" y="93" text-anchor="middle" font-family="'Geist', sans-serif" font-size="11" fill="#475569" font-weight="600">Edge</text>
+<rect x="696" y="80" width="192" height="272" rx="16" fill="rgba(15,23,42,0.025)" stroke="rgba(15,23,42,0.12)" stroke-width="1"/>
+<rect x="708" y="84" width="40" height="12" rx="2" fill="#f6f7fb"/>
+<text x="728" y="93" text-anchor="middle" font-family="'Geist', sans-serif" font-size="11" fill="#475569" font-weight="600">Data</text>
+<path d="M 184,144 L 233,144" fill="none" stroke="#0284c7" stroke-width="1.4"/>
+<polygon points="240,144 230,148 230,140" fill="#0284c7"/>
+<path d="M 384,144 L 465,144" fill="none" stroke="#4f46e5" stroke-width="2"/>
+<polygon points="472,144 462,148 462,140" fill="#4f46e5"/>
+<path d="M 616,144 L 713,144" fill="none" stroke="#4f46e5" stroke-width="2"/>
+<polygon points="720,144 710,148 710,140" fill="#4f46e5"/>
+<path d="M 312,176 L 312,280 Q 312,288 320,288 L 465,288" fill="none" stroke="rgba(15,23,42,0.45)" stroke-width="1.4"/>
+<polygon points="472,288 462,292 462,284" fill="rgba(15,23,42,0.45)"/>
+<path d="M 616,288 L 713,288" fill="none" stroke="rgba(15,23,42,0.45)" stroke-width="1.4"/>
+<polygon points="720,288 710,292 710,284" fill="rgba(15,23,42,0.45)"/>
+<path d="M 544,112 L 544,84 Q 544,76 552,76 L 1000,76 Q 1008,76 1008,84 L 1008,249" fill="none" stroke="rgba(15,23,42,0.45)" stroke-width="1.4"/>
+<polygon points="1008,256 1004,246 1012,246" fill="rgba(15,23,42,0.45)"/>
+<rect x="388" y="122" width="80" height="14" rx="2" fill="#f6f7fb"/>
+<text x="428" y="134" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#4f46e5">POST /orders</text>
+<rect x="644" y="122" width="48" height="14" rx="2" fill="#f6f7fb"/>
+<text x="668" y="134" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#4f46e5">writes</text>
+<rect x="404" y="266" width="48" height="14" rx="2" fill="#f6f7fb"/>
+<text x="428" y="278" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#475569">browse</text>
+<rect x="648" y="266" width="40" height="14" rx="2" fill="#f6f7fb"/>
+<text x="668" y="278" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#475569">reads</text>
+<rect x="750" y="54" width="52" height="14" rx="2" fill="#f6f7fb"/>
+<text x="776" y="66" text-anchor="middle" font-family="'Geist', sans-serif" font-size="10" fill="#475569">charges</text>
+<rect x="40" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="40" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.28)" stroke-width="1" stroke-dasharray="5,4"/>
+<g transform="translate(70.16 134) scale(0.83)" fill="rgba(15,23,42,0.06)" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 8l16 0"/><path d="M8 4l0 4"/></g>
+<text x="126" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Web shop</text>
+<text x="126" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">browser</text>
+<rect x="240" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="240" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+<g transform="translate(255.16 134) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 12v.01"/><path d="M3 21h18"/><path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5"/><path d="M21 7h-7m3 -3l-3 3l3 3"/></g>
+<text x="326" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">API gateway</text>
+<text x="326" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">auth, rate limits</text>
+<rect x="472" y="112" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="472" y="112" width="144" height="64" rx="10" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+<g transform="translate(480 134) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></g>
+<text x="558" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#4f46e5" font-weight="600">Checkout</text>
+<text x="558" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">prices, reserves stock</text>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#f6f7fb"/>
+<path d="M720,118.4 C720,109.76 864,109.76 864,118.4 L864,169.6 C864,178.24 720,178.24 720,169.6 Z M720,118.4 C720,127.04 864,127.04 864,118.4 C864,127.04 720,127.04 720,118.4" fill="#ffffff" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>
+<g transform="translate(746.68 134) scale(0.83)" fill="rgba(124,58,237,0.14)" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></g>
+<text x="806" y="139.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Orders DB</text>
+<text x="806" y="155" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">Postgres</text>
+<rect x="472" y="256" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="472" y="256" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+<g transform="translate(492.2 278) scale(0.83)" fill="rgba(79,70,229,0.14)" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></g>
+<text x="558" y="283.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Catalog</text>
+<text x="558" y="299" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">products, stock</text>
+<path d="M720,262.4 C720,253.76 864,253.76 864,262.4 L864,313.6 C864,322.24 720,322.24 720,313.6 Z M720,262.4 C720,271.04 864,271.04 864,262.4 C864,271.04 720,271.04 720,262.4" fill="#f6f7fb"/>
+<path d="M720,262.4 C720,253.76 864,253.76 864,262.4 L864,313.6 C864,322.24 720,322.24 720,313.6 Z M720,262.4 C720,271.04 864,271.04 864,262.4 C864,271.04 720,271.04 720,262.4" fill="#ffffff" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>
+<g transform="translate(760.6 278) scale(0.83)" fill="rgba(124,58,237,0.14)" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></g>
+<text x="806" y="283.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Cache</text>
+<text x="806" y="299" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">Redis</text>
+<rect x="936" y="256" width="144" height="64" rx="10" fill="#f6f7fb"/>
+<rect x="936" y="256" width="144" height="64" rx="10" fill="#ffffff" stroke="rgba(15,23,42,0.28)" stroke-width="1" stroke-dasharray="5,4"/>
+<g transform="translate(961.24 278) scale(0.83)" fill="rgba(15,23,42,0.06)" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 10l18 0"/><path d="M7 15l.01 0"/><path d="M11 15l2 0"/></g>
+<text x="1022" y="283.32" text-anchor="middle" font-family="'Geist', sans-serif" font-size="12" fill="#0f172a" font-weight="600">Payments</text>
+<text x="1022" y="299" text-anchor="middle" font-family="'Geist', sans-serif" font-size="9" fill="#475569">card provider</text>
+<text x="40" y="44" font-family="'Geist', sans-serif" font-size="26" fill="#0f172a" font-weight="600">Checkout</text><rect x="932" y="252" width="152" height="72" fill="none" stroke="#4f46e5" stroke-width="1.5"/><rect x="929" y="249" width="6" height="6" fill="#fff" stroke="#4f46e5" stroke-width="1.5" transform="translate(0 0)"/><rect x="1073" y="249" width="6" height="6" fill="#fff" stroke="#4f46e5" stroke-width="1.5" transform="translate(8 0)"/><rect x="929" y="313" width="6" height="6" fill="#fff" stroke="#4f46e5" stroke-width="1.5" transform="translate(0 8)"/><rect x="1073" y="313" width="6" height="6" fill="#fff" stroke="#4f46e5" stroke-width="1.5" transform="translate(8 8)"/><rect x="936" y="112" width="144" height="64" rx="10" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/><path d="M 1008,184 V 244" stroke="#4f46e5" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/><path transform="translate(1054 302)" d="M0,0 L0,17 L4.5,13 L8,20 L10.5,19 L7,12 L13,12 Z" fill="#0f172a" stroke="#fff" stroke-width="1.2"/></svg></div></div>
+</section>
+<div class="maph">The rest of the page, top to bottom</div><div class="map"><div><b><i>2</i> Looks</b>The same file redrawn in eleven looks: a strip of thumbnails, one click each.</div><div><b><i>3</i> Kinds</b>An index of the 44 kinds as a list of names; hovering one draws it in the workbench above.</div><div><b><i>4</i> Why a text file</b>Four short lines, no cards: reviewed like code, edits kept, one look per team, nothing uploaded.</div><div><b><i>5</i> Set up</b>The command again, with the agent tabs and three prompts to try.</div></div></body></html>
