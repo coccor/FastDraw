@@ -132,7 +132,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 
 ### Icons
 
-Every look starts with a set of built-in icons (see `fastdraw sizes`), each as an outline, solid or duotone. Add your own, or replace one, with
+Every look starts with a set of built-in icons (see `fastdraw sizes`), each as an outline, solid or duotone: about 130 with friendly names, and every other Phosphor icon under Phosphor's own name (`anchor`, `acorn`; `fastdraw icons <word>` finds them; a Phosphor name that a friendly name already uses, such as `book`, is `ph-book`). Add your own, or replace one, with
 
 ```
 icon queue "M4 6h16" "M4 12h16" "M4 18h16"

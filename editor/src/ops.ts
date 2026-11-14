@@ -201,7 +201,7 @@ export function setRows(src: string, sc: Scene, s: Shape, rows: RowSpec[]): stri
   return patchSource(src, patches);
 }
 
-export function addShape(src: string, style: string, b: Box, sized: boolean, table = false, chart = false): { src: string; id: string } {
+export function addShape(src: string, style: string, b: Box, sized: boolean, table = false, chart = false, icon?: { name: string; style: 'outline' | 'solid' | 'duotone' }): { src: string; id: string } {
   const id = freshId(src, style.replace(/-/g, '_'));
   if (chart) {
     const w = sized ? Math.round(b.w) : 320, h = sized ? Math.round(b.h) : 180;
@@ -211,7 +211,7 @@ export function addShape(src: string, style: string, b: Box, sized: boolean, tab
     const head = `${id}: ${style} "Name" at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}`;
     return { src: appendStatements(src, [head + '\n  | r1 "first" "value"\n  | r2 "second" "value"']), id };
   }
-  const line = `${id}: ${style} at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}${style === 'icon' ? ' icon=server' : ''}`;
+  const line = `${id}: ${style} at ${Math.round(b.x)},${Math.round(b.y)}${sized ? ` ${Math.round(b.w)}x${Math.round(b.h)}` : ''}${style === 'icon' ? ` icon=${icon?.name ?? 'server'}${icon && icon.style !== 'outline' ? ` icon.style=${icon.style}` : ''}` : ''}`;
   return { src: appendStatements(src, [line]), id };
 }
 

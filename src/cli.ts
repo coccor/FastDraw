@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf } from './node.ts';
 import { buildScene } from './scene.ts';
 import { defaultLook } from './look.ts';
-import { iconMatches } from './icons.ts';
+import { iconMatches, ICONS } from './icons.ts';
+import { isBuiltIn } from './iconStyle.ts';
+import { loadExtendedIcons } from './extendedIcons.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
@@ -16,6 +18,9 @@ import { setup, detect, TARGETS, type Target } from './setup.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const [cmd, ...args] = process.argv.slice(2);
+// every Phosphor icon, not only the first ~130 built-in ones, for check, render, icons and the rest
+const NAMED_ICONS = new Set(Object.keys(ICONS));
+await loadExtendedIcons();
 
 function usage(): never {
   console.log(`fastdraw <command>
@@ -138,7 +143,8 @@ if (cmd === 'check') {
   });
   y += 60;
   heading('Icons');
-  [...look.icons.keys()].forEach((n, i) => {
+  // the named built-in icons and the look's own; the other ~1,400 Phosphor icons would fill pages (fastdraw icons <word> finds them)
+  [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n) || !isBuiltIn(look, n)).forEach((n, i) => {
     const cx = 40 + (i % 11) * 80;
     if (i && i % 11 === 0) y += 60;
     L.push(`icon at ${cx + 20},${y} icon=${n}`);
