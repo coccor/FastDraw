@@ -95,6 +95,31 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
 .mD .cta { background: #0b5bd3; color: #fff; }
 .mD .fig { border: 1.5px solid #16181d; border-bottom: 0; background: #fff; }
 
+.mE { background: #f4f0e6; color: #1b1815; font-family: 'Libre Franklin', sans-serif; border-top: 4px solid #1b1815; }
+.mE nav { padding-bottom: 14px; border-bottom: 1px solid #1b1815; }
+.mE nav b { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 28px; }
+.mE .hl { font: 400 72px/.94 'Instrument Serif', serif; letter-spacing: -0.025em; }
+.mE .row p { color: #6a6257; font: italic 400 21px/1.3 'Instrument Serif', serif; }
+.mE .cta { background: #1b1815; color: #f4f0e6; border-radius: 0; }
+.mE .row .cta { background: #c5311d; color: #fff; }
+.mE .fig { border: 1px solid #1b1815; border-bottom: 0; }
+
+.mF { background: #f7f3ea; color: #22201c; font-family: 'Newsreader', Georgia, serif; }
+.mF nav b { font-weight: 500; font-size: 22px; }
+.mF nav { font-size: 15px; }
+.mF .hl { font: 500 50px/1.05 'Newsreader', serif; letter-spacing: -0.02em; }
+.mF .row p { color: #6f685c; font-size: 17px; }
+.mF .cta { background: #1f5a41; color: #f7f3ea; border-radius: 2px; font-family: 'Libre Franklin', sans-serif; }
+.mF .fig { border: 1px solid #d2cbbb; border-bottom: 0; }
+
+.mG { background: #fff1e5; color: #33302e; font-family: 'Libre Franklin', sans-serif; }
+.mG nav { padding-bottom: 14px; border-bottom: 1px solid #e0cdbb; }
+.mG nav b { font-family: 'Newsreader', serif; font-weight: 500; font-size: 22px; }
+.mG .hl { font: 500 50px/1.05 'Newsreader', serif; letter-spacing: -0.02em; }
+.mG .row p { color: #6b625b; }
+.mG .cta { background: #0d7680; color: #fff; border-radius: 0; }
+.mG .fig { border: 1px solid #33302e; border-bottom: 0; }
+
 @media (max-width: 760px) { .facts, .pair { grid-template-columns: minmax(0, 1fr); } .mock .hl { font-size: 34px !important; } .mock .row { display: block; } .mock .cta { margin-top: 14px; } }
 </style>
 </head>
@@ -108,11 +133,21 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
     <li><a href="#brief">The brief</a></li>
     <li><a href="#learned">What your reactions told me</a></li>
     <li><a href="#fixed">What stays fixed</a></li>
+    <li><a href="#styles"><b>Round two: five styles</b></a></li>
+    <li><a href="#keys">1. Keys</a></li>
+    <li><a href="#offset">2. Offset</a></li>
+    <li><a href="#engraved">3. Engraved</a></li>
+    <li><a href="#transit">4. Transit</a></li>
+    <li><a href="#listing">5. Listing</a></li>
+    <li><a href="#round1">Round one (set aside)</a></li>
     <li><a href="#current">Baseline</a></li>
     <li><a href="#a">A. Harbor, edited</a></li>
     <li><a href="#b">B. Graphics desk</a></li>
     <li><a href="#c">C. Colour blocks</a></li>
     <li><a href="#d">D. Schematic</a></li>
+    <li><a href="#e">E. Broadsheet</a></li>
+    <li><a href="#f">F. Literary</a></li>
+    <li><a href="#g">G. Salmon</a></li>
     <li><a href="#x">Tried and rejected</a></li>
     <li><a href="#decide">What I need from you</a></li>
   </ul>
@@ -133,18 +168,96 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <tr><td>Blue pen and yellow highlighter, on everything</td><td class="quote">"not sure how I feel about the color choices"; then "what doesn't look right is the whole style you chose. I want to go for the Editorial look"</td><td>Loud, saturated, poster-like is the wrong register. You want something composed and typographic.</td></tr>
   <tr><td>First Editorial diagram: black outlines on white</td><td class="quote">"it doesn't look bad, but it doesn't make me think 'oh, that's a nice looking diagram', it's mid, meh"</td><td>Restraint alone is not enough. The diagram needs craft you can see.</td></tr>
   <tr><td>Second Editorial diagram: hatching, italic notes, grey fields</td><td class="quote">"better, but it isn't better than the current look"</td><td>The look on main is the bar. A new look has to beat it, not just differ from it.</td></tr>
+  <tr><td>The four directions below (A to D)</td><td class="quote">"forget about the restrictions I gave you earlier"</td><td>The paper ground and black ink I was avoiding are allowed. Directions E, F and G.</td></tr>
+  <tr><td>Round one of this document (A to G)</td><td class="quote">"the looks you created are just small variations from the base line. I asked for different styles ... miro vs excalidraw ... I want us to have our own original style"</td><td>A style is a way of drawing, not a palette. Round two.</td></tr>
   <tr><td>How I worked</td><td class="quote">"usually designers first create a design doc. you went straight to changing it"</td><td>Explore on paper first. This document.</td></tr>
 </table>
 <p>One thing I have not pinned down: what "Editorial" means to you. I have read it as magazine typography: serif headlines, rules, generous white space, one rich colour. If you have a reference in mind (a site, a magazine, a tool's preset called Editorial), it would settle a lot.</p>
 
 <h2 id="fixed">What stays fixed in every direction</h2>
 <ul>
-  <li>No cream or off-white "paper" grounds. No black or near-black as the highlight. Looks are not named after publications or brands. These are your standing rules.</li>
+  <li>Directions A to D were drawn under your earlier rules: no cream or off-white "paper" grounds, and no black as the highlight. You have since lifted those, and directions E, F and G use what they ruled out.</li>
   <li>The opening of the website is the product working: the diagram file beside the canvas, where a visitor can drag a box and watch one line of the file change. That part was built and works; only its styling changes with the direction.</li>
   <li>Style names in the look (<code>focal</code>, <code>store</code>, <code>primary</code> and so on) do not change, so all 44 guides and every existing diagram keep working.</li>
   <li>Light and dark versions of whatever we choose.</li>
 </ul>
 
+<h2 id="styles">Round two: five styles of our own</h2>
+<p>You said the first round was small variations on the baseline, and that you want styles as different from each other as Miro is from Excalidraw, without borrowing either. That is right: everything in round one was the same drawing language, outlined boxes joined by thin arrows, in different colours and fonts.</p>
+<p>The five below differ in how a diagram is <em>drawn</em>: what a box is made of, what a line is, where depth and texture come from. They are prototypes: the layout is FastDraw's own, taken from the same two files, but each picture comes from a separate throwaway renderer (<code>docs/design/revamp/proto/proto.ts</code>), not from the product. Rough edges are expected; judge the idea.</p>
+
+<section class="dir" id="keys">
+  <h2>1. Keys</h2>
+  <p class="idea">Every box is a solid key you could press: a face, and a coloured side that shows its depth. Lines are thick cables, and their labels are tags clipped onto them.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>Rounded faces with a 2px dark outline and a second, darker slab underneath. Stores are pill-shaped keys in green; the subject is a violet key. Zones are shallow trays. Things outside the system are flat dotted outlines, because they are not ours to press. Notes are tilted yellow keys.</div>
+    <div><b>What building it takes</b>Moderate: a depth slab under each shape, pill labels on lines, thicker line weights. No new layout.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-keys.png" alt="Architecture diagram in the 1. Keys style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-keys.png" alt="Swimlane diagram in the 1. Keys style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> tactile and friendly, and it photographs well in a README. The idea of pressing matches a product where you grab and move things. <b>Against:</b> of the five it is the nearest to today's tools (rounded, cheerful, coloured). Dense diagrams get heavy with every box carrying a slab.</p>
+</section>
+
+<section class="dir" id="offset">
+  <h2>2. Offset</h2>
+  <p class="idea">Printed in two spot inks, slightly out of register, the way a small press prints a poster. There is no black anywhere: blue is the ink, red is the subject, tints are fields of dots.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>Blue outlines with the colour fill shifted a few pixels down and right, as if the second ink missed. Zones and notes are halftone dots, not flat tints. Inks multiply where they overlap. The title is printed twice, red under blue. A fine paper grain over everything.</div>
+    <div><b>What building it takes</b>Higher: offset fills, dot patterns, blending between inks and a grain layer. Exports get larger.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-offset.png" alt="Architecture diagram in the 2. Offset style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-offset.png" alt="Swimlane diagram in the 2. Offset style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> the most unusual of the five, and nothing in the diagram-tool world looks like it. Very recognisable at thumbnail size. <b>Against:</b> the texture costs legibility on small text and dense tables, and it is the hardest to keep clean across all 44 kinds. Some people will read it as a mistake in the print.</p>
+</section>
+
+<section class="dir" id="engraved">
+  <h2>3. Engraved</h2>
+  <p class="idea">A plate from an old technical book. Double rules around every box, shadows and curved surfaces shaded with fine cut lines, a tall serif title over a swelled rule, notes in italic. This is the Editorial idea made into a drawing language of its own.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>Each box has an outer rule and a hairline inside it, and a shadow made of diagonal hatching along its right and bottom edges. Cylinders are shaded with hatching on their sides, like turned metal. Zones are hatched fields with their name set into the top rule and a square at each corner. The subject is a solid black plate; the main path is a red double line.</div>
+    <div><b>What building it takes</b>Higher: double rules, hatch shading for shadows and cylinders, titled borders, double-line arrows.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-engraved.png" alt="Architecture diagram in the 3. Engraved style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-engraved.png" alt="Swimlane diagram in the 3. Engraved style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> the most beautiful as a picture, and exactly the register you asked for with "Editorial". Looks made by a person with a pen. <b>Against:</b> fine lines need resolution: at small sizes the hatching turns to grey. Paper ground and black plate bring back the two things you had ruled out before. Formal; less at home in a casual README.</p>
+</section>
+
+<section class="dir" id="transit">
+  <h2>4. Transit</h2>
+  <p class="idea">A transit map. The lines are the picture: thick coloured routes with sweeping bends, and the boxes are stations along them, with a ring where a route stops.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>Routes are 6 to 9px wide with wide curved corners and a white casing so they cross cleanly. Their names ride on them as coloured plates. Stations are pills with a heavy outline; stores get a second ring; the subject is a solid dark station. Zones are pale fare zones.</div>
+    <div><b>What building it takes</b>Moderate: wide lines with casings and large corner radii, stop rings at line ends, plate labels. Needs wider gaps between boxes in some guides.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-transit.png" alt="Architecture diagram in the 4. Transit style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-transit.png" alt="Swimlane diagram in the 4. Transit style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> puts the flow first, which is what most architecture and process diagrams are about. Bold, clear from across a room, and familiar to everyone without copying any one map. <b>Against:</b> less suited to kinds that are not about flow: tables, charts, matrices. Thick lines crowd when many arrows share a corridor.</p>
+</section>
+
+<section class="dir" id="listing">
+  <h2>5. Listing</h2>
+  <p class="idea">The diagram as a line printer would put it on green-bar paper, sprocket holes and all. A FastDraw diagram is a text file; in this style the picture admits it.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>Everything sits on a character grid in one typewriter face, names in capitals. Corners are marked with plus signs, the subject is printed in reverse, stores have a double border, zones are shaded with printer characters. Lines turn at square joints.</div>
+    <div><b>What building it takes</b>Low to moderate: mostly what the renderer already does, on a grid, plus the paper.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-listing.png" alt="Architecture diagram in the 5. Listing style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-listing.png" alt="Swimlane diagram in the 5. Listing style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> the only one that says something true about the product: text in, picture out. Engineers will smile. <b>Against:</b> a novelty for anyone outside engineering, and the green paper is a strong statement on a slide. Capitals in one typeface make long names hard to scan.</p>
+</section>
+
+<h2 id="round1" style="margin-top:96px">Round one: variations on today's look (set aside)</h2>
+<p>Kept for the record. These change colour, type and finish but not the drawing language, which is why they read as the same style.</p>
 <section class="dir" id="current">
   <h2>Baseline: the look on main today</h2>
   <p class="idea">Rounded white cards with two-tone icons, softly tinted zones, slate greys, one indigo. This is the one to beat.</p>
@@ -244,6 +357,72 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <p class="verdict"><b>For:</b> speaks to engineers; precise and serious. <b>Against:</b> not editorial at all, and you moved away from this family once already when you chose the Harbor look.</p>
 </section>
 
+<section class="dir" id="e">
+  <h2>E. Broadsheet</h2>
+  <p class="idea">Added after you lifted the earlier rules. Warm paper, black ink, the subject as a solid black block and one red for the main path. A tall condensed serif for titles and italic notes.</p>
+  <div class="facts">
+    <div><b>Type</b>Instrument Serif for titles, deks and the italic notes; Libre Franklin for names.</div>
+    <div><b>Shapes</b>Fine black outlines, hatched stores, flat paper-grey fields for zones. No dots.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#f4f0e6"></i><i style="background:#fffdf7"></i><i style="background:#e8e2d3"></i><i style="background:#1b1815"></i><i style="background:#6a6257"></i><i style="background:#c5311d"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/e-broadsheet-arch.png" alt="Architecture in direction E"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/e-broadsheet-swim.png" alt="Swimlane in direction E"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mE"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/e-broadsheet-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> the strongest character of all seven, and unmistakably editorial. Black, paper and one red is a complete identity for the logo, site and editor. <b>Against:</b> the paper tint travels with every exported diagram, so it shows on a white README or slide. Cream with a serif is a look many AI-made pages share, so it has to be executed with care to feel chosen.</p>
+</section>
+
+<section class="dir" id="f">
+  <h2>F. Literary</h2>
+  <p class="idea">A page from a well-made book. Cream ground, everything in serif including the names in the boxes, the finest outlines of the set, italic zone names, a deep green for the subject.</p>
+  <div class="facts">
+    <div><b>Type</b>Newsreader throughout; small capitals only in the legend.</div>
+    <div><b>Shapes</b>Hairline outlines, dotted zone borders, fine hatching.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#f7f3ea"></i><i style="background:#fdfbf5"></i><i style="background:#22201c"></i><i style="background:#6f685c"></i><i style="background:#1f5a41"></i><i style="background:#d5e5d8"></i><i style="background:#8a5a1c"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/f-literary-arch.png" alt="Architecture in direction F"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/f-literary-swim.png" alt="Swimlane in direction F"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mF"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/f-literary-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> the most elegant and the calmest; nothing else in the diagram-tool world looks like it. <b>Against:</b> the quietest of the set, and serif names in small boxes are a little harder to scan than sans. Reads as literary rather than technical.</p>
+</section>
+
+<section class="dir" id="g">
+  <h2>G. Salmon</h2>
+  <p class="idea">The pink of a financial paper, slate ink, a solid teal block on the subject and claret for requests. Square and businesslike.</p>
+  <div class="facts">
+    <div><b>Type</b>Newsreader for titles, Libre Franklin for everything else.</div>
+    <div><b>Shapes</b>Square 1px outlines, tan fields for zones and stores.</div>
+    <div><b>Colour</b><span class="sw"><i style="background:#fff1e5"></i><i style="background:#fffaf5"></i><i style="background:#f2dfce"></i><i style="background:#33302e"></i><i style="background:#0d7680"></i><i style="background:#990f3d"></i></span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/g-salmon-arch.png" alt="Architecture in direction G"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/g-salmon-swim.png" alt="Swimlane in direction G"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <div class="mock mG"><div class="in">
+    <nav><b>FastDraw</b><span>How it works</span><span>Set up</span><span>Kinds</span><span class="cta">Open the editor</span></nav>
+    <div class="hl">Your agent draws the diagram.<br>You drag it into shape.</div>
+    <div class="row"><p>FastDraw is a diagram format for Claude Code, Codex and Copilot. The agent writes a small text file; you move things on a canvas.</p><span class="cta">Set up your agent</span></div>
+    <div class="fig"><img src="img/g-salmon-arch.png" alt=""></div>
+  </div></div>
+  <figcaption>Sketch of the website in this direction (not built)</figcaption>
+  <p class="verdict"><b>For:</b> instantly recognisable ground colour; teal and claret are a confident pair. <b>Against:</b> the pink is so tied to one newspaper that it reads as a reference to it rather than as FastDraw. Strongest tint of the three on an exported image.</p>
+</section>
+
 <section class="dir" id="x">
   <h2>Tried and rejected: blue pen, yellow highlighter</h2>
   <p class="idea">Everything in one blue ink on a pale blue pad, yellow on the subject, a saturated blue website. Built this morning; kept here for the record.</p>
@@ -256,13 +435,11 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
 
 <h2 id="decide">What I need from you</h2>
 <ul>
-  <li><b>A direction</b>, or a mix: for example "A's diagrams with B's website". My own pick is A for the diagrams, because it starts from the look you already prefer and adds the editorial voice, with B's website: serif headlines, rules, square frames.</li>
-  <li><b>What "Editorial" means to you</b>, ideally a link or a screenshot.</li>
-  <li><b>Scope:</b> should the built-in look change at all, or should Editorial be an extra look in the picker while the website and editor are restyled around the current one?</li>
+  <li><b>Which of the five styles pull you in</b>, and which leave you cold. One is enough to go on; two that could be combined is better. For example Transit's lines with Keys' boxes, or Engraved for the diagrams with Listing for the editor.</li>
+  <li><b>Or that none of them is it</b>, and what is missing. A reference picture of anything you find beautiful, diagram or not, would help more than words.</li>
 </ul>
-<p>Once a direction is chosen, the next step is one more page like this at higher fidelity: the website hero, one inner section, the editor chrome and eight kinds of diagram, light and dark. Only after you approve that does the product change.</p>
-<p>Each direction is a real look file in <code>docs/design/revamp/looks/</code>; any diagram can be drawn in one with <code>look "path/to/file.look"</code> on its first line.</p>
-
+<p>My own pick is <b>Engraved</b> if the aim is a diagram people stop and look at, and <b>Transit</b> if the aim is a diagram people read fastest. Both are unlike any other tool.</p>
+<p>What happens after you choose: one more page like this, taking the chosen style through eight kinds of diagram (including a table, a chart and a sequence diagram, which are the hard ones), light and dark, with the website and the editor drawn to match. Only when you approve that does the renderer change.</p>
 </div>
 </body>
 </html>
