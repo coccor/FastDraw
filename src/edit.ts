@@ -75,6 +75,32 @@ export function moveStatement(src: string, line: number, where: 'front' | 'back'
   return lines.join('\n');
 }
 
+// Move statements one past another: each move takes the statement starting at `line` and puts it just
+// after (`where: 'after'`) or just before its `anchor` statement. Lines are those of `src`, before any
+// move, and the moves apply in order, so moving several statements is one call.
+export function moveStatementsPast(src: string, moves: { line: number; anchor: number; where: 'after' | 'before' }[]): string {
+  const lines = src.split('\n');
+  const stmts = parseStatements(src);
+  // the file as segments: one per statement, one per line between statements (comments, blanks)
+  const segs: { line: number; text: string[] }[] = [];
+  let i = 1;
+  for (const st of [...stmts].sort((a, b) => a.line - b.line)) {
+    for (; i < st.line; i++) segs.push({ line: -1, text: [lines[i - 1]] });
+    segs.push({ line: st.line, text: lines.slice(st.line - 1, st.end) });
+    i = st.end + 1;
+  }
+  for (; i <= lines.length; i++) segs.push({ line: -1, text: [lines[i - 1]] });
+  for (const m of moves) {
+    const from = segs.findIndex((s) => s.line === m.line);
+    if (from < 0 || m.line === m.anchor) continue;
+    const [seg] = segs.splice(from, 1);
+    const to = segs.findIndex((s) => s.line === m.anchor);
+    if (to < 0) { segs.splice(from, 0, seg); continue; }
+    segs.splice(m.where === 'after' ? to + 1 : to, 0, seg);
+  }
+  return segs.flatMap((s) => s.text).join('\n');
+}
+
 // ---- token helpers --------------------------------------------------------
 const hasId = (toks: Tok[]) => toks[0]?.t === 'word' && toks[0].v.endsWith(':') && toks[0].v.length > 1;
 const opIndex = (toks: Tok[]) => toks.findIndex((t) => t.t === 'word' && OPS.includes(t.v));

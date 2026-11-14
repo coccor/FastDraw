@@ -715,3 +715,22 @@ test('a diagram\'s canvas line can override the look\'s background, with or with
   const noLine = 'look "x.look"\na: node "A" at 20,20';
   assert.match(setCanvas(noLine, buildScene(noLine, look), { paper: '#ffffff' }), /^look "x.look"\ncanvas paper=#ffffff\n/);
 });
+
+test('a step forward or backward moves past the next overlapping element in the same stack', async () => {
+  const { reorderStep } = await import('../editor/src/ops.ts');
+  const { moveStatementsPast } = await import('../src/edit.ts');
+  const body = 'a: node at 0,0\nb: node at 500,0\n// note\nc: node at 40,20\nt: text "hi" at 0,0\nd: node at 60,30\n';
+  const src = `look "x.look"\n${body}`;
+  const sc = buildScene(src, look);
+  const ids = (s: string) => s.split('\n').map((l) => l.split(':')[0]).filter((x) => /^[a-z]$/.test(x));
+  // a skips b (not touching) and goes just over c, the first shape it overlaps; the text stays where it is
+  assert.deepEqual(ids(reorderStep(src, sc, ['a'], 'forward')), ['b', 'c', 'a', 't', 'd']);
+  // d steps back under c, not under the text
+  assert.deepEqual(ids(reorderStep(src, sc, ['d'], 'backward')), ['a', 'b', 'd', 'c', 't']);
+  // two picked: both pass c together and keep their order
+  assert.deepEqual(ids(reorderStep(src, sc, ['a', 'b'], 'forward')), ['c', 'a', 'b', 't', 'd']);
+  // already on top of its stack: nothing changes
+  assert.equal(reorderStep(src, sc, ['d'], 'forward'), src);
+  // comments and blank lines stay put
+  assert.equal(moveStatementsPast('a: x\n// c\nb: y\n', [{ line: 1, anchor: 3, where: 'after' }]), '// c\nb: y\na: x\n');
+});
