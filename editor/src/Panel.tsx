@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
-  BringToFront, Copy, SendToBack, Trash2,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2,
 } from 'lucide-react';
 import { color } from '../../src/look.ts';
 import { MARKERS } from '../../src/scene.ts';
@@ -9,14 +9,15 @@ import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
 import { IconPicker } from './IconPicker.tsx';
-import type { AlignMode } from './ops.ts';
+import { ColorPicker } from './ColorPicker.tsx';
+import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
   setProp: (k: string, v: string | null) => void;
   setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
   setOp: (op: string) => void;
-  reorder: (where: 'front' | 'back') => void;
+  reorder: (where: Layering) => void;
   align: (mode: AlignMode) => void;
   remove: () => void;
   duplicate: () => void;
@@ -26,7 +27,7 @@ export type PanelActions = {
   setRoute: (route: string) => void;
 };
 
-// `custom` adds a last swatch that opens the system colour picker; it shows the chosen colour when that is not one of `values`.
+// `custom` adds a last swatch that opens a colour picker (hex first); it shows the chosen colour when that is not one of `values`.
 export function Swatches({ sc, values, current, onPick, custom, label }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom?: string; label?: string }) {
   const own = !!current && !values.includes(current) && /^#[0-9a-f]{6}$/i.test(current) ? current : null;
   return (
@@ -39,9 +40,8 @@ export function Swatches({ sc, values, current, onPick, custom, label }: { sc: S
         );
       })}
       {custom && (
-        <label className={'custom' + (own ? ' on' : '')} title={own ? `${own} (pick another)` : 'Any colour'} style={own ? { background: own } : undefined}>
-          <input type="color" aria-label={custom} value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : '#000000')} onChange={(e) => onPick(e.target.value)} />
-        </label>
+        <ColorPicker className={'custom' + (own ? ' on' : '')} style={own ? { background: own } : undefined} label={custom}
+          value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : null)} onPick={onPick} />
       )}
     </div>
   );
@@ -145,6 +145,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const solidIcon = iconShape && p['icon.style'] === 'solid';
   const styles = [...sc.look.styles.values()].filter((s) => s.kind === (kind === 'conn' ? 'line' : kind));
   const dashOf = (v: string | undefined) => (!v || v === 'none' ? 'solid' : v.startsWith('1') || v.startsWith('2') ? 'dotted' : 'dashed');
+  const colorKey = kind === 'conn' ? 'label.color' : 'title.color';
   const sizeKey = kind === 'shape' ? 'title.size' : kind === 'text' ? 'size' : 'label.size';
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
   const op = kind === 'conn' ? stmtToks(src, first.el.line)?.find((t) => t.t === 'word' && ['->', '--', '<->'].includes(t.v))?.v : undefined;
@@ -179,11 +180,11 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         </>
       )}
       {same && kind === 'shape' && !stroke && !iconShape && (
-        <section><h4>Background</h4><Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} /></section>
+        <section><h4>Background</h4><Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} custom="Custom background colour" label="Background colours" /></section>
       )}
       {same && kind !== 'text' && !iconShape && (
         <>
-          <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} /></section>
+          <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} custom="Custom stroke colour" label="Stroke colours" /></section>
           <section>
             <h4>Stroke style</h4>
             <div className="seg">
@@ -203,7 +204,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         </>
       )}
       {same && kind === 'text' && (
-        <section><h4>Colour</h4><Swatches sc={sc} values={names} current={p.color} onPick={(v) => act.setProp('color', v)} /></section>
+        <section><h4>Colour</h4><Swatches sc={sc} values={names} current={p.color} onPick={(v) => act.setProp('color', v)} custom="Custom text colour" label="Text colours" /></section>
       )}
       {same && kind === 'conn' && (
         <>
@@ -258,6 +259,12 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <div className="seg">
             {sizes.map(([l, v]) => <button key={l} className={p[sizeKey] === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v)}>{l}</button>)}
           </div>
+        </section>
+      )}
+      {same && kind !== 'text' && !stroke && !iconShape && (
+        <section>
+          <h4>Text colour</h4>
+          <Swatches sc={sc} values={names} current={p[colorKey]} onPick={(v) => act.setProp(colorKey, v)} custom="Custom text colour" label="Text colours" />
         </section>
       )}
       {els.length === 1 && first.kind === 'shape' && first.el.legend && (
@@ -321,8 +328,10 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       <section>
         <h4>Layers</h4>
         <div className="seg">
-          <button title="Bring to front" aria-label="Bring to front" onClick={() => act.reorder('front')}><BringToFront size={16} /></button>
-          <button title="Send to back" aria-label="Send to back" onClick={() => act.reorder('back')}><SendToBack size={16} /></button>
+          <button title="Send to back (Ctrl+Shift+[)" aria-label="Send to back" onClick={() => act.reorder('back')}><ArrowDownToLine size={16} /></button>
+          <button title="Send backward (Ctrl+[)" aria-label="Send backward" onClick={() => act.reorder('backward')}><ArrowDown size={16} /></button>
+          <button title="Bring forward (Ctrl+])" aria-label="Bring forward" onClick={() => act.reorder('forward')}><ArrowUp size={16} /></button>
+          <button title="Bring to front (Ctrl+Shift+])" aria-label="Bring to front" onClick={() => act.reorder('front')}><ArrowUpToLine size={16} /></button>
         </div>
       </section>
       <section>

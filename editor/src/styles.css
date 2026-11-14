@@ -39,6 +39,8 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 
 .iconbtn { width: 34px; height: 34px; padding: 0; }
 .iconbtn.island { width: 38px; height: 38px; }
+/* a button that is its own island keeps its surface under the hover tint (the tint is see-through in dark) */
+button.island:hover { background: linear-gradient(var(--hover), var(--hover)) var(--surface); }
 
 /* toolbar */
 .toolbar { display: flex; align-items: center; gap: 2px; padding: 5px; }
@@ -59,9 +61,22 @@ kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .canvasbg { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 6px; }
 .canvasbg > span { color: var(--mute); font-size: 12px; }
 .canvasbg .row { display: flex; gap: 5px; align-items: center; }
-.canvasbg .custom, .swatches .custom { position: relative; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
+.canvasbg .custom, .swatches .custom, .canvasbg .custom:hover, .swatches .custom:hover { position: relative; width: 24px; height: 24px; padding: 0; flex: none; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
 .swatches .custom.on { outline: 2px solid var(--accent); outline-offset: 2px; }
-.canvasbg .custom input, .swatches .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+/* the any-colour picker: a saturation/brightness square, a hue strip and the hex value */
+.colorpop { position: fixed; z-index: 40; width: 212px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.colorpop .sv { position: relative; height: 132px; border-radius: 7px; cursor: crosshair; touch-action: none;
+  background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent); }
+.colorpop .hue { position: relative; height: 12px; border-radius: 6px; cursor: ew-resize; touch-action: none;
+  background: linear-gradient(to right, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00); }
+.colorpop .sv span, .colorpop .hue span { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35), 0 1px 3px rgba(0, 0, 0, .3); transform: translate(-50%, -50%); pointer-events: none; }
+.colorpop .hue span { top: 50%; background: transparent; }
+.colorpop .hexrow { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px 0 4px; height: 32px; }
+.colorpop .hexrow:focus-within { border-color: var(--accent); }
+.colorpop .hexrow i { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(22, 24, 40, .14); flex: none; }
+.colorpop .hexrow b { color: var(--mute); font: 500 13px 'Geist Mono', monospace; }
+.colorpop .hexrow input { border: 0; background: none; padding: 0; flex: 1; min-width: 0; font: 13px 'Geist Mono', monospace; text-transform: uppercase; outline: none; }
 .canvasbg .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
 .dropdown .canvasbg button.link { padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 

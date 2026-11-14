@@ -104,3 +104,12 @@ export function noPageErrors(page: Page): string[] {
   page.on('pageerror', (e) => errors.push(String(e)));
   return errors;
 }
+
+// The any-colour swatch opens the editor's own picker on its hex field: type a value and press Enter.
+export async function pickHex(page: Page, label: string, hex: string) {
+  await page.getByRole('button', { name: label }).click();
+  const field = page.getByRole('dialog', { name: label }).getByLabel('Hex colour');
+  await expect(field).toBeFocused();
+  await field.fill(hex);
+  await field.press('Enter');
+}

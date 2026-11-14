@@ -2,7 +2,7 @@
 import { parseStatements } from '../../src/parse.ts';
 import type { Tok } from '../../src/parse.ts';
 import type { Scene, Shape, TextEl, Conn, End, Box, Pt } from '../../src/scene.ts';
-import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement, setRows as editRows } from '../../src/edit.ts';
+import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement, moveStatementsPast, setRows as editRows } from '../../src/edit.ts';
 import type { Patch, RowSpec } from '../../src/edit.ts';
 
 export type El = { kind: 'shape'; el: Shape } | { kind: 'text'; el: TextEl } | { kind: 'conn'; el: Conn };
@@ -351,6 +351,46 @@ export function reorder(src: string, sc: Scene, ids: string[], where: 'front' | 
   }
   return cur;
 }
+
+// The stack an element is drawn in: back shapes, lines under the shapes, shapes, lines over them, text.
+// Order only means something inside one stack, so a step forward or back stays inside it.
+function stackOf(e: El): string {
+  if (e.kind === 'shape') return e.el.back ? 'back' : 'shape';
+  if (e.kind === 'conn') return e.el.p.layer === 'front' ? 'over' : 'under';
+  return 'text';
+}
+
+const overlaps = (a: Box, b: Box) => a.x <= b.x + b.w && b.x <= a.x + a.w && a.y <= b.y + b.h && b.y <= a.y + a.h;
+
+// One step forward or backward: past the next element in the same stack that overlaps it (so every
+// step changes what is seen), or past the very next one when nothing above or below overlaps.
+export function reorderStep(src: string, sc: Scene, ids: string[], dir: 'forward' | 'backward'): string {
+  const all: El[] = [
+    ...sc.shapes.map((el) => ({ kind: 'shape' as const, el })),
+    ...sc.texts.map((el) => ({ kind: 'text' as const, el })),
+    ...sc.conns.map((el) => ({ kind: 'conn' as const, el })),
+  ];
+  const chosen = new Set(ids);
+  const picked = all.filter((e) => chosen.has(e.el.id));
+  const moves: { line: number; anchor: number; where: 'after' | 'before' }[] = [];
+  for (const k of new Set(picked.map(stackOf))) {
+    const stack = all.filter((e) => stackOf(e) === k).sort((a, b) => a.el.line - b.el.line);
+    const mine = stack.filter((e) => chosen.has(e.el.id));
+    // forward: the topmost goes first, so the ones below it keep their order once they follow
+    if (dir === 'forward') mine.reverse();
+    for (const e of mine) {
+      const at = stack.indexOf(e);
+      const past = (dir === 'forward' ? stack.slice(at + 1) : stack.slice(0, at).reverse()).filter((o) => !chosen.has(o.el.id) && o.el.line !== e.el.line);
+      if (!past.length) continue;
+      const box = boxOf(e);
+      const anchor = past.find((o) => overlaps(box, boxOf(o))) ?? past[0];
+      moves.push({ line: e.el.line, anchor: anchor.el.line, where: dir === 'forward' ? 'after' : 'before' });
+    }
+  }
+  return moves.length ? moveStatementsPast(src, moves) : src;
+}
+
+export type Layering = 'front' | 'forward' | 'backward' | 'back';
 
 export type AlignMode = 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' | 'bottom';
 export function align(src: string, sc: Scene, ids: string[], mode: AlignMode): string {
