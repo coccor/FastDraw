@@ -6,6 +6,8 @@ import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
 import { SOLID_BOX, SOLID_ICONS } from './solidIcons.ts';
+import { DUOTONE_ICONS } from './duotoneIcons.ts';
+import { ICONS } from './icons.ts';
 import { canSketch, sketchSvg, rectD, ellipseD } from './sketch.ts';
 
 // Per render: how rough the look draws (canvas sketch=, 0 for clean lines) and the fill patterns it needs.
@@ -257,7 +259,8 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
 }
 
 // An outline icon is drawn with icon.color as its line, icon.fill inside its closed parts (none by default),
-// and icon.width as the line's thickness in pixels at the size it is drawn.
+// and icon.width as the line's thickness in pixels at the size it is drawn. A duotone icon is the outline
+// over a tint of its main enclosed parts: icon.fill when the look or the box sets one, else icon.color, light.
 function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
   const name = p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
@@ -271,7 +274,14 @@ function drawIcon(look: Look, p: Props, x: number, y: number, size: number): str
   const k = r2(size / 24);
   const stroke = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink'), fill = col(look, p['icon.fill'] ?? 'none');
   const px = num(p['icon.width'], 0), sw = px > 0 ? Math.min(px, 8) / k : Math.max(1.5, 1.2 / k);
-  const paths = (look.icons.get(name) ?? []).map((d) => `<path d="${esc(d)}"/>`).join('');
+  const outline = look.icons.get(name) ?? [], paths = outline.map((d) => `<path d="${esc(d)}"/>`).join('');
+  // the tint belongs to the built-in outline; a look that redraws the icon gets its outline alone
+  const tint = p['icon.style'] === 'duotone' && outline === ICONS[name] ? DUOTONE_ICONS[name] : undefined;
+  if (p['icon.style'] === 'duotone') {
+    const own = p['icon.fill'] && p['icon.fill'] !== 'none';
+    const under = tint ? `<path d="${tint}" fill="${own ? fill : stroke}"${own ? '' : ' fill-opacity="0.2"'} stroke="none"/>` : '';
+    return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})">${under}<g fill="none" stroke="${stroke}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g></g>`;
+  }
   return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="${fill}" stroke="${stroke}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
 }
 

@@ -505,6 +505,26 @@ test('chart: place one from the gallery, change its numbers and add a series', a
   expect(errors).toEqual([]);
 });
 
+test('icons: the Duotone tab picks the outline over a tint, and Solid switches it', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await page.getByRole('tab', { name: 'Duotone' }).click();
+  const duo = page.getByRole('radiogroup', { name: 'Duotone icons' });
+  // the tiles show the tint under the outline
+  await expect(duo.getByRole('radio', { name: 'database', exact: true }).locator('path[fill-opacity="0.2"]')).toHaveCount(1);
+  await duo.getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=duotone$/);
+  await expect(duo.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
+  // drawn as a tint with the outline over it
+  await expect(page.locator('svg.canvas g[transform*="scale"] > path[stroke="none"] + g[fill="none"]')).toHaveCount(1);
+  await page.getByRole('tab', { name: 'Solid' }).click();
+  await page.getByRole('radiogroup', { name: 'Solid icons' }).getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
 test('icons: the Solid tab picks the filled twin of an icon, and Outline takes it back', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);

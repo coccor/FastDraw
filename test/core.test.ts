@@ -542,6 +542,23 @@ test('icon.style=solid draws the filled twin of a built-in icon in one colour', 
   assert.match(check(buildScene('look "x.look"\na: rect "A" icon=bolt icon.style=solid at 40,40\n', look)).map((i) => i.msg).join(), /icon bolt has no solid version/);
 });
 
+test('icon.style=duotone draws the outline over a light tint of its main part, made from the outline itself', async () => {
+  const { DUOTONE_ICONS } = await import('../src/duotoneIcons.ts');
+  const sc = scene('a: icon at 40,40 icon=user icon.style=duotone stroke=#ff0000\nb: node "Box" icon=database icon.style=duotone icon.fill=#00ff00/0.3 at 200,40\nc: icon at 400,40 icon=trend icon.style=duotone\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  // the tint sits under the outline, in the icon's colour made light
+  assert.ok(svg.includes(`<path d="${DUOTONE_ICONS.user}" fill="#ff0000" fill-opacity="0.2" stroke="none"/><g fill="none" stroke="#ff0000"`));
+  // icon.fill, when set, is the tint
+  assert.match(svg, new RegExp(`<path d="${DUOTONE_ICONS.database.slice(0, 20)}[^"]*" fill="rgba\\(0, ?255, ?0, ?0\\.3\\)" stroke="none"/>`));
+  // an icon that encloses nothing is its outline alone
+  assert.ok(!DUOTONE_ICONS.trend && /translate\(400 40\) scale\(1\)"><g fill="none"/.test(svg));
+  // a gear's ring is tinted, not its centre (the tint has a hole); every tint stays inside the 24 box
+  assert.ok(DUOTONE_ICONS.settings.split('M').length - 1 >= 2);
+  for (const d of Object.values(DUOTONE_ICONS)) for (const m of d.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)) assert.ok(+m[1] >= 0 && +m[1] <= 24 && +m[2] >= 0 && +m[2] <= 24);
+  assert.match(check(scene('a: icon at 40,40 icon=user icon.style=dotted\n')).map((i) => i.msg).join(), /icon\.style=dotted: .*icon\.style=duotone/);
+});
+
 test('an icon on its own is the shape: no box, fill/stroke/sw style the icon, its text is a caption underneath', async () => {
   const { captionBox } = await import('../src/scene.ts');
   const sc = scene('db: icon "Orders DB" sub="Postgres" at 40,40 40x40 icon=database fill=#2e8540/0.2 stroke=#2e8540 sw=2\nu: icon at 200,40 icon=user\n');

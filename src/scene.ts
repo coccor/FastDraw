@@ -2,7 +2,7 @@
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
 import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
-import { iconMatches } from './icons.ts';
+import { ICONS, iconMatches } from './icons.ts';
 import { SOLID_ICONS } from './solidIcons.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
@@ -462,8 +462,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       err(st.line, `there is no icon called "${p.icon}"${folder}; the look has: ${list.join(', ')}${all.length > list.length ? `, and ${all.length - list.length} more (run "fastdraw icons" to see them all)` : ''}`);
     }
     if (p['icon.width'] !== undefined && !(Number(p['icon.width']) > 0 && Number(p['icon.width']) <= 8)) err(st.line, `icon.width=${p['icon.width']}: the icon's line thickness in pixels, a number from 0.5 to 8 (e.g. icon.width=2)`);
-    if (p['icon.style'] !== undefined && !['outline', 'solid'].includes(p['icon.style'])) err(st.line, `icon.style=${p['icon.style']}: an icon is drawn as an outline (the default) or filled in one colour (icon.style=solid)`);
+    if (p['icon.style'] !== undefined && !['outline', 'solid', 'duotone'].includes(p['icon.style'])) err(st.line, `icon.style=${p['icon.style']}: an icon is drawn as an outline (the default), filled in one colour (icon.style=solid), or as an outline over a light tint of its main part (icon.style=duotone)`);
     else if (p['icon.style'] === 'solid' && p.icon && p.icon !== 'none' && (look.images.has(p.icon) || !SOLID_ICONS[p.icon]) && (look.icons.has(p.icon) || look.images.has(p.icon))) warn(st.line, `icon ${p.icon} has no solid version (only the built-in icons do), so it is drawn as it is; drop icon.style=solid`);
+    else if (p['icon.style'] === 'duotone' && p.icon && p.icon !== 'none' && (look.images.has(p.icon) || (look.icons.has(p.icon) && look.icons.get(p.icon) !== ICONS[p.icon]))) warn(st.line, `icon ${p.icon} has no duotone version (only the built-in icons do), so it is drawn as it is; drop icon.style=duotone`);
     if (p['icon.pos'] && !['left', 'top'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)`);
     for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {
