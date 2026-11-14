@@ -162,14 +162,14 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 
 ### Icons
 
-`icon=name` puts a small outline icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, mail, function, ai and about 120 more). `fastdraw icons email` searches them by name or meaning: it finds `mail`, and `k8s` finds `pod`.
+`icon=name` puts a small icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, mail, function, ai and about 120 more). `fastdraw icons email` searches them by name or meaning: it finds `mail`, and `k8s` finds `pod`.
 
 - The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height.
 - With no text, the icon fills the box.
 - An icon on its own, with no box, is the `icon` style: `api: icon "Orders API" at 60,220 40x40 icon=server` (24x24 unless you give `WxH`). The icon is the shape, so `fill=`, `stroke=` and `sw=` style the icon itself (`fill=accent/0.2 stroke=accent sw=2`), and its text is a caption centred underneath. Lines attach to the icon and go around other icons' captions.
 - `icon.size=20` and `icon.color=link` change it; by default it takes the colour of the box's text.
-- `icon.fill=accent/0.2` fills the icon's closed parts for a two-tone look (none by default), and `icon.width=2` sets its stroke width in pixels. Both take look colours, tints or hex (`icon.fill=#ffd400`), and both work in a look's `style` lines so every box of a style gets the same icon treatment. Icons from a look's folder keep their own colours.
-- `icon.style=solid` draws a built-in icon as a filled shape in one colour instead of an outline (`icon=database icon.style=solid`). It takes `icon.color=` (on an `icon` shape, `stroke=`); `icon.fill=` and `icon.width=` do nothing to it. Every built-in icon has a solid version; a look's own icons do not. Keep one style across a diagram: all outline or all solid.
+- `icon.fill=accent/0.2` lays a tint under the icon's main part for a two-tone look (none by default), and `icon.width=2` sets its line thickness in pixels; a built-in icon comes in four weights (thin, light, regular, bold), and the nearest is used. Both take look colours, tints or hex (`icon.fill=#ffd400`), and both work in a look's `style` lines so every box of a style gets the same.
+- `icon.style=solid` draws a built-in icon filled in one colour, and `icon.style=duotone` draws its outline over a light tint of the same drawing (`icon=database icon.style=duotone`). They take `icon.color=` (on an `icon` shape, `stroke=`); a duotone's tint is `icon.fill=` when set, else a light shade of the icon's colour. Outline, solid and duotone are the same drawing; every built-in icon has all three, a look's own icons only the outline. Keep one style across a diagram.
 - A look can bring its own colour icons (a cloud vendor's set, product logos). `fastdraw sizes <look>` lists them first; use them the same way: `icon=virtual-machine`. They keep their own colours. Run `fastdraw icons <look> word` to search a large set.
 - Use icons where they say something the name does not (what kind of thing a box is), on every box of a row or on none. Two or three kinds of icon in one diagram is plenty.
 

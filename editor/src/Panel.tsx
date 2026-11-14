@@ -119,8 +119,9 @@ const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
 // An icon's stroke width in pixels; Regular leaves it to the icon's size.
 function IconWidths({ value, onPick }: { value: string | undefined; onPick: (v: string | null) => void }) {
   return (
-    <div className="seg" role="group" aria-label="Icon stroke width">
-      {([['Thin', '1', 1.2], ['Regular', '', 1.8], ['Bold', '2', 2.6], ['Heavy', '2.75', 3.4]] as const).map(([l, v, w]) => (
+    // the line thickness in pixels; a built-in icon takes the nearest of its weights
+    <div className="seg" role="group" aria-label="Icon weight">
+      {([['Thin', '0.5', 0.8], ['Light', '1', 1.3], ['Regular', '', 1.8], ['Bold', '2', 2.8]] as const).map(([l, v, w]) => (
         <button key={l} title={l} aria-label={l} className={(value ?? '') === v ? 'on' : ''} onClick={() => onPick(v || null)}><Stroke w={w} /></button>
       ))}
     </div>
@@ -167,12 +168,12 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {iconShape && (
         // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
         <>
-          {/* a solid icon is one filled shape: only its colour (stroke=) applies */}
-          {!solidIcon && <section><h4>Fill</h4><Swatches sc={sc} values={iconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
-          <section><h4>{solidIcon ? 'Colour' : 'Stroke'}</h4><Swatches sc={sc} values={names} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label={solidIcon ? 'Icon colours' : 'Icon stroke colours'} /></section>
+          {/* a solid icon is one filled shape: only its colour (stroke=) applies; fill= is the tint under an outline */}
+          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
+          <section><h4>Colour</h4><Swatches sc={sc} values={names} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></section>
           {!solidIcon && (
             <section>
-              <h4>Stroke width</h4>
+              <h4>Weight</h4>
               <IconWidths value={p.sw} onPick={(v) => act.setProp('sw', v)} />
             </section>
           )}
@@ -276,7 +277,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Icon</h4>
-          <IconPicker look={sc.look} value={p.icon} solid={p['icon.style'] === 'solid'} onPick={(n, solid) => act.setProps({ icon: n, 'icon.style': n && solid ? 'solid' : null })} />
+          <IconPicker look={sc.look} value={p.icon} iconStyle={p['icon.style'] === 'solid' || p['icon.style'] === 'duotone' ? p['icon.style'] : 'outline'}
+            onPick={(n, style) => act.setProps({ icon: n, 'icon.style': n && style !== 'outline' ? style : null })} />
           {p.icon && p.icon !== 'none' && !iconShape && (
             <>
               <div className="seg" style={{ marginTop: 6 }}>
@@ -291,15 +293,15 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               </div>
               {!sc.look.images.has(p.icon) && (
                 <>
-                  <div className="sublabel">Icon stroke</div>
+                  <div className="sublabel">Icon colour</div>
                   <div className="seg" style={{ marginBottom: 4 }}>
                     <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
                   </div>
-                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon stroke colours" />
-                  <div className="sublabel">Icon fill</div>
+                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
+                  <div className="sublabel">Icon tint</div>
                   <Swatches sc={sc} values={iconFills} current={p['icon.fill'] ?? 'none'}
                     onPick={(v) => act.setProp('icon.fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" />
-                  <div className="sublabel">Icon stroke width</div>
+                  <div className="sublabel">Icon weight</div>
                   <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
                 </>
               )}
