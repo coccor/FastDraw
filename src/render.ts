@@ -499,10 +499,21 @@ export function tagWidth(look: Look, p: Props): number {
   return Math.ceil((textWidth(p.tag ?? '', t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
 }
 
-// Points along a shape's outline, relative to its top-left corner; null for a plain box.
-function outlinePts(s: Shape): Pt[] | null {
+// Points along a shape's outline that fall inside the box `near`, relative to the shape's top-left corner; null
+// for a plain box. A diagram file is untrusted and a shape can be any size, so an edge is sampled at most
+// EDGE_SAMPLES times and only the points the caller can use are kept: neither the work nor the memory grows
+// with the size of the shape.
+const EDGE_SAMPLES = 20000;
+function outlinePts(s: Shape, near: { x0: number; x1: number; y0: number; y1: number }): Pt[] | null {
   const { w, h } = s, out: Pt[] = [];
-  const line = (a: Pt, b: Pt) => { const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2)); for (let i = 0; i <= n; i++) out.push({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }); };
+  const line = (a: Pt, b: Pt) => {
+    if (Math.max(a.x, b.x) < near.x0 || Math.min(a.x, b.x) > near.x1 || Math.max(a.y, b.y) < near.y0 || Math.min(a.y, b.y) > near.y1) return;
+    const n = Math.min(EDGE_SAMPLES, Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2)));
+    for (let i = 0; i <= n; i++) {
+      const q = { x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n };
+      if (q.x >= near.x0 && q.x <= near.x1 && q.y >= near.y0 && q.y <= near.y1) out.push(q);
+    }
+  };
   if (s.shape === 'ellipse') { for (let i = 0; i < 180; i++) { const t = (i / 180) * 2 * Math.PI; out.push({ x: w / 2 + (w / 2) * Math.cos(t), y: h / 2 + (h / 2) * Math.sin(t) }); } return out; }
   if (s.shape === 'diamond') { const c = [{ x: w / 2, y: 0 }, { x: w, y: h / 2 }, { x: w / 2, y: h }, { x: 0, y: h / 2 }]; c.forEach((a, i) => line(a, c[(i + 1) % 4])); return out; }
   if (s.shape === 'polygon' && s.poly) { const c = s.poly.map((q) => ({ x: q.x - s.x, y: q.y - s.y })); c.forEach((a, i) => line(a, c[(i + 1) % c.length])); return out; }
@@ -517,7 +528,8 @@ function outlinePts(s: Shape): Pt[] | null {
       else if (cmd === 'L') { const b = pt(); line(cur, b); cur = b; }
       else if (cmd === 'C') {
         const c1 = pt(), c2 = pt(), b = pt();
-        for (let k = 1; k <= 24; k++) { const t = k / 24, m = 1 - t; const q = { x: m * m * m * cur.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x, y: m * m * m * cur.y + 3 * m * m * t * c1.y + 3 * m * t * t * c2.y + t * t * t * b.y }; line(out.length ? out[out.length - 1] : cur, q); }
+        let prev = cur;
+        for (let k = 1; k <= 24; k++) { const t = k / 24, m = 1 - t; const q = { x: m * m * m * cur.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x, y: m * m * m * cur.y + 3 * m * m * t * c1.y + 3 * m * t * t * c2.y + t * t * t * b.y }; line(prev, q); prev = q; }
         cur = b;
       } else i++;
     }
@@ -528,10 +540,14 @@ function outlinePts(s: Shape): Pt[] | null {
 
 // The smallest top offset, from `from`, at which a tag of w x h at left offset x keeps `gap` clear of
 // the shape's outline (0 for a plain box, which has nothing inside to avoid).
+// The search goes at most CLEAR_SEARCH pixels down: a tag that has not found room by then is not going to sit in
+// its corner anyway, and the search must not grow with the height of the shape.
+const CLEAR_SEARCH = 400;
 function outlineClear(s: Shape, x: number, w: number, h: number, from: number, gap: number): number {
-  const pts = outlinePts(s);
+  const end = Math.min(s.h / 2, from + CLEAR_SEARCH);
+  const pts = outlinePts(s, { x0: x - gap, x1: x + w + gap, y0: from - gap, y1: end + h + gap });
   if (!pts) return 0;
-  for (let y = from; y < s.h / 2; y++) {
+  for (let y = from; y < end; y++) {
     if (!pts.some((q) => q.x > x - gap && q.x < x + w + gap && q.y > y - gap && q.y < y + h + gap)) return y;
   }
   return 0;

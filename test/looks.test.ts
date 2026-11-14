@@ -127,3 +127,14 @@ test('look properties: depth lands lines on the slab, plates, stops, echo and ca
   // the new marker is known to the language, and unknown look values raise no issue
   assert.deepEqual(look('style arrow line stroke=ink tail=stop\nstyle node shape=rect shade=ink depth=4 inner=ink corners=plus offset=3,3 blend=multiply halftone=ink').issues, []);
 });
+
+test('a tag on a shape of any size is placed in bounded time', () => {
+  // a diamond two billion pixels across: placing its corner tag samples the outline, and that sampling must not
+  // grow with the shape (it used to run out of memory)
+  const t0 = performance.now();
+  const svg = renderSvg(buildScene('d: decision "Huge" at 0,0 2000000000x2000000000 tag=A\n', null));
+  assert.ok(svg.includes('>A<'));
+  assert.ok(performance.now() - t0 < 2000, `took ${Math.round(performance.now() - t0)}ms`);
+  // and an ordinary one is still moved clear of its outline, exactly as before
+  assert.match(renderSvg(buildScene('d: decision "Ship?" at 40,40 200x96 tag=Q\n', null)), />Q</);
+});
