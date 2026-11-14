@@ -133,7 +133,12 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
     <li><a href="#brief">The brief</a></li>
     <li><a href="#learned">What your reactions told me</a></li>
     <li><a href="#fixed">What stays fixed</a></li>
-    <li><a href="#styles"><b>Round two: five styles</b></a></li>
+    <li><a href="#round3"><b>Round three: four restrained styles</b></a></li>
+    <li><a href="#plates">6. Plates</a></li>
+    <li><a href="#brackets">7. Brackets</a></li>
+    <li><a href="#shade">8. Shade</a></li>
+    <li><a href="#tabs">9. Tabs</a></li>
+    <li><a href="#styles">Round two: five styles (kept as extra styles)</a></li>
     <li><a href="#keys">1. Keys</a></li>
     <li><a href="#offset">2. Offset</a></li>
     <li><a href="#engraved">3. Engraved</a></li>
@@ -170,6 +175,7 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <tr><td>Second Editorial diagram: hatching, italic notes, grey fields</td><td class="quote">"better, but it isn't better than the current look"</td><td>The look on main is the bar. A new look has to beat it, not just differ from it.</td></tr>
   <tr><td>The four directions below (A to D)</td><td class="quote">"forget about the restrictions I gave you earlier"</td><td>The paper ground and black ink I was avoiding are allowed. Directions E, F and G.</td></tr>
   <tr><td>Round one of this document (A to G)</td><td class="quote">"the looks you created are just small variations from the base line. I asked for different styles ... miro vs excalidraw ... I want us to have our own original style"</td><td>A style is a way of drawing, not a palette. Round two.</td></tr>
+  <tr><td>Round two (styles 1 to 5)</td><td class="quote">"wow, all these styles are very nice and worth keeping as styles for our diagrams. Unfortunately none of them are 'the one'. Draw some inspiration from diagram-design"</td><td>Keep all five as selectable styles later. The main style should have diagram-design's restraint. Round three.</td></tr>
   <tr><td>How I worked</td><td class="quote">"usually designers first create a design doc. you went straight to changing it"</td><td>Explore on paper first. This document.</td></tr>
 </table>
 <p>One thing I have not pinned down: what "Editorial" means to you. I have read it as magazine typography: serif headlines, rules, generous white space, one rich colour. If you have a reference in mind (a site, a magazine, a tool's preset called Editorial), it would settle a lot.</p>
@@ -182,8 +188,75 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
   <li>Light and dark versions of whatever we choose.</li>
 </ul>
 
-<h2 id="styles">Round two: five styles of our own</h2>
-<p>You said the first round was small variations on the baseline, and that you want styles as different from each other as Miro is from Excalidraw, without borrowing either. That is right: everything in round one was the same drawing language, outlined boxes joined by thin arrows, in different colours and fonts.</p>
+<h2 id="round3">Round three: diagram-design's restraint, with an idea of our own</h2>
+<p>You said the five styles of round two are worth keeping as styles, but none is "the one", and pointed me at <a href="https://github.com/cathrynlavery/diagram-design">diagram-design</a>. Reading its style guide answered the question I kept asking: "Editorial" is its own word ("Editorial diagrams your designer won't hate"). What makes it good is not a trick of drawing. It is restraint:</p>
+<ul>
+  <li>White-smoke paper, slate ink, hairline outlines, no shadows, small corner radii.</li>
+  <li>One accent, on the one or two things the reader should look at first.</li>
+  <li>A serif title, and italic serif for an editor's asides. Typewriter capitals only for technical labels: ports, protocols, types.</li>
+  <li>Few things on the page. "The highest-quality move is usually deletion."</li>
+</ul>
+<figure><img src="img/ref-diagram-design.png" alt="A deployment diagram from diagram-design's own examples"><figcaption>For reference: one of diagram-design's own examples. Not ours.</figcaption></figure>
+<p>All five of my round-two styles were louder than this, which is likely why none felt right. The four below keep that restraint (same paper, ink, hairlines, type roles, and the note drawn as an italic aside) and each adds one drawing idea that diagram-design does not have, so the result is ours. The accent here is FastDraw's indigo; the accent is a separate decision.</p>
+
+<section class="dir" id="plates">
+  <h2>6. Plates</h2>
+  <p class="idea">Every box is a thin plate lying on the page, with a visible edge. Zones are larger plates underneath, so a diagram is a few layers stacked. It borrows from the exploded-view diagrams FastDraw already draws.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>A hairline card with a second hairline 5px below it, the gap filled pale grey: the edge of the plate. The subject plate is tinted, with a tinted edge. Stores are short drums. Things outside the system are flat dashed outlines: no plate, because they are not built by us.</div>
+    <div><b>What building it takes</b>Low: one extra shape under each box. Lines and layout unchanged.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-plates.png" alt="Architecture diagram in the 6. Plates style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-plates.png" alt="Swimlane diagram in the 6. Plates style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> the smallest step from diagram-design that still gives a recognisable silhouette, and it matches the layer and exploded diagrams that are already FastDraw's best-looking kinds. Works at any size. <b>Against:</b> the edge is subtle; at thumbnail size it reads as a heavier bottom border. It is depth, which diagram-design rules out on principle.</p>
+</section>
+
+<section class="dir" id="brackets">
+  <h2>7. Brackets</h2>
+  <p class="idea">A box is marked at its corners, not fenced in. The page stays open and the text carries the picture.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>A white field with four corner marks in ink; no full outline. The subject gets heavier indigo corners and a tint. Stores are grey fields with a rule top and bottom. Zones are larger, lighter corner marks. Each line starts with a small open dot.</div>
+    <div><b>What building it takes</b>Low: corner marks in place of outlines, a dot at line starts.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-brackets.png" alt="Architecture diagram in the 7. Brackets style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-brackets.png" alt="Swimlane diagram in the 7. Brackets style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> the lightest and most airy of all nine; nothing else looks like it. Dense diagrams stay calm because there are far fewer lines on the page. <b>Against:</b> on a white slide the white fields vanish and only the corners remain, which can make boxes hard to find. Shapes other than rectangles (diamonds, cylinders) need their own answer.</p>
+</section>
+
+<section class="dir" id="shade">
+  <h2>8. Shade</h2>
+  <p class="idea">A hairline card that casts a shadow made of fine drawn lines. It is the one piece of texture on the page, and it is the Engraved idea from round two reduced to a whisper.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>Square hairline cards. Along the right and bottom edge of each, a 5px band of diagonal hatching. The subject's shadow is hatched in indigo. Zones are fields of wider, fainter hatching inside a hairline, with the name set into the top rule.</div>
+    <div><b>What building it takes</b>Low to moderate: a hatched band per box; the hatching already exists in the renderer.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-shade.png" alt="Architecture diagram in the 8. Shade style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-shade.png" alt="Swimlane diagram in the 8. Shade style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> looks drawn by hand with a ruling pen, and the most "editorial" of the four. The hatching survives black-and-white printing. <b>Against:</b> fine hatching goes grey at small sizes, and hatched zones behind hatched shadows can get busy in dense diagrams.</p>
+</section>
+
+<section class="dir" id="tabs">
+  <h2>9. Tabs</h2>
+  <p class="idea">Every box is an index card with a tab that says what it is. Zones are folders holding the cards.</p>
+  <div class="facts">
+    <div style="grid-column: span 2"><b>How it is drawn</b>A hairline card with a small tab on its top-left edge. The tab carries the type marker that diagram-design puts in a chip inside the box (API, DATA, EXT). Zones are folders with a larger tab for their name. Stores are grey cards.</div>
+    <div><b>What building it takes</b>Low: a tab on the outline. The type marker moves from inside the box to the tab, which frees space in the box.</div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/s-arch-tabs.png" alt="Architecture diagram in the 9. Tabs style"><figcaption>Architecture</figcaption></figure>
+    <figure><img src="img/s-swim-tabs.png" alt="Swimlane diagram in the 9. Tabs style"><figcaption>Swimlane</figcaption></figure>
+  </div>
+  <p class="verdict"><b>For:</b> a distinctive silhouette that also does a job: you can read what kind of thing a box is before you read its name. Folders holding cards is an honest picture of grouping. <b>Against:</b> cards without a type get an empty tab or none, so some diagrams look uneven. Tabs need a few pixels of room above every box.</p>
+</section>
+
+<h2 id="styles" style="margin-top:96px">Round two: five styles of our own</h2>
+<p>These are the styles you asked to keep. You said the first round was small variations on the baseline, and that you want styles as different from each other as Miro is from Excalidraw, without borrowing either. That is right: everything in round one was the same drawing language, outlined boxes joined by thin arrows, in different colours and fonts.</p>
 <p>The five below differ in how a diagram is <em>drawn</em>: what a box is made of, what a line is, where depth and texture come from. They are prototypes: the layout is FastDraw's own, taken from the same two files, but each picture comes from a separate throwaway renderer (<code>docs/design/revamp/proto/proto.ts</code>), not from the product. Rough edges are expected; judge the idea.</p>
 
 <section class="dir" id="keys">
@@ -435,10 +508,11 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
 
 <h2 id="decide">What I need from you</h2>
 <ul>
-  <li><b>Which of the five styles pull you in</b>, and which leave you cold. One is enough to go on; two that could be combined is better. For example Transit's lines with Keys' boxes, or Engraved for the diagrams with Listing for the editor.</li>
-  <li><b>Or that none of them is it</b>, and what is missing. A reference picture of anything you find beautiful, diagram or not, would help more than words.</li>
+  <li><b>Is "the one" among Plates, Brackets, Shade and Tabs?</b> Or a mix: for example Tabs for the cards with Plates' edge, or Brackets for zones only.</li>
+  <li><b>If still not</b>, which is closest and what is it missing? Too quiet, too plain, wrong shape, wrong colour.</li>
 </ul>
-<p>My own pick is <b>Engraved</b> if the aim is a diagram people stop and look at, and <b>Transit</b> if the aim is a diagram people read fastest. Both are unlike any other tool.</p>
+<p>My own pick is <b>Plates</b>: it is the nearest to diagram-design's calm, it gives FastDraw a silhouette no other tool has, and it ties the ordinary diagrams to the layer and exploded views that are already the best-looking things FastDraw draws. <b>Tabs</b> is my second, because its one idea also carries information.</p>
+<p>Agreed so far: the five styles of round two (Keys, Offset, Engraved, Transit, Listing) are kept, to become selectable styles once the main one is settled. That needs the renderer to learn new ways of drawing, not just new look files, so it is its own piece of work.</p>
 <p>What happens after you choose: one more page like this, taking the chosen style through eight kinds of diagram (including a table, a chart and a sequence diagram, which are the hard ones), light and dark, with the website and the editor drawn to match. Only when you approve that does the renderer change.</p>
 </div>
 </body>

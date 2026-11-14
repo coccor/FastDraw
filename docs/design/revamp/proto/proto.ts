@@ -283,12 +283,147 @@ function listing(sc: Scene, h: number): string {
   return frame(sc, h, '#f6fbf6', '', o);
 }
 
-const [file, prefix] = process.argv.slice(2);
+// =============================================================================================
+// Round three: the restraint of diagram-design (white-smoke paper, slate ink, hairlines, a serif
+// title, typewriter capitals for technical labels, one accent) with a drawing idea of our own.
+const Q = { paper: '#f5f5f5', paper2: '#ececec', ink: '#2d3142', muted: '#4f5d75', soft: '#5a6580', rule: 'rgba(45,49,66,.14)', ruleSolid: '#bfc0c0', accent: '#4f46e5', tint: '#eceafd', tintSide: '#cfcbf7', link: '#2e5aa8' };
+const qCol = (k: string) => (k === 'primary' ? Q.accent : k === 'link' ? Q.link : Q.muted);
+function qLines(sc: Scene, o: { dots?: boolean; r?: number } = {}): string {
+  let out = '';
+  for (const c of sc.conns) {
+    const k = lineKind(c), col = qCol(k);
+    out += `<path d="${route(c.pts, o.r ?? 8, c.head ? 6 : 0)}" fill="none" stroke="${k === 'rule' ? Q.ruleSolid : col}" stroke-width="${k === 'primary' ? 1.5 : 1}"${k === 'return' ? ' stroke-dasharray="5 4"' : ''}/>`;
+    if (c.head) out += head(c.pts, 8, 3.2, col);
+    if (o.dots && k !== 'rule') out += `<circle cx="${c.pts[0].x}" cy="${c.pts[0].y}" r="2.4" fill="${Q.paper}" stroke="${col}" stroke-width="1"/>`;
+    if (c.label) {
+      const t = c.label.text.toUpperCase(), lw = t.length * 5.4 + 10;
+      out += `<rect x="${c.label.cx - lw / 2}" y="${c.label.baseline - 9}" width="${lw}" height="12" rx="2" fill="${Q.paper}"/>` + text(c.label.cx, c.label.baseline, t, { font: 'Geist Mono', size: 8, fill: col, spacing: 0.5 });
+    }
+  }
+  return out;
+}
+function qText(sc: Scene): string {
+  let out = '';
+  for (const t of sc.texts) {
+    const f = freeText(t);
+    if (f.role === 'h1') out += text(t.ax, t.ay + 2, t.text, { font: 'Instrument Serif', size: 36, fill: Q.ink, anchor: 'start', spacing: -0.3 });
+    else if (f.role === 'dek') out += text(t.ax, t.ay + 4, t.text, { font: 'Geist', size: 12.5, fill: Q.muted, anchor: 'start' });
+    else out += text(t.ax, t.ay, f.role === 'caps' ? t.text.toUpperCase() : t.text, f.role === 'caps' ? { font: 'Geist Mono', size: 8, weight: 500, fill: Q.soft, anchor: f.anchor, spacing: 1.4 } : { font: 'Geist', size: f.size, fill: Q.muted, anchor: f.anchor });
+  }
+  return out;
+}
+// a note becomes an editor's aside: italic serif beside a short accent rule
+function qNote(s: Shape): string {
+  const lines = (s.text ?? '').split('\n');
+  let out = `<path d="M${s.x + 1} ${s.y + 8} v${lines.length * 19 + 2}" stroke="${Q.accent}" stroke-width="1.5"/>`;
+  lines.forEach((l, i) => { out += text(s.x + 14, s.y + 24 + i * 19, l, { font: 'Instrument Serif', size: 17, fill: Q.ink, anchor: 'start', italic: true }); });
+  return out;
+}
+const qLabel = (sc: Scene, s: Shape, focal: boolean, dy = 0) => label(sc, s, { title: { font: 'Geist', size: 12.5, weight: 600, fill: Q.ink }, sub: { font: 'Geist Mono', size: 9, fill: focal ? Q.accent : Q.muted }, iconColor: focal ? Q.accent : Q.ink, iconSize: 18, dy });
+function qTag(s: Shape, col: string, y = s.y + 6): string {
+  if (!s.p.tag) return '';
+  const w = s.p.tag.length * 4.9 + 12;
+  return `<rect x="${s.x + 8}" y="${y}" width="${w}" height="12" rx="2" fill="none" stroke="${col}" stroke-opacity=".45" stroke-width=".8"/>` + text(s.x + 8 + w / 2, y + 8.6, s.p.tag, { font: 'Geist Mono', size: 7, weight: 500, fill: col, spacing: 0.6 });
+}
+const qZoneLabel = (s: Shape, x = s.x + 14, y = s.y + 18) => text(x, y, (s.text ?? '').toUpperCase(), { font: 'Geist Mono', size: 8, weight: 500, fill: Q.soft, anchor: 'start', spacing: 1.5 });
+
+// 6. Plates: every box is a thin plate lying on the page, with a visible edge. Zones are larger plates underneath.
+function plates(sc: Scene, h: number): string {
+  const D = 5;
+  const plate = (x: number, y: number, w: number, hh: number, r: number, face: string, side: string, line: string, d = D) =>
+    `<rect x="${x}" y="${y + d}" width="${w}" height="${hh}" rx="${r}" fill="${side}" stroke="${line}" stroke-width="1"/><rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="${r}" fill="${face}" stroke="${line}" stroke-width="1"/>`;
+  let o = '';
+  for (const s of sc.shapes) if (kind(s) === 'zone') o += plate(s.x, s.y, s.w, s.h, 10, Q.paper2, '#dcdcdf', Q.ruleSolid, 4) + qZoneLabel(s);
+  o += qLines(sc);
+  for (const s of sc.shapes) {
+    const k = kind(s);
+    if (k === 'zone' || k === 'legend') continue;
+    if (k === 'sticky') { o += qNote(s); continue; }
+    if (k === 'external') o += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="6" fill="${Q.paper}" stroke="${Q.ink}" stroke-opacity=".45" stroke-width="1" stroke-dasharray="4 3"/>`;
+    else if (k === 'store') {
+      const e = 7;
+      o += `<path d="M${s.x} ${s.y + e} V${s.y + s.h - e + D} A${s.w / 2} ${e} 0 0 0 ${s.x + s.w} ${s.y + s.h - e + D} V${s.y + e} Z" fill="#e3e4e8" stroke="${Q.ink}" stroke-width="1"/>`;
+      o += `<path d="M${s.x} ${s.y + e} V${s.y + s.h - e} A${s.w / 2} ${e} 0 0 0 ${s.x + s.w} ${s.y + s.h - e} V${s.y + e} Z" fill="#ffffff" stroke="${Q.ink}" stroke-width="1"/><ellipse cx="${s.x + s.w / 2}" cy="${s.y + e}" rx="${s.w / 2}" ry="${e}" fill="#ffffff" stroke="${Q.ink}" stroke-width="1"/>`;
+    } else if (k === 'focal') o += plate(s.x, s.y, s.w, s.h, 6, Q.tint, Q.tintSide, Q.accent);
+    else o += plate(s.x, s.y, s.w, s.h, 6, '#ffffff', '#e3e4e8', Q.ink);
+    o += qTag(s, k === 'focal' ? Q.accent : Q.muted) + qLabel(sc, s, k === 'focal', k === 'store' ? 4 : 0);
+  }
+  return frame(sc, h, Q.paper, '', o + qText(sc));
+}
+
+// 7. Brackets: a box is marked at its corners, not fenced in. The page stays open.
+function brackets(sc: Scene, h: number): string {
+  const corner = (x: number, y: number, w: number, hh: number, n: number, col: string, sw: number, dash = '') => {
+    const d = `M${x} ${y + n} V${y} H${x + n} M${x + w - n} ${y} H${x + w} V${y + n} M${x + w} ${y + hh - n} V${y + hh} H${x + w - n} M${x + n} ${y + hh} H${x} V${y + hh - n}`;
+    return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${sw}"${dash}/>`;
+  };
+  let o = '';
+  for (const s of sc.shapes) if (kind(s) === 'zone') o += corner(s.x, s.y, s.w, s.h, 18, Q.ruleSolid, 1) + qZoneLabel(s, s.x + 26, s.y + 3);
+  o += qLines(sc, { dots: true });
+  for (const s of sc.shapes) {
+    const k = kind(s);
+    if (k === 'zone' || k === 'legend') continue;
+    if (k === 'sticky') { o += qNote(s); continue; }
+    const fill = k === 'focal' ? Q.tint : k === 'external' ? 'none' : k === 'store' ? '#e9e9ec' : '#ffffff';
+    o += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="${fill}"/>`;
+    if (k === 'store') o += `<path d="M${s.x + 10} ${s.y + s.h - 5} H${s.x + s.w - 10}" stroke="${Q.muted}" stroke-width=".8"/><path d="M${s.x + 10} ${s.y + 5} H${s.x + s.w - 10}" stroke="${Q.muted}" stroke-width=".8"/>`;
+    o += corner(s.x, s.y, s.w, s.h, k === 'focal' ? 12 : 9, k === 'focal' ? Q.accent : k === 'external' ? Q.soft : Q.ink, k === 'focal' ? 1.8 : 1.2, k === 'external' ? ' stroke-dasharray="2 2"' : '');
+    o += qTag(s, k === 'focal' ? Q.accent : Q.muted, s.y + 8) + qLabel(sc, s, k === 'focal');
+  }
+  return frame(sc, h, Q.paper, '', o + qText(sc));
+}
+
+// 8. Shade: a hairline card that casts a shadow made of fine drawn lines. The only texture on the page.
+function shade(sc: Scene, h: number): string {
+  const defs = `<pattern id="sh" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="${Q.ink}" stroke-width=".6"/></pattern>
+    <pattern id="sha" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="${Q.accent}" stroke-width=".8"/></pattern>
+    <pattern id="shz" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="${Q.ink}" stroke-width=".35"/></pattern>`;
+  const S = 5;
+  let o = '';
+  for (const s of sc.shapes) if (kind(s) === 'zone') o += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="url(#shz)" opacity=".35"/><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="none" stroke="${Q.ruleSolid}" stroke-width="1"/><rect x="${s.x + 10}" y="${s.y - 6}" width="${(s.text ?? '').length * 6.4 + 12}" height="12" fill="${Q.paper}"/>` + qZoneLabel(s, s.x + 16, s.y + 3);
+  o += qLines(sc);
+  for (const s of sc.shapes) {
+    const k = kind(s);
+    if (k === 'zone' || k === 'legend') continue;
+    if (k === 'sticky') { o += qNote(s); continue; }
+    if (k !== 'external') o += `<path d="M${s.x + s.w} ${s.y + S} h${S} v${s.h} h${-s.w} v${-S} h${s.w - S} Z" fill="url(#${k === 'focal' ? 'sha' : 'sh'})" opacity="${k === 'focal' ? 1 : 0.75}"/>`;
+    o += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${k === 'store' ? 0 : 2}" fill="${k === 'focal' ? Q.tint : k === 'external' ? Q.paper : '#ffffff'}" stroke="${k === 'focal' ? Q.accent : Q.ink}" stroke-width="1"${k === 'external' ? ' stroke-dasharray="4 3" stroke-opacity=".5"' : ''}/>`;
+    if (k === 'store') o += `<path d="M${s.x} ${s.y + 6} H${s.x + s.w} M${s.x} ${s.y + s.h - 6} H${s.x + s.w}" stroke="${Q.ink}" stroke-width=".7"/>`;
+    o += qTag(s, k === 'focal' ? Q.accent : Q.muted, s.y + (k === 'store' ? 11 : 6)) + qLabel(sc, s, k === 'focal');
+  }
+  return frame(sc, h, Q.paper, defs, o + qText(sc));
+}
+
+// 9. Tabs: every box is an index card with a tab that says what it is. Zones are folders.
+function tabs(sc: Scene, h: number): string {
+  const card = (x: number, y: number, w: number, hh: number, tw: number, th: number, r: number) =>
+    `M${x} ${y + r} Q${x} ${y} ${x + r} ${y} H${x + w - r} Q${x + w} ${y} ${x + w} ${y + r} V${y + hh - r} Q${x + w} ${y + hh} ${x + w - r} ${y + hh} H${x + r} Q${x} ${y + hh} ${x} ${y + hh - r} Z M${x + 10} ${y} V${y - th + 3} Q${x + 10} ${y - th} ${x + 13} ${y - th} H${x + 10 + tw - 3} Q${x + 10 + tw} ${y - th} ${x + 10 + tw} ${y - th + 3} V${y}`;
+  let o = '';
+  for (const s of sc.shapes) if (kind(s) === 'zone') {
+    const tw = (s.text ?? '').length * 6.2 + 22;
+    o += `<path d="${card(s.x, s.y, s.w, s.h, tw, 16, 8)}" fill="${Q.paper2}" stroke="${Q.ruleSolid}" stroke-width="1"/><path d="M${s.x + 10.5} ${s.y} h${tw - 1}" stroke="${Q.paper2}" stroke-width="1.6"/>` + qZoneLabel(s, s.x + 21, s.y - 4);
+  }
+  o += qLines(sc);
+  for (const s of sc.shapes) {
+    const k = kind(s);
+    if (k === 'zone' || k === 'legend') continue;
+    if (k === 'sticky') { o += qNote(s); continue; }
+    const word = s.p.tag ?? (k === 'store' ? 'DATA' : k === 'external' ? 'EXT' : k === 'focal' ? 'CORE' : ''), tw = word ? word.length * 5 + 14 : 18;
+    const fill = k === 'focal' ? Q.tint : k === 'store' ? '#e9e9ec' : k === 'external' ? Q.paper : '#ffffff', line = k === 'focal' ? Q.accent : Q.ink;
+    o += `<path d="${card(s.x, s.y, s.w, s.h, tw, 11, 5)}" fill="${fill}" stroke="${line}" stroke-width="1"${k === 'external' ? ' stroke-dasharray="4 3" stroke-opacity=".5"' : ''}/><path d="M${s.x + 10.6} ${s.y} h${tw - 1.2}" stroke="${fill}" stroke-width="1.6"/>`;
+    if (word) o += text(s.x + 10 + tw / 2, s.y - 2.2, word, { font: 'Geist Mono', size: 7, weight: 500, fill: k === 'focal' ? Q.accent : Q.muted, spacing: 0.6 });
+    o += qLabel(sc, s, k === 'focal');
+  }
+  return frame(sc, h, Q.paper, '', o + qText(sc));
+}
+
+const [file, prefix, only] = process.argv.slice(2);
 const sc = buildScene(readFileSync(file, 'utf8').replace(/^legend .*$/m, ''), null);
 const legend = sc.shapes.find((s) => s.shape === 'legend');
 const h = sc.h;
 const fontFiles = readdirSync(FONTS).filter((f) => /\.ttf$/.test(f)).map((f) => FONTS + f);
-for (const [name, draw] of Object.entries({ keys, offset, engraved, transit, listing })) {
+for (const [name, draw] of Object.entries({ keys, offset, engraved, transit, listing, plates, brackets, shade, tabs })) {
+  if (only && !only.split(',').includes(name)) continue;
   const svg = draw(sc, h);
   writeFileSync(`${prefix}${name}.svg`, svg);
   writeFileSync(`${prefix}${name}.png`, new Resvg(svg, { font: { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 1.5 } }).render().asPng());
