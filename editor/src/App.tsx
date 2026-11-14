@@ -19,9 +19,9 @@ import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
-  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Square, Sticker, Trash2, TriangleAlert, Type, Undo2, Ungroup,
+  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
-import { IconDialog } from './IconPicker.tsx';
+import { IconDialog, IconGlyph } from './IconPicker.tsx';
 import { rememberIcon } from './recentIcons.ts';
 import type { IconStyle } from '../../src/iconStyle.ts';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
@@ -145,7 +145,10 @@ export function App() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   // The Icon tool in the top bar: its dialog picks the icon, then each click on the canvas places that icon.
   const [iconToolOpen, setIconToolOpen] = useState(false);
+  // the icon the tool places: none until one is picked (then it places `server`); the button shows it once there is one
+  const [pickedIcon, setPickedIcon] = useState<{ name: string; style: IconStyle } | null>(null);
   const iconToPlace = useRef<{ name: string; style: IconStyle }>({ name: 'server', style: 'outline' });
+  iconToPlace.current = pickedIcon ?? { name: 'server', style: 'outline' };
   const [folderFiles, setFolderFiles] = useState<string[]>([]);
   const [, force] = useState(0);
   const [locked, setLocked] = useState(false);
@@ -1245,7 +1248,7 @@ export function App() {
           ))}
           <button className={'tool' + (tool === 'style:icon' ? ' on' : '')} title={scene.look.styles.has('icon') ? 'Icon — I' : 'This look has no icon style'} aria-label="Icon" aria-pressed={tool === 'style:icon'} aria-haspopup="dialog"
             disabled={!scene.look.styles.has('icon')} onClick={() => setIconToolOpen(true)}>
-            <Sticker size={17} /><kbd>I</kbd>
+            {pickedIcon && (scene.look.icons.has(pickedIcon.name) || scene.look.images.has(pickedIcon.name)) ? <IconGlyph look={scene.look} name={pickedIcon.name} iconStyle={pickedIcon.style} size={17} /> : <Smile size={17} />}<kbd>I</kbd>
           </button>
         </div>
         {tool === 'freehand' && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
@@ -1350,7 +1353,7 @@ export function App() {
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
       {iconToolOpen && (
         <IconDialog look={scene.look} value={undefined} iconStyle={iconToPlace.current.style} onClose={() => setIconToolOpen(false)}
-          onPick={(n, style) => { setIconToolOpen(false); if (!n) return; iconToPlace.current = { name: n, style }; rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
+          onPick={(n, style) => { setIconToolOpen(false); if (!n) return; setPickedIcon({ name: n, style }); rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
       )}
       {exportOpen && <ExportDialog scene={scene} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
       {templateDialog}
