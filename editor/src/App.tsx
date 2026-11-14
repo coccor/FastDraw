@@ -19,8 +19,11 @@ import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
-  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
+  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Square, Sticker, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
+import { IconDialog } from './IconPicker.tsx';
+import { rememberIcon } from './recentIcons.ts';
+import type { IconStyle } from '../../src/iconStyle.ts';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
@@ -30,6 +33,8 @@ import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
+import { useExtendedIcons } from './useExtendedIcons.ts';
+import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -138,6 +143,9 @@ export function App() {
   const [pasteOpen, setPasteOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  // The Icon tool in the top bar: its dialog picks the icon, then each click on the canvas places that icon.
+  const [iconToolOpen, setIconToolOpen] = useState(false);
+  const iconToPlace = useRef<{ name: string; style: IconStyle }>({ name: 'server', style: 'outline' });
   const [folderFiles, setFolderFiles] = useState<string[]>([]);
   const [, force] = useState(0);
   const [locked, setLocked] = useState(false);
@@ -177,7 +185,10 @@ export function App() {
   // name (look sketch) or no line at all is drawn without it
   const lookLine = lookPath(src ?? '');
   const fileLookOn = !!lookLine && !isBundledLook(lookLine);
-  const parsedLook = useMemo(() => (lookSrc != null && fileLookOn ? parseLook(lookSrc) : null), [lookSrc, fileLookOn]);
+  // The rest of Phosphor's icons are fetched when a diagram uses one (or the icon dialog opens); looks and the
+  // scene are built again when they arrive.
+  const iconsReady = useExtendedIcons(useMemo(() => [...(src ?? '').matchAll(/\bicon="?([\w-]+)/g)].some((m) => !BUILT_IN_ICONS[m[1]!]), [src]));
+  const parsedLook = useMemo(() => (lookSrc != null && fileLookOn ? parseLook(lookSrc) : null), [lookSrc, fileLookOn, iconsReady]);
   // Icon files: read from the look's icon folders when a folder is open, or carried inside an opened image.
   const [iconFiles, setIconFiles] = useState<{ name: string; bytes: Uint8Array }[]>([]);
   const [carriedIcons, setCarriedIcons] = useState<Record<string, string>>({});
@@ -221,7 +232,7 @@ export function App() {
     return () => { stale = true; };
   }, [look, name, docId]);
   const cur = draft ?? src ?? '';
-  const scene = useMemo(() => buildScene(cur, look), [cur, look]);
+  const scene = useMemo(() => buildScene(cur, look), [cur, look, iconsReady]);
   // what the canvas draws: the diagram, or while a look is being tried, the diagram in that look.
   // Editing always works on the real diagram; only the picture changes.
   const shown = useMemo(() => {
@@ -229,7 +240,7 @@ export function App() {
     const p = lookPreview;
     const fl = pickerFile.current && p === pickerFile.current.path ? pickerFile.current.look : look;
     return buildScene(ops.setLook(cur, p), p !== null && !isBundledLook(p) ? fl : null);
-  }, [scene, lookPreview, cur, look]);
+  }, [scene, lookPreview, cur, look, iconsReady]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
   // the page layers are left out: the paper and dots fill the whole view instead
   const body = useMemo(() => renderBody(shown).split('\n').filter((l) => !l.startsWith('<rect class="fd-page"')).join('\n'), [shown]);
@@ -776,7 +787,7 @@ export function App() {
       : { x: snap(a.x - dw / 2), y: snap(a.y - dh / 2), w: dw, h: dh };
     const table = style.props.shape === 'table';
     const chart = style.props.shape === 'chart';
-    return ops.addShape(base, styleName, (table || chart) && !big ? { ...box, x: snap(a.x - (chart ? 160 : 80)), y: snap(a.y - (chart ? 90 : 40)) } : box, table || chart ? big : big || !m, table, chart);
+    return ops.addShape(base, styleName, (table || chart) && !big ? { ...box, x: snap(a.x - (chart ? 160 : 80)), y: snap(a.y - (chart ? 90 : 40)) } : box, table || chart ? big : big || !m, table, chart, styleName === 'icon' ? iconToPlace.current : undefined);
   };
 
   const onMove = (e: React.PointerEvent) => {
@@ -1049,6 +1060,7 @@ export function App() {
         commit(ops.moveElements(text, sc, s, dx, dy));
         return;
       }
+      if (e.key.toLowerCase() === 'i') { e.preventDefault(); if (sc.look.styles.has('icon')) setIconToolOpen(true); return; }
       const hot = TOOLS.find((t) => t[2].toLowerCase() === e.key.toLowerCase());
       if (hot) setTool(hot[0]);
     };
@@ -1231,6 +1243,10 @@ export function App() {
               {ICONS[id]}<kbd>{key}</kbd>
             </button>
           ))}
+          <button className={'tool' + (tool === 'style:icon' ? ' on' : '')} title={scene.look.styles.has('icon') ? 'Icon — I' : 'This look has no icon style'} aria-label="Icon" aria-pressed={tool === 'style:icon'} aria-haspopup="dialog"
+            disabled={!scene.look.styles.has('icon')} onClick={() => setIconToolOpen(true)}>
+            <Sticker size={17} /><kbd>I</kbd>
+          </button>
         </div>
         {tool === 'freehand' && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
         {armed && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
@@ -1332,6 +1348,10 @@ export function App() {
       )}
 
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
+      {iconToolOpen && (
+        <IconDialog look={scene.look} value={undefined} iconStyle={iconToPlace.current.style} onClose={() => setIconToolOpen(false)}
+          onPick={(n, style) => { setIconToolOpen(false); if (!n) return; iconToPlace.current = { name: n, style }; rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
+      )}
       {exportOpen && <ExportDialog scene={scene} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
       {templateDialog}
     </div>

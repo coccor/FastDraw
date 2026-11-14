@@ -554,6 +554,58 @@ test('icons: the Solid tab picks the filled twin of an icon, and Outline takes i
   expect(errors).toEqual([]);
 });
 
+test('icons: the Icon tool in the top bar places any Phosphor icon, and the last five icons come back in the sidebar', async ({ page }) => {
+  await pinSidebar(page);
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  // the Components tab no longer lists the icon: it is a tool in the top bar
+  await sidebar(page, 'Components');
+  await expect(page.locator('.thumbcard', { hasText: 'an icon on its own' })).toHaveCount(0);
+  // pick an icon only the full set has, in the solid style, then click the canvas to place it
+  await page.getByRole('button', { name: 'Icon', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
+  await page.getByRole('tab', { name: 'Solid' }).click();
+  await page.getByLabel('Search icons').fill('anchor');
+  await dialog.getByRole('radio', { name: 'anchor', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Icon', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const spot = await at(page, 700, 340);
+  await page.mouse.click(spot.x, spot.y);
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=anchor icon\.style=solid$/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // the sidebar offers the last five icons used, newest first, and a click applies one
+  const pick = async (name: string) => {
+    await page.locator('.iconchoose').click();
+    await page.getByRole('tab', { name: 'Outline' }).click();
+    await page.getByLabel('Search icons').fill(name);
+    await dialog.getByRole('radio', { name, exact: true }).click();
+  };
+  const recent = page.getByRole('group', { name: 'Recent icons' });
+  const names = () => recent.getByRole('button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  expect(await names()).toEqual(['Recent icon anchor']);
+  for (const n of ['server', 'database', 'cloud', 'lock', 'key']) await pick(n);
+  expect(await names()).toEqual(['Recent icon key', 'Recent icon lock', 'Recent icon cloud', 'Recent icon database', 'Recent icon server']);
+  await recent.getByRole('button', { name: 'Recent icon database' }).click();
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=database$/);
+  expect((await names())[0]).toBe('Recent icon database');
+  // I opens the same dialog, and Escape closes it
+  await page.mouse.click(...Object.values(await at(page, 100, 60)) as [number, number]);
+  await page.keyboard.press('i');
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
+test('icons: a diagram that uses an icon from the rest of Phosphor draws it once they have loaded', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, 'a: rect "Anchor" at 40,40 120x60 icon=anchor\nb: rect "Book" at 240,40 120x60 icon=ph-book icon.style=duotone\n');
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"]')).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
 test('icons: the dialog holds every icon, closes on Escape, and the sidebar row removes the icon', async ({ page }) => {
   await pinSidebar(page);
   const errors = noPageErrors(page);
@@ -609,7 +661,8 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await expect(tiles.getByRole('radio')).toHaveCount(0);
   await expect(tiles).toContainText('No icon is called anything like');
   await page.getByLabel('Search icons').fill('balanc');
-  await expect(tiles.getByRole('radio')).toHaveCount(1);
+  // a name that has the word comes before an icon that only has it among Phosphor's search words
+  await expect(tiles.getByRole('radio').first()).toHaveAttribute('aria-label', 'load-balancer');
   await page.getByLabel('Search icons').press('Enter');
   expect(lineOf(await source(page), 'db')).toMatch(/icon=load-balancer icon\.pos=top$/);
   await expect(page.locator('.iconname')).toHaveText('load-balancer');
@@ -647,8 +700,9 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await page.locator('.iconchoose').click();
   await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
   expect(lineOf(await source(page), 'db')).not.toContain('icon=');
-  await sidebar(page, 'Components');
-  await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
+  // an icon on its own comes from the Icon tool in the top bar: pick it in the dialog, then click the canvas
+  await page.getByRole('button', { name: 'Icon', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Choose an icon' }).getByRole('radio', { name: 'server', exact: true }).click();
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=server$/);

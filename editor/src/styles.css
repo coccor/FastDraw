@@ -117,6 +117,9 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .iconname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .iconopen { flex: none; font-size: 12px; color: var(--mute); }
 .iconclear { flex: none; width: 28px; padding: 0; }
+.iconrecent { display: flex; gap: 4px; margin-top: 6px; }
+.iconrecent .icontile { width: 36px; height: 36px; aspect-ratio: auto; flex: none; border: 1px solid var(--line); }
+.iconrecent .icontile.on { border-color: var(--accent); }
 
 /* the icon dialog: every icon, searchable, in a large grid */
 .icondialog { width: min(860px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; }

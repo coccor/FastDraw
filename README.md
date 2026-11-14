@@ -190,6 +190,8 @@ copyright (c) 2025 Cathryn Lavery). The guides are written anew for FastDraw's l
 pictures in `compare/kinds/*-ref.png` are renders of diagram-design's own example pages, kept for
 side-by-side comparison; `looks/reference.look` mirrors its default palette for the same purpose.
 
-The bundled icons (`src/iconSet.ts`, built by `tools/phosphor-icons.mjs`) are from
-[Phosphor Icons](https://phosphoricons.com) (MIT licence, copyright (c) 2023 Phosphor Icons), in its
+The bundled icons (`src/iconSet.ts` and `src/iconSetAll.ts`, built by `tools/phosphor-icons.mjs`) are
+[Phosphor Icons](https://phosphoricons.com) (MIT licence, copyright (c) 2023 Phosphor Icons), all of them, in its
 thin, light, regular, bold, fill and duotone weights; the licence is in `licenses/phosphor-icons.txt`.
+About 130 have friendly names (`database`, `load-balancer`) and are always loaded; the rest keep Phosphor's own
+names (`anchor`) and are loaded when a diagram or the editor's icon dialog needs them.
