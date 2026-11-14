@@ -1,5 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { Search } from 'lucide-react';
 import type { Look } from '../../src/look.ts';
 import { isIconUri } from '../../src/iconfiles.ts';
 import { iconMatches, ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
@@ -31,7 +32,7 @@ export function IconGlyph({ look, name, size = 22, iconStyle = 'outline' }: { lo
 
 // Every icon the look has, as tiles to click, with a search box, in three tabs: Outline (the look's folder
 // and own icons first, then the built-in ones), Solid and Duotone (the built-in icons, which have both).
-export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string | null, style: IconStyle) => void; autoFocus?: boolean }) {
+export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string, style: IconStyle) => void; autoFocus?: boolean }) {
   const [q, setQ] = React.useState('');
   // open on the tab of the chosen icon; with none chosen, on outline
   const [tab, setTab] = React.useState<IconStyle>(iconStyle);
@@ -53,7 +54,7 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
     if (g && el) g.scrollTop = el.offsetTop - g.offsetTop - g.clientHeight / 2 + el.clientHeight / 2;
   }, [value, tab]);
   const tile = (n: string) => (
-    <button key={n} type="button" className={'icontile' + (on(n) ? ' on' : '')} title={on(n) ? `${n} (click again to remove)` : n} role="radio" aria-label={n} aria-checked={on(n)} onClick={() => onPick(on(n) ? null : n, tab)}>
+    <button key={n} type="button" className={'icontile' + (on(n) ? ' on' : '')} title={n} role="radio" aria-label={n} aria-checked={on(n)} onClick={() => onPick(n, tab)}>
       <IconGlyph look={look} name={n} iconStyle={tab} />
     </button>
   );
@@ -84,45 +85,46 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
   );
 }
 
-// The icon row in the sidebar: the chosen icon and its name, and a button that opens every icon in a dialog
-// with search. The full grid is too long for the sidebar, so it only lives in the dialog.
-// Under it, the last few icons chosen (here or with the Icon tool), to pick again with one click.
-export function IconField({ look, value, iconStyle, onPick }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string | null, style: IconStyle) => void }) {
+// Icons offered before any has been used, so the sidebar is never empty.
+const STARTER_ICONS = ['server', 'database', 'cloud', 'user', 'lock'];
+const QUICK = 5;
+
+// The icon row in the sidebar: five icons to pick with one click (the chosen one if it is not among them, then
+// the last icons used here or with the Icon tool, then the starter icons), and a sixth tile that opens every icon
+// in a dialog with search. The full grid is too long for the sidebar, so it only lives in the dialog.
+export function IconField({ look, value, iconStyle, onPick }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string, style: IconStyle) => void }) {
   const [open, setOpen] = React.useState(false);
   const remembered = useRecentIcons();
   useExtendedIcons(remembered.some((r) => !BUILT_IN_ICONS[r.name])); // a recent icon from the rest of Phosphor needs them
-  const recent = remembered.filter((r) => look.icons.has(r.name) || look.images.has(r.name));
+  const has = (n: string) => look.icons.has(n) || look.images.has(n);
   const name = value && value !== 'none' ? value : undefined;
-  const choose = (n: string | null, s: IconStyle) => { if (n) rememberIcon({ name: n, style: s }); onPick(n, s); };
+  const choose = (n: string, s: IconStyle) => { rememberIcon({ name: n, style: s }); onPick(n, s); };
+  const quick: { name: string; style: IconStyle }[] = [];
+  const offer = (r: { name: string; style: IconStyle }) => { if (has(r.name) && !quick.some((q) => q.name === r.name)) quick.push(r); };
+  if (name) offer({ name, style: iconStyle });
+  remembered.forEach(offer);
+  STARTER_ICONS.forEach((n) => offer({ name: n, style: 'outline' }));
+  quick.splice(QUICK);
   return (
-    <div className="iconbox">
-      <div className="iconfield">
-        <button type="button" className="iconchoose" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-          <span className="iconpreview">{name ? <IconGlyph look={look} name={name} iconStyle={iconStyle} /> : null}</span>
-          <span className="iconname">{name ?? 'No icon'}</span>
-          <span className="iconopen">Choose…</span>
-        </button>
-        {name && <button type="button" className="iconclear" aria-label="Remove icon" title="Remove icon" onClick={() => onPick(null, iconStyle)}>×</button>}
-        {open && createPortal(<IconDialog look={look} value={value} iconStyle={iconStyle} onClose={() => setOpen(false)} onPick={(n, s) => { choose(n, s); setOpen(false); }} />, document.body)}
-      </div>
-      {recent.length > 0 && (
-        <div className="iconrecent" role="group" aria-label="Recent icons">
-          {recent.map((r) => {
-            const on = value === r.name && iconStyle === r.style;
-            return (
-              <button key={r.name} type="button" className={'icontile' + (on ? ' on' : '')} title={r.name} aria-label={`Recent icon ${r.name}`} aria-pressed={on} onClick={() => choose(r.name, r.style)}>
-                <IconGlyph look={look} name={r.name} iconStyle={r.style} />
-              </button>
-            );
-          })}
-        </div>
-      )}
+    <div className="iconquick" role="group" aria-label="Icons">
+      {quick.map((r) => {
+        const on = value === r.name && iconStyle === r.style;
+        return (
+          <button key={r.name} type="button" className={'icontile' + (on ? ' on' : '')} title={r.name} aria-label={`Icon ${r.name}`} aria-pressed={on} onClick={() => choose(r.name, r.style)}>
+            <IconGlyph look={look} name={r.name} iconStyle={r.style} />
+          </button>
+        );
+      })}
+      <button type="button" className="icontile iconchoose" title="Search all icons" aria-label="Search all icons" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+        <Search size={16} />
+      </button>
+      {open && createPortal(<IconDialog look={look} value={value} iconStyle={iconStyle} onClose={() => setOpen(false)} onPick={(n, s) => { choose(n, s); setOpen(false); }} />, document.body)}
     </div>
   );
 }
 
 // Every icon of the look in a dialog, with search: picking one applies it and closes the dialog.
-export function IconDialog({ look, value, iconStyle, onPick, onClose }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string | null, style: IconStyle) => void; onClose: () => void }) {
+export function IconDialog({ look, value, iconStyle, onPick, onClose }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string, style: IconStyle) => void; onClose: () => void }) {
   const ready = useExtendedIcons(true); // opening the dialog is what asks for every icon
   return (
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -130,7 +132,7 @@ export function IconDialog({ look, value, iconStyle, onPick, onClose }: { look: 
         <div className="icondialoghead">
           <div>
             <h3>Choose an icon</h3>
-            <p className="muted small">{ready ? 'Search by name or meaning, then click one. Click the chosen icon again to remove it.' : 'Loading the rest of the icons…'}</p>
+            <p className="muted small">{ready ? 'Search by name or meaning, then click one.' : 'Loading the rest of the icons…'}</p>
           </div>
           <button type="button" className="iconclose" aria-label="Close" title="Close" onClick={onClose}>×</button>
         </div>

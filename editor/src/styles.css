@@ -109,17 +109,12 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .icontile.on { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
 .panel .sublabel { font-size: 11px; color: var(--mute); margin: 10px 0 4px; }
 
-/* the sidebar's icon row: the chosen icon, and a button that opens the icon dialog */
-.iconfield { display: flex; gap: 4px; align-items: center; }
-.iconchoose { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; text-align: left; }
-.iconpreview { flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
-.iconpreview img, .iconpreview svg { width: 22px; height: 22px; }
-.iconname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.iconopen { flex: none; font-size: 12px; color: var(--mute); }
-.iconclear { flex: none; width: 28px; padding: 0; }
-.iconrecent { display: flex; gap: 4px; margin-top: 6px; }
-.iconrecent .icontile { width: 36px; height: 36px; aspect-ratio: auto; flex: none; border: 1px solid var(--line); }
-.iconrecent .icontile.on { border-color: var(--accent); }
+/* the sidebar's icon row: five icons to pick, and a tile that opens the icon dialog */
+.iconquick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.iconquick .icontile { border: 1px solid var(--line); }
+.iconquick .icontile.on { border-color: var(--accent); }
+.iconquick .iconchoose { border-style: dashed; color: var(--mute); }
+.iconquick .iconchoose:hover { color: var(--accent-ink); border-color: var(--accent); }
 
 /* the icon dialog: every icon, searchable, in a large grid */
 .icondialog { width: min(860px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; }

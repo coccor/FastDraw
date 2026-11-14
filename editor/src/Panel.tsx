@@ -278,7 +278,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         <section>
           <h4>Icon</h4>
           <IconField look={sc.look} value={p.icon} iconStyle={p['icon.style'] === 'solid' || p['icon.style'] === 'duotone' ? p['icon.style'] : 'outline'}
-            onPick={(n, style) => act.setProps({ icon: n, 'icon.style': n && style !== 'outline' ? style : null })} />
+            onPick={(n, style) => act.setProps({ icon: n, 'icon.style': style !== 'outline' ? style : null })} />
           {p.icon && p.icon !== 'none' && !iconShape && (
             <>
               <div className="seg" style={{ marginTop: 6 }}>

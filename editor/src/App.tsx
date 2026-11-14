@@ -1353,7 +1353,7 @@ export function App() {
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
       {iconToolOpen && (
         <IconDialog look={scene.look} value={undefined} iconStyle={iconToPlace.current.style} onClose={() => setIconToolOpen(false)}
-          onPick={(n, style) => { setIconToolOpen(false); if (!n) return; setPickedIcon({ name: n, style }); rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
+          onPick={(n, style) => { setIconToolOpen(false); setPickedIcon({ name: n, style }); rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
       )}
       {exportOpen && <ExportDialog scene={scene} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
       {templateDialog}

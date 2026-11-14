@@ -580,14 +580,15 @@ test('icons: the Icon tool in the top bar places any Phosphor icon, and the last
     await page.getByLabel('Search icons').fill(name);
     await dialog.getByRole('radio', { name, exact: true }).click();
   };
-  const recent = page.getByRole('group', { name: 'Recent icons' });
-  const names = () => recent.getByRole('button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
-  expect(await names()).toEqual(['Recent icon anchor']);
+  const quick = page.getByRole('group', { name: 'Icons' });
+  const names = () => quick.locator('button[aria-pressed]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  // the icon just used comes first, and the starter icons fill the rest
+  expect(await names()).toEqual(['Icon anchor', 'Icon server', 'Icon database', 'Icon cloud', 'Icon user']);
   for (const n of ['server', 'database', 'cloud', 'lock', 'key']) await pick(n);
-  expect(await names()).toEqual(['Recent icon key', 'Recent icon lock', 'Recent icon cloud', 'Recent icon database', 'Recent icon server']);
-  await recent.getByRole('button', { name: 'Recent icon database' }).click();
+  expect(await names()).toEqual(['Icon key', 'Icon lock', 'Icon cloud', 'Icon database', 'Icon server']);
+  await quick.getByRole('button', { name: 'Icon database' }).click();
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=database$/);
-  expect((await names())[0]).toBe('Recent icon database');
+  expect((await names())[0]).toBe('Icon database');
   // I opens the same dialog, and Escape closes it
   await page.mouse.click(...Object.values(await at(page, 100, 60)) as [number, number]);
   await page.keyboard.press('i');
@@ -606,12 +607,18 @@ test('icons: a diagram that uses an icon from the rest of Phosphor draws it once
   expect(errors).toEqual([]);
 });
 
-test('icons: the dialog holds every icon, closes on Escape, and the sidebar row removes the icon', async ({ page }) => {
+test('icons: the sidebar offers five icons from the start, and a tile that opens a dialog with every icon', async ({ page }) => {
   await pinSidebar(page);
   const errors = noPageErrors(page);
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
-  await expect(page.locator('.iconname')).toHaveText('No icon');
+  // five starter icons, none chosen yet, and one click picks one
+  const quick = page.getByRole('group', { name: 'Icons' });
+  expect(await quick.locator('button[aria-pressed]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Icon server', 'Icon database', 'Icon cloud', 'Icon user', 'Icon lock']);
+  await expect(quick.locator('button[aria-pressed="true"]')).toHaveCount(0);
+  await quick.getByRole('button', { name: 'Icon lock' }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=lock$/);
+  await expect(quick.getByRole('button', { name: 'Icon lock' })).toHaveAttribute('aria-pressed', 'true');
   await page.locator('.iconchoose').click();
   const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
   await expect(dialog).toBeVisible();
@@ -626,9 +633,8 @@ test('icons: the dialog holds every icon, closes on Escape, and the sidebar row 
   await dialog.getByRole('radio', { name: 'database', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
-  await page.getByRole('button', { name: 'Remove icon' }).click();
-  expect(lineOf(await source(page), 'db')).not.toContain('icon=');
-  await expect(page.locator('.iconname')).toHaveText('No icon');
+  // there is no way to take the icon away in the panel
+  await expect(page.getByRole('button', { name: 'Remove icon' })).toHaveCount(0);
   await expect(page.locator('.problems')).toHaveText('No problems');
   expect(errors).toEqual([]);
 });
@@ -646,7 +652,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(await tiles.getByRole('radio').count()).toBeGreaterThan(50);
   await tiles.getByRole('radio', { name: 'database', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
-  await expect(page.locator('.iconname')).toHaveText('database');
+  await expect(page.getByRole('button', { name: 'Icon database', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.locator('.iconchoose').click();
   await expect(tiles.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
   await page.keyboard.press('Escape');
@@ -665,7 +671,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await expect(tiles.getByRole('radio').first()).toHaveAttribute('aria-label', 'load-balancer');
   await page.getByLabel('Search icons').press('Enter');
   expect(lineOf(await source(page), 'db')).toMatch(/icon=load-balancer icon\.pos=top$/);
-  await expect(page.locator('.iconname')).toHaveText('load-balancer');
+  await expect(page.getByRole('button', { name: 'Icon load-balancer', exact: true })).toHaveAttribute('aria-pressed', 'true');
   // size and colour
   await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'L', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.size=32');
@@ -698,8 +704,8 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Regular' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.width');
   await page.locator('.iconchoose').click();
-  await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
-  expect(lineOf(await source(page), 'db')).not.toContain('icon=');
+  await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, stays
+  expect(lineOf(await source(page), 'db')).toContain('icon=load-balancer');
   // an icon on its own comes from the Icon tool in the top bar: pick it in the dialog, then click the canvas
   await page.getByRole('button', { name: 'Icon', exact: true }).click();
   await page.getByRole('dialog', { name: 'Choose an icon' }).getByRole('radio', { name: 'server', exact: true }).click();
