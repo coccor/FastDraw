@@ -505,6 +505,28 @@ test('chart: place one from the gallery, change its numbers and add a series', a
   expect(errors).toEqual([]);
 });
 
+test('icons: the Duotone tab picks the outline over a tint, and Solid switches it', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await page.locator('.iconchoose').click();
+  await page.getByRole('tab', { name: 'Duotone' }).click();
+  const duo = page.getByRole('radiogroup', { name: 'Duotone icons' });
+  // the tiles show the tint under the outline
+  await expect(duo.getByRole('radio', { name: 'database', exact: true }).locator('path[opacity="0.2"]')).toHaveCount(1);
+  await duo.getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=duotone$/);
+  await page.locator('.iconchoose').click();
+  await expect(duo.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
+  // drawn as the tint, then the outline over it
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] > path + g > path[d^="M128,24"]')).toHaveCount(1);
+  await page.getByRole('tab', { name: 'Solid' }).click();
+  await page.getByRole('radiogroup', { name: 'Solid icons' }).getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
 test('icons: the Solid tab picks the filled twin of an icon, and Outline takes it back', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);
@@ -576,7 +598,7 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await page.locator('.iconchoose').click();
   await expect(tiles.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
   await page.keyboard.press('Escape');
-  await expect(page.locator('svg.canvas g[stroke-linecap="round"] path').first()).toBeVisible();
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] path[d^="M128,24"]').first()).toBeVisible();
   await page.getByRole('button', { name: 'Above the text' }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.pos=top$/);
   // the search narrows the tiles, and Enter takes the first match
@@ -596,14 +618,14 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain('icon.size=32');
   await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'Auto' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.size');
-  const strokes = page.getByRole('group', { name: 'Icon stroke colours' });
+  const strokes = page.getByRole('group', { name: 'Icon colours' });
   const ink = await strokes.locator('.swatch').last().getAttribute('aria-label');
   await strokes.locator('.swatch').last().click();
   expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
   // any colour, from the system colour picker
   await pickHex(page, 'Custom icon colour', '#e0457b');
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
-  await expect(page.locator('svg.canvas g[stroke="#e0457b"]')).toHaveCount(1);
+  await expect(page.locator('svg.canvas g[fill="#e0457b"]')).toHaveCount(1);
   await expect(strokes.locator('.custom.on')).toHaveCount(1);
   await page.getByRole('button', { name: 'Text colour', exact: true }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
@@ -614,13 +636,13 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain(`icon.fill=${tint}`);
   await pickHex(page, 'Custom icon fill', '#ffd400');
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
-  await expect(page.locator('svg.canvas g[fill="#ffd400"]')).toHaveCount(1);
+  await expect(page.locator('svg.canvas path[fill="#ffd400"]')).toHaveCount(1); // the tint under the icon
   await fills.getByRole('button', { name: 'none', exact: true }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.fill');
-  // the stroke width, in pixels on screen
-  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Bold' }).click();
+  // the weight: a line thickness in pixels on screen, the nearest of the icon's weights
+  await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.width=2');
-  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Regular' }).click();
+  await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Regular' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.width');
   await page.locator('.iconchoose').click();
   await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
@@ -639,9 +661,9 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const itint = await ifills.locator('.swatch').nth(1).getAttribute('aria-label');
   await ifills.locator('.swatch').nth(1).click();
   await pickHex(page, 'Custom icon colour', '#0369a1');
-  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Heavy' }).click();
-  expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2\\.75$`));
-  await expect(page.locator('svg.canvas g[stroke="#0369a1"]')).toHaveCount(1);
+  await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
+  expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2$`));
+  await expect(page.locator('svg.canvas g[fill="#0369a1"]')).toHaveCount(1);
   // double-click puts a caption under it
   await page.waitForTimeout(500);
   const c = await corner(page, 'icon');
