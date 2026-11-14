@@ -11,13 +11,14 @@ import * as ws from './workspace.ts';
 import * as served from './served.ts';
 import { Panel, TextField, Swatches } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
+import { Sidebar, useSidebar } from './Sidebar.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
 import type { LookChoice, FileLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
   BringToFront, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
-  Group, ListTree, Menu, Palette, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Shapes, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
+  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, SendToBack, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
@@ -144,9 +145,11 @@ export function App() {
   const [hover, setHover] = useState<string | null>(null);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  // the look picker, and the look being tried on the canvas (undefined: none, null: the built-in look)
-  const [lookOpen, setLookOpen] = useState(false);
+  // the right sidebar (components, looks), and the look being tried on the canvas (undefined: none, null: the built-in look)
+  const side = useSidebar();
+  const lookOpen = !side.collapsed && side.tab === 'look';
+  const sideOpenRef = useRef(side.pinned); sideOpenRef.current = side.pinned;
+  const sideRef = useRef(side); sideRef.current = side;
   const pickerFile = useRef<FileLook>(null);
   const [lookPreview, setLookPreview] = useState<LookChoice | undefined>(undefined);
   const lockedRef = useRef(false); lockedRef.current = locked;
@@ -286,15 +289,16 @@ export function App() {
     const cur = live.current;
     const reuse = !!cur && (opt.replace || (text !== BLANK && cur.src === BLANK && !cur.hist.past.length && !cur.io.file && !cur.io.pending));
     const sc = buildScene(text, lookText != null ? parseLook(lookText) : null);
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const k = Math.min(1.5, Math.max(0.2, Math.min((vw - 340) / sc.w, (vh - 140) / sc.h)));
+    // fit between the left panel and the right sidebar (or its rail when collapsed)
+    const vw = window.innerWidth, vh = window.innerHeight, left = 280, right = sideOpenRef.current ? 336 : 72, room = vw - left - right;
+    const k = Math.min(1.5, Math.max(0.2, Math.min(room / sc.w, (vh - 140) / sc.h)));
     const taken = new Set([...docs.current.values()].filter((d) => !(reuse && d.id === cur!.id)).map((d) => d.name));
     let unique = label;
     for (let n = 2; taken.has(unique); n++) unique = `${label} ${n}`;
     if (cur && !reuse) stash();
     const d: Doc = {
       id: reuse ? cur!.id : ws.newId(), name: unique, src: text, lookSrc: lookText, carried: opt.carried ?? {}, io: io.current, hist: { past: [], future: [] },
-      view: { x: Math.round((vw - sc.w * k) / 2 + 80 - sc.x * k), y: Math.round((vh - sc.h * k) / 2 + 16 - sc.y * k), k }, folderFiles: io.current.folder?.files ?? [],
+      view: { x: Math.round(left + (room - sc.w * k) / 2 - sc.x * k), y: Math.round((vh - sc.h * k) / 2 + 16 - sc.y * k), k }, folderFiles: io.current.folder?.files ?? [],
     };
     docs.current.set(d.id, d);
     if (!reuse) setTabs((t) => [...t, d.id]);
@@ -692,7 +696,7 @@ export function App() {
   const onDown = (e: React.PointerEvent) => {
     if (src === null) return;
     if (editing) finishEdit(true);
-    setMenuOpen(false); setGalleryOpen(false); setCtx(null);
+    setMenuOpen(false); setCtx(null);
     if (e.button === 2) return;
     const p = world(e);
     const t = e.target as Element;
@@ -1030,7 +1034,7 @@ export function App() {
       if (mod && e.key.toLowerCase() === 'v') { if (clip.current.length) { const r = ops.duplicateElements(text, sc, clip.current.filter((id) => ops.find(sc, id))); commit(r.src, r.ids); } return; }
       if (mod) return;
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); actRef.current.remove(); return; }
-      if (e.key === 'Escape') { setSel([]); setTool('select'); setMenuOpen(false); setGalleryOpen(false); setLookOpen(false); setLookPreview(undefined); setCtx(null); return; }
+      if (e.key === 'Escape') { setSel([]); setTool('select'); setMenuOpen(false); setLookPreview(undefined); setCtx(null); sideRef.current.dismiss(); return; }
       if (e.key === 'Enter' && s.length === 1) { e.preventDefault(); startEditRef.current(s[0]); return; }
       if (e.key.startsWith('Arrow') && s.length) {
         e.preventDefault();
@@ -1055,7 +1059,7 @@ export function App() {
   };
 
   // ---- render -------------------------------------------------------------
-  const closePopups = () => { setMenuOpen(false); setGalleryOpen(false); setLookOpen(false); setLookPreview(undefined); setCtx(null); };
+  const closePopups = () => { setMenuOpen(false); setLookPreview(undefined); setCtx(null); side.dismiss(); };
   const applyLook = (v: LookChoice) => {
     setLookPreview(undefined);
     if (src === null) return;
@@ -1192,7 +1196,7 @@ export function App() {
       )}
 
       <div className="topleft" onPointerDown={(e) => e.stopPropagation()}>
-        <button className="iconbtn island" title="Menu" aria-label="Menu" aria-expanded={menuOpen} onClick={() => { setMenuOpen((o) => !o); setGalleryOpen(false); setCtx(null); }}><Menu size={18} /></button>
+        <button className="iconbtn island" title="Menu" aria-label="Menu" aria-expanded={menuOpen} onClick={() => { setMenuOpen((o) => !o); setCtx(null); }}><Menu size={18} /></button>
         {menuOpen && (
           <div className="dropdown island" role="menu">
             <button role="menuitem" onClick={() => { closePopups(); newDiagram(); }}><FilePlus size={16} />New diagram</button>
@@ -1217,23 +1221,13 @@ export function App() {
           <button className={'tool' + (locked ? ' on' : '')} title="Keep the chosen tool active after drawing" aria-label="Keep tool active" aria-pressed={locked} onClick={() => setLocked((l) => !l)}>{locked ? <Lock size={17} /> : <LockOpen size={17} />}</button>
           <span className="sep" />
           {TOOLS.map(([id, label, key]) => (
-            <button key={id} className={'tool' + (tool === id ? ' on' : '')} title={`${label} — ${key}`} aria-label={label} aria-pressed={tool === id} onClick={() => { setTool(id); setGalleryOpen(false); }}>
+            <button key={id} className={'tool' + (tool === id ? ' on' : '')} title={`${label} — ${key}`} aria-label={label} aria-pressed={tool === id} onClick={() => setTool(id)}>
               {ICONS[id]}<kbd>{key}</kbd>
             </button>
           ))}
-          <span className="sep" />
-          <button className={'tool wide lookstyles' + (armed || galleryOpen ? ' on' : '')} title="Components from this diagram's look" aria-expanded={galleryOpen} onClick={() => { setGalleryOpen((o) => !o); setLookOpen(false); setLookPreview(undefined); setMenuOpen(false); setCtx(null); }}>
-            <Shapes size={17} /><span>{armed ? tool.replace(/^(style|conn):/, '') : 'Components'}</span>
-          </button>
-          <button className={'tool wide' + (lookOpen ? ' on' : '')} title="Try the diagram in another look" aria-expanded={lookOpen}
-            onClick={() => { setLookOpen((o) => !o); setLookPreview(undefined); setGalleryOpen(false); setMenuOpen(false); setCtx(null); }}>
-            <Palette size={17} /><span>Look</span>
-          </button>
         </div>
-        {lookOpen && <LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} />}
-        {galleryOpen && <div className="island gallerywrap"><Gallery look={scene.look} current={tool} onPick={(t) => { setTool(t); setGalleryOpen(false); }} /></div>}
-        {tool === 'freehand' && !galleryOpen && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
-        {armed && !galleryOpen && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
+        {tool === 'freehand' && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
+        {armed && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
         {fontNote && <div className="banner">{fontNote}</div>}
         {iconNote && <div className="banner">{iconNote}</div>}
         {missingLook && (
@@ -1245,28 +1239,9 @@ export function App() {
       </div>
 
       <div className="topright" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="island filechip">
-          {folderFiles.length > 1
-            ? <select aria-label="Diagram" value={io.current.path} onChange={(e) => io.current.folder && openPath(io.current.folder, e.target.value, true)}>{folderFiles.map((f) => <option key={f}>{f}</option>)}</select>
-            : <b title={name}>{name}</b>}
-          <span className={'dot ' + saveState} />
-          <span className="status">{status}</span>
-          {io.current.pending && <button className="reconnect" title={`Let the editor write to ${io.current.pending.file.name} again`} onClick={() => reconnect(true)}>Reconnect</button>}
-        </div>
-        <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
-          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
-          {issues.length ? <TriangleAlert size={15} /> : <Check size={15} />}
-          {issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}
-        </button>
-        {showIssues && issues.length > 0 && (
-          <ul className="island issuelist">
-            {issues.map((i, n) => (
-              <li key={n} className={i.level} onClick={() => { const hit = [...scene.shapes, ...scene.texts, ...scene.conns].find((x) => x.line === i.line); if (hit) setSel([hit.id]); }}>
-                {i.msg}
-              </li>
-            ))}
-          </ul>
-        )}
+        <Sidebar side={side}
+          components={<Gallery look={scene.look} current={tool} onPick={setTool} />}
+          look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} />} />
       </div>
 
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
@@ -1282,8 +1257,31 @@ export function App() {
         <div className="island group"><ThemeToggle className="iconbtn" /></div>
       </div>
 
+      <div className="bottomright" onPointerDown={(e) => e.stopPropagation()}>
+        {showIssues && issues.length > 0 && (
+          <ul className="island issuelist">
+            {issues.map((i, n) => (
+              <li key={n} className={i.level} onClick={() => { const hit = [...scene.shapes, ...scene.texts, ...scene.conns].find((x) => x.line === i.line); if (hit) setSel([hit.id]); }}>
+                {i.msg}
+              </li>
+            ))}
+          </ul>
+        )}
+        <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
+          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
+          {issues.length ? <TriangleAlert size={15} /> : <Check size={15} />}
+          {issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}
+        </button>
+      </div>
+
       <div className="bottomcenter" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island tabs" role="tablist" aria-label="Open diagrams">
+          {folderFiles.length > 1 && (
+            <label className="folderpick" title="Open another diagram from this folder">
+              <FolderOpen size={14} />
+              <select aria-label="Diagram" value={io.current.path} onChange={(e) => io.current.folder && openPath(io.current.folder, e.target.value, true)}>{folderFiles.map((f) => <option key={f}>{f}</option>)}</select>
+            </label>
+          )}
           {tabs.map((id) => {
             const d = id === docId ? live.current : docs.current.get(id);
             const where = d?.io.file || d?.io.pending ? `Saved to ${d.io.path ?? d.io.file?.name ?? d.io.pending?.file.name}` : 'Kept in this browser';
@@ -1295,6 +1293,14 @@ export function App() {
                       onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') rename(id, e.currentTarget.value); else if (e.key === 'Escape') setRenaming(null); }} />
                   : <button role="tab" aria-selected={id === docId} title={`${d?.name} — ${where}${d?.io.file || d?.io.pending ? '' : '. Double-click to rename'}`}
                       onClick={() => switchTo(id)} onDoubleClick={() => d && !d.io.file && !d.io.pending && setRenaming(id)}>{tabName(id)}</button>}
+                {/* every tab keeps room for the dot, so switching tabs does not shift them */}
+                {id === docId
+                  ? <span className="savestate" title={status || undefined}>
+                      <span className={'dot ' + saveState} aria-hidden="true" />
+                      <span className="status">{status}</span>
+                      {io.current.pending && <button className="reconnect" title={`Let the editor write to ${io.current.pending.file.name} again`} onClick={() => reconnect(true)}>Reconnect</button>}
+                    </span>
+                  : <span className="savestate" aria-hidden="true"><span className="dot off" /></span>}
                 <button className="tabx" aria-label={`Close ${tabName(id)}`} title="Close" onClick={() => closeTab(id)}><X size={13} /></button>
               </div>
             );

@@ -29,7 +29,7 @@ export function LookPicker({ src, current, file, onPreview, onApply }: {
   const choices: LookChoice[] = [null, ...BUNDLED_LOOK_NAMES, ...(file ? [file.path] : [])];
   const show = (v: LookChoice) => onPreview(v === current ? undefined : v);
   return (
-    <div className="island lookpicker" role="dialog" aria-label="Choose a look" onPointerDown={(e) => e.stopPropagation()}>
+    <div className="lookpicker" aria-label="Choose a look">
       <div className="lookgrid" onPointerLeave={() => onPreview(undefined)}>
         {choices.map((v) => (
           <button key={v ?? '(built-in)'} className={'lookcard' + (v === current ? ' on' : '')} aria-pressed={v === current} aria-label={lookLabel(v, file) + (v === current ? ' (in use)' : '')} title={v === null ? 'The built-in look' : `look ${v}`}
