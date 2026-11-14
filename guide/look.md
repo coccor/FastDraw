@@ -2,7 +2,7 @@
 
 A look is one text file (`.look`) that decides how every style is drawn: colours, fonts, shapes, lines and text. Diagrams point to it with `look "./team.look"`. Change the look and every diagram that uses it changes.
 
-Five looks ship with FastDraw and need no file: `look headline`, `look night`, `look reference`, `look sketch` and `look whiteboard` (a bare name, no quotes or `.look`). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
+Eleven looks ship with FastDraw and need no file: `look engraved`, `look headline`, `look keys`, `look listing`, `look night`, `look offset`, `look reference`, `look shade`, `look sketch`, `look transit` and `look whiteboard` (a bare name, no quotes or `.look`). Six of them are styles of drawing more than palettes: `shade` (hairline boxes with a hatched shadow), `engraved` (double rules and a black plate, like a printed plate), `keys` (boxes with a side, like keycaps), `transit` (thick route lines with stops, like a network map), `offset` (two inks printed out of register) and `listing` (a printout on striped listing paper). In the editor, the **Look** button shows the diagram in each of them and the built-in look, to try one before keeping it.
 
 ## How to work
 
@@ -13,7 +13,7 @@ Five looks ship with FastDraw and need no file: `look headline`, `look night`, `
 
 Keep the style names from the built-in look (`node`, `focal`, `store`, `cloud`, `external`, `optional`, `step`, `terminal`, `terminal-focal`, `decision`, `zone`, `bar`, `arrow`, `primary`, `link`, `return`, `lifeline`, `rule`, `h1`, `eyebrow`, `caption`, `note`, `small`). The diagram guides and existing diagrams use those names. You may add more styles of your own.
 
-The looks that ship with FastDraw all define the same styles (the ones above plus `kicker`, `dek`, `legend`, `table`, `matrix`, `chart`, `relation`, `sticky`, `sticky-orange` and `sticky-violet`), so a diagram can move between them without a style going plain. A test holds them to that: after editing one in `looks/`, run `node tools/bundle-looks.mjs`.
+The looks that ship with FastDraw all define the same styles (the ones above plus `kicker`, `dek`, `legend`, `table`, `matrix`, `chart`, `relation`, `sticky`, `sticky-orange` and `sticky-violet`), so a diagram can move between them without a style going plain. A test holds them to that: after editing one in `looks/`, run `node tools/bundle-looks.mjs`. The six style looks are written by `tools/gen-style-looks.py`; change them there.
 
 ## The file
 
@@ -22,6 +22,8 @@ One statement per line; an indented line continues the one above; `//` starts a 
 ```
 canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional; a diagram's own canvas line can override any of the three
                                                  // sketch=1 draws every outline and line by hand (2 is rougher); see looks/sketch.look
+                                                 // bars=colour stripes the page like listing paper (bargap= is the stripe height), feed=colour adds
+                                                 // sprocket holes down both edges, grain=0.5 lays paper grain over everything (0 to 1)
 
 color paper  #ffffff                             // a named colour
 color ink    #1c1f2a
@@ -79,14 +81,23 @@ font sans "Fira Sans"
 | `size=WxH` | default size when a diagram gives none |
 | `fill=`, `stroke=`, `sw=`, `dash=5,4` | fill colour, stroke colour, stroke width, dash pattern |
 | `hatch=colour` | fill with diagonal pencil lines on top of `fill=`; `hatch.gap=` spaces them, `hatch.sw=` weighs them |
+| `halftone=colour` | fill with a field of printed dots; `halftone.gap=` spaces them, `halftone.r=` sizes them |
+| `shade=colour` | a shadow of fine diagonal lines down the right and bottom of the shape; `shade.size=` is how far it reaches (default 5), `shade.gap=` and `shade.sw=` space and weigh its lines |
+| `depth=N` | a slab N pixels below the shape, so it reads as a solid with a side; `depth.fill=` and `depth.stroke=` colour it. A line that ends on the bottom edge ends on the slab |
+| `inner=colour` | a second, finer rule just inside the outline; `inner.gap=` (default 3.5) and `inner.sw=` |
+| `corners=plus` | a mark on each corner of a box: `plus` or `square`; `corners.color=`, `corners.size=` |
+| `offset=dx,dy` | print the fill that far out of register with the outline |
+| `blend=multiply` | let this style's ink darken what it overlaps, like overprinting (also on line and text styles) |
 | `sketch=0` | with `canvas sketch=` on: draw this style with clean lines (works on line styles too) |
 | `layer=back` | draw behind everything (for regions like `zone`) |
-| `title.*` | the main text: `title.font`, `title.size`, `title.weight`, `title.color`, `title.italic=1`, `title.spacing` (in em), `title.caps=1`; `title.pos=top` puts it as a small caption at the top edge |
+| `title.*` | the main text: `title.font`, `title.size`, `title.weight`, `title.color`, `title.italic=1`, `title.spacing` (in em), `title.caps=1`; `title.pos=top` puts it as a small caption at the top edge, `title.dy=` moves that caption up or down and `title.fill=` colours the patch behind it (`none` for no patch) |
 | `sub.*` | the second line (`sub=` on an element): `sub.font`, `sub.size`, `sub.color` |
 | `tag.*` | the corner marker (`tag=`): `tag.color`, `tag.border`, `tag.font`, `tag.size` |
 | `ghost.*` | the big faint number (`ghost=`): `ghost.color`, `ghost.size` |
 
-On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `tag.border` to something that contrasts, or the text disappears. Set these explicitly on every style; do not rely on defaults.
+On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `tag.border` to something that contrasts, or the text disappears. Set these explicitly on every style; do not rely on defaults. Diagrams also lay their own text over boxes (a caption drawn on the subject): where a style's fill would swallow that text, it is drawn in the style's `title.color` instead, so a dark `focal` needs a light `title.color`.
+
+Keep type close to the built-in look's sizes (12px titles, 9px second lines, 10px line labels). Diagrams are laid out for those, so larger type overflows boxes that fit before.
 
 The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a paper-coloured patch behind it.
 
@@ -121,10 +132,14 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 | `route=` | `ortho` (right-angle turns), `straight`, or `curve` (a smooth line) |
 | `radius=` | corner radius of the turns |
 | `head=` | the marker `->` draws: `arrow` (default), `open`, `triangle`, `diamond`, `diamond-solid`, `dot`, `circle`, or one of the relationship ends (`one`, `only-one`, `many`, `one-many`, `zero-one`, `zero-many`). `head=none` marks a style meant for plain lines, never arrows |
-| `tail=` | a marker for the start of the line, if the style always has one |
-| `label.*` | the text on the line: `label.font`, `label.size`, `label.color`, `label.spacing`, `label.caps=0` to keep the label's own case (default is capitals) |
+| `tail=` | a marker for the start of the line, if the style always has one. `stop` is a ring, like a station on a route map (`stop.color=`) |
+| `head.size=` | scale the arrowhead, for a wide line (1 is the default; 0.5 to 4) |
+| `cap=round` | round the ends and corners of the line |
+| `casing=colour` | a wider line of that colour underneath, so lines that cross stay apart; `casing.width=` is how far it shows on each side |
+| `double=colour` | a finer line of that colour on top, which turns a wide line into two rails; `double.sw=` |
+| `label.*` | the text on the line: `label.font`, `label.size`, `label.color`, `label.spacing`, `label.caps=0` to keep the label's own case (default is capitals), `label.weight`, `label.italic=1`. `label.fill=` and `label.border=` make the label a plate instead of a patch of paper (`label.radius=`, `label.pad=`, `label.sw=`) |
 
-**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`.
+**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`. `echo=colour` prints the text a second time underneath, a little off (`echo.dx=`, `echo.dy=`, default 3).
 
 ### Built-in styles you can restyle
 

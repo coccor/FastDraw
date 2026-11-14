@@ -12,6 +12,12 @@ const LOOKS: { id: string; name: string; about: string }[] = [
   { id: 'headline', name: 'Headline', about: 'Flat blocks and one strong colour, for print' },
   { id: '', name: 'Built-in', about: 'Rounded cards, tinted zones and one indigo, the default' },
   { id: 'night', name: 'Night', about: 'The built-in look after dark' },
+  { id: 'shade', name: 'Shade', about: 'Hairline boxes that cast a hatched shadow' },
+  { id: 'engraved', name: 'Engraved', about: 'Double rules and a black plate, like a printed plate' },
+  { id: 'keys', name: 'Keys', about: 'Boxes with a side, like keycaps' },
+  { id: 'transit', name: 'Transit', about: 'Thick routes with stops, like a network map' },
+  { id: 'offset', name: 'Offset', about: 'Two inks printed out of register' },
+  { id: 'listing', name: 'Listing', about: 'A printout on striped listing paper' },
 ];
 
 const withLook = (look: string) => source.replace(/^look .*\n/, look ? `look ${look}\n` : '');

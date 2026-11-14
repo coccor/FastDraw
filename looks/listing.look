@@ -9,7 +9,7 @@ color card     #f6fbf6
 color ink      #1d2b24
 color muted    #4a5d52
 color soft     #8fa697
-color accent   #1d2b24
+color accent   #2f8f5f
 color link     #1d2b24
 color teal     #1d6b4f
 color amber    #8a6d00
@@ -49,7 +49,7 @@ style chart shape=chart fill=none stroke=ink sw=1.4 mask=0 bar.radius=0 grid.col
     tick.font=mono tick.size=9 tick.color=ink use="axes with your numbers drawn for you: chart at x,y WxH x=\"Q1,Q2,Q3\" y=0..100, then a line per series: | bars \"Revenue\" 42 61 75"
 
 // ---- lines -----------------------------------------------------------------
-style arrow line stroke=ink sw=1.4 route=ortho radius=0 label.font=mono label.size=9 label.color=ink label.spacing=0.04 use="default arrow"
+style arrow line stroke=ink sw=1.4 route=ortho radius=0 label.font=mono label.size=9 label.color=ink label.spacing=0.02 use="default arrow"
 style primary extends arrow sw=3.4 double=paper double.sw=1 head.size=1.3 use="the main path; at most two per diagram"
 style link extends arrow use="an HTTP or API request crossing a boundary"
 style return extends arrow dash=6,5 use="a response, or something optional or asynchronous"

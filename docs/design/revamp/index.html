@@ -161,6 +161,13 @@ figcaption { font-size: 14px; color: var(--mute); margin-top: 6px; }
 
 <h2 id="outcome">Where this stands</h2>
 <p class="verdict" style="font-size:16px"><b>Decided on 14 November 2026:</b> the built-in look stays as it is on main. After three rounds, your verdict was that the baseline is still the best. Of the new ideas, Shade is the cleanest and Engraved, its louder sibling, the one closest to it. Those two, with Keys, Offset, Transit and Listing, are kept as candidates for extra selectable styles. Nothing in the product was changed by this exploration: the one build that was made (blue pen, yellow highlighter) was reverted.</p>
+<p><b>Built on 14 November 2026:</b> the six are now real looks, chosen with one line (<code>look shade</code>, <code>look engraved</code>, <code>look keys</code>, <code>look transit</code>, <code>look offset</code>, <code>look listing</code>) or from the editor's Look panel, and shown on the landing page's look switcher. Each is a plain <code>.look</code> file: the renderer learned the drawing they need as look properties any look can use (a hatched shadow, a slab under a box, a second inner rule, a fill out of register, halftone, corner marks, cased and double lines, label plates, a stop marker, striped and sprocketed paper, grain). They were held to three rules while being built:</p>
+<ul>
+  <li><b>The built-in look and the five older looks are untouched.</b> All 85 example diagrams draw byte for byte what main draws.</li>
+  <li><b>A diagram laid out for the built-in look fits in every style.</b> The prototypes' larger type was brought back to the built-in sizes (12px titles, 9px second lines, 10px line labels), and all 82 kind examples pass the checker in each style with nothing new reported.</li>
+  <li><b>Text stays readable on a dark subject.</b> Where a diagram lays its own text over a box that a style fills dark, the text takes that box's light colour.</li>
+</ul>
+<p>The prototype pictures further down show the first drawings; the looks as shipped have slightly smaller type than those.</p>
 
 <h2 id="brief">The brief</h2>
 <p>Make the UI look good enough that a visitor stops, and then uses the product. Everything is open: the website, the diagram looks, the logo, the editor. FastDraw takes diagram-design a step further: the diagrams can be edited and shared.</p>

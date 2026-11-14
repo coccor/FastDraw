@@ -7,7 +7,7 @@ color paper    #ffffff
 color card     #ffffff
 color ink      #14213d
 color muted    #5c677d
-color soft     #a6afbf
+color soft     #8a94a8
 color accent   #e4002b
 color link     #0072ce
 color teal     #00857c
@@ -20,7 +20,7 @@ font mono  "Geist Mono"
 font serif "Newsreader"
 
 // ---- boxes -----------------------------------------------------------------
-style node shape=rect radius=32 size=144x64 fill=card stroke=ink sw=3.5 title.size=13.5 sub.font=sans sub.size=10.5 sub.color=muted
+style node shape=rect radius=32 size=144x64 fill=card stroke=ink sw=3.5 title.size=12.5 sub.font=sans sub.size=9.5 sub.color=muted
     tag.color=muted tag.border=ink/0.35 tag.font=mono icon.color=ink use="default box: a backend, service, component or step"
 style focal extends node fill=ink title.color=#ffffff sub.color=#ffffff/0.8 tag.color=#ffffff tag.border=#ffffff/0.6 icon.color=#ffffff ghost.color=#ffffff/0.14 use="the one or two elements the diagram is about"
 style store extends node inner=ink inner.gap=5.5 inner.sw=1.2 use="something that holds data or state"
@@ -35,7 +35,7 @@ style sticky-violet extends sticky fill=#e6dcf7 use="a violet sticky note: a dec
 style step extends node size=160x48 use="flowchart action"
 style terminal extends node size=160x48 fill=#eef2f7 use="flowchart start or end"
 style terminal-focal extends terminal fill=ink title.color=#ffffff sub.color=#ffffff/0.8 use="the flowchart outcome that matters most"
-style decision shape=diamond size=200x96 fill=card stroke=ink sw=3.5 title.size=13.5 use="flowchart yes/no question; put the text on two short lines"
+style decision shape=diamond size=200x96 fill=card stroke=ink sw=3.5 title.size=12.5 use="flowchart yes/no question; put the text on two short lines"
 
 // ---- regions and markers ---------------------------------------------------
 style zone shape=rect radius=26 fill=#eef2f7 stroke=none sw=0 layer=back
@@ -49,7 +49,7 @@ style chart shape=chart fill=none stroke=ink sw=2 mask=0 bar.radius=3 grid.color
 
 // ---- lines -----------------------------------------------------------------
 style arrow line stroke=ink sw=6 cap=round route=ortho radius=22 casing=paper casing.width=2.5 tail=stop stop.color=ink head.size=1.7
-    label.font=sans label.size=9.5 label.weight=600 label.spacing=0.08 label.color=#ffffff label.fill=ink label.radius=3 label.pad=4 use="default arrow"
+    label.font=sans label.size=9 label.weight=600 label.spacing=0.05 label.color=#ffffff label.fill=ink label.radius=3 label.pad=4 use="default arrow"
 style primary extends arrow stroke=accent sw=9 label.fill=accent use="the main path; at most two per diagram"
 style link extends arrow stroke=link label.fill=link use="an HTTP or API request crossing a boundary"
 style return extends arrow stroke=#8a94a6 dash=1,11 label.fill=#8a94a6 use="a response, or something optional or asynchronous"

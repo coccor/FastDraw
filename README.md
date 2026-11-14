@@ -138,7 +138,8 @@ bin/fastdraw preview-look team.look
 ```
 
 A diagram picks its look with one line, `look "./team.look"`, or names one that ships with FastDraw:
-`look headline`, `look night`, `look reference`, `look sketch` or `look whiteboard`. In the editor, the **Look** button
+`look headline`, `look night`, `look reference`, `look sketch`, `look whiteboard`, or one of six styles of drawing:
+`look shade`, `look engraved`, `look keys`, `look transit`, `look offset`, `look listing`. In the editor, the **Look** button
 previews the diagram in each one before you keep it. A look can also bring its own fonts
 (`fontdir`) and colour icons (`icondir`). `fastdraw guide look` explains the format.
 
@@ -164,6 +165,7 @@ All of these were written by agents from the guides alone. Sources are in
 | `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison |
 | `looks/whiteboard.look` | Whiteboard: an online-whiteboard look with pastel sticky notes, white rounded shapes, curved connectors and one blue accent. Samples in `examples/whiteboard/` |
 | `looks/night.look` | Night: the built-in look after dark, on a deep navy page with the same styles, so a diagram can switch with one line |
+| `looks/shade.look`, `engraved.look`, `keys.look`, `transit.look`, `offset.look`, `listing.look` | Six styles of drawing: a hatched shadow, an engraved plate, keycaps, a transit map, two inks out of register, a printout on listing paper. Written by `tools/gen-style-looks.py` |
 | `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
 | `editor/` | The browser editor (Vite + React) |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |

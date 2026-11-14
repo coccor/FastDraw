@@ -404,9 +404,12 @@ function drawShape(look: Look, s: Shape): string {
     const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
     // a caption on the top edge: centred, or at the left or right corner with title.align
     const al = p['title.align'], mid = al === 'left' ? s.x + 12 + tw / 2 : al === 'right' ? s.x + s.w - 12 - tw / 2 : cxm;
-    const ty = s.y + num(p['title.dy'], 0), th = Math.max(12, Math.ceil(title.size + 4));
+    // title.dy moves the caption off the edge and title.fill colours its plate (none for no plate); a look that
+    // sets either gets a plate sized to its type, the others keep the 12px plate they have always had
+    const own = p['title.dy'] !== undefined || p['title.fill'] !== undefined;
+    const ty = s.y + num(p['title.dy'], 0), th = own ? Math.max(12, Math.ceil(title.size + 4)) : 12;
     if (p['title.fill'] !== 'none') out.push(`<rect x="${mid - tw / 2}" y="${ty + 4}" width="${tw}" height="${th}" rx="2" fill="${col(look, p['title.fill'] ?? look.canvas.paper ?? 'paper')}"/>`);
-    out.push(`<text x="${mid}" y="${r2(ty + 4 + th / 2 + title.size * 0.36)}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
+    out.push(`<text x="${mid}" y="${own ? r2(ty + 4 + th / 2 + title.size * 0.36) : s.y + 13}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
   } else if (s.text || p.sub) {
     const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
     const lh = Math.round(title.size * 1.17);
@@ -645,8 +648,88 @@ function drawText(look: Look, t: TextEl): string {
   return rot === 90 || rot === -90 ? `<g transform="rotate(${rot} ${t.ax} ${t.ay})">${body}</g>` : body;
 }
 
+// A colour as numbers, laid over the page when it is see-through; null for anything that is not a plain colour.
+function rgbOf(look: Look, v: string | undefined, over?: [number, number, number]): [number, number, number] | null {
+  const c = color(look, v);
+  let m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (m) {
+    const h = m[1].length === 3 ? m[1].replace(/./g, (x) => x + x) : m[1];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  m = /^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/.exec(c);
+  if (!m) return null;
+  const al = m[4] === undefined ? 1 : +m[4], o = over ?? [255, 255, 255];
+  return [0, 1, 2].map((i) => +m![i + 1] * al + o[i] * (1 - al)) as [number, number, number];
+}
+function contrast(x: [number, number, number], y: [number, number, number]): number {
+  const lum = (c: number[]) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const p = lum(x), q = lum(y);
+  return (Math.max(p, q) + 0.05) / (Math.min(p, q) + 0.05);
+}
+const FAINT = 1.8; // below this contrast text is close to invisible: the checker's threshold too
+// Text laid on a filled box (a caption over the subject, a small chip on a card) has to stay readable whatever a
+// look fills that box with. So when the fill is the look's own choice for that style and the text's colour would
+// sink into it, the text takes the colour the box gives its title. A fill the diagram chose itself is left alone,
+// for the checker to report. The checker reads the scene through this, so it reports only what is really drawn.
+export function legible(sc: Scene): Scene {
+  const look = sc.look, paper = rgbOf(look, look.canvas.paper ?? 'paper') ?? [255, 255, 255];
+  const filled = (s: Shape) => !s.rows && s.shape !== 'legend' && s.shape !== 'chart' && s.shape !== 'icon' && !!s.p.fill && s.p.fill !== 'none';
+  // the last-drawn filled shape under a point, among the first upTo shapes
+  const under = (x: number, y: number, upTo: number) => {
+    for (let k = upTo - 1; k >= 0; k--) { const s = sc.shapes[k]; if (filled(s) && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return s; }
+    return undefined;
+  };
+  // the colour to use instead of c on top of shape `on`, or undefined when c reads well enough. A box whose own
+  // title is light on dark (it would vanish on the page) asks more of the text on it than one that is merely tinted.
+  const swap = (on: Shape | undefined, c: string) => {
+    if (!on || on.back || on.p.fill !== look.styles.get(on.style)?.props.fill) return undefined;
+    const bg = rgbOf(look, on.p.fill, paper), fg = bg && rgbOf(look, c, bg);
+    if (!bg || !fg) return undefined;
+    const tc = on.p['title.color'], trgb = tc ? rgbOf(look, tc, bg) : null, inverse = !!trgb && contrast(paper, trgb) < 2;
+    const now = contrast(bg, fg);
+    if (now >= (inverse ? 4.5 : FAINT)) return undefined;
+    // the main text takes the box's title colour, quieter text its second-line colour
+    const quiet = color(look, c) !== color(look, 'ink') ? on.p['sub.color'] : undefined;
+    return [quiet, tc, 'paper', 'ink', '#ffffff'].find((v) => { const k = v ? rgbOf(look, v, bg) : null; return k && contrast(bg, k) >= 3 && contrast(bg, k) > now; });
+  };
+  let changed = false;
+  const texts = sc.texts.map((t) => {
+    if (/\/0?\.[0-3]\d*$/.test(t.p.color ?? '')) return t; // a watermark is meant to be faint
+    const c = swap(under(t.x + t.w / 2, t.y + t.h / 2, sc.shapes.length), t.p.color ?? 'ink');
+    if (!c) return t;
+    changed = true;
+    return { ...t, p: { ...t.p, color: c } };
+  });
+  const shapes = sc.shapes.map((s, at) => {
+    // a box with no fill of its own shows the box under it
+    if (s.back || !s.text || s.rows || !boxy(s) || s.shape === 'icon' || s.shape === 'legend' || s.shape === 'chart' || (s.p.fill && s.p.fill !== 'none') || s.p['title.pos'] === 'top') return s;
+    const c = swap(under(s.x + s.w / 2, s.y + s.h / 2, at), s.p['title.color'] ?? 'ink');
+    if (!c) return s;
+    changed = true;
+    return { ...s, p: { ...s.p, 'title.color': c, ...(s.p.stroke && s.p.stroke !== 'none' ? { stroke: /\/[0-9.]+$/.test(c) ? c : c + '/0.6' } : {}) } };
+  });
+  return changed ? { ...sc, texts, shapes } : sc;
+}
+// A box with depth has its foot below its outline: a line that ends on the bottom edge ends on the foot instead,
+// so its arrowhead is not buried under the slab.
+function footed(c: Conn, shapes: Shape[]): Conn {
+  if (c.curve || c.pts.length < 2) return c;
+  const pts = c.pts.map((q) => ({ ...q }));
+  let moved = false;
+  for (const [i, j] of [[0, 1], [pts.length - 1, pts.length - 2]]) {
+    const q = pts[i], n = pts[j];
+    if (Math.abs(q.x - n.x) > 0.5 || n.y < q.y) continue; // only a line coming straight up into the edge
+    for (const s of shapes) {
+      const d = num(s.p.depth, 0);
+      if (d > 0 && !s.back && Math.abs(q.y - (s.y + s.h)) < 1 && q.x > s.x && q.x < s.x + s.w && n.y - q.y > d + 6) { q.y += d; moved = true; break; }
+    }
+  }
+  return moved ? { ...c, pts } : c;
+}
+
 // background: false leaves the page out (no paper, no dots), for an image laid over something else
 export function renderBody(sc: Scene, background = true): string {
+  sc = legible(sc);
   const look = sc.look, cv = look.canvas;
   const out: string[] = [];
   R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
@@ -670,7 +753,8 @@ export function renderBody(sc: Scene, background = true): string {
   }
   for (const s of sc.shapes) if (s.back) out.push(drawShape(look, s));
   // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
-  const under = sc.conns.filter((c) => c.p.layer !== 'front'), over = sc.conns.filter((c) => c.p.layer === 'front');
+  const conns = sc.shapes.some((s) => num(s.p.depth, 0) > 0) ? sc.conns.map((c) => footed(c, sc.shapes)) : sc.conns;
+  const under = conns.filter((c) => c.p.layer !== 'front'), over = conns.filter((c) => c.p.layer === 'front');
   for (const c of under) out.push(drawConn(look, c));
   for (const c of under) if (c.label) out.push(drawLabel(look, c));
   for (const s of sc.shapes) if (!s.back) out.push(drawShape(look, s));
