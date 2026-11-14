@@ -5,7 +5,8 @@ import { textWidth, ICON_CAPTION_GAP } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
-import { SOLID_BOX, SOLID_ICONS } from './solidIcons.ts';
+import { ICON_BOX, isBuiltIn, weightFor, iconLayers } from './iconStyle.ts';
+import type { IconStyle } from './iconStyle.ts';
 import { canSketch, sketchSvg, rectD, ellipseD } from './sketch.ts';
 
 // Per render: how rough the look draws (canvas sketch=, 0 for clean lines) and the fill patterns it needs.
@@ -314,23 +315,30 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
   return { x, y: s.y + (s.h - size) / 2, size, dx: (size + 8) / 2, dy: 0 };
 }
 
-// An outline icon is drawn with icon.color as its line, icon.fill inside its closed parts (none by default),
-// and icon.width as the line's thickness in pixels at the size it is drawn.
+// A built-in icon (Phosphor) is drawn in icon.color, as an outline (the default), solid, or duotone: the
+// outline over a tint, which is icon.fill when set and a light shade of icon.color otherwise. An outline
+// with icon.fill gets the same tint under it. icon.width picks the outline's weight (thin, light, regular,
+// bold) nearest that line thickness, in pixels at the size the icon is drawn.
+// A look's own icon is an outline in a 24 box, drawn with icon.color as its line, icon.fill inside its
+// closed parts, and icon.width as the line's thickness; it has no solid or duotone version.
 function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
   const name = p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
   if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
-  const solid = p['icon.style'] === 'solid' ? SOLID_ICONS[name] : undefined;
-  if (solid) {
-    // a solid icon is one filled shape in icon.color; icon.fill and icon.width have nothing to act on
-    const ks = size / SOLID_BOX, ink = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
-    return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${+ks.toFixed(5)})" fill="${ink}">${solid.map((d) => `<path d="${esc(d)}"/>`).join('')}</g>`;
+  const ink = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');
+  const ownFill = p['icon.fill'] && p['icon.fill'] !== 'none' ? col(look, p['icon.fill']) : null;
+  const px = num(p['icon.width'], 0);
+  if (isBuiltIn(look, name)) {
+    const style = (['solid', 'duotone'].includes(p['icon.style']) ? p['icon.style'] : 'outline') as IconStyle;
+    const { tint, front } = iconLayers(name, style, weightFor(px > 0 ? (px * ICON_BOX) / size : undefined));
+    const under = style === 'duotone' ? ownFill ?? ink : style === 'outline' ? ownFill : null;
+    const tintPaths = under ? tint.map((d) => `<path d="${esc(d)}" fill="${under}"${ownFill ? '' : ' fill-opacity="0.2"'}/>`).join('') : '';
+    return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${+(size / ICON_BOX).toFixed(5)})">${tintPaths}<g fill="${ink}">${front.map((d) => `<path d="${esc(d)}"/>`).join('')}</g></g>`;
   }
-  const k = r2(size / 24);
-  const stroke = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink'), fill = col(look, p['icon.fill'] ?? 'none');
-  const px = num(p['icon.width'], 0), sw = px > 0 ? Math.min(px, 8) / k : Math.max(1.5, 1.2 / k);
+  const k = r2(size / 24), fill = ownFill ?? 'none';
+  const sw = px > 0 ? Math.min(px, 8) / k : Math.max(1.5, 1.2 / k);
   const paths = (look.icons.get(name) ?? []).map((d) => `<path d="${esc(d)}"/>`).join('');
-  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="${fill}" stroke="${stroke}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
+  return `<g transform="translate(${r2(x)} ${r2(y)}) scale(${k})" fill="${fill}" stroke="${ink}" stroke-width="${r2(sw)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>`;
 }
 
 // An icon that is the shape itself, with no box around it: fill=, stroke= and sw= style the icon,

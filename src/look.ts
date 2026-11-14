@@ -179,3 +179,10 @@ export function defaultLook(): Look {
   cachedDefault ??= parseLook(DEFAULT_LOOK, 'default look');
   return cachedDefault;
 }
+
+// The looks above are parsed once and kept, with the icons that existed then; after more icons are
+// registered (extendedIcons.ts) they are parsed again so they offer them too.
+export function resetLookCaches(): void {
+  cachedDefault = undefined;
+  bundledCache.clear();
+}

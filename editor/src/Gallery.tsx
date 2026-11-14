@@ -5,7 +5,8 @@ import type { Look, Style } from '../../src/look.ts';
 import { buildScene } from '../../src/scene.ts';
 import { renderBody } from '../../src/render.ts';
 
-const BUILTIN = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'freehand', 'arc', 'text', 'arrow', 'line', 'legend']);
+// styles that have a tool in the top bar (the icon among them), so the sidebar does not list them
+const BUILTIN = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'freehand', 'arc', 'text', 'arrow', 'line', 'legend', 'icon']);
 
 function Thumb({ look, style }: { look: Look; style: Style }) {
   const view = useMemo(() => {
@@ -18,7 +19,6 @@ function Thumb({ look, style }: { look: Look; style: Style }) {
       w = Math.max(176, sw + 24); h = sh + 24;
       const label = sw < 40 ? '' : p['title.pos'] === 'top' ? '"Group"' : '"Name"';
       src = `s: ${style.name} ${label} at ${(w - sw) / 2},${(h - sh) / 2} ${sw}x${sh}`;
-      if (style.name === 'icon') src = `s: icon at ${w / 2 - 20},${h / 2 - 20} 40x40 icon=server`;
       if (p.shape === 'chart') { h = 104; src = `s: ${style.name} at 36,12 120x68 x="A,B,C,D" yaxis=0\n  | bars "" 30 50 40 70`; }
       if (p.shape === 'table') { h = 104; src = `s: ${style.name} "Name" at 24,12 128x0\n  | "first" "value"\n  | "second" "value"`; }
     } else if (style.kind === 'line') {

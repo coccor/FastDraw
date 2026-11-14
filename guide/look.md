@@ -147,13 +147,13 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 
 ### Icons
 
-Every look starts with a set of outline icons (see `fastdraw sizes`). Add your own, or replace one, with
+Every look starts with a set of built-in icons (see `fastdraw sizes`), each as an outline, solid or duotone: about 130 with friendly names, and every other Phosphor icon under Phosphor's own name (`anchor`, `acorn`; `fastdraw icons <word>` finds them; a Phosphor name that a friendly name already uses, such as `book`, is `ph-book`). Add your own, or replace one, with
 
 ```
 icon queue "M4 6h16" "M4 12h16" "M4 18h16"
 ```
 
-The quoted parts are SVG path data drawn in a 24x24 box; they are stroked, not filled, in the colour of the box's text. Keep to simple outlines with a 1.5 stroke in mind, so they match the bundled ones. A style can carry an icon (`style store extends node icon=database`), and `icon.size=`, `icon.color=`, `icon.pos=top` work in a style too.
+The quoted parts are SVG path data drawn in a 24x24 box; they are stroked, not filled, in the colour of the box's text. Keep to simple outlines with a 1.5 stroke in mind, so they sit with the built-in ones. An icon of your own (or one you replace) is an outline only: it has no solid or duotone style. A style can carry an icon (`style store extends node icon=database`), and `icon.size=`, `icon.color=`, `icon.pos=top` work in a style too.
 
 **Colour icons and vendor sets** go in a folder of SVG files next to the look:
 

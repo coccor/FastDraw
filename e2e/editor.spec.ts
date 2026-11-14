@@ -505,14 +505,40 @@ test('chart: place one from the gallery, change its numbers and add a series', a
   expect(errors).toEqual([]);
 });
 
+test('icons: the Duotone tab picks the outline over a tint, and Solid switches it', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await page.locator('.iconchoose').click();
+  await page.getByRole('tab', { name: 'Duotone' }).click();
+  const duo = page.getByRole('radiogroup', { name: 'Duotone icons' });
+  // the tiles show the tint under the outline
+  await expect(duo.getByRole('radio', { name: 'database', exact: true }).locator('path[opacity="0.2"]')).toHaveCount(1);
+  await duo.getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=duotone$/);
+  await page.locator('.iconchoose').click();
+  await expect(duo.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
+  // drawn as the tint, then the outline over it
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] > path + g > path[d^="M128,24"]')).toHaveCount(1);
+  await page.getByRole('tab', { name: 'Solid' }).click();
+  await page.getByRole('radiogroup', { name: 'Solid icons' }).getByRole('radio', { name: 'database', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
 test('icons: the Solid tab picks the filled twin of an icon, and Outline takes it back', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await page.locator('.iconchoose').click();
   await page.getByRole('tab', { name: 'Solid' }).click();
   const solid = page.getByRole('radiogroup', { name: 'Solid icons' });
   await solid.getByRole('radio', { name: 'database', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.style=solid$/);
+  // picking closes the dialog; reopening it shows the chosen icon on the Solid tab
+  await expect(page.getByRole('dialog', { name: 'Choose an icon' })).toHaveCount(0);
+  await page.locator('.iconchoose').click();
   await expect(solid.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
   // drawn filled, from the 256 box, with no outline stroke
   await expect(page.locator('svg.canvas g[transform*="scale(0.0"] path[d^="M128,24"]')).toHaveCount(1);
@@ -528,6 +554,91 @@ test('icons: the Solid tab picks the filled twin of an icon, and Outline takes i
   expect(errors).toEqual([]);
 });
 
+test('icons: the Icon tool in the top bar places any Phosphor icon, and the last five icons come back in the sidebar', async ({ page }) => {
+  await pinSidebar(page);
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  // the Components tab no longer lists the icon: it is a tool in the top bar
+  await sidebar(page, 'Components');
+  await expect(page.locator('.thumbcard', { hasText: 'an icon on its own' })).toHaveCount(0);
+  // pick an icon only the full set has, in the solid style, then click the canvas to place it
+  await page.getByRole('button', { name: 'Icon', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
+  await page.getByRole('tab', { name: 'Solid' }).click();
+  await page.getByLabel('Search icons').fill('anchor');
+  await dialog.getByRole('radio', { name: 'anchor', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Icon', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const spot = await at(page, 700, 340);
+  await page.mouse.click(spot.x, spot.y);
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=anchor icon\.style=solid$/);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // the sidebar offers the last five icons used, newest first, and a click applies one
+  const pick = async (name: string) => {
+    await page.locator('.iconchoose').click();
+    await page.getByRole('tab', { name: 'Outline' }).click();
+    await page.getByLabel('Search icons').fill(name);
+    await dialog.getByRole('radio', { name, exact: true }).click();
+  };
+  const quick = page.getByRole('group', { name: 'Icons' });
+  const names = () => quick.locator('button[aria-pressed]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  // the icon just used comes first, and the starter icons fill the rest
+  expect(await names()).toEqual(['Icon anchor', 'Icon server', 'Icon database', 'Icon cloud', 'Icon user']);
+  for (const n of ['server', 'database', 'cloud', 'lock', 'key']) await pick(n);
+  expect(await names()).toEqual(['Icon key', 'Icon lock', 'Icon cloud', 'Icon database', 'Icon server']);
+  await quick.getByRole('button', { name: 'Icon database' }).click();
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=database$/);
+  expect((await names())[0]).toBe('Icon database');
+  // I opens the same dialog, and Escape closes it
+  await page.mouse.click(...Object.values(await at(page, 100, 60)) as [number, number]);
+  await page.keyboard.press('i');
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
+test('icons: a diagram that uses an icon from the rest of Phosphor draws it once they have loaded', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, 'a: rect "Anchor" at 40,40 120x60 icon=anchor\nb: rect "Book" at 240,40 120x60 icon=ph-book icon.style=duotone\n');
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"]')).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
+test('icons: the sidebar offers five icons from the start, and a tile that opens a dialog with every icon', async ({ page }) => {
+  await pinSidebar(page);
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  // five starter icons, none chosen yet, and one click picks one
+  const quick = page.getByRole('group', { name: 'Icons' });
+  expect(await quick.locator('button[aria-pressed]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Icon server', 'Icon database', 'Icon cloud', 'Icon user', 'Icon lock']);
+  await expect(quick.locator('button[aria-pressed="true"]')).toHaveCount(0);
+  await quick.getByRole('button', { name: 'Icon lock' }).click();
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=lock$/);
+  await expect(quick.getByRole('button', { name: 'Icon lock' })).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.iconchoose').click();
+  const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('radio').first()).toBeVisible();
+  // the dialog is not clipped to the sidebar: it covers the whole editor
+  const box = (await dialog.boundingBox())!;
+  expect(box.width).toBeGreaterThan(400);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await page.locator('.iconchoose').click();
+  await page.getByLabel('Search icons').fill('database');
+  await dialog.getByRole('radio', { name: 'database', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
+  // there is no way to take the icon away in the panel
+  await expect(page.getByRole('button', { name: 'Remove icon' })).toHaveCount(0);
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
 test('icons: choose one for a box in the panel, move it above the text, and place an icon on its own', async ({ page }) => {
   await pinSidebar(page);
   const errors = noPageErrors(page);
@@ -535,36 +646,45 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
   // the tall panel scrolls; it never squashes the menu button above it
   expect((await page.getByRole('button', { name: 'Menu' }).boundingBox())!.height).toBe(38);
+  // the sidebar shows the chosen icon; every icon is in the dialog that opens from it
+  await page.locator('.iconchoose').click();
   const tiles = page.getByRole('radiogroup', { name: 'Icons' });
+  expect(await tiles.getByRole('radio').count()).toBeGreaterThan(50);
   await tiles.getByRole('radio', { name: 'database', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database$/);
+  await expect(page.getByRole('button', { name: 'Icon database', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.iconchoose').click();
   await expect(tiles.getByRole('radio', { name: 'database', exact: true })).toBeChecked();
-  await expect(page.locator('svg.canvas g[stroke-linecap="round"] path').first()).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('svg.canvas g[transform*="scale(0.0"] path[d^="M128,24"]').first()).toBeVisible();
   await page.getByRole('button', { name: 'Above the text' }).click();
   expect(lineOf(await source(page), 'db')).toMatch(/icon=database icon\.pos=top$/);
   // the search narrows the tiles, and Enter takes the first match
+  await page.locator('.iconchoose').click();
   await page.getByLabel('Search icons').fill('lambda');
   await expect(tiles.getByRole('radio', { name: 'function', exact: true })).toBeVisible();
   await page.getByLabel('Search icons').fill('zzqx');
   await expect(tiles.getByRole('radio')).toHaveCount(0);
   await expect(tiles).toContainText('No icon is called anything like');
   await page.getByLabel('Search icons').fill('balanc');
-  await expect(tiles.getByRole('radio')).toHaveCount(1);
+  // a name that has the word comes before an icon that only has it among Phosphor's search words
+  await expect(tiles.getByRole('radio').first()).toHaveAttribute('aria-label', 'load-balancer');
   await page.getByLabel('Search icons').press('Enter');
   expect(lineOf(await source(page), 'db')).toMatch(/icon=load-balancer icon\.pos=top$/);
+  await expect(page.getByRole('button', { name: 'Icon load-balancer', exact: true })).toHaveAttribute('aria-pressed', 'true');
   // size and colour
   await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'L', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.size=32');
   await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'Auto' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.size');
-  const strokes = page.getByRole('group', { name: 'Icon stroke colours' });
+  const strokes = page.getByRole('group', { name: 'Icon colours' });
   const ink = await strokes.locator('.swatch').last().getAttribute('aria-label');
   await strokes.locator('.swatch').last().click();
   expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
   // any colour, from the system colour picker
   await pickHex(page, 'Custom icon colour', '#e0457b');
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
-  await expect(page.locator('svg.canvas g[stroke="#e0457b"]')).toHaveCount(1);
+  await expect(page.locator('svg.canvas g[fill="#e0457b"]')).toHaveCount(1);
   await expect(strokes.locator('.custom.on')).toHaveCount(1);
   await page.getByRole('button', { name: 'Text colour', exact: true }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
@@ -575,19 +695,20 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain(`icon.fill=${tint}`);
   await pickHex(page, 'Custom icon fill', '#ffd400');
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
-  await expect(page.locator('svg.canvas g[fill="#ffd400"]')).toHaveCount(1);
+  await expect(page.locator('svg.canvas path[fill="#ffd400"]')).toHaveCount(1); // the tint under the icon
   await fills.getByRole('button', { name: 'none', exact: true }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.fill');
-  // the stroke width, in pixels on screen
-  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Bold' }).click();
+  // the weight: a line thickness in pixels on screen, the nearest of the icon's weights
+  await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.width=2');
-  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Regular' }).click();
+  await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Regular' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.width');
-  await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, goes
-  expect(lineOf(await source(page), 'db')).not.toContain('icon=');
-  await page.keyboard.press('Escape');
-  await sidebar(page, 'Components');
-  await page.locator('.thumbcard', { hasText: 'an icon on its own' }).first().click();
+  await page.locator('.iconchoose').click();
+  await tiles.getByRole('radio', { name: 'load-balancer', exact: true }).click(); // the chosen icon, clicked again, stays
+  expect(lineOf(await source(page), 'db')).toContain('icon=load-balancer');
+  // an icon on its own comes from the Icon tool in the top bar: pick it in the dialog, then click the canvas
+  await page.getByRole('button', { name: 'Icon', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Choose an icon' }).getByRole('radio', { name: 'server', exact: true }).click();
   const spot = await at(page, 700, 340);
   await page.mouse.click(spot.x, spot.y);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^icon: icon at \d+,\d+ icon=server$/);
@@ -600,9 +721,9 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   const itint = await ifills.locator('.swatch').nth(1).getAttribute('aria-label');
   await ifills.locator('.swatch').nth(1).click();
   await pickHex(page, 'Custom icon colour', '#0369a1');
-  await page.getByRole('group', { name: 'Icon stroke width' }).getByRole('button', { name: 'Heavy' }).click();
-  expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2\\.75$`));
-  await expect(page.locator('svg.canvas g[stroke="#0369a1"]')).toHaveCount(1);
+  await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
+  expect(lineOf(await source(page), 'icon')).toMatch(new RegExp(`icon=server fill=${itint!.replace(/[/.]/g, '\\$&')} stroke=#0369a1 sw=2$`));
+  await expect(page.locator('svg.canvas g[fill="#0369a1"]')).toHaveCount(1);
   // double-click puts a caption under it
   await page.waitForTimeout(500);
   const c = await corner(page, 'icon');
@@ -628,6 +749,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   await expect(page.locator('.banner')).toHaveCount(0);
   // the picker offers the folder's icons by their file-derived names
   await page.mouse.click(...Object.values(await corner(page, 'st')) as [number, number]);
+  await page.locator('.iconchoose').click();
   await expect(page.getByRole('radiogroup', { name: 'Icons' })).toContainText("From the look's folder");
   await page.getByRole('radiogroup', { name: 'Icons' }).getByRole('radio', { name: 'sample-screen', exact: true }).click();
   await saved(page);
