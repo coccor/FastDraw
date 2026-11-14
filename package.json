@@ -28,7 +28,8 @@
     "fonts",
     "agents",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "licenses"
   ],
   "engines": {
     "node": ">=20"

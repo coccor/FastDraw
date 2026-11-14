@@ -190,5 +190,6 @@ copyright (c) 2025 Cathryn Lavery). The guides are written anew for FastDraw's l
 pictures in `compare/kinds/*-ref.png` are renders of diagram-design's own example pages, kept for
 side-by-side comparison; `looks/reference.look` mirrors its default palette for the same purpose.
 
-The bundled icons (`src/icons.ts`) are from [Tabler Icons](https://tabler.io/icons) (MIT licence,
-copyright (c) 2020-2024 Paweł Kuna), the same generic set diagram-design uses.
+The bundled icons (`src/iconSet.ts`, built by `tools/phosphor-icons.mjs`) are from
+[Phosphor Icons](https://phosphoricons.com) (MIT licence, copyright (c) 2023 Phosphor Icons), in its
+thin, light, regular, bold, fill and duotone weights; the licence is in `licenses/phosphor-icons.txt`.

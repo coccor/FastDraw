@@ -16,7 +16,8 @@ import { defaultLook } from '../src/look.ts';
 import { fontMeta } from '../src/fontmeta.ts';
 import { lookFonts } from '../src/node.ts';
 import { ICONS } from '../src/icons.ts';
-import { SOLID_ICONS } from '../src/solidIcons.ts';
+import { ICON_WEIGHTS, DUOTONE_TINT } from '../src/iconSet.ts';
+const SOLID_ICONS = ICON_WEIGHTS.fill;
 
 const look = parseLook(readFileSync(new URL('../looks/reference.look', import.meta.url), 'utf8'));
 const scene = (body: string) => buildScene(`look "x.look"\n${body}`, look);
@@ -510,7 +511,8 @@ test('icons: on a box, on their own, from the look, and with clear errors', () =
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   const svg = renderSvg(sc);
   assert.equal((svg.match(/<g transform="translate\(/g) ?? []).length, 4);
-  assert.ok(svg.includes('scale(1)') && svg.includes('stroke-linecap="round"'));
+  // built-in icons are Phosphor's filled shapes, scaled from their 256 box (a 20px icon on a box)
+  assert.ok(svg.includes(`scale(${+(20 / 256).toFixed(5)})`) && !svg.includes('stroke-linecap="round"'));
   // the icon and the text are centred as a pair: the title no longer sits on the box centre
   const x = Number(/<text x="([\d.]+)"[^>]*>Orders DB</.exec(svg)![1]);
   assert.ok(x > 40 + 72 + 8);
@@ -529,14 +531,29 @@ test('icon.style=solid draws the filled twin of a built-in icon in one colour', 
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   const svg = renderSvg(sc);
   assert.ok(svg.includes('fill="#ff0000"><path d="M128,24'), 'the box icon is filled in icon.color');
-  assert.ok(/scale\(0\.0[0-9]+\)" fill="#0000ff"/.test(svg), 'the icon shape is filled in its stroke colour, scaled from the 256 box');
+  assert.ok(/scale\(0\.0[0-9]+\)"><g fill="#0000ff">/.test(svg), 'the icon shape is filled in its stroke colour, scaled from the 256 box');
   assert.ok(!/stroke="#ff0000"/.test(svg));
   // every built-in icon has a solid twin
   for (const n of Object.keys(ICONS)) assert.ok(SOLID_ICONS[n]?.length, `solid ${n}`);
   const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
   assert.match(msgs('a: node "A" icon=server icon.style=filled at 40,40\n'), /icon.style=filled: an icon is drawn as an outline/);
   const look = parseLook('icon bolt "M13 3 L4 14 H12 L11 21 L20 10 H12 Z"\n');
-  assert.match(check(buildScene('look "x.look"\na: rect "A" icon=bolt icon.style=solid at 40,40\n', look)).map((i) => i.msg).join(), /icon bolt has no solid version/);
+  assert.match(check(buildScene('look "x.look"\na: rect "A" icon=bolt icon.style=solid at 40,40\n', look)).map((i) => i.msg).join(), /icon bolt is the look's own, with no solid version/);
+});
+
+test('icon.style=duotone draws the regular outline over a light tint of the same drawing', () => {
+  const sc = scene('a: icon at 40,40 icon=user icon.style=duotone stroke=#ff0000\nb: node "Box" icon=database icon.style=duotone icon.fill=#00ff00/0.3 at 200,40\nc: icon at 400,40 icon=user\n');
+  assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
+  const svg = renderSvg(sc);
+  // the tint, in the icon's colour made light, then the same outline as icon.style=outline
+  assert.ok(svg.includes(`<path d="${DUOTONE_TINT.user[0]}" fill="#ff0000" fill-opacity="0.2"/><g fill="#ff0000"><path d="${ICON_WEIGHTS.regular.user[0]}"/>`));
+  // icon.fill, when set, is the tint
+  assert.ok(svg.includes(`<path d="${DUOTONE_TINT.database[0]}" fill="rgba(0,255,0,0.3)"/>`));
+  // a plain outline has no tint
+  assert.equal(svg.split(DUOTONE_TINT.user[0]).length - 1, 1);
+  const look = parseLook('icon bolt "M13 3 L4 14 H12 L11 21 L20 10 H12 Z"\n');
+  assert.match(check(buildScene('look "x.look"\na: rect "A" icon=bolt icon.style=duotone at 40,40\n', look)).map((i) => i.msg).join(), /icon bolt is the look's own, with no duotone version/);
+  assert.match(check(scene('a: icon at 40,40 icon=user icon.style=dotted\n')).map((i) => i.msg).join(), /icon\.style=dotted: .*icon\.style=duotone/);
 });
 
 test('an icon on its own is the shape: no box, fill/stroke/sw style the icon, its text is a caption underneath', async () => {
@@ -544,33 +561,36 @@ test('an icon on its own is the shape: no box, fill/stroke/sw style the icon, it
   const sc = scene('db: icon "Orders DB" sub="Postgres" at 40,40 40x40 icon=database fill=#2e8540/0.2 stroke=#2e8540 sw=2\nu: icon at 200,40 icon=user\n');
   const svg = renderSvg(sc);
   assert.ok(!/<rect x="40" y="40" width="40"/.test(svg), 'no box is drawn around the icon');
-  // 40px icon: scale 1.67, so a 2px stroke is 1.2 in the icon's own units
-  assert.match(svg, /translate\(40 40\) scale\(1\.67\)" fill="rgba\(46, ?133, ?64, ?0\.2\)" stroke="#2e8540" stroke-width="1\.2"/);
+  // 40px icon from the 256 box: fill= is the tint under it, stroke= its colour, and a 2px line (12.8 in
+  // the 256 box) picks the light weight
+  assert.ok(svg.includes(`translate(40 40) scale(0.15625)"><path d="${DUOTONE_TINT.database[0]}" fill="rgba(46,133,64,0.2)"/><g fill="#2e8540"><path d="${ICON_WEIGHTS.light.database[0]}"/>`));
   const caption = /<text x="60" y="([\d.]+)" text-anchor="middle"[^>]*>Orders DB</.exec(svg);
   assert.ok(caption && +caption[1] > 80 + 6, 'the caption sits under the icon, centred');
   assert.ok(svg.includes('>Postgres<'));
-  assert.match(svg, /translate\(200 40\) scale\(1\)" fill="none" stroke="[^"]+"/);
+  assert.match(svg, /translate\(200 40\) scale\(0\.09375\)"><g fill="[^"]+"><path d="/); // no fill: no tint
   // a caption wider than its icon needs no room inside it, and the picture's extent takes it in
   assert.deepEqual(check(sc).filter((i) => i.level === 'warn').map((i) => i.msg), []);
   const cb = captionBox(sc.shapes[0])!;
   assert.ok(cb.w > 40 && cb.y === 86 && sc.y + sc.h >= cb.y + cb.h + 40 && sc.x <= cb.x - 40);
 });
 
-test('built-in icons: every one would pass the look rules, and a search finds them by meaning as well as name', async () => {
+test('built-in icons: every one in each style, a search finds them by meaning as well as name', async () => {
   const { ICONS, ICON_WORDS, iconMatches } = await import('../src/icons.ts');
   assert.ok(Object.keys(ICONS).length >= 120);
-  for (const [name, paths] of Object.entries(ICONS)) {
+  for (const name of Object.keys(ICONS)) {
     assert.match(name, /^[a-z][a-z0-9-]*$/);
-    assert.ok(paths.length && paths.length <= 12 && paths.every((d) => /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) && d.length <= 4000), name);
+    for (const w of ['thin', 'light', 'regular', 'bold', 'fill'] as const) assert.ok(ICON_WEIGHTS[w][name]?.length, `${w} ${name}`);
+    assert.ok(DUOTONE_TINT[name], `duotone ${name}`);
   }
   assert.deepEqual(Object.keys(ICON_WORDS).filter((n) => !ICONS[n]), []);
   const find = (w: string) => Object.keys(ICONS).filter((n) => iconMatches(n, w));
   assert.ok(find('email').includes('mail') && find('k8s').includes('pod') && find('db').includes('database') && find('lambda').includes('function'));
   assert.ok(find('load balancer').includes('load-balancer') && find('').length === Object.keys(ICONS).length);
-  // stroke, fill and stroke width: the width is in pixels at the size the icon is drawn (24px here: scale 1)
-  const svg = renderSvg(scene('a: icon at 40,40 icon=database icon.color=#112233 icon.fill=#2e8540/0.2 icon.width=2.5\nb: icon at 100,40 icon=database\n'));
-  assert.match(svg, /fill="rgba\(46, ?133, ?64, ?0\.2\)" stroke="#112233" stroke-width="2\.5"/);
-  assert.match(svg, /fill="none" stroke="[^"]+" stroke-width="1\.5"/);
+  // icon.width is the line's thickness in pixels at the size the icon is drawn, and picks the nearest
+  // weight: at 24px, 2.5 is bold and 0.4 thin; with none, regular
+  const svg = renderSvg(scene('a: icon at 40,40 icon=database icon.color=#112233 icon.width=2.5\nb: icon at 100,40 icon=database\nc: icon at 160,40 icon=database icon.width=0.4\n'));
+  assert.ok(svg.includes(`<g fill="#112233"><path d="${ICON_WEIGHTS.bold.database[0]}"/>`));
+  assert.ok(svg.includes(`<path d="${ICON_WEIGHTS.regular.database[0]}"/>`) && svg.includes(`<path d="${ICON_WEIGHTS.thin.database[0]}"/>`));
   assert.match(check(scene('a: icon at 40,40 icon=server icon.width=thick\n')).map((i) => i.msg).join(), /icon\.width=thick: the icon's line thickness in pixels/);
   // a wrong name points at what was probably meant first
   const msg = check(scene('a: node "A" icon=email at 40,40\n')).map((i) => i.msg).join();
