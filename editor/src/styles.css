@@ -60,11 +60,13 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .dropdown.ctx { position: fixed; top: auto; left: auto; min-width: 200px; }
 .canvasbg { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 6px; }
 .canvasbg > span { color: var(--mute); font-size: 12px; }
-.canvasbg .row { display: flex; gap: 5px; align-items: center; }
-.canvasbg .custom, .swatches .custom, .canvasbg .custom:hover, .swatches .custom:hover { position: relative; width: 24px; height: 24px; padding: 0; flex: none; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
+/* the current colour, after the quick picks: it opens the whole palette and the any-colour picker */
+.swatches .custom, .swatches .custom:hover { position: relative; width: 24px; height: 24px; padding: 0; flex: none; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); cursor: pointer; }
+.swatches .custom.none { background: linear-gradient(to top right, #fff calc(50% - 1px), var(--bad) 50%, #fff calc(50% + 1px)); }
 .swatches .custom.on { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* the any-colour picker: a saturation/brightness square, a hue strip and the hex value */
-.colorpop { position: fixed; z-index: 40; width: 212px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+/* the any-colour picker: the palette, a saturation/brightness square, a hue strip and the hex value */
+.colorpop { position: fixed; z-index: 40; width: 232px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.colorpop .palette { display: grid; grid-template-columns: repeat(7, 24px); gap: 6px; justify-content: space-between; padding: 2px 2px 10px; border-bottom: 1px solid var(--line); }
 .colorpop .sv { position: relative; height: 132px; border-radius: 7px; cursor: crosshair; touch-action: none;
   background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent); }
 .colorpop .hue { position: relative; height: 12px; border-radius: 6px; cursor: ew-resize; touch-action: none;
@@ -84,7 +86,8 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 250px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .panel h4, .gallery h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--mute); }
 .panel select { width: 100%; }
-.swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+.swatches { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; }
+.swatches .divider { width: 1px; height: 20px; margin: 0 2px; background: var(--line); flex: none; }
 .swatch { width: 24px; height: 24px; padding: 0; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); }
 .swatch.none { background: linear-gradient(to top right, #fff calc(50% - 1px), var(--bad) 50%, #fff calc(50% + 1px)); }
 .swatch.on { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -2,8 +2,8 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 // A colour picker of our own, so it opens on a hex field (the browser's picker opens in RGB and
-// cannot be told otherwise): a saturation/brightness square, a hue strip and the hex value.
-// A pick is one change: the square and strip apply on release, the field on Enter or when left.
+// cannot be told otherwise): a saturation/brightness square, a hue strip and the hex value, under an
+// optional palette (`children`). A pick is one change: the square and strip apply on release, the field on Enter or when left.
 
 type Hsv = { h: number; s: number; v: number };
 
@@ -29,21 +29,21 @@ function hsvToHex({ h, s, v }: Hsv): string {
   return '#' + [f(5), f(3), f(1)].map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('');
 }
 
-export function ColorPicker({ value, onPick, label, className, style }: {
-  value: string | null; onPick: (hex: string) => void; label: string; className?: string; style?: React.CSSProperties;
+export function ColorPicker({ value, onPick, label, className, style, title, children }: {
+  value: string | null; onPick: (hex: string) => void; label: string; className?: string; style?: React.CSSProperties; title?: string; children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   return (
     <>
-      <button ref={btn} type="button" className={className} style={style} aria-label={label} title={value ? `${value} (pick another)` : 'Any colour'}
+      <button ref={btn} type="button" className={className} style={style} aria-label={label} title={title ?? (value ? `${value} (pick another)` : 'Any colour')}
         aria-expanded={open} onClick={() => setOpen((o) => !o)} />
-      {open && <Popover anchor={btn.current!} start={value ?? '#4f46e5'} label={label} onPick={onPick} onClose={() => setOpen(false)} />}
+      {open && <Popover anchor={btn.current!} start={value ?? '#4f46e5'} label={label} onPick={onPick} onClose={() => setOpen(false)}>{children}</Popover>}
     </>
   );
 }
 
-function Popover({ anchor, start, label, onPick, onClose }: { anchor: HTMLElement; start: string; label: string; onPick: (hex: string) => void; onClose: () => void }) {
+function Popover({ anchor, start, label, onPick, onClose, children }: { anchor: HTMLElement; start: string; label: string; onPick: (hex: string) => void; onClose: () => void; children?: React.ReactNode }) {
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normHex(start) ?? '#4f46e5'));
   const hex = hsvToHex(hsv);
   const [text, setText] = useState(hex.slice(1));
@@ -53,6 +53,11 @@ function Popover({ anchor, start, label, onPick, onClose }: { anchor: HTMLElemen
   // the value last handed out, so leaving the field after a drag does not apply it twice
   const sent = useRef(normHex(start));
   const pick = (h: string) => { if (h !== sent.current) { sent.current = h; onPick(h); } };
+  // a colour picked from the palette moves the square, strip and field to it
+  useEffect(() => {
+    const h = normHex(start);
+    if (h && h !== sent.current) { sent.current = h; setHsv(hexToHsv(h)); setText(h.slice(1)); }
+  }, [start]);
 
   // fixed, so the scrolling panel does not clip it; flipped up or left when it would leave the window
   useLayoutEffect(() => {
@@ -89,6 +94,7 @@ function Popover({ anchor, start, label, onPick, onClose }: { anchor: HTMLElemen
   return createPortal(
     <div ref={box} className="colorpop island" role="dialog" aria-label={label} style={pos}
       onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') onClose(); }}>
+      {children}
       <div className="sv" style={{ backgroundColor: `hsl(${hsv.h} 100% 50%)` }} onPointerDown={(e) => drag(e, (x, y) => ({ h: hsv.h, s: x, v: 1 - y }))}>
         <span style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: hex }} />
       </div>

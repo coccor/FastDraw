@@ -182,6 +182,16 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await page.locator('.panel .swatch[title="accent/0.08"]').click();
   await page.locator('.panel button[title="Dotted"]').click();
   expect(lineOf(await source(page), 'user')).toMatch(/fill=accent\/0\.08 dash=1,4$/);
+  // each colour choice is one row: a few quick picks, then the current colour, which opens the whole palette
+  for (const row of await page.locator('.panel .swatches').all()) {
+    expect(await row.locator('button').evaluateAll((bs) => new Set(bs.map((b) => b.getBoundingClientRect().top)).size)).toBe(1);
+  }
+  await page.getByRole('button', { name: 'Custom stroke colour' }).click();
+  await page.getByRole('dialog', { name: 'Custom stroke colour' }).getByRole('button', { name: 'violet', exact: true }).click();
+  expect(lineOf(await source(page), 'user')).toContain('stroke=violet');
+  await expect(page.getByRole('group', { name: 'Stroke colours' }).locator('.custom.on')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Custom stroke colour' })).toHaveCount(0);
   await page.locator('.panel select').first().selectOption('cloud');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');
