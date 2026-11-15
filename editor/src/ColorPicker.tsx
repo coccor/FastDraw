@@ -20,9 +20,21 @@ const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 
 const toHex = (c: number[]) => '#' + c.map((x) => Math.round(clamp(x, 0, 255)).toString(16).padStart(2, '0')).join('');
 const mix = (hex: string, to: number, t: number) => toHex(rgb(hex).map((x) => x + (to - x) * t));
 
-// lightest to darkest, the colour itself fourth
-export function shades(hex: string): string[] {
-  return [mix(hex, 255, 0.85), mix(hex, 255, 0.6), mix(hex, 255, 0.32), hex.toLowerCase(), mix(hex, 0, 0.3)];
+// a tint of a look colour (accent/0.08) belongs to that colour
+export const baseOf = (v: string | undefined) => (v && /^[a-z][\w-]*\/[\d.]+$/i.test(v) ? v.slice(0, v.indexOf('/')) : v);
+const ALPHAS = [0.08, 0.2, 0.4, 0.7];
+
+// Five shades of a colour, lightest first and the colour itself last. A look colour's shades are its own
+// tints (name/alpha), so they keep following the look and dark mode; a hex colour's are mixed towards white.
+// None for none, or for a colour too light to shade.
+export function shades(base: string | undefined, resolve: (v: string) => string): string[] | null {
+  if (!base || base === 'none') return null;
+  const c = resolve(base);
+  if (!isHex(c)) return null;
+  const [r, g, b] = rgb(c);
+  if (0.299 * r + 0.587 * g + 0.114 * b > 235) return null;
+  if (isHex(base)) return [0.88, 0.7, 0.5, 0.25].map((t) => mix(c, 255, t)).concat(c.toLowerCase());
+  return ALPHAS.map((a) => `${base}/${a}`).concat(base);
 }
 
 // dark or light, whichever reads on the swatch
@@ -56,11 +68,11 @@ function Popover({ anchor, label, value, palette, recent, resolve, onPick, onClo
   const [pos, setPos] = useState({ left: 0, top: 0 });
   const cur = value ? resolve(value) : null;
   // the colour the shades are of: the one last picked from the palette, or the current one
-  const [base, setBase] = useState(value);
-  const baseHex = base ? resolve(base) : null;
-  const tones = isHex(baseHex) ? shades(baseHex) : null;
+  const lower = value?.toLowerCase();
+  const [base, setBase] = useState(baseOf(value));
+  const tones = shades(base, resolve);
   useEffect(() => {
-    if (value && !(tones && isHex(cur) && tones.includes(cur.toLowerCase()))) setBase(value);
+    if (!(tones && lower && tones.includes(lower))) setBase(baseOf(value));
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [text, setText] = useState(isHex(cur) ? cur.slice(1) : '');
@@ -96,10 +108,11 @@ function Popover({ anchor, label, value, palette, recent, resolve, onPick, onClo
     if (!e.shiftKey && i >= 0 && palette[i]) { e.preventDefault(); fromPalette(palette[i]!); }
   };
 
-  const swatch = (v: string, pick: (v: string) => void, key?: string, on = v === value) => {
+  // keyed by place, not value: two shades of a pale colour can come out the same
+  const swatch = (v: string, i: number, pick: (v: string) => void, key: string | undefined, on: boolean) => {
     const c = resolve(v);
     return (
-      <button key={v} type="button" title={v === 'none' ? 'None' : v} aria-label={v} aria-pressed={on}
+      <button key={i} type="button" title={v === 'none' ? 'None' : v} aria-label={v} aria-pressed={on}
         className={'pswatch' + (on ? ' on' : '') + (c === 'none' ? ' none' : '')}
         style={c === 'none' ? undefined : { background: c, color: inkOn(c) }} onClick={() => pick(v)}>
         {key && <kbd>{key}</kbd>}
@@ -114,21 +127,21 @@ function Popover({ anchor, label, value, palette, recent, resolve, onPick, onClo
       {recent.length > 0 && (
         <section>
           <h5>Custom colours</h5>
-          <div className="pgrid">{recent.slice(0, 5).map((v) => swatch(v, onPick, undefined, isHex(cur) && v === cur.toLowerCase()))}</div>
+          <div className="pgrid">{recent.slice(0, 5).map((v, i) => swatch(v, i, onPick, undefined, v === lower))}</div>
         </section>
       )}
       <section>
         <h5>Colours</h5>
-        <div className="pgrid" role="group" aria-label="Palette">{palette.map((v, i) => swatch(v, fromPalette, KEYS[i]))}</div>
+        <div className="pgrid" role="group" aria-label="Palette">{palette.map((v, i) => swatch(v, i, fromPalette, KEYS[i], v === base))}</div>
       </section>
-      {tones && (
-        <section>
-          <h5>Shades</h5>
+      <section>
+        <h5>Shades</h5>
+        {tones ? (
           <div className="pgrid" role="group" aria-label="Shades">
-            {tones.map((h, i) => swatch(h, onPick, `⇧${i + 1}`, isHex(cur) && cur.toLowerCase() === h))}
+            {tones.map((t, i) => swatch(t, i, onPick, `⇧${i + 1}`, t.toLowerCase() === lower))}
           </div>
-        </section>
-      )}
+        ) : <p className="noshades">No shades for this colour</p>}
+      </section>
       <section>
         <h5>Hex code</h5>
         <label className="hexrow">

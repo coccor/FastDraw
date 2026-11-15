@@ -171,10 +171,18 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   // a stroke drawn by hand (any open outline) is only a line: it has no inside to fill and carries no text or icon
   const stroke = els.every((e) => e!.kind === 'shape' && !!e!.el.poly && e!.el.p.open === '1');
   const p = first.el.p;
-  const names = [...sc.look.colors.keys()].filter((n) => n !== 'paper');
-  const fills = ['none', '#ffffff', ...names.map((n) => `${n}/0.08`), ...names.filter((n) => n !== 'ink')];
-  const strokes = [...names, ...names.slice(0, 1).map((n) => `${n}/0.3`), 'none'];
-  const iconFills = ['none', ...names.filter((n) => n !== 'ink').map((n) => `${n}/0.2`), ...names];
+  // each of the look's colours once (two names for one colour show as one swatch); tints are the popover's shades
+  const seen = new Set<string>();
+  const names = [...sc.look.colors.keys()].filter((n) => {
+    const c = color(sc.look, n).toLowerCase();
+    if (n === 'paper' || seen.has(c)) return false;
+    seen.add(c);
+    return true;
+  });
+  const white = seen.has('#ffffff') ? [] : ['#ffffff'];
+  const fills = ['none', ...white, ...names];
+  const strokes = [...names, 'none'];
+  const iconFills = ['none', ...names];
   // the quick picks in front of each palette: ink and four colours, or none and four light tints of them
   const hues = vivid(sc, names).slice(0, 4);
   const inks = names.includes('ink') ? ['ink', ...hues] : names.slice(0, 5);

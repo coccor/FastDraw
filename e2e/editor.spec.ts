@@ -191,10 +191,18 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   expect(lineOf(await source(page), 'user')).toContain('stroke=violet');
   await expect(page.getByRole('group', { name: 'Stroke colours' }).locator('.custom.on')).toHaveCount(1);
   // the palette's letter keys and the shades' Shift+digit keys pick too
+  const pop = page.getByRole('dialog', { name: 'Custom stroke colour' });
   await page.keyboard.press('q');
-  expect(lineOf(await source(page), 'user')).toMatch(/stroke=\w+/);
+  expect(lineOf(await source(page), 'user')).toContain('stroke=ink');
+  // a look colour's shades are its tints, so they follow the look; the row always holds five
   await page.keyboard.press('Shift+Digit1');
-  expect(lineOf(await source(page), 'user')).toMatch(/stroke=#[0-9a-f]{6}/);
+  expect(lineOf(await source(page), 'user')).toContain('stroke=ink/0.08');
+  await expect(pop.getByRole('group', { name: 'Shades' }).locator('button')).toHaveCount(5);
+  await expect(pop.getByRole('group', { name: 'Palette' }).getByRole('button', { name: 'ink', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await pop.getByRole('button', { name: 'none', exact: true }).click();
+  await expect(pop.getByText('No shades for this colour')).toBeVisible();
+  await pop.getByRole('button', { name: 'rose', exact: true }).click();
+  await expect(pop.getByRole('group', { name: 'Shades' }).locator('button')).toHaveCount(5);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Custom stroke colour' })).toHaveCount(0);
   await page.locator('.panel select').first().selectOption('cloud');
