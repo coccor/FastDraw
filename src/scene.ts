@@ -7,6 +7,7 @@ import { isBuiltIn } from './iconStyle.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
 import { crosses, routeAround } from './router.ts';
+import { FONT_WIDTHS, WIDTH_CHARS } from './fontWidths.ts';
 
 export type Pt = { x: number; y: number };
 export type Box = { x: number; y: number; w: number; h: number };
@@ -56,6 +57,28 @@ const num = (v: string | undefined, d: number) => (v === undefined || v === '' |
 export function textWidth(text: string, size: number, font: string, weight: number, spacing: number): number {
   const f = font === 'mono' ? 0.6 : font === 'serif' ? 0.46 : weight >= 600 ? 0.58 : 0.56;
   return text.length * size * (f + spacing);
+}
+
+// How wide text is when drawn in a look's font, letter by letter from the widths of the fonts FastDraw ships
+// (a family it does not ship is measured as the bundled font for its role), with the look's letter-spacing.
+// textWidth above stays the generous guess that sizes boxes; this is for things that must hug their text.
+export function measureText(look: Look, text: string, size: number, role: string, weight: number, spacing: number): number {
+  const fam = (look.fonts.get(role) ?? role).toLowerCase();
+  const chars = [...text];
+  let em = 0;
+  // a family name comes from the look file, so only the table's own keys count (not "constructor" and the like)
+  const known = Object.hasOwn(FONT_WIDTHS, fam);
+  if (fam.includes('mono') || (role === 'mono' && !known)) em = chars.length * 0.6;
+  else {
+    const byWeight = known ? FONT_WIDTHS[fam] : FONT_WIDTHS[role === 'serif' ? 'newsreader' : 'geist'];
+    const near = Object.keys(byWeight).map(Number).sort((a, b) => Math.abs(a - weight) - Math.abs(b - weight) || b - a)[0];
+    const table = byWeight[near] ?? FONT_WIDTHS.geist[400], fallback = table[WIDTH_CHARS.indexOf('o')];
+    for (const ch of chars) {
+      const w = table[WIDTH_CHARS.indexOf(ch)] ?? -1;
+      em += (w >= 0 ? w : ch.codePointAt(0)! >= 0x1100 ? 100 : fallback) / 100;
+    }
+  }
+  return em * size + Math.max(0, chars.length - 1) * spacing * size;
 }
 
 const cx = (b: Box) => b.x + b.w / 2;

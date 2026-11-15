@@ -99,7 +99,7 @@ On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `ta
 
 Keep type close to the built-in look's sizes (12px titles, 9px second lines, 10px line labels). Diagrams are laid out for those, so larger type overflows boxes that fit before.
 
-The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a paper-coloured patch behind it.
+The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a patch behind it, 6px wider than the words on each side. A patch that crosses the outline is paper-coloured, so the edge stops at the words; one that sits inside the shape takes the shape's own fill, so it hides the page dots behind the words and is otherwise invisible.
 
 **Table styles** (`shape=table`) use `fill`, `stroke`, `sw`, `radius`, `dash` and `title.*` like any box, plus:
 

@@ -128,6 +128,36 @@ test('look properties: depth lands lines on the slab, plates, stops, echo and ca
   assert.deepEqual(look('style arrow line stroke=ink tail=stop\nstyle node shape=rect shade=ink depth=4 inner=ink corners=plus offset=3,3 blend=multiply halftone=ink').issues, []);
 });
 
+test('a zone caption has a plate as wide as its words, in the zone\'s own colour when it sits inside', async () => {
+  const { measureText } = await import('../src/scene.ts');
+  const plates = (src: string) => [...renderSvg(buildScene(src, null)).matchAll(/<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="\d+" rx="2" fill="([^"]+)"\/>/g)].map((m) => ({ x: +m[1], w: +m[2], fill: m[3] }));
+  // measured in the font as drawn: narrow letters, dots and slashes count for what they are (it was 152 wide)
+  const look = defaultLook();
+  assert.ok(Math.abs(measureText(look, '1. The project on disk', 11, 'sans', 600, 0) - 113) < 2);
+  assert.ok(measureText(look, 'iiii', 11, 'sans', 600, 0) < measureText(look, 'MMMM', 11, 'sans', 600, 0) / 2);
+  assert.equal(measureText(look, 'ab', 10, 'mono', 400, 0), 12);
+  assert.equal(measureText(look, 'ab', 10, 'mono', 400, 0.1), 13); // spacing between letters
+  for (const lk of ['', 'look night\n']) {
+    const [paper, tint] = plates(`${lk}z: zone ".pz/state/ · outlives runs" at 40,40 300x120 fill=accent/0.05 stroke=accent\n`);
+    assert.equal(paper.w, Math.ceil(measureText(look, '.pz/state/ · outlives runs', 11, 'sans', 600, 0) + 12));
+    assert.equal(paper.x, 52); // left-aligned: the words start 6px into the plate, 18px into the zone
+    // inside the zone the plate is paper with the zone's tint over it, so it reads as the zone itself
+    assert.equal(tint.w, paper.w);
+    assert.match(tint.fill, /^rgba\(.*,0\.05\)$/);
+  }
+  // a caption on the edge keeps a plain paper plate, its tint would show outside the zone
+  const edge = renderSvg(buildScene('look engraved\nz: zone "Area" at 40,40 300x120\n', null));
+  assert.equal([...edge.matchAll(/rx="2"/g)].length, 1);
+  // a font named after an Object property is just an unknown family, measured as the bundled one for its role
+  for (const name of ['constructor', '__proto__', 'toString']) {
+    const odd = parseLook(`font sans "${name}"\nfont mono "${name}"\nfont serif "${name}"\nstyle zone shape=rect title.pos=top\n`);
+    assert.equal(measureText(odd, 'ab', 10, 'sans', 600, 0), measureText(look, 'ab', 10, 'sans', 600, 0), name);
+    assert.equal(measureText(odd, 'ab', 10, 'mono', 400, 0), 12, name);
+    assert.ok(measureText(odd, 'ab', 10, 'serif', 400, 0) > 0, name);
+    assert.match(renderSvg(buildScene('z: zone "Area" at 40,40 200x100\n', odd)), /Area/);
+  }
+});
+
 test('a tag on a shape of any size is placed in bounded time', () => {
   // a diamond two billion pixels across: placing its corner tag samples the outline, and that sampling must not
   // grow with the shape (it used to run out of memory)
