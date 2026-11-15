@@ -238,6 +238,8 @@ Labels are drawn in small caps on a paper-coloured patch, above a horizontal lin
 
 `text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. `rotate=-90` turns the text to read upwards about its `at` point (`rotate=90`: downwards), for a label along a vertical axis. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1` (only where the font has an italic face; the bundled sans and mono do not, the serif does).
 
+Spaces inside the quotes are drawn as written, here and in every other text (labels, `sub=`, table cells): leading spaces indent, and a run of spaces stays a run. So indented code or lined-up columns can be one text per line at the same x, with `font=mono` for the columns to line up: `text "  orders:" at 40,58 font=mono`.
+
 ### Legend
 
 One statement draws a whole legend: a rule line, a heading, and one entry per style, spaced and wrapped for you.

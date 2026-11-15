@@ -795,8 +795,16 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" filter="url(#fd-grain)" opacity="${Math.min(1, num(cv.grain, 0))}" pointer-events="none"/>`);
   }
   if (R.defs.size) out.splice(1, 0, `<defs>${hatchDefs()}</defs>`);
-  return out.join('\n');
+  return keepSpaces(out.join('\n'));
 }
+
+// SVG collapses runs of spaces and drops leading and trailing ones. A text that has any of those is marked
+// xml:space="preserve" (which resvg and SVG files opened on their own honour) and white-space:pre (which a browser
+// honours when the SVG sits inside a page, as on the editor canvas), so indented code and lined-up columns are drawn
+// as written. Texts with a line break or tab are left alone: those come from icon files, not from the diagram.
+const keepSpaces = (svg: string) =>
+  svg.replace(/<text\b([^>]*)>([^<]*)<\/text>/g, (m, a: string, t: string) =>
+    /^ | $| {2}/.test(t) && !/[\n\t]/.test(t) && !/xml:space|style=/.test(a) ? `<text xml:space="preserve" style="white-space:pre"${a}>${t}</text>` : m);
 
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.
 export function renderSvg(sc: Scene, css?: string, opts: { background?: boolean } = {}): string {

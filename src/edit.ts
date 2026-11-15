@@ -36,6 +36,13 @@ export function setRows(toks: Tok[], rows: RowSpec[]): Tok[] {
   return out;
 }
 
+// The cells of a row typed as "a | b | c". One space either side of a "|" belongs to the separator; any
+// more is the cell's own, so an indented cell keeps its indentation. Spaces at the end of the row go.
+export function splitCells(text: string): string[] {
+  const parts = text.replace(/\s+$/, '').split('|');
+  return parts.map((c, i) => (i > 0 ? c.replace(/^ /, '') : c).replace(i < parts.length - 1 ? / $/ : /\s+$/, ''));
+}
+
 export type Patch = (toks: Tok[]) => Tok[] | null; // null deletes the statement
 
 // Apply patches keyed by the 1-based first line of a statement.

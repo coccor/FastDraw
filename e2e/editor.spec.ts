@@ -407,6 +407,18 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   expect(errors).toEqual([]);
 });
 
+test('spaces in a text are drawn on the canvas as written, and an indented cell keeps its spaces through the panel', async ({ page }) => {
+  await paste(page, 'canvas 600x300\na: text "abc" at 40,40 font=mono\nb: text "    abc" at 40,70 font=mono\nt: table "T" at 40,120\n  | "x" "    y"\n');
+  const len = (s: string) => page.locator('svg.canvas text').evaluateAll((ts, s) => (ts.find((t) => t.textContent === s) as SVGTextElement).getComputedTextLength(), s);
+  expect(await len('    abc')).toBeGreaterThan(2 * await len('abc')); // four spaces drawn before "abc", not dropped
+  await page.mouse.click(...Object.values(await corner(page, 't')) as [number, number]);
+  const row = page.getByLabel('Row 1', { exact: true });
+  await expect(row).toHaveValue('x |     y');
+  await row.fill('x |       y');
+  await row.press('Enter');
+  expect(await source(page)).toContain('  | "x" "      y"');
+});
+
 test('a table can be placed from the components gallery', async ({ page }) => {
   await pinSidebar(page);
   await paste(page, SMALL);
