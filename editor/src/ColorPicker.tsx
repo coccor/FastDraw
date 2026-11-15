@@ -1,13 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-// A colour picker of our own, so it opens on a hex field (the browser's picker opens in RGB and
-// cannot be told otherwise): a saturation/brightness square, a hue strip and the hex value.
-// A pick is one change: the square and strip apply on release, the field on Enter or when left.
+// The colour popover, as Excalidraw lays it out: the diagram's own custom colours, the look's palette
+// (keys q w e r t / a s d f g / z x c v b), five shades of the picked colour (Shift+1..5) and a hex field
+// with an eyedropper. It opens beside the panel it was opened from.
 
-type Hsv = { h: number; s: number; v: number };
+const KEYS = 'qwertasdfgzxcvb';
 
-const clamp = (n: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
 export function normHex(v: string): string | null {
   let s = v.trim().replace(/^#/, '').toLowerCase();
@@ -15,93 +15,151 @@ export function normHex(v: string): string | null {
   return /^[0-9a-f]{6}$/.test(s) ? '#' + s : null;
 }
 
-function hexToHsv(hex: string): Hsv {
-  const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
-  const max = Math.max(r, g, b), d = max - Math.min(r, g, b);
-  let h = 0;
-  if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return { h: ((h * 60) + 360) % 360, s: max ? d / max : 0, v: max };
+const isHex = (c: string | null | undefined): c is string => !!c && /^#[0-9a-f]{6}$/i.test(c);
+const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const toHex = (c: number[]) => '#' + c.map((x) => Math.round(clamp(x, 0, 255)).toString(16).padStart(2, '0')).join('');
+const mix = (hex: string, to: number, t: number) => toHex(rgb(hex).map((x) => x + (to - x) * t));
+
+// a tint of a look colour (accent/0.08) belongs to that colour
+export const baseOf = (v: string | undefined) => (v && /^[a-z][\w-]*\/[\d.]+$/i.test(v) ? v.slice(0, v.indexOf('/')) : v);
+const ALPHAS = [0.08, 0.2, 0.4, 0.7];
+
+// Five shades of a colour, lightest first and the colour itself last. A look colour's shades are its own
+// tints (name/alpha), so they keep following the look and dark mode; a hex colour's are mixed towards white.
+// None for none, or for a colour too light to shade.
+export function shades(base: string | undefined, resolve: (v: string) => string): string[] | null {
+  if (!base || base === 'none') return null;
+  const c = resolve(base);
+  if (!isHex(c)) return null;
+  const [r, g, b] = rgb(c);
+  if (0.299 * r + 0.587 * g + 0.114 * b > 235) return null;
+  if (isHex(base)) return [0.88, 0.7, 0.5, 0.25].map((t) => mix(c, 255, t)).concat(c.toLowerCase());
+  return ALPHAS.map((a) => `${base}/${a}`).concat(base);
 }
 
-function hsvToHex({ h, s, v }: Hsv): string {
-  const f = (k: number) => { const x = (k + h / 60) % 6; return v - v * s * Math.max(0, Math.min(x, 4 - x, 1)); };
-  return '#' + [f(5), f(3), f(1)].map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('');
+// dark or light, whichever reads on the swatch
+function inkOn(c: string): string {
+  if (!isHex(c)) return 'var(--ink)';
+  const [r, g, b] = rgb(c);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? 'rgba(15, 23, 42, .75)' : 'rgba(255, 255, 255, .9)';
 }
 
-export function ColorPicker({ value, onPick, label, className, style }: {
-  value: string | null; onPick: (hex: string) => void; label: string; className?: string; style?: React.CSSProperties;
-}) {
+type PickerProps = {
+  value: string | undefined; // the current value as written (a colour name, name/alpha, hex or none)
+  palette: string[]; recent: string[];
+  resolve: (v: string) => string; // a value as a CSS colour, or 'none'
+  onPick: (v: string) => void; label: string; className?: string; style?: React.CSSProperties; title?: string;
+};
+
+export function ColorPicker({ label, className, style, title, ...rest }: PickerProps) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   return (
     <>
-      <button ref={btn} type="button" className={className} style={style} aria-label={label} title={value ? `${value} (pick another)` : 'Any colour'}
+      <button ref={btn} type="button" className={className} style={style} aria-label={label} title={title}
         aria-expanded={open} onClick={() => setOpen((o) => !o)} />
-      {open && <Popover anchor={btn.current!} start={value ?? '#4f46e5'} label={label} onPick={onPick} onClose={() => setOpen(false)} />}
+      {open && <Popover anchor={btn.current!} label={label} onClose={() => setOpen(false)} {...rest} />}
     </>
   );
 }
 
-function Popover({ anchor, start, label, onPick, onClose }: { anchor: HTMLElement; start: string; label: string; onPick: (hex: string) => void; onClose: () => void }) {
-  const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(normHex(start) ?? '#4f46e5'));
-  const hex = hsvToHex(hsv);
-  const [text, setText] = useState(hex.slice(1));
+function Popover({ anchor, label, value, palette, recent, resolve, onPick, onClose }: Omit<PickerProps, 'className' | 'style' | 'title'> & { anchor: HTMLElement; onClose: () => void }) {
   const box = useRef<HTMLDivElement>(null);
-  const field = useRef<HTMLInputElement>(null);
   const [pos, setPos] = useState({ left: 0, top: 0 });
-  // the value last handed out, so leaving the field after a drag does not apply it twice
-  const sent = useRef(normHex(start));
-  const pick = (h: string) => { if (h !== sent.current) { sent.current = h; onPick(h); } };
+  const cur = value ? resolve(value) : null;
+  // the colour the shades are of: the one last picked from the palette, or the current one
+  const lower = value?.toLowerCase();
+  const [base, setBase] = useState(baseOf(value));
+  const tones = shades(base, resolve);
+  useEffect(() => {
+    if (!(tones && lower && tones.includes(lower))) setBase(baseOf(value));
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // fixed, so the scrolling panel does not clip it; flipped up or left when it would leave the window
+  const [text, setText] = useState(isHex(cur) ? cur.slice(1) : '');
+  useEffect(() => setText(isHex(cur) ? cur.slice(1) : ''), [cur]);
+  const commitText = () => {
+    const h = normHex(text);
+    if (!h) { setText(isHex(cur) ? cur.slice(1) : ''); return; }
+    if (h !== cur?.toLowerCase()) onPick(h);
+  };
+
+  // fixed beside the panel (or menu) it was opened from, so the scrolling panel does not clip it
   useLayoutEffect(() => {
-    const a = anchor.getBoundingClientRect(), w = box.current!.offsetWidth, h = box.current!.offsetHeight;
-    const top = a.bottom + 6 + h > innerHeight - 8 ? Math.max(8, a.top - 6 - h) : a.bottom + 6;
-    setPos({ left: clamp(a.left, 8, innerWidth - w - 8), top });
+    const a = anchor.getBoundingClientRect(), side = (anchor.closest('.panel, .dropdown') ?? anchor).getBoundingClientRect();
+    const w = box.current!.offsetWidth, h = box.current!.offsetHeight;
+    const left = side.right + 8 + w <= innerWidth - 8 ? side.right + 8 : Math.max(8, side.left - 8 - w);
+    setPos({ left, top: clamp(a.top - 12, 8, innerHeight - h - 8) });
   }, [anchor]);
-  useEffect(() => { field.current?.focus(); field.current?.select(); }, []);
+  useEffect(() => { box.current?.focus(); }, []);
   useEffect(() => {
     const away = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose(); };
     document.addEventListener('pointerdown', away, true);
     return () => document.removeEventListener('pointerdown', away, true);
   }, [anchor, onClose]);
 
-  const set = (next: Hsv) => { setHsv(next); setText(hsvToHex(next).slice(1)); };
-  const drag = (e: React.PointerEvent<HTMLDivElement>, f: (x: number, y: number) => Hsv) => {
-    const el = e.currentTarget, r = el.getBoundingClientRect();
-    const at = (ev: { clientX: number; clientY: number }) => f(clamp((ev.clientX - r.left) / r.width), clamp((ev.clientY - r.top) / r.height));
-    let last = at(e);
-    set(last);
-    el.setPointerCapture(e.pointerId);
-    const move = (ev: PointerEvent) => { last = at(ev); set(last); };
-    const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); pick(hsvToHex(last)); };
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerup', up);
-  };
-  const commitText = () => {
-    const h = normHex(text);
-    if (!h) { setText(hex.slice(1)); return; }
-    setHsv(hexToHsv(h)); setText(h.slice(1));
-    pick(h);
+  const fromPalette = (v: string) => { setBase(v); onPick(v); };
+  const keys = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { onClose(); anchor.focus(); return; }
+    if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
+    const shade = /^Digit([1-5])$/.exec(e.code);
+    if (e.shiftKey && shade && tones) { e.preventDefault(); onPick(tones[+shade[1]! - 1]!); return; }
+    const i = KEYS.indexOf(e.key.toLowerCase());
+    if (!e.shiftKey && i >= 0 && palette[i]) { e.preventDefault(); fromPalette(palette[i]!); }
   };
 
+  // keyed by place, not value: two shades of a pale colour can come out the same
+  const swatch = (v: string, i: number, pick: (v: string) => void, key: string | undefined, on: boolean) => {
+    const c = resolve(v);
+    return (
+      <button key={i} type="button" title={v === 'none' ? 'None' : v} aria-label={v} aria-pressed={on}
+        className={'pswatch' + (on ? ' on' : '') + (c === 'none' ? ' none' : '')}
+        style={c === 'none' ? undefined : { background: c, color: inkOn(c) }} onClick={() => pick(v)}>
+        {key && <kbd>{key}</kbd>}
+      </button>
+    );
+  };
+  const dropper = typeof window !== 'undefined' && 'EyeDropper' in window;
+
   return createPortal(
-    <div ref={box} className="colorpop island" role="dialog" aria-label={label} style={pos}
-      onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') onClose(); }}>
-      <div className="sv" style={{ backgroundColor: `hsl(${hsv.h} 100% 50%)` }} onPointerDown={(e) => drag(e, (x, y) => ({ h: hsv.h, s: x, v: 1 - y }))}>
-        <span style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: hex }} />
-      </div>
-      <div className="hue" onPointerDown={(e) => drag(e, (x) => ({ ...hsv, h: Math.min(359.9, x * 360) }))}>
-        <span style={{ left: `${(hsv.h / 360) * 100}%` }} />
-      </div>
-      <label className="hexrow">
-        <i style={{ background: hex }} />
-        <b>#</b>
-        <input ref={field} aria-label="Hex colour" value={text} spellCheck={false} maxLength={7}
-          onChange={(e) => setText(e.target.value.replace(/^#/, ''))} onBlur={commitText}
-          onKeyDown={(e) => { if (e.key === 'Enter') { commitText(); onClose(); } }} />
-      </label>
+    <div ref={box} tabIndex={-1} className="colorpop island" role="dialog" aria-label={label} style={pos}
+      onPointerDown={(e) => e.stopPropagation()} onKeyDown={keys}>
+      {recent.length > 0 && (
+        <section>
+          <h5>Custom colours</h5>
+          <div className="pgrid">{recent.slice(0, 5).map((v, i) => swatch(v, i, onPick, undefined, v === lower))}</div>
+        </section>
+      )}
+      <section>
+        <h5>Colours</h5>
+        <div className="pgrid" role="group" aria-label="Palette">{palette.map((v, i) => swatch(v, i, fromPalette, KEYS[i], v === base))}</div>
+      </section>
+      <section>
+        <h5>Shades</h5>
+        {tones ? (
+          <div className="pgrid" role="group" aria-label="Shades">
+            {tones.map((t, i) => swatch(t, i, onPick, `⇧${i + 1}`, t.toLowerCase() === lower))}
+          </div>
+        ) : <p className="noshades">No shades for this colour</p>}
+      </section>
+      <section>
+        <h5>Hex code</h5>
+        <label className="hexrow">
+          <b>#</b>
+          <input aria-label="Hex colour" value={text} spellCheck={false} maxLength={7} placeholder={cur === 'none' ? 'none' : ''}
+            onChange={(e) => setText(e.target.value.replace(/^#/, ''))} onBlur={commitText}
+            onKeyDown={(e) => { if (e.key === 'Enter') { commitText(); onClose(); anchor.focus(); } }} />
+          {dropper && (
+            <button type="button" className="dropper" title="Pick a colour from the screen" aria-label="Pick a colour from the screen"
+              onClick={() => new (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper().open()
+                .then((r) => { const h = normHex(r.sRGBHex); if (h) onPick(h); }).catch(() => {})}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m2 22 1-1h3l9-9" /><path d="M3 21v-3l9-9" /><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z" />
+              </svg>
+            </button>
+          )}
+        </label>
+      </section>
     </div>,
     document.body,
   );

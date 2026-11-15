@@ -182,6 +182,29 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await page.locator('.panel .swatch[title="accent/0.08"]').click();
   await page.locator('.panel button[title="Dotted"]').click();
   expect(lineOf(await source(page), 'user')).toMatch(/fill=accent\/0\.08 dash=1,4$/);
+  // each colour choice is one row: a few quick picks, then the current colour, which opens the whole palette
+  for (const row of await page.locator('.panel .swatches').all()) {
+    expect(await row.locator('button').evaluateAll((bs) => new Set(bs.map((b) => b.getBoundingClientRect().top)).size)).toBe(1);
+  }
+  await page.getByRole('button', { name: 'Custom stroke colour' }).click();
+  await page.getByRole('dialog', { name: 'Custom stroke colour' }).getByRole('button', { name: 'violet', exact: true }).click();
+  expect(lineOf(await source(page), 'user')).toContain('stroke=violet');
+  await expect(page.getByRole('group', { name: 'Stroke colours' }).locator('.custom.on')).toHaveCount(1);
+  // the palette's letter keys and the shades' Shift+digit keys pick too
+  const pop = page.getByRole('dialog', { name: 'Custom stroke colour' });
+  await page.keyboard.press('q');
+  expect(lineOf(await source(page), 'user')).toContain('stroke=ink');
+  // a look colour's shades are its tints, so they follow the look; the row always holds five
+  await page.keyboard.press('Shift+Digit1');
+  expect(lineOf(await source(page), 'user')).toContain('stroke=ink/0.08');
+  await expect(pop.getByRole('group', { name: 'Shades' }).locator('button')).toHaveCount(5);
+  await expect(pop.getByRole('group', { name: 'Palette' }).getByRole('button', { name: 'ink', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await pop.getByRole('button', { name: 'none', exact: true }).click();
+  await expect(pop.getByText('No shades for this colour')).toBeVisible();
+  await pop.getByRole('button', { name: 'rose', exact: true }).click();
+  await expect(pop.getByRole('group', { name: 'Shades' }).locator('button')).toHaveCount(5);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Custom stroke colour' })).toHaveCount(0);
   await page.locator('.panel select').first().selectOption('cloud');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');

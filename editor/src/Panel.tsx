@@ -28,24 +28,57 @@ export type PanelActions = {
   setRoute: (route: string) => void;
 };
 
-// `custom` adds a last swatch that opens a colour picker (hex first); it shows the chosen colour when that is not one of `values`.
-export function Swatches({ sc, values, current, onPick, custom, label }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom?: string; label?: string }) {
-  const own = !!current && !values.includes(current) && /^#[0-9a-f]{6}$/i.test(current) ? current : null;
+// One row, as Excalidraw does it: a few quick picks (`top`, else the first five of `values`), a divider, then a
+// swatch showing the current colour that opens the whole palette (`values`), the diagram's custom colours, shades and a hex field.
+// `custom` is that swatch's label; it is marked when the current colour is not one of the quick picks.
+export function Swatches({ sc, values, current, onPick, custom, label, top }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom: string; label?: string; top?: string[] }) {
+  const picks = top ?? values.slice(0, 5);
+  // the diagram's own hex colours that the palette does not already offer
+  const recent = React.useMemo(() => {
+    const has = new Set(values.map((v) => color(sc.look, v).toLowerCase()));
+    return customColours(sc).filter((h) => !has.has(h));
+  }, [sc, values.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hex = current ? color(sc.look, current) : null;
+  const own = !!current && !picks.includes(current);
+  const swatch = (v: string) => {
+    const c = color(sc.look, v);
+    return (
+      <button key={v} title={v === 'none' ? 'None' : v} aria-label={v} className={'swatch' + (current === v ? ' on' : '') + (c === 'none' ? ' none' : '')}
+        onClick={() => onPick(v)} style={{ background: c === 'none' ? undefined : c }} />
+    );
+  };
   return (
-    <div className="swatches" role={label ? "group" : undefined} aria-label={label}>
-      {values.map((v) => {
-        const c = color(sc.look, v);
-        return (
-          <button key={v} title={v === 'none' ? 'None' : v} aria-label={v} className={'swatch' + (current === v ? ' on' : '') + (c === 'none' ? ' none' : '')}
-            onClick={() => onPick(v)} style={{ background: c === 'none' ? undefined : c }} />
-        );
-      })}
-      {custom && (
-        <ColorPicker className={'custom' + (own ? ' on' : '')} style={own ? { background: own } : undefined} label={custom}
-          value={own ?? (/^#[0-9a-f]{6}$/i.test(color(sc.look, current)) ? color(sc.look, current) : null)} onPick={onPick} />
-      )}
+    <div className="swatches" role={label ? 'group' : undefined} aria-label={label}>
+      {picks.map(swatch)}
+      <span className="divider" />
+      <ColorPicker className={'custom' + (own ? ' on' : '') + (hex === 'none' ? ' none' : hex ? ' set' : '')} style={hex && hex !== 'none' ? { background: hex } : undefined}
+        label={custom} title={current ? `${current === 'none' ? 'None' : current} (more colours)` : 'More colours'}
+        value={current} palette={values} recent={recent} resolve={(v) => color(sc.look, v)} onPick={onPick} />
     </div>
   );
+}
+
+// The hex colours written in the diagram, most used first: the "custom colours" of the popover.
+function customColours(sc: Scene): string[] {
+  const n = new Map<string, number>();
+  for (const el of [...sc.shapes, ...sc.texts, ...sc.conns]) {
+    for (const v of Object.values(el.p)) {
+      const h = typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null;
+      if (h) n.set(h, (n.get(h) ?? 0) + 1);
+    }
+  }
+  return [...n].sort((a, b) => b[1] - a[1]).map(([h]) => h);
+}
+
+// The look's colours that are not ink, greys, near-blacks or white: the ones worth a quick pick.
+function vivid(sc: Scene, names: string[]): string[] {
+  return names.filter((n) => {
+    const c = color(sc.look, n);
+    if (n === 'ink' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+    const v = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+    const max = Math.max(...v);
+    return max > 96 && (max - Math.min(...v)) / max > 0.35;
+  });
 }
 
 export function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (v: string) => void }) {
@@ -138,10 +171,23 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   // a stroke drawn by hand (any open outline) is only a line: it has no inside to fill and carries no text or icon
   const stroke = els.every((e) => e!.kind === 'shape' && !!e!.el.poly && e!.el.p.open === '1');
   const p = first.el.p;
-  const names = [...sc.look.colors.keys()].filter((n) => n !== 'paper');
-  const fills = ['none', '#ffffff', ...names.map((n) => `${n}/0.08`), ...names.filter((n) => n !== 'ink')];
-  const strokes = [...names, ...names.slice(0, 1).map((n) => `${n}/0.3`), 'none'];
-  const iconFills = ['none', ...names.filter((n) => n !== 'ink').map((n) => `${n}/0.2`), ...names];
+  // each of the look's colours once (two names for one colour show as one swatch); tints are the popover's shades
+  const seen = new Set<string>();
+  const names = [...sc.look.colors.keys()].filter((n) => {
+    const c = color(sc.look, n).toLowerCase();
+    if (n === 'paper' || seen.has(c)) return false;
+    seen.add(c);
+    return true;
+  });
+  const white = seen.has('#ffffff') ? [] : ['#ffffff'];
+  const fills = ['none', ...white, ...names];
+  const strokes = [...names, 'none'];
+  const iconFills = ['none', ...names];
+  // the quick picks in front of each palette: ink and four colours, or none and four light tints of them
+  const hues = vivid(sc, names).slice(0, 4);
+  const inks = names.includes('ink') ? ['ink', ...hues] : names.slice(0, 5);
+  const topFills = ['none', ...hues.map((n) => `${n}/0.08`)];
+  const topIconFills = ['none', ...hues.map((n) => `${n}/0.2`)];
   const iconShape = same && kind === 'shape' && els.every((e) => e!.kind === 'shape' && e!.el.shape === 'icon');
   const solidIcon = iconShape && p['icon.style'] === 'solid';
   const styles = [...sc.look.styles.values()].filter((s) => s.kind === (kind === 'conn' ? 'line' : kind));
@@ -170,8 +216,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
         <>
           {/* a solid icon is one filled shape: only its colour (stroke=) applies; fill= is the tint under an outline */}
-          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
-          <section><h4>Colour</h4><Swatches sc={sc} values={names} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></section>
+          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
+          <section><h4>Colour</h4><Swatches sc={sc} values={names} top={inks} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></section>
           {!solidIcon && (
             <section>
               <h4>Weight</h4>
@@ -181,11 +227,11 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         </>
       )}
       {same && kind === 'shape' && !stroke && !iconShape && (
-        <section><h4>Background</h4><Swatches sc={sc} values={fills} current={p.fill} onPick={(v) => act.setProp('fill', v)} custom="Custom background colour" label="Background colours" /></section>
+        <section><h4>Background</h4><Swatches sc={sc} values={fills} top={topFills} current={p.fill} onPick={(v) => act.setProp('fill', v)} custom="Custom background colour" label="Background colours" /></section>
       )}
       {same && kind !== 'text' && !iconShape && (
         <>
-          <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} custom="Custom stroke colour" label="Stroke colours" /></section>
+          <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} top={inks} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} custom="Custom stroke colour" label="Stroke colours" /></section>
           <section>
             <h4>Stroke style</h4>
             <div className="seg">
@@ -205,7 +251,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         </>
       )}
       {same && kind === 'text' && (
-        <section><h4>Colour</h4><Swatches sc={sc} values={names} current={p.color} onPick={(v) => act.setProp('color', v)} custom="Custom text colour" label="Text colours" /></section>
+        <section><h4>Colour</h4><Swatches sc={sc} values={names} top={inks} current={p.color} onPick={(v) => act.setProp('color', v)} custom="Custom text colour" label="Text colours" /></section>
       )}
       {same && kind === 'conn' && (
         <>
@@ -265,7 +311,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind !== 'text' && !stroke && !iconShape && (
         <section>
           <h4>Text colour</h4>
-          <Swatches sc={sc} values={names} current={p[colorKey]} onPick={(v) => act.setProp(colorKey, v)} custom="Custom text colour" label="Text colours" />
+          <Swatches sc={sc} values={names} top={inks} current={p[colorKey]} onPick={(v) => act.setProp(colorKey, v)} custom="Custom text colour" label="Text colours" />
         </section>
       )}
       {els.length === 1 && first.kind === 'shape' && first.el.legend && (
@@ -298,9 +344,9 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
                   <div className="seg" style={{ marginBottom: 4 }}>
                     <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
                   </div>
-                  <Swatches sc={sc} values={names} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
+                  <Swatches sc={sc} values={names} top={inks} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
                   <div className="sublabel">Icon tint</div>
-                  <Swatches sc={sc} values={iconFills} current={p['icon.fill'] ?? 'none'}
+                  <Swatches sc={sc} values={iconFills} top={topIconFills} current={p['icon.fill'] ?? 'none'}
                     onPick={(v) => act.setProp('icon.fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" />
                   <div className="sublabel">Icon weight</div>
                   <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
