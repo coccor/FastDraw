@@ -84,8 +84,8 @@ npm run dev                                  # the website and editor, at http:/
 
 | Command | What it does |
 |---|---|
-| `fastdraw check <file.fdraw>` | Report problems, with line numbers |
-| `fastdraw render <file.fdraw> [-o out.png\|.svg] [--scale 2] [--transparent] [--no-embed]` | Draw the diagram (PNG by default). `--transparent` leaves out the page colour and dots; `--no-embed` leaves the diagram out of the image |
+| `fastdraw check <file.fdraw \| folder> ...` | Report problems, with line numbers. A folder means every `.fdraw` file under it |
+| `fastdraw render <file.fdraw \| folder> ... [-o out.png\|.svg] [--scale 2] [--transparent] [--no-embed] [--look name\|file.look] [--dark]` | Draw the diagram (PNG by default) next to the file. `--transparent` leaves out the page colour and dots; `--no-embed` leaves the diagram out of the image. `--look` draws with another look without changing the file. `--dark` also writes `x-dark.png` with the look's dark version (Night for the built-in look). With several files or a folder, every file is checked first and nothing is drawn if any has an error; `-o` works with one file only |
 | `fastdraw guide [topic]` | Print the language guide, or the guide for one kind of diagram |
 | `fastdraw guide list` | List the kinds of diagram that have a guide |
 | `fastdraw sizes [file]` | List a look's styles and their sizes (the built-in look when no file is given) |
@@ -141,7 +141,14 @@ A diagram picks its look with one line, `look "./team.look"`, or names one that 
 `look headline`, `look night`, `look reference`, `look sketch`, `look whiteboard`, or one of six styles of drawing:
 `look shade`, `look engraved`, `look keys`, `look transit`, `look offset`, `look listing`. In the editor, the **Look** button
 previews the diagram in each one before you keep it. A look can also bring its own fonts
-(`fontdir`) and colour icons (`icondir`). `fastdraw guide look` explains the format.
+(`fontdir`) and colour icons (`icondir`), and name its dark version (`dark "./team-night.look"`)
+for `fastdraw render --dark`. `fastdraw guide look` explains the format.
+
+A docs site with light and dark themes can draw both images of every diagram with one command:
+
+```bash
+fastdraw render docs/diagrams --dark    # x.png with each file's look, x-dark.png with its dark version
+```
 
 ## Gallery
 

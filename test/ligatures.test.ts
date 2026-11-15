@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { Resvg } from '@resvg/resvg-js';
 import { buildScene, textWidth } from '../src/scene.ts';
 import { renderSvg } from '../src/render.ts';
@@ -37,10 +38,10 @@ test('the SVG turns ligatures off for all its text', () => {
 });
 
 // Width of the ink of one line of Geist Mono, drawn by resvg with the fonts the command line uses.
-const inkWidth = (text: string) => withoutLigatureFonts(bundledFonts(), (fontFiles) => {
+const inkWidth = (text: string) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="40"><text x="10" y="30" font-family="Geist Mono" font-size="20">${text}</text></svg>`;
-  return new Resvg(svg, { font: { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Geist' } }).getBBox()!.width;
-});
+  return new Resvg(svg, { font: { fontFiles: withoutLigatureFonts(bundledFonts()), loadSystemFonts: false, defaultFontFamily: 'Geist' } }).getBBox()!.width;
+};
 
 test('code in the PNG is drawn character for character, as wide as it is measured', () => {
   // `->`, `>=`, `...` and `--` are ligatures in Geist Mono; drawn as one glyph they take one cell, not two or three
@@ -49,9 +50,17 @@ test('code in the PNG is drawn character for character, as wide as it is measure
   assert.equal(textWidth('|->>=...--|', 20, 'mono', 400, 0), textWidth(plain, 20, 'mono', 400, 0));
 });
 
-test('the temporary font copies are removed after drawing', () => {
-  let seen: string[] = [];
-  withoutLigatureFonts(bundledFonts(), (files) => { seen = files.filter((f) => !bundledFonts().includes(f)); });
-  assert.ok(seen.length > 0);
-  for (const f of seen) assert.ok(!existsSync(f));
+test('the font copies are made once per process and removed when it exits', () => {
+  const first = withoutLigatureFonts(bundledFonts()), again = withoutLigatureFonts(bundledFonts());
+  assert.deepEqual(again, first); // patched once, reused for every image
+  const copies = first.filter((f) => !bundledFonts().includes(f));
+  assert.ok(copies.length > 0);
+  for (const f of copies) assert.ok(existsSync(f));
+  // a process that patches the fonts leaves no copies behind once it has exited
+  const node = new URL('../src/node.ts', import.meta.url).href;
+  const r = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', '--input-type=module', '-e',
+    `import { bundledFonts, withoutLigatureFonts } from ${JSON.stringify(node)}; console.log(JSON.stringify(withoutLigatureFonts(bundledFonts()).filter((f) => !bundledFonts().includes(f))));`], { encoding: 'utf8' });
+  const made: string[] = JSON.parse(r.stdout);
+  assert.ok(made.length > 0, r.stderr);
+  for (const f of made) assert.ok(!existsSync(f), f);
 });
