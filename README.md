@@ -202,6 +202,36 @@ All of these were written by agents from the guides alone. Sources are in
 | <img src="compare/kinds/sankey.png" alt="Sankey diagram" width="270"><br>Sankey | <img src="compare/kinds/db-schema.png" alt="Database schema" width="270"><br>Database schema | <img src="compare/kinds/swimlane.png" alt="Swimlane diagram" width="270"><br>Swimlane |
 | <img src="compare/kinds/uml-class.png" alt="UML class diagram" width="270"><br>UML class | <img src="compare/kinds/deployment.png" alt="Deployment diagram" width="270"><br>Deployment | <img src="compare/kinds/exploded.png" alt="Exploded layer diagram" width="270"><br>Exploded layers |
 
+## Diagrams on GitHub
+
+GitHub draws Mermaid blocks itself but runs no other renderer, so a `.fdraw` file shows there as an
+image from fastdraw.dev. Point an image at the file's path in a public repository:
+
+```md
+![How a run works](https://fastdraw.dev/gh/OWNER/REPO/main/docs/overview.fdraw)
+```
+
+The address is `/gh/<owner>/<repo>/<branch>/<path>`, the same parts as a `raw.githubusercontent.com`
+link. fastdraw.dev reads the file (and its `.look` file, which must be in the same repository), draws it
+with the editor's renderer and answers with an SVG that has its fonts inside. Pushing a change updates
+the image after a few minutes, once GitHub's and fastdraw.dev's caches expire.
+
+- **Dark mode.** `?theme=dark` draws the look's dark version (`night` for the built-in look). To follow
+  the reader's GitHub theme, give both:
+
+  ```html
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://fastdraw.dev/gh/OWNER/REPO/main/docs/overview.fdraw?theme=dark">
+    <img alt="How a run works" src="https://fastdraw.dev/gh/OWNER/REPO/main/docs/overview.fdraw">
+  </picture>
+  ```
+- **Editing.** The same address with `?edit` opens the diagram in the editor, so a linked image opens
+  there on click: `[![How a run works](URL)](URL?edit)`.
+- **Private repositories.** fastdraw.dev cannot read them. Use `/s/<data>` instead, where `<data>` is the
+  part after `#fdraw=` in an editor share link: the diagram travels in the address itself.
+- **When it cannot draw.** A missing file, a look outside the repository or a diagram with errors comes
+  back as an image that says what is wrong.
+
 ## Repository layout
 
 | Path | What it is |
@@ -218,6 +248,7 @@ All of these were written by agents from the guides alone. Sources are in
 | `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
 | `editor/` | The browser editor (Vite + React) |
 | `editor/src/embed/` | `<fastdraw-diagram>`, built as `embed.js` by `vite.embed.config.ts` |
+| `worker/` | The fastdraw.dev Worker: diagrams as SVG images at `/gh/*` and `/s/*`, for GitHub |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
 | `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
