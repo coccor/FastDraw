@@ -1,8 +1,8 @@
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf } from './node.ts';
-import { buildScene } from './scene.ts';
+import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
+import { buildScene, withLook, type Scene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
 import { isBuiltIn } from './iconStyle.ts';
@@ -25,9 +25,16 @@ await loadExtendedIcons();
 function usage(): never {
   console.log(`fastdraw <command>
 
-  check  <file.fdraw>                     report problems, with line numbers
-  render <file.fdraw> [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
-                                          draw the diagram (PNG by default)
+  check  <file.fdraw | folder> ...        report problems, with line numbers. A folder means every
+                                          .fdraw file under it
+  render <file.fdraw | folder> ... [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
+         [--look name|file.look] [--dark]
+                                          draw the diagram (PNG by default) next to it. With several
+                                          files or a folder, checks them all first and draws nothing
+                                          if any has an error. --look draws with another look instead
+                                          of the file's own. --dark also writes x-dark.png with the
+                                          look's dark version (the look's dark line; Night for the
+                                          built-in look)
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
@@ -58,35 +65,101 @@ function report(file: string): { errors: number; warns: number } {
   return { errors, warns };
 }
 
+// The files named on the command line: a folder means every .fdraw file under it, sorted. many: more
+// than one file, or a folder, which turns on the batch behaviour of check and render.
+function diagramFiles(paths: string[]): { files: string[]; many: boolean } {
+  const files: string[] = [];
+  let folder = false;
+  const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true })
+    .filter((e) => !e.name.startsWith('.') && e.name !== 'node_modules')
+    .flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : e.isFile() && e.name.endsWith('.fdraw') ? [join(dir, e.name)] : []));
+  for (const p of paths) {
+    if (existsSync(p) && statSync(p).isDirectory()) {
+      folder = true;
+      const found = walk(p).sort();
+      if (!found.length) { console.log(`no .fdraw files in ${p}`); process.exit(1); }
+      files.push(...found);
+    } else files.push(p);
+  }
+  return { files, many: folder || files.length > 1 };
+}
+// the arguments that are not flags or a flag's value
+const VALUE_FLAGS = ['-o', '--scale', '--look', '--editor'];
+const positional = (a: string[]) => a.filter((x, i) => !x.startsWith('-') && !VALUE_FLAGS.includes(a[i - 1]));
+
 if (cmd === 'check') {
-  if (!args[0]) usage();
-  process.exit(report(args[0]).errors ? 1 : 0);
+  const { files, many } = diagramFiles(positional(args));
+  if (!files.length) usage();
+  if (!many) process.exit(report(files[0]).errors ? 1 : 0);
+  let errors = 0, warns = 0, hints = 0;
+  for (const f of files) {
+    for (const i of check(loadScene(f))) {
+      console.log(`${f}:${i.line}  ${i.level.padEnd(5)}  ${i.msg}`);
+      if (i.level === 'error') errors++; else if (i.level === 'warn') warns++; else hints++;
+    }
+  }
+  console.log(errors + warns + hints ? `\n${files.length} files: ${errors} error(s), ${warns} warning(s), ${hints} hint(s)` : `ok: no problems found in ${files.length} files`);
+  process.exit(errors ? 1 : 0);
 } else if (cmd === 'render') {
-  const file = args.find((a, i) => !a.startsWith('-') && args[i - 1] !== '-o' && args[i - 1] !== '--scale');
-  if (!file) usage();
-  const oi = args.indexOf('-o'), si = args.indexOf('--scale');
-  const out = oi >= 0 ? args[oi + 1] : file.replace(/\.fdraw$/, '') + '.png';
+  const { files, many } = diagramFiles(positional(args));
+  if (!files.length) usage();
+  const oi = args.indexOf('-o'), si = args.indexOf('--scale'), li = args.indexOf('--look');
+  if (oi >= 0 && many) { console.log('-o names one output file, so it works with one diagram; leave it out to write each PNG next to its diagram'); process.exit(1); }
   const scale = si >= 0 ? +args[si + 1] : 2;
-  const sc = loadScene(file);
-  const errors = sc.issues.filter((i) => i.level === 'error');
-  if (errors.length) {
-    for (const i of errors) console.log(`${basename(file)}:${i.line}  error  ${i.msg}`);
-    console.log('\nnot rendered: fix the errors first');
-    process.exit(1);
-  }
   if (!(scale > 0)) { console.log('--scale takes a number above 0, like 1, 2 or 3'); process.exit(1); }
-  const transparent = args.includes('--transparent'), embed = !args.includes('--no-embed');
-  const svg = renderSvg(sc, undefined, { background: !transparent });
-  const payload = { v: 1 as const, ...readSources(file, sc) };
-  if (out.endsWith('.svg')) writeFileSync(out, embed ? embedSvg(svg, payload) : svg);
-  else {
-    const { Resvg } = await import('@resvg/resvg-js');
-    const fontFiles = [...bundledFonts(), ...(sc.fontFiles ?? [])];
-    const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng());
-    writeFileSync(out, embed ? embedPng(png, payload) : png);
+  const transparent = args.includes('--transparent'), embed = !args.includes('--no-embed'), dark = args.includes('--dark');
+  let lookOver: LookRef | undefined;
+  if (li >= 0) {
+    const r = args[li + 1] ? lookArg(args[li + 1]) : 'give --look the name of a look that ships with FastDraw, or a path to a .look file';
+    if (typeof r === 'string') { console.log(r); process.exit(1); }
+    lookOver = r;
   }
-  const notes = [out.endsWith('.svg') ? '' : `at ${scale}x`, transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
-  console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
+  type Job = { file: string; out: string; src?: string; sc: Scene; look?: string };
+  // a diagram drawn with its own look, or with `ref` in place of it
+  const job = (file: string, out: string, ref?: LookRef): Job => {
+    let src: string | undefined, look: string | undefined;
+    if (ref) { look = lookRefText(ref, file); try { src = withLook(readFileSync(file, 'utf8'), look); } catch { /* loadScene says it cannot read the file */ } }
+    return { file, out, src, sc: loadScene(file, src), look };
+  };
+  const jobs: Job[] = [], problems: string[] = [];
+  let failed = false;
+  for (const file of files) {
+    const name = many ? file : basename(file);
+    const out = oi >= 0 ? args[oi + 1] : file.replace(/\.fdraw$/, '') + '.png';
+    const light = job(file, out, lookOver);
+    jobs.push(light);
+    // one diagram keeps the old rule (only errors that stop drawing); several are checked in full first
+    const issues = many ? check(light.sc).filter((i) => i.level !== 'hint') : light.sc.issues.filter((i) => i.level === 'error');
+    for (const i of issues) problems.push(`${name}:${i.line}  ${i.level.padEnd(5)}  ${i.msg}`);
+    if (issues.some((i) => i.level === 'error')) failed = true;
+    if (!dark) continue;
+    let base = lookOver;
+    if (!base) try { base = lookOfDiagram(file, readFileSync(file, 'utf8')); } catch { continue; }
+    const d = darkLookOf(base);
+    if (typeof d === 'string') { problems.push(`${name}  error  --dark: ${d}`); failed = true; continue; }
+    const dj = job(file, out.replace(/(\.[^./\\]*)?$/, '-dark$1'), d);
+    jobs.push(dj);
+    const seen = new Set(issues.map((i) => `${i.line} ${i.msg}`));
+    const darkIssues = (many ? check(dj.sc).filter((i) => i.level !== 'hint') : dj.sc.issues.filter((i) => i.level === 'error')).filter((i) => !seen.has(`${i.line} ${i.msg}`));
+    for (const i of darkIssues) problems.push(`${name}:${i.line}  ${i.level.padEnd(5)}  ${i.msg} (in the dark image, look ${dj.look})`);
+    if (darkIssues.some((i) => i.level === 'error')) failed = true;
+  }
+  for (const p of problems) console.log(p);
+  if (failed) { console.log('\nnot rendered: fix the errors first'); process.exit(1); }
+  if (problems.length) console.log('');
+  const { Resvg } = await import('@resvg/resvg-js');
+  for (const { file, out, src, sc, look } of jobs) {
+    const svg = renderSvg(sc, undefined, { background: !transparent });
+    const payload = { v: 1 as const, ...readSources(file, sc, src) };
+    if (out.endsWith('.svg')) writeFileSync(out, embed ? embedSvg(svg, payload) : svg);
+    else {
+      const fontFiles = [...bundledFonts(), ...(sc.fontFiles ?? [])];
+      const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng());
+      writeFileSync(out, embed ? embedPng(png, payload) : png);
+    }
+    const notes = [out.endsWith('.svg') ? '' : `at ${scale}x`, look ? `look ${look}` : '', transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
+    console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
+  }
 } else if (cmd === 'sizes') {
   const look = !args[0] ? defaultLook() : args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
   const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);

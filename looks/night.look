@@ -4,6 +4,9 @@
 
 canvas paper=paper dots=ink/0.08 dotgap=24
 
+// already dark, so "fastdraw render --dark" draws the dark image with this look too
+dark night
+
 color paper  #0b1226
 color card   #131c38
 color ink    #e2e8f0

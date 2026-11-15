@@ -296,6 +296,18 @@ export function lookPath(src: string): string | undefined {
   return st?.toks[1]?.v;
 }
 
+// The diagram drawn with another look: its look statement now names `look` (a bundled name, or a
+// path to a .look file relative to the diagram). The statement is rewritten where it stands, or added
+// at the end when the diagram has none, so every other line keeps its number.
+export function withLook(src: string, look: string): string {
+  const line = `look ${/^[a-z][a-z0-9-]*$/.test(look) ? look : JSON.stringify(look)}`;
+  const lines = src.split(/\r?\n/);
+  const sts = parseStatements(src).filter((s) => s.toks[0]?.t === 'word' && s.toks[0].v === 'look');
+  if (!sts.length) return src.replace(/\s*$/, '') + '\n' + line + '\n';
+  sts.forEach((s, i) => { for (let l = s.line; l <= s.end; l++) lines[l - 1] = l === s.line && i === 0 ? line : ''; });
+  return lines.join('\n');
+}
+
 // lookIn: the already-parsed look the diagram points to, or null if it could not be found.
 export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const issues: Issue[] = [];

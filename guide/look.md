@@ -167,6 +167,17 @@ Every `.svg` file directly in that folder becomes an icon, drawn exactly as the 
 - Files over 300 KB are skipped. Only the icons a diagram uses are carried inside its exported image.
 - A file with the same name as a built-in icon replaces it.
 
+### Dark version
+
+`dark` names the look that draws the same diagrams on a dark page. `fastdraw render x.fdraw --dark` writes `x.png` with the diagram's look and `x-dark.png` with the look its `dark` line names, for a site that shows one or the other with the reader's theme.
+
+```
+dark night                    // a look that ships with FastDraw
+dark "./team-night.look"      // a look file, relative to this look file
+```
+
+The built-in look's dark version is `night`, and Night names itself, since it is already dark. A dark look should keep the same style names, so the diagram draws the same way in both. Without a `dark` line, `--dark` stops with an error that names the look. To draw one diagram with another look without changing the file, use `fastdraw render x.fdraw --look night` (or `--look ./other.look`).
+
 ### Guidance
 
 `guidance "..."` lines are shown to agents by `fastdraw sizes`. Use them for rules a drawing tool cannot enforce: how many accent elements are allowed, when to use `tag=`, what `sub=` is for.

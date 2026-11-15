@@ -17,6 +17,7 @@ export type Look = {
   iconDirs: string[]; // folders of SVG icon files, relative to the look file
   images: Map<string, string>; // name -> data URI of an icon file, filled in by whoever can read the folders
   guidance: string[];
+  dark?: string; // the look that draws the same diagrams on a dark page: a bundled look's name, or a .look path relative to this look's file
   issues: Issue[];
 };
 
@@ -79,7 +80,14 @@ export function parseLook(src: string, path = 'look'): Look {
   for (const st of parseStatements(src)) {
     const [head, ...rest] = st.toks;
     const err = (msg: string) => look.issues.push({ line: st.line, level: 'error', msg, file: path });
-    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icondir or guidance'); continue; }
+    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icondir, guidance or dark'); continue; }
+    if (head.v === 'dark') {
+      // dark night | dark "./team-night.look": the look `fastdraw render --dark` uses for the dark image
+      const v = rest[0]?.v;
+      if (!v || rest.length > 1 || !(Object.hasOwn(BUNDLED_LOOKS, v) || /\.look$/i.test(v))) err(`dark needs one look: the name of a look that ships with FastDraw or a path to a .look file, e.g. dark night or dark "./team-night.look" (named looks: ${Object.keys(BUNDLED_LOOKS).join(', ')})`);
+      else look.dark = v;
+      continue;
+    }
     if (head.v === 'icondir') {
       if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"'); else look.iconDirs.push(rest[0].v);
       continue;

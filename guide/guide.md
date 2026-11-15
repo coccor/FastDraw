@@ -27,6 +27,7 @@ One statement per line. An indented line continues the statement above it. `//` 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
                             // or a look that ships with FastDraw: look headline | night | reference | sketch | whiteboard | shade | engraved | keys | transit | offset | listing
+                            // for a dark theme, keep the line and run  fastdraw render x.fdraw --dark  to get x-dark.png too
 canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
 
 // shape:   id: style "text" at x,y WxH key=value ...
