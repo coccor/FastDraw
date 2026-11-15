@@ -10,7 +10,6 @@ import * as files from './files.ts';
 import * as ws from './workspace.ts';
 import * as served from './served.ts';
 import { Panel, TextField, Swatches } from './Panel.tsx';
-import { ColorPicker } from './ColorPicker.tsx';
 import { Gallery } from './Gallery.tsx';
 import { Sidebar, useSidebar } from './Sidebar.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
@@ -106,15 +105,11 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
   const basePaper = base.paper ?? 'paper', paper = cv.paper ?? 'paper';
   const dotsOn = !!cv.dots && cv.dots !== 'none';
   const overridden = ['paper', 'dots', 'dotgap'].some((k) => cv[k] !== base[k]);
-  const hex = color(scene.look, paper);
   return (
     <div className="canvasbg">
       <span>Background</span>
-      <div className="row">
-        <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
-          onPick={(v) => set({ paper: v === basePaper ? null : v })} />
-        <ColorPicker className="custom" label="Custom background colour" value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#ffffff'} onPick={(v) => set({ paper: v })} />
-      </div>
+      <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
+        onPick={(v) => set({ paper: v === basePaper ? null : v })} custom="Custom background colour" />
       <label className="check">
         <input type="checkbox" checked={dotsOn} onChange={() => set({ dots: dotsOn ? 'none' : base.dots && base.dots !== 'none' ? null : 'ink/0.1' })} />
         Dot grid
