@@ -14,7 +14,7 @@ function fonts(): Plugin {
   return {
     name: 'fastdraw-embed-fonts',
     generateBundle() {
-      for (const f of FONT_FILES) this.emitFile({ type: 'asset', fileName: `fonts/${f}`, source: readFileSync(resolve(__dirname, 'fonts', f)) });
+      for (const f of FONT_FILES) this.emitFile({ type: 'asset', fileName: `fonts/${f}`, source: readFileSync(resolve(import.meta.dirname, 'fonts', f)) });
     },
   };
 }
@@ -37,7 +37,7 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'es2022',
     chunkSizeWarningLimit: 4000,
-    lib: { entry: resolve(__dirname, 'editor/src/embed/element.ts'), formats: ['es'], fileName: () => 'embed.js' },
+    lib: { entry: resolve(import.meta.dirname, 'editor/src/embed/element.ts'), formats: ['es'], fileName: () => 'embed.js' },
     rollupOptions: { preserveEntrySignatures: 'allow-extension', output: { chunkFileNames: 'embed/[name]-[hash].js' } },
   },
 });
