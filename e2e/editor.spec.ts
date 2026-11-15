@@ -3,7 +3,7 @@ import { mkdtempSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { serveFolder } from '../src/serve.ts';
-import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex } from './helpers.ts';
+import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex, kept } from './helpers.ts';
 
 // open the right sidebar on a tab, from the rail or from its own tabs
 async function sidebar(page: import('@playwright/test').Page, name: 'Components' | 'Look') {
@@ -843,6 +843,7 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   await page.getByRole('tab', { name: 'pasted diagram' }).click();
   expect(await source(page)).toBe(drawn);
   await expect(page.locator('.status')).toHaveText('saved in this browser');
+  await expect.poll(() => kept(page)).toEqual({ tabs: ['pasted diagram', 'untitled'], active: 'pasted diagram' });
 
   await page.reload();
   await page.waitForSelector('svg.canvas');
@@ -886,12 +887,14 @@ test('each tab keeps its own diagram and history; closing one asks first and sta
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Close second' }).click();
   await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram']);
+  await expect.poll(() => kept(page)).toEqual({ tabs: ['pasted diagram'], active: 'pasted diagram' });
   await page.reload();
   await page.waitForSelector('svg.canvas');
   await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveText(['pasted diagram']);
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Close pasted diagram' }).click();
   await page.waitForSelector('.welcome');
+  await expect.poll(() => kept(page)).toEqual({ tabs: [], active: null });
   await page.reload();
   await page.waitForSelector('.welcome');
 });

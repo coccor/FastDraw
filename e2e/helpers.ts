@@ -113,3 +113,20 @@ export async function pickHex(page: Page, label: string, hex: string) {
   await field.fill(hex);
   await field.press('Enter');
 }
+
+// What the browser store holds right now: the open tabs by name, in order, and the active one.
+// A test waits on this before a reload, so the reload does not race the last write.
+export const kept = (page: Page) => page.evaluate(() => new Promise<{ tabs: string[]; active: string | null }>((done) => {
+  const req = indexedDB.open('fastdraw');
+  req.onsuccess = () => {
+    const tx = req.result.transaction(['docs', 'meta'], 'readonly');
+    const docs = tx.objectStore('docs').getAll(), meta = tx.objectStore('meta').get('tabs');
+    tx.oncomplete = () => {
+      const names = new Map((docs.result as { id: string; name: string }[]).map((d) => [d.id, d.name]));
+      const m = meta.result as { order: string[]; active: string | null } | undefined;
+      const order = [...(m?.order ?? []).filter((id) => names.has(id)), ...[...names.keys()].filter((id) => !m?.order.includes(id))];
+      req.result.close();
+      done({ tabs: order.map((id) => names.get(id)!), active: m?.active ? names.get(m.active) ?? null : null });
+    };
+  };
+}));
