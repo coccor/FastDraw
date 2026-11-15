@@ -13,14 +13,14 @@ function agentFiles(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = (req.url ?? '').split('?')[0].replace(/^\//, '');
-        const text = siteFiles(__dirname).get(path);
+        const text = siteFiles(import.meta.dirname).get(path);
         if (text === undefined) return next();
         res.setHeader('Content-Type', `${path.endsWith('.md') ? 'text/markdown' : 'text/plain'}; charset=utf-8`);
         res.end(text);
       });
     },
     generateBundle() {
-      for (const [fileName, source] of siteFiles(__dirname)) this.emitFile({ type: 'asset', fileName, source });
+      for (const [fileName, source] of siteFiles(import.meta.dirname)) this.emitFile({ type: 'asset', fileName, source });
     },
   };
 }
@@ -33,7 +33,7 @@ export default defineConfig({
   build: {
     outDir: '../dist-editor',
     emptyOutDir: true,
-    rollupOptions: { input: { main: resolve(__dirname, 'editor/index.html'), edit: resolve(__dirname, 'editor/edit/index.html') } },
+    rollupOptions: { input: { main: resolve(import.meta.dirname, 'editor/index.html'), edit: resolve(import.meta.dirname, 'editor/edit/index.html') } },
   },
   assetsInclude: ['**/*.fdraw', '**/*.look'],
 });
