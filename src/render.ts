@@ -760,7 +760,10 @@ function footed(c: Conn, shapes: Shape[]): Conn {
   return moved ? { ...c, pts } : c;
 }
 
-const NO_LIGATURES = 'font-variant-ligatures:none';
+// Text is drawn as written: no ligatures, and glyphs placed at their true widths. A browser otherwise rounds
+// each glyph's advance to whole screen pixels at small sizes, so a zoomed-out diagram (the embed, the editor
+// zoomed out) loses its word spaces ("DuckDBexecutes"); geometricPrecision keeps the widths measureText assumes.
+const TEXT_STYLE = 'font-variant-ligatures:none;text-rendering:geometricPrecision';
 
 // background: false leaves the page out (no paper, no dots), for an image laid over something else
 export function renderBody(sc: Scene, background = true): string {
@@ -808,7 +811,7 @@ export function renderBody(sc: Scene, background = true): string {
   if (R.defs.size) out.splice(1, 0, `<defs>${hatchDefs()}</defs>`);
   // Text is drawn as written: no font turns `--`, `->`, `>=` or `...` into one glyph (the PNG renderer gets
   // fonts with their ligatures turned off instead, withoutLigatureFonts), and spaces are kept (keepSpaces).
-  return keepSpaces([`<g style="${NO_LIGATURES}">`, ...out, '</g>'].join('\n'));
+  return keepSpaces([`<g style="${TEXT_STYLE}">`, ...out, '</g>'].join('\n'));
 }
 
 // SVG collapses runs of spaces and drops leading and trailing ones. A text that has any of those is marked

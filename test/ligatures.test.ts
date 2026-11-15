@@ -34,7 +34,7 @@ test('the font copies for the PNG renderer have no ligature features', () => {
 
 test('the SVG turns ligatures off for all its text', () => {
   const svg = renderSvg(buildScene('a: node "pz run --log-format json" at 0,0\n', null));
-  assert.match(svg, /<g style="font-variant-ligatures:none">[\s\S]*pz run --log-format json[\s\S]*<\/g>\n<\/svg>$/);
+  assert.match(svg, /<g style="font-variant-ligatures:none;text-rendering:geometricPrecision">[\s\S]*pz run --log-format json[\s\S]*<\/g>\n<\/svg>$/);
 });
 
 // Width of the ink of one line of Geist Mono, drawn by resvg with the fonts the command line uses.
