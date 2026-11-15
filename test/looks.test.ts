@@ -7,7 +7,7 @@ import { parseStatements } from '../src/parse.ts';
 import { buildScene } from '../src/scene.ts';
 import { renderSvg } from '../src/render.ts';
 import { check } from '../src/check.ts';
-import { parseLook } from '../src/look.ts';
+import { parseLook, color } from '../src/look.ts';
 // @ts-expect-error a plain JS tool
 import { generate } from '../tools/bundle-looks.mjs';
 
@@ -137,4 +137,42 @@ test('a tag on a shape of any size is placed in bounded time', () => {
   assert.ok(performance.now() - t0 < 2000, `took ${Math.round(performance.now() - t0)}ms`);
   // and an ordinary one is still moved clear of its outline, exactly as before
   assert.match(renderSvg(buildScene('d: decision "Ship?" at 40,40 200x96 tag=Q\n', null)), />Q</);
+});
+
+// The hue (degrees) and chroma of a colour as drawn: an rgba laid over an opaque backdrop, in OKLCH.
+function drawnLch(c: string, over: string): [number, number] {
+  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(c)!, b = hex(over), a = +m[4];
+  const [r, g, bl] = [1, 2, 3].map((i) => (+m[i] * a + b[i - 1] * (1 - a)) / 255).map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl), mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl);
+  const A = 1.9779984951 * l - 2.428592205 * mm + 0.4505937099 * s, B = 0.0259040371 * l + 0.7827717662 * mm - 0.808675766 * s;
+  return [((Math.atan2(B, A) * 180) / Math.PI + 360) % 360, Math.hypot(A, B)];
+}
+const hueGap = (x: number, y: number) => Math.min(Math.abs(x - y), 360 - Math.abs(x - y));
+
+test('a tint keeps its hue on a dark page: amber/0.1 over navy is a dark amber, not grey', () => {
+  const night = bundledLook('night')!, paper = night.colors.get('paper')!, card = night.colors.get('card')!;
+  for (const name of ['amber', 'violet', 'rose', 'teal']) {
+    const [hue] = drawnLch(`rgba(${[1, 3, 5].map((i) => parseInt(night.colors.get(name)!.slice(i, i + 2), 16))},1)`, paper);
+    for (const [over, under] of [[undefined, paper], ['card', card]] as const) {
+      const [h, c] = drawnLch(color(night, `${name}/0.1`, over), under);
+      assert.ok(hueGap(h, hue) < 6, `${name}/0.1 over ${under} has hue ${h.toFixed(0)}, the tint's is ${hue.toFixed(0)}`);
+      assert.ok(c > 0.012, `${name}/0.1 over ${under} is nearly grey (chroma ${c.toFixed(3)})`);
+    }
+  }
+  // grey tints are a plain blend, as before
+  assert.equal(color(night, 'ink/0.03'), 'rgba(226,232,240,0.03)');
+});
+
+test('tints on a light page are a plain alpha blend, unchanged; canvas tint= chooses either way', () => {
+  for (const [name, look] of looks()) if (name !== 'night') assert.equal(color(look, '#fbbf24/0.1'), 'rgba(251,191,36,0.1)', name);
+  assert.equal(color(parseLook('canvas paper=#0b1226 tint=alpha'), '#fbbf24/0.1'), 'rgba(251,191,36,0.1)');
+  assert.notEqual(color(parseLook('canvas paper=#ffffff tint=hue'), '#fbbf24/0.1'), 'rgba(251,191,36,0.1)');
+});
+
+test('row and cell tints in a table are mixed against the table\'s fill', () => {
+  const svg = renderSvg(buildScene('look night\nt: table "t" at 0,0\n  | a "x" fill=amber/0.15\n  | b "y" fill.1=amber/0.15\n', null));
+  const tint = color(bundledLook('night')!, 'amber/0.15', '#131c38');
+  assert.notEqual(tint, color(bundledLook('night')!, 'amber/0.15'));
+  assert.equal(svg.split(`fill="${tint}"`).length - 1, 2, 'the row and the cell tint use the colour mixed over the card');
 });
