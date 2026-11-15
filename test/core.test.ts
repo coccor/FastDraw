@@ -387,7 +387,7 @@ test('a chart draws axes and its series from the numbers given', async () => {
   assert.deepEqual(check(sc).filter((i) => i.level !== 'hint'), []);
   const svg = renderSvg(sc);
   // the scale runs 0..100 over 200px: a bar of 40 is 80px tall and stands on the axis at y=280
-  assert.ok(svg.includes('y="200" width="62" height="80"'), svg.match(/<rect[^>]*height="80"[^>]*>/)?.[0]);
+  assert.ok(svg.includes('y="200" width="62" height="80"'), svg.match(/<rect[^>]*height="80"[^>]*>/)?.[0] ?? svg);
   assert.equal((svg.match(/rx="2" fill="#/g) ?? []).length >= 3, true);
   assert.ok(svg.includes('>100k<') && svg.includes('>Q3<') && svg.includes('>Plan<') && svg.includes('>Revenue<'));
   assert.ok(svg.includes('points="130,180 230,180 330,180 430,180"')); // the plan line at 50, through the middle of each category
