@@ -16,8 +16,9 @@ back as a small edit to the text. Neither side has to redo the other's work.
 
 </div>
 
-> **Status: proof of concept.** The language, the tool and the editor all work, but nothing is
-> published as a package yet and details may change.
+> **Status: early.** The language, the command-line tool and the editor all work. The tool is on
+> npm as [`fastdraw`](https://www.npmjs.com/package/fastdraw) and the editor is live at
+> https://fastdraw.dev/edit/. Version 0.x: details of the language may still change.
 
 ## What you get
 
