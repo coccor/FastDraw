@@ -132,18 +132,95 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
+type RGB = [number, number, number];
+type Lab = [number, number, number];
+const lin = (v: number) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+const unlin = (v: number) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+function toOklab(c: RGB): Lab {
+  const [r, g, b] = c.map(lin);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+}
+// sRGB from OKLab, unclamped: a channel outside 0..255 means the colour is out of gamut
+function fromOklab([L, A, B]: Lab): RGB {
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3, m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3, s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  return [unlin(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s), unlin(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s), unlin(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)];
+}
+const inGamut = (c: RGB) => c.every((v) => v >= -0.5 && v <= 255.5);
+
+// Whether a look mixes colour/alpha tints so they keep their hue. canvas tint=hue or tint=alpha says so; without
+// it, a dark page keeps the hue and a light page uses a plain alpha blend. On a dark page a plain blend of a warm
+// colour over a cool one cancels out: amber/0.1 over navy is a flat grey.
+export function tintKeepsHue(look: Look): boolean {
+  if (look.canvas.tint === 'hue') return true;
+  if (look.canvas.tint === 'alpha') return false;
+  const paper = resolveBase(look, look.canvas.paper ?? 'paper');
+  const rgb = paper.startsWith('#') ? hexToRgb(paper) : null;
+  return !!rgb && toOklab(rgb)[0] < 0.5;
+}
+
+function resolveBase(look: Look, v: string): string {
+  const base = look.colors.get(v) ?? v;
+  return look.colors.get(base) ?? base;
+}
+
+// The tint `rgb` at `alpha` laid over `over`, mixed in OKLCH so it keeps the tint's hue: lightness moves from the
+// backdrop's towards the tint's, chroma is the tint's share, the hue is the tint's. Written back as rgba whose plain alpha blend over
+// `over` gives exactly that colour, so it stays see-through like any other tint. Grey tints are left as they are.
+function hueTint(rgb: RGB, alpha: number, over: RGB): string | null {
+  const t = toOklab(rgb), b = toOklab(over);
+  const ct = Math.hypot(t[1], t[2]), cb = Math.hypot(b[1], b[2]);
+  if (ct < 0.05 || alpha <= 0 || alpha >= 1) return null;
+  const L = b[0] + (t[0] - b[0]) * alpha, h = Math.atan2(t[2], t[1]);
+  // the backdrop's own colour counts only as far as it leans the tint's way, so a warm tint on a navy page is as
+  // strong as it would be on a grey one, and an indigo tint on navy comes out as a plain blend would
+  const lean = cb ? Math.max(0, (b[1] * t[1] + b[2] * t[2]) / (cb * ct)) : 0;
+  let C = ct * alpha + cb * lean * (1 - alpha), target = fromOklab([L, C * Math.cos(h), C * Math.sin(h)]);
+  while (!inGamut(target) && C > 0.001) { C *= 0.95; target = fromOklab([L, C * Math.cos(h), C * Math.sin(h)]); }
+  target = target.map((v) => Math.min(255, Math.max(0, v))) as RGB;
+  // the least opacity at or above the author's whose colour, blended over the backdrop, can reach the target
+  let a = alpha;
+  for (let i = 0; i < 3; i++) {
+    const d = target[i] - over[i];
+    if (d > 0) a = Math.max(a, d / (255 - over[i] || 1));
+    if (d < 0) a = Math.max(a, -d / (over[i] || 1));
+  }
+  a = Math.min(1, Math.ceil(a * 1000) / 1000);
+  const c = target.map((v, i) => Math.round(Math.min(255, Math.max(0, over[i] + (v - over[i]) / a))));
+  return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+}
+
 // Accepts: none, #hex, a colour name from the look, and any of those followed by /alpha.
-export function color(look: Look, v: string | undefined): string {
+// `over` is what the colour will be laid on (a colour as a look writes it); the page when not given. It matters
+// only for tints on a look whose tints keep their hue.
+export function color(look: Look, v: string | undefined, over?: string): string {
   if (!v || v === 'none' || v === 'transparent') return 'none';
   let alpha: number | undefined;
   const m = /^(.*)\/([0-9.]+)$/.exec(v);
   if (m && !v.startsWith('rgb')) { v = m[1]; alpha = parseFloat(m[2]); }
-  let base = look.colors.get(v) ?? v;
-  base = look.colors.get(base) ?? base;
+  const base = resolveBase(look, v);
   if (alpha === undefined) return base;
   const rgb = base.startsWith('#') ? hexToRgb(base) : null;
   if (!rgb) return base;
+  if (tintKeepsHue(look)) {
+    const under = backdrop(look, over) ?? backdrop(look, look.canvas.paper ?? 'paper');
+    const mixed = under && hueTint(rgb, alpha, under);
+    if (mixed) return mixed;
+  }
   return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
+}
+
+// An opaque colour to mix a tint against; a see-through one is laid over the page first.
+function backdrop(look: Look, v: string | undefined): RGB | null {
+  if (!v || v === 'none') return null;
+  const m = /^(.*)\/([0-9.]+)$/.exec(v);
+  const rgb = (c: string) => { const b = resolveBase(look, c); return b.startsWith('#') ? hexToRgb(b) : null; };
+  if (!m) return rgb(v);
+  const top = rgb(m[1]), page = rgb(look.canvas.paper ?? 'paper'), a = parseFloat(m[2]);
+  if (!top || !page) return top;
+  return [0, 1, 2].map((i) => top[i] * a + page[i] * (1 - a)) as RGB;
 }
 
 export function isColor(look: Look, v: string): boolean {

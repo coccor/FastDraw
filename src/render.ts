@@ -92,7 +92,7 @@ export const num = (v: string | undefined, d: number) => (v === undefined || v =
 export const r2 = (n: number) => Math.round(n * 100) / 100;
 // Everything interpolated into an attribute goes through esc: diagram files are untrusted input
 // and the editor injects this markup into the page.
-export const col = (look: Look, v: string | undefined) => esc(color(look, v));
+export const col = (look: Look, v: string | undefined, over?: string) => esc(color(look, v, over));
 const fam = (look: Look, v: string | undefined) => esc(fontFamily(look, v));
 
 export function textAttrs(look: Look, p: Props, pre: string, d: { font: string; size: number; weight: number; color: string }) {
@@ -252,7 +252,7 @@ function drawTable(look: Look, s: Shape): string {
   out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} fill="${col(look, p.fill)}"/>`);
   if (headH) {
     const hy = s.y + headH;
-    out.push(`<path d="M ${s.x},${hy} L ${s.x},${s.y + r} Q ${s.x},${s.y} ${s.x + r},${s.y} L ${x2 - r},${s.y} Q ${x2},${s.y} ${x2},${s.y + r} L ${x2},${hy} Z" fill="${col(look, p['head.fill'] ?? 'ink/0.06')}"/>`);
+    out.push(`<path d="M ${s.x},${hy} L ${s.x},${s.y + r} Q ${s.x},${s.y} ${s.x + r},${s.y} L ${x2 - r},${s.y} Q ${x2},${s.y} ${x2},${s.y + r} L ${x2},${hy} Z" fill="${col(look, p['head.fill'] ?? 'ink/0.06', p.fill)}"/>`);
     const t = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
     const txt = p['title.caps'] === '1' ? s.text!.toUpperCase() : s.text!;
     const tl = txt.split('\n'), tlh = Math.round(t.size * 1.25), left = p['title.align'] === 'left';
@@ -266,7 +266,7 @@ function drawTable(look: Look, s: Shape): string {
   rows.forEach((row, i) => {
     if (row.kind === 'rule') { out.push(`<line x1="${s.x}" y1="${row.y}" x2="${x2}" y2="${row.y}" stroke="${stroke}" stroke-width="${sw}"/>`); return; }
     const fill = row.p.fill ?? (row.kind === 'head' ? p['head.fill'] ?? 'ink/0.06' : undefined);
-    if (fill && fill !== 'none') out.push(`<rect x="${s.x + sw / 2}" y="${row.y}" width="${s.w - sw}" height="${row.h - (i === rows.length - 1 ? sw / 2 : 0)}" fill="${col(look, fill)}"/>`);
+    if (fill && fill !== 'none') out.push(`<rect x="${s.x + sw / 2}" y="${row.y}" width="${s.w - sw}" height="${row.h - (i === rows.length - 1 ? sw / 2 : 0)}" fill="${col(look, fill, p.fill)}"/>`);
     const prev = rows[i - 1];
     if (prev && prev.kind !== 'rule' && p.rules !== '0') out.push(`<line x1="${s.x}" y1="${row.y}" x2="${x2}" y2="${row.y}" stroke="${rule}" stroke-width="0.8"/>`);
     row.cells.forEach((cell, j) => {
@@ -275,7 +275,7 @@ function drawTable(look: Look, s: Shape): string {
       const cf = row.p[`fill.${j + 1}`], cc = row.p[`color.${j + 1}`], g = num(p['cell.gap'], 16);
       if (cf && cf !== 'none') {
         const x0 = j === 0 ? s.x + sw / 2 : s.x + c.x - g / 2, x1 = j === cols.length - 1 ? x2 - sw / 2 : s.x + cols[j + 1].x - g / 2;
-        out.push(`<rect x="${r2(x0)}" y="${row.y}" width="${r2(x1 - x0)}" height="${row.h}" fill="${col(look, cf)}"/>`);
+        out.push(`<rect x="${r2(x0)}" y="${row.y}" width="${r2(x1 - x0)}" height="${row.h}" fill="${col(look, cf, p.fill)}"/>`);
       }
       if (cell === '') return;
       const base = row.kind === 'head' ? strong : j === 0 ? first : rest;

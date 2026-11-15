@@ -24,6 +24,7 @@ canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dot
                                                  // sketch=1 draws every outline and line by hand (2 is rougher); see looks/sketch.look
                                                  // bars=colour stripes the page like listing paper (bargap= is the stripe height), feed=colour adds
                                                  // sprocket holes down both edges, grain=0.5 lays paper grain over everything (0 to 1)
+                                                 // tint=hue or tint=alpha: how colour/opacity tints mix (see Colours)
 
 color paper  #ffffff                             // a named colour
 color ink    #1c1f2a
@@ -46,6 +47,8 @@ guidance "Use focal on at most two things in one diagram."
 ### Colours
 
 A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names. `card` is the fill of a plain box (white unless a look sets it; a dark look sets it to its box colour), so a diagram that writes `fill=card` stays right in every look.
+
+On a light page a tint such as `amber/0.1` is the colour at that opacity over what is underneath. On a dark page that blend loses the hue: 10% of amber over navy is grey. So when `paper` is dark, a tint of a coloured colour is mixed so it keeps its hue: it gets lighter and takes on the tint's colour as if the page were neutral grey, and stays see-through. `amber/0.1` on Night is a dark amber, the counterpart of the pale amber on the built-in look, so one diagram reads in both. Tints of greys (`ink/0.06`) are blended as before. `canvas tint=alpha` turns this off for a dark look; `canvas tint=hue` turns it on for a light one.
 
 ### Fonts
 
@@ -174,7 +177,7 @@ Every `.svg` file directly in that folder becomes an icon, drawn exactly as the 
 
 ## What makes a look good
 
-- **On dark paper, use solid fills for the accent.** A translucent tint (`accent/0.15`) over a dark background turns muddy; a solid accent with dark text on it stays clean.
+- **On dark paper, tints are quiet.** A tint (`accent/0.15`) keeps its hue but stays dark; for the one thing that must stand out, a solid accent with dark text on it is clearer.
 - **Decide the accent first.** One colour carries the focus (`focal`, `terminal-focal`, `primary`). Everything else is ink, greys and paper. A look with three bright colours has no focus.
 - **Separate by more than colour.** `external`, `optional`, `cloud` and `store` should differ in shape, fill or dash, so they read in greyscale and for colour-blind readers.
 - **Two or three stroke weights at most**, and the accent arrow slightly heavier than the default arrow.
