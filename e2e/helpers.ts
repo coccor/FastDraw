@@ -14,7 +14,6 @@ export async function openFolder(page: Page, files: Record<string, string | { ba
   await page.waitForSelector('.welcome');
   await page.evaluate(async (entries) => {
     const rootDir = await navigator.storage.getDirectory();
-    // @ts-expect-error entries() is not in the DOM types
     for await (const [n] of rootDir.entries()) await rootDir.removeEntry(n, { recursive: true });
     for (const [path, data] of Object.entries(entries)) {
       const parts = path.split('/');
