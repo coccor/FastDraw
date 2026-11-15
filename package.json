@@ -22,8 +22,13 @@
   "bin": {
     "fastdraw": "dist/cli.js"
   },
+  "exports": {
+    "./embed": "./dist-embed/embed.js",
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist/cli.js",
+    "dist-embed",
     "guide",
     "fonts",
     "agents",
@@ -37,11 +42,12 @@
   "scripts": {
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
     "dev": "vite",
-    "build:editor": "vite build",
+    "build:editor": "vite build && vite build -c vite.embed.config.ts --outDir dist-editor --emptyOutDir false",
     "typecheck": "tsc -p .",
     "test:e2e": "playwright test",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node20 --external:@resvg/resvg-js --banner:js=\"#!/usr/bin/env node\" --outfile=dist/cli.js",
-    "prepack": "npm run build:cli"
+    "prepack": "npm run build:cli && npm run build:embed",
+    "build:embed": "vite build -c vite.embed.config.ts"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2"

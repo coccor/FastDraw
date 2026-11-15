@@ -1,0 +1,8 @@
+# Cloudflare static assets: other sites load embed.js (a module script, fetched with CORS),
+# the renderer it loads, and the fonts it adds with FontFace, so these answer any origin.
+/embed.js
+  Access-Control-Allow-Origin: *
+/embed/*
+  Access-Control-Allow-Origin: *
+/fonts/*
+  Access-Control-Allow-Origin: *

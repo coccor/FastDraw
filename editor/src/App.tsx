@@ -35,6 +35,7 @@ import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
 import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
+import { decodeShared, sharedInHash } from './embed/share.ts';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -544,6 +545,23 @@ export function App() {
     const t = TEMPLATES.find((x) => x.kind === kind);
     if (t) newDiagram(t.text, t.kind);
   });
+
+  // `#fdraw=...`, from "Open in FastDraw" on a diagram embedded in another site: that diagram (and its look
+  // file, when it has its own) as a new diagram kept in this browser. The hash is cleared so a reload does not
+  // open it twice.
+  const sharedOnce = useRef(false);
+  useEffect(() => {
+    if (!ready || sharedOnce.current) return;
+    sharedOnce.current = true;
+    const data = sharedInHash(location.hash);
+    if (data === null) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    decodeShared(data).then((d) => {
+      if (!d) { setStatus('the link to this diagram is incomplete, so it could not be opened'); return; }
+      io.current = { fileMod: 0, lookMod: 0, written: '' };
+      load(d.text, d.look?.text ?? null, d.name.replace(/\.fdraw$/i, '') || 'diagram');
+    });
+  }, [ready, load]);
 
   const openDemo = (text: string, label: string) => {
     io.current = { fileMod: 0, lookMod: 0, written: '' };

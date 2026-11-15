@@ -11,5 +11,6 @@ FastDraw diagrams are small text files (`.fdraw`). You place every element yours
 2. Always finish with `fastdraw check <file>` clean and a look at the PNG from `fastdraw render <file>`.
 3. When the diagram is done, ask the person what to do next with AskUserQuestion: **Preview as PNG** (open the rendered PNG in their image viewer), **Open in fastdraw.dev** (run `fastdraw open <file>` in the background; it saves their edits back to the file) or **Nothing**. Do not open anything before they choose.
 4. When changing an existing diagram, do not move, resize or restyle what is already there unless asked. A person may have arranged it by hand.
+5. For a docs site (a web page, not a GitHub README), put the diagram on the page with `<fastdraw-diagram src="....fdraw">` from https://fastdraw.dev/embed.js, with the rendered PNG inside it as the fallback image. It draws the file live, pannable and zoomable, and follows the page's dark mode.
 
 If the `fastdraw` command is not on the PATH, run it as `npx fastdraw` (for example `npx fastdraw guide`).

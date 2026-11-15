@@ -1,6 +1,7 @@
 node_modules/
 *.png
 dist-editor/
+dist-embed/
 !compare/*.png
 !compare/kinds/*.png
 .playwright-mcp/
