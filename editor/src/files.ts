@@ -11,7 +11,6 @@ const SKIP = new Set(['node_modules', '.git', 'dist', 'bin', 'obj', '.next', 'ta
 
 async function walk(dir: FileSystemDirectoryHandle, prefix: string, depth: number, out: string[]): Promise<void> {
   if (depth > 6 || out.length > 500) return;
-  // @ts-expect-error: entries() is not in the bundled DOM types
   for await (const [name, h] of dir.entries()) {
     if (h.kind === 'directory') { if (!SKIP.has(name) && !name.startsWith('.')) await walk(h, prefix + name + '/', depth + 1, out); }
     else if (name.endsWith('.fdraw')) out.push(prefix + name);
@@ -126,7 +125,6 @@ export async function readFontDir(root: FileSystemDirectoryHandle, path: string,
   try {
     let dir = root;
     for (const seg of parts) dir = await dir.getDirectoryHandle(seg);
-    // @ts-expect-error: entries() is not in the bundled DOM types
     for await (const [name, h] of dir.entries()) {
       if (h.kind !== 'file' || !ext.test(name) || out.length >= maxFiles) continue;
       const f = await h.getFile();
