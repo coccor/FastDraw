@@ -29,10 +29,15 @@ export type PanelActions = {
 };
 
 // One row, as Excalidraw does it: a few quick picks (`top`, else the first five of `values`), a divider, then a
-// swatch showing the current colour that opens the whole palette (`values`) over a colour picker (hex first).
+// swatch showing the current colour that opens the whole palette (`values`), the diagram's custom colours, shades and a hex field.
 // `custom` is that swatch's label; it is marked when the current colour is not one of the quick picks.
 export function Swatches({ sc, values, current, onPick, custom, label, top }: { sc: Scene; values: string[]; current: string | undefined; onPick: (v: string) => void; custom: string; label?: string; top?: string[] }) {
   const picks = top ?? values.slice(0, 5);
+  // the diagram's own hex colours that the palette does not already offer
+  const recent = React.useMemo(() => {
+    const has = new Set(values.map((v) => color(sc.look, v).toLowerCase()));
+    return customColours(sc).filter((h) => !has.has(h));
+  }, [sc, values.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const hex = current ? color(sc.look, current) : null;
   const own = !!current && !picks.includes(current);
   const swatch = (v: string) => {
@@ -48,11 +53,21 @@ export function Swatches({ sc, values, current, onPick, custom, label, top }: { 
       <span className="divider" />
       <ColorPicker className={'custom' + (own ? ' on' : '') + (hex === 'none' ? ' none' : hex ? ' set' : '')} style={hex && hex !== 'none' ? { background: hex } : undefined}
         label={custom} title={current ? `${current === 'none' ? 'None' : current} (more colours)` : 'More colours'}
-        value={hex && /^#[0-9a-f]{6}$/i.test(hex) ? hex : null} onPick={onPick}>
-        <div className="palette" role="group" aria-label="Palette">{values.map(swatch)}</div>
-      </ColorPicker>
+        value={current} palette={values} recent={recent} resolve={(v) => color(sc.look, v)} onPick={onPick} />
     </div>
   );
+}
+
+// The hex colours written in the diagram, most used first: the "custom colours" of the popover.
+function customColours(sc: Scene): string[] {
+  const n = new Map<string, number>();
+  for (const el of [...sc.shapes, ...sc.texts, ...sc.conns]) {
+    for (const v of Object.values(el.p)) {
+      const h = typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null;
+      if (h) n.set(h, (n.get(h) ?? 0) + 1);
+    }
+  }
+  return [...n].sort((a, b) => b[1] - a[1]).map(([h]) => h);
 }
 
 // The look's colours that are not ink, greys, near-blacks or white: the ones worth a quick pick.

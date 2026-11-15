@@ -190,6 +190,11 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await page.getByRole('dialog', { name: 'Custom stroke colour' }).getByRole('button', { name: 'violet', exact: true }).click();
   expect(lineOf(await source(page), 'user')).toContain('stroke=violet');
   await expect(page.getByRole('group', { name: 'Stroke colours' }).locator('.custom.on')).toHaveCount(1);
+  // the palette's letter keys and the shades' Shift+digit keys pick too
+  await page.keyboard.press('q');
+  expect(lineOf(await source(page), 'user')).toMatch(/stroke=\w+/);
+  await page.keyboard.press('Shift+Digit1');
+  expect(lineOf(await source(page), 'user')).toMatch(/stroke=#[0-9a-f]{6}/);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Custom stroke colour' })).toHaveCount(0);
   await page.locator('.panel select').first().selectOption('cloud');
