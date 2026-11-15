@@ -1,7 +1,7 @@
 // Draws a resolved scene as SVG. The same output feeds PNG export.
 import { color, fontFamily } from './look.ts';
 import type { Look, Props } from './look.ts';
-import { textWidth, ICON_CAPTION_GAP } from './scene.ts';
+import { textWidth, measureText, ICON_CAPTION_GAP } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri } from './iconfiles.ts';
@@ -409,14 +409,23 @@ function drawShape(look: Look, s: Shape): string {
   if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x, ib.y, ib.size));
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
-    const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
+    // the plate is the text as drawn in the look's font plus 6px either side
+    const tw = Math.ceil(measureText(look, txt, title.size, title.font, title.weight, title.spacing) + 12);
     // a caption on the top edge: centred, or at the left or right corner with title.align
     const al = p['title.align'], mid = al === 'left' ? s.x + 12 + tw / 2 : al === 'right' ? s.x + s.w - 12 - tw / 2 : cxm;
     // title.dy moves the caption off the edge and title.fill colours its plate (none for no plate); a look that
     // sets either gets a plate sized to its type, the others keep the 12px plate they have always had
     const own = p['title.dy'] !== undefined || p['title.fill'] !== undefined;
     const ty = s.y + num(p['title.dy'], 0), th = own ? Math.max(12, Math.ceil(title.size + 4)) : 12;
-    if (p['title.fill'] !== 'none') out.push(`<rect x="${mid - tw / 2}" y="${ty + 4}" width="${tw}" height="${th}" rx="2" fill="${col(look, p['title.fill'] ?? look.canvas.paper ?? 'paper')}"/>`);
+    // A plate that crosses the outline is paper, so the edge stops at the words. One that sits inside the
+    // shape is the shape's own fill laid over paper, so it reads as the shape and only keeps the page's
+    // dots and hatching off the text.
+    if (p['title.fill'] !== 'none') {
+      const rect = (fill: string) => `<rect x="${r2(mid - tw / 2)}" y="${ty + 4}" width="${tw}" height="${th}" rx="2" fill="${fill}"/>`;
+      out.push(rect(col(look, p['title.fill'] ?? look.canvas.paper ?? 'paper')));
+      const inside = p['title.fill'] === undefined && ty + 4 >= s.y + num(p.sw, 1) / 2 && !p.offset && !blendOf(p);
+      if (inside && p.fill && p.fill !== 'none') out.push(rect(col(look, p.fill)));
+    }
     out.push(`<text x="${mid}" y="${own ? r2(ty + 4 + th / 2 + title.size * 0.36) : s.y + 13}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
   } else if (s.text || p.sub) {
     const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
