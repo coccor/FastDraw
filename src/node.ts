@@ -1,9 +1,10 @@
 // File-system loaders for the command-line tool. The rest of the core is browser-safe.
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { fontMeta } from './fontmeta.ts';
-import { dirname, resolve } from 'node:path';
-import { parseLook, emptyLook } from './look.ts';
+import { fontMeta, withoutLigatures } from './fontmeta.ts';
+import { dirname, resolve, join, basename } from 'node:path';
+import { parseLook, emptyLook, isBundledLook, bundledLook, defaultLook, BUNDLED_LOOK_NAMES } from './look.ts';
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
@@ -58,6 +59,36 @@ const listFonts = (dir: string) => (existsSync(dir) ? readdirSync(dir).filter(is
 export const bundledFontDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'fonts');
 export const bundledFonts = () => listFonts(bundledFontDir);
 
+// The given font files as copies that have their ligatures turned off, so the PNG shows `--`, `->` and `>=`
+// as typed, as the SVG does with font-variant-ligatures: none. resvg only takes font paths, so the copies go
+// to a private temporary folder. Each file is patched once per process and the copy reused for every image
+// drawn after it; the folder is removed when the process exits. A file with nothing to turn off is used as is.
+const patched = new Map<string, string>();
+let patchDir: string | undefined;
+export function withoutLigatureFonts(files: string[]): string[] {
+  return files.map((f) => {
+    const key = resolve(f);
+    let out = patched.get(key);
+    if (out === undefined) {
+      const copy = withoutLigatures(new Uint8Array(readFileSync(f)));
+      out = f;
+      if (copy) {
+        if (!patchDir) {
+          const dir = mkdtempSync(join(tmpdir(), 'fastdraw-fonts-'));
+          patchDir = dir;
+          process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
+          // Ctrl-C and kill end the process without 'exit'; turn them into an exit so the folder still goes
+          for (const sig of ['SIGINT', 'SIGTERM'] as const) process.once(sig, () => process.exit(sig === 'SIGINT' ? 130 : 143));
+        }
+        out = join(patchDir, `${patched.size}-${basename(f)}`);
+        writeFileSync(out, copy);
+      }
+      patched.set(key, out);
+    }
+    return out;
+  });
+}
+
 // The font files a look brings with its `fontdir` lines, and a note for every family the look
 // names that neither those folders nor the bundled fonts provide.
 export function lookFonts(lookFile: string | undefined, look: Look): { files: string[]; missing: string[] } {
@@ -78,9 +109,10 @@ function readLook(file: string, p: string | undefined): { text: string | null; r
   catch { return { text: null, refused: false }; }
 }
 
-export function loadScene(file: string): Scene {
-  let src = '';
-  try { src = readFileSync(file, 'utf8'); }
+// srcIn: the diagram's text when it is not the file's as it is on disk (drawn with another look)
+export function loadScene(file: string, srcIn?: string): Scene {
+  let src = srcIn ?? '';
+  try { if (srcIn === undefined) src = readFileSync(file, 'utf8'); }
   catch {
     const sc = buildScene('', null, file);
     sc.issues.unshift({ line: 0, level: 'error', msg: `cannot read ${file}` });
@@ -100,8 +132,8 @@ export function loadScene(file: string): Scene {
 
 // The diagram and look texts as they are on disk, for embedding in exports. A look that does
 // not parse cleanly is left out.
-export function readSources(file: string, sc?: Scene): { diagram: string; look: string | null; icons?: Record<string, string> } {
-  const diagram = readFileSync(file, 'utf8');
+export function readSources(file: string, sc?: Scene, src?: string): { diagram: string; look: string | null; icons?: Record<string, string> } {
+  const diagram = src ?? readFileSync(file, 'utf8');
   const p = lookPath(diagram);
   const { text } = readLook(file, p);
   const clean = text !== null && parseLook(text, p).issues.every((i) => i.level !== 'error');
@@ -115,4 +147,50 @@ export function lookFileOf(diagramFile: string): string | undefined {
     const p = lookPath(readFileSync(diagramFile, 'utf8'));
     return p && p.toLowerCase().endsWith('.look') ? resolve(dirname(diagramFile), p) : undefined;
   } catch { return undefined; }
+}
+
+// A look named on the command line, in a diagram or in a look's `dark` line: one that ships with
+// FastDraw by its name, or a .look file by its full path. No look at all is the built-in one.
+export type LookRef = { name: string } | { file: string };
+
+// --look <name|path>: a bundled look's name, or a path to a .look file from the current folder.
+export function lookArg(v: string): LookRef | string {
+  if (isBundledLook(v)) return { name: v };
+  if (!/\.look$/i.test(v)) return `no look named ${v}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file`;
+  return existsSync(v) ? { file: resolve(v) } : `look file not found: ${v}`;
+}
+
+// The look a diagram's text names, with a path read from the diagram's folder. undefined: the built-in look.
+export function lookOfDiagram(file: string, src: string): LookRef | undefined {
+  const p = lookPath(src);
+  if (p === undefined) return undefined;
+  return isBundledLook(p) ? { name: p } : { file: resolve(dirname(file), p) };
+}
+
+// How a diagram at `file` names the look: a bare name, or a path from the diagram's folder.
+export function lookRefText(ref: LookRef, file: string): string {
+  if ('name' in ref) return ref.name;
+  const rel = relative(dirname(resolve(file)), ref.file).split(sep).join('/');
+  return rel.startsWith('.') || isAbsolute(rel) ? rel : './' + rel;
+}
+
+// The look that draws the dark image for a look: what its `dark` line names (relative to the look's
+// own file). The built-in look's is Night. A string is the reason there is none.
+export function darkLookOf(ref: LookRef | undefined): LookRef | string {
+  const how = 'add a line to the look naming its dark version, like  dark night  or  dark "./team-night.look"';
+  let look = defaultLook(), name = 'the built-in look', from: string | undefined;
+  if (ref && 'name' in ref) { look = bundledLook(ref.name)!; name = `the ${ref.name} look`; }
+  else if (ref) {
+    if (!/\.look$/i.test(ref.file)) return `the look path must end in .look; ${ref.file} was not read`;
+    if (!existsSync(ref.file)) return `look file not found: ${ref.file}`;
+    look = parseLook(readFileSync(ref.file, 'utf8'), ref.file); name = basename(ref.file); from = ref.file;
+  }
+  const d = look.dark;
+  if (!d) return ref && 'name' in ref
+    ? `${name} has no dark version; draw the dark image with --look and a dark look instead`
+    : `${name} has no dark version: ${how}`;
+  if (isBundledLook(d)) return { name: d };
+  if (!from) return `${name} names a dark look by path (${d}), which only a look file can do`;
+  const file = resolve(dirname(from), d);
+  return existsSync(file) ? { file } : `the dark look of ${name} was not found: ${d}`;
 }

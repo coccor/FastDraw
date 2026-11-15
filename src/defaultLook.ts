@@ -6,6 +6,10 @@ export const DEFAULT_LOOK = `// FastDraw default look. Copy it with "fastdraw in
 
 canvas paper=paper dots=ink/0.07 dotgap=24
 
+// the look "fastdraw render --dark" draws the dark image with. Night has these styles on a dark page;
+// once your colours differ, point it at a dark look of your own: dark "./team-night.look"
+dark night
+
 color paper  #f6f7fb
 color card   #ffffff
 color ink    #0f172a

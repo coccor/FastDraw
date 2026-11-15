@@ -1,0 +1,9 @@
+
+shopper: external "Shopper" at 40,60
+api:     focal "Orders API" sub="REST" at 296,60
+db:      store "Orders DB" at 552,56
+
+shopper -> api "HTTPS" style=link
+api -> db "writes" style=primary
+
+legend at 40,172 external="Outside what you own" focal="The service this is about" store="Holds data"

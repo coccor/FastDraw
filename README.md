@@ -10,7 +10,7 @@ An agent writes a diagram as a small text file and places every element itself. 
 the same file in a browser editor, changes anything on a free canvas, and the change is saved
 back as a small edit to the text. Neither side has to redo the other's work.
 
-[A first diagram](#a-first-diagram) · [Getting started](#getting-started) · [Commands](#the-command-line-tool) · [Agents](#using-it-with-an-agent) · [Editor](#the-editor) · [Looks](#looks) · [Gallery](#gallery)
+[A first diagram](#a-first-diagram) · [Getting started](#getting-started) · [Commands](#the-command-line-tool) · [Agents](#using-it-with-an-agent) · [Editor](#the-editor) · [Embedding](#embedding-a-diagram) · [Looks](#looks) · [Gallery](#gallery)
 
 <img src="assets/how-it-works.png" alt="An AI agent writes diagram.fdraw; a person edits the same file in the browser editor; a look file sets the styles" width="860">
 
@@ -84,8 +84,8 @@ npm run dev                                  # the website and editor, at http:/
 
 | Command | What it does |
 |---|---|
-| `fastdraw check <file.fdraw>` | Report problems, with line numbers |
-| `fastdraw render <file.fdraw> [-o out.png\|.svg] [--scale 2] [--transparent] [--no-embed]` | Draw the diagram (PNG by default). `--transparent` leaves out the page colour and dots; `--no-embed` leaves the diagram out of the image |
+| `fastdraw check <file.fdraw \| folder> ...` | Report problems, with line numbers. A folder means every `.fdraw` file under it |
+| `fastdraw render <file.fdraw \| folder> ... [-o out.png\|.svg] [--scale 2] [--transparent] [--no-embed] [--look name\|file.look] [--dark]` | Draw the diagram (PNG by default) next to the file. `--transparent` leaves out the page colour and dots; `--no-embed` leaves the diagram out of the image. `--look` draws with another look without changing the file. `--dark` also writes `x-dark.png` with the look's dark version (Night for the built-in look). With several files or a folder, every file is checked first and nothing is drawn if any has an error; `-o` works with one file only |
 | `fastdraw guide [topic]` | Print the language guide, or the guide for one kind of diagram |
 | `fastdraw guide list` | List the kinds of diagram that have a guide |
 | `fastdraw sizes [file]` | List a look's styles and their sizes (the built-in look when no file is given) |
@@ -126,7 +126,49 @@ only for the editor's own address), opens the browser at the diagram, and writes
 on this device. `--editor http://localhost:5173/` points it at a local editor instead.
 
 `npm run build:editor` writes the website to `dist-editor/` as a static site you can host anywhere: the
-landing page at `/`, the editor at `/edit/`, and the guide for agents at `/llms.txt` and `/guide/<kind>.md`.
+landing page at `/`, the editor at `/edit/`, `embed.js` (below), and the guide for agents at `/llms.txt`
+and `/guide/<kind>.md`.
+
+## Embedding a diagram
+
+A docs site can show a `.fdraw` file as a live drawing instead of a PNG. Load `embed.js` once and wrap
+the image you already have in a `<fastdraw-diagram>` element:
+
+```html
+<script type="module" src="https://fastdraw.dev/embed.js"></script>
+
+<fastdraw-diagram src="/diagrams/01-overview.fdraw">
+  <img src="/diagrams/01-overview.png" alt="How a run works">
+</fastdraw-diagram>
+```
+
+The element fetches `src` (relative to the page), draws it as an SVG with the editor's renderer and
+replaces the image with it. A `look` line works as it does on the command line: a bundled look by name,
+or a `.look` file relative to the `.fdraw` file. The fonts come from the same place as `embed.js`.
+
+- **Size.** The drawing is as wide as the element, and its height follows the diagram's proportions. Give
+  `max-height="480"` (or a CSS `max-height`) to cap it; a taller diagram can then be scrolled inside.
+- **Moving around.** Drag to pan (one finger on a touch screen), pinch or Ctrl/Cmd+wheel to zoom. A plain
+  wheel scrolls the page as usual. Double-click shows the whole diagram again. With the diagram focused,
+  `+`, `-` and `0` zoom in, out and back to fit.
+- **Toolbar.** On hover or focus (always on touch screens): zoom in, zoom out, fit, full screen, and
+  **Open in FastDraw**, which opens a copy of the diagram (and its look file) in the editor at
+  https://fastdraw.dev/edit/. The diagram travels in the link after the `#`, so no server sees it. Set
+  `editor="http://localhost:5199/edit/"` to send it to another copy of the editor.
+- **Dark mode.** `theme="auto"` (the default) follows the page: `data-theme` on `<html>` (Starlight,
+  Docusaurus), a `dark` class on `<html>` (VitePress), otherwise the system setting, and redraws when it
+  changes. On a dark page a diagram in the built-in look is drawn in `night`; a diagram in another look
+  stays as it is. `theme="light"` or `theme="dark"` fixes it.
+- **When it cannot draw.** If the file is missing or has errors (anything `fastdraw check` reports as an
+  error), the image stays and the reason is logged to the browser console. Without JavaScript the image
+  is all a reader sees.
+
+`embed.js` is about 6 kB gzipped. It loads the renderer (about 135 kB gzipped) the first time a diagram
+is drawn, and the full icon set (about 1 MB) only for a diagram that uses an icon outside the built-in
+ones. To host it yourself, `npm run build:embed` writes `embed.js`, its `embed/` folder and `fonts/` to
+`dist-embed/` (the npm package ships them, as `fastdraw/embed`); serve the three together, and send
+`Access-Control-Allow-Origin` for them if the pages are on another origin. A `fonts="..."` attribute points
+at the fonts when they live somewhere else.
 
 ## Looks
 
@@ -141,7 +183,14 @@ A diagram picks its look with one line, `look "./team.look"`, or names one that 
 `look headline`, `look night`, `look reference`, `look sketch`, `look whiteboard`, or one of six styles of drawing:
 `look shade`, `look engraved`, `look keys`, `look transit`, `look offset`, `look listing`. In the editor, the **Look** button
 previews the diagram in each one before you keep it. A look can also bring its own fonts
-(`fontdir`) and colour icons (`icondir`). `fastdraw guide look` explains the format.
+(`fontdir`) and colour icons (`icondir`), and name its dark version (`dark "./team-night.look"`)
+for `fastdraw render --dark`. `fastdraw guide look` explains the format.
+
+A docs site with light and dark themes can draw both images of every diagram with one command:
+
+```bash
+fastdraw render docs/diagrams --dark    # x.png with each file's look, x-dark.png with its dark version
+```
 
 ## Gallery
 
@@ -168,6 +217,7 @@ All of these were written by agents from the guides alone. Sources are in
 | `looks/shade.look`, `engraved.look`, `keys.look`, `transit.look`, `offset.look`, `listing.look` | Six styles of drawing: a hatched shadow, an engraved plate, keycaps, a transit map, two inks out of register, a printout on listing paper. Written by `tools/gen-style-looks.py` |
 | `looks/headline.look` | Headline: serif headline over flat newspaper-graphics blocks, one muted crimson accent. An alternative to the built-in look |
 | `editor/` | The browser editor (Vite + React) |
+| `editor/src/embed/` | `<fastdraw-diagram>`, built as `embed.js` by `vite.embed.config.ts` |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
 | `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
@@ -180,7 +230,8 @@ All of these were written by agents from the guides alone. Sources are in
 npm test              # core tests
 npm run typecheck
 npm run test:e2e      # editor tests (Playwright)
-npm run build:editor  # static site in dist-editor/
+npm run build:editor  # static site in dist-editor/, with embed.js
+npm run build:embed   # embed.js alone, in dist-embed/
 ```
 
 ## Credits

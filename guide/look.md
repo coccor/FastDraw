@@ -24,6 +24,7 @@ canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dot
                                                  // sketch=1 draws every outline and line by hand (2 is rougher); see looks/sketch.look
                                                  // bars=colour stripes the page like listing paper (bargap= is the stripe height), feed=colour adds
                                                  // sprocket holes down both edges, grain=0.5 lays paper grain over everything (0 to 1)
+                                                 // tint=hue or tint=alpha: how colour/opacity tints mix (see Colours)
 
 color paper  #ffffff                             // a named colour
 color ink    #1c1f2a
@@ -47,6 +48,8 @@ guidance "Use focal on at most two things in one diagram."
 
 A colour value is `#hex`, a name defined with `color`, or either followed by `/opacity`: `ink/0.3`, `#ffffff/0.85`. `none` means no fill or no stroke. Define `paper`, `ink` and `muted` at least; built-in parts fall back to those names. `card` is the fill of a plain box (white unless a look sets it; a dark look sets it to its box colour), so a diagram that writes `fill=card` stays right in every look.
 
+On a light page a tint such as `amber/0.1` is the colour at that opacity over what is underneath. On a dark page that blend loses the hue: 10% of amber over navy is grey. So when `paper` is dark, a tint of a coloured colour is mixed so it keeps its hue: it gets lighter and takes on the tint's colour as if the page were neutral grey, and stays see-through. `amber/0.1` on Night is a dark amber, the counterpart of the pale amber on the built-in look, so one diagram reads in both. Tints of greys (`ink/0.06`) are blended as before. `canvas tint=alpha` turns this off for a dark look; `canvas tint=hue` turns it on for a light one.
+
 ### Fonts
 
 `font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`.
@@ -61,6 +64,7 @@ font sans "Fira Sans"
 - Files must be **TTF or OTF**, one file per weight and style you use (for example Regular and SemiBold; add Italic if a style sets `italic=1`). Box titles use weight 600 by default. Use static files, not a single variable font.
 - The family name is read from inside the files, so `font sans "..."` must match it exactly. `fastdraw sizes team.look` lists the fonts and flags any family it found no file for; `fastdraw check` warns about it too.
 - Commit the font folder with the look, and keep the font's licence file beside it. Use fonts whose licence allows redistribution (for example the SIL Open Font License).
+- Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`, `->`, `>=`, `!=` and `...` are drawn as the characters written, never as one joined glyph, so code, command-line flags and SQL read as typed.
 - In the browser editor the look's fonts load when a folder is open. A diagram opened as a single file, pasted, or restored from an exported image is drawn with fallback fonts until its folder is opened.
 
 ### Styles
@@ -99,7 +103,7 @@ On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `ta
 
 Keep type close to the built-in look's sizes (12px titles, 9px second lines, 10px line labels). Diagrams are laid out for those, so larger type overflows boxes that fit before.
 
-The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a paper-coloured patch behind it.
+The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a patch behind it, 6px wider than the words on each side. A patch that crosses the outline is paper-coloured, so the edge stops at the words; one that sits inside the shape takes the shape's own fill, so it hides the page dots behind the words and is otherwise invisible.
 
 **Table styles** (`shape=table`) use `fill`, `stroke`, `sw`, `radius`, `dash` and `title.*` like any box, plus:
 
@@ -167,13 +171,24 @@ Every `.svg` file directly in that folder becomes an icon, drawn exactly as the 
 - Files over 300 KB are skipped. Only the icons a diagram uses are carried inside its exported image.
 - A file with the same name as a built-in icon replaces it.
 
+### Dark version
+
+`dark` names the look that draws the same diagrams on a dark page. `fastdraw render x.fdraw --dark` writes `x.png` with the diagram's look and `x-dark.png` with the look its `dark` line names, for a site that shows one or the other with the reader's theme.
+
+```
+dark night                    // a look that ships with FastDraw
+dark "./team-night.look"      // a look file, relative to this look file
+```
+
+The built-in look's dark version is `night`, and Night names itself, since it is already dark. A dark look should keep the same style names, so the diagram draws the same way in both. Without a `dark` line, `--dark` stops with an error that names the look. To draw one diagram with another look without changing the file, use `fastdraw render x.fdraw --look night` (or `--look ./other.look`).
+
 ### Guidance
 
 `guidance "..."` lines are shown to agents by `fastdraw sizes`. Use them for rules a drawing tool cannot enforce: how many accent elements are allowed, when to use `tag=`, what `sub=` is for.
 
 ## What makes a look good
 
-- **On dark paper, use solid fills for the accent.** A translucent tint (`accent/0.15`) over a dark background turns muddy; a solid accent with dark text on it stays clean.
+- **On dark paper, tints are quiet.** A tint (`accent/0.15`) keeps its hue but stays dark; for the one thing that must stand out, a solid accent with dark text on it is clearer.
 - **Decide the accent first.** One colour carries the focus (`focal`, `terminal-focal`, `primary`). Everything else is ink, greys and paper. A look with three bright colours has no focus.
 - **Separate by more than colour.** `external`, `optional`, `cloud` and `store` should differ in shape, fill or dash, so they read in greyscale and for colour-blind readers.
 - **Two or three stroke weights at most**, and the accent arrow slightly heavier than the default arrow.

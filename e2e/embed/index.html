@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A docs page with FastDraw diagrams</title>
+  <!-- the site and this page are on different origins, as on a real docs site -->
+  <script type="module" src="http://site.test/embed.js"></script>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 860px; margin: 32px auto; padding: 0 16px; }
+    html[data-theme=dark] body { background: #17171c; color: #e4e4e7; }
+    img { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Orders</h1>
+  <p>How an order reaches the database.</p>
+  <fastdraw-diagram id="good" src="diagrams/example.fdraw" editor="http://site.test/edit/">
+    <img src="diagrams/example.png" alt="Shopper, Orders API and Orders DB">
+  </fastdraw-diagram>
+
+  <p>The same diagram in a look of the team's own.</p>
+  <fastdraw-diagram id="teamed" src="diagrams/teamed.fdraw" editor="http://site.test/edit/" max-height="180">
+    <img src="diagrams/example.png" alt="The same diagram">
+  </fastdraw-diagram>
+
+  <p>A file that is not there.</p>
+  <fastdraw-diagram id="missing" src="diagrams/missing.fdraw">
+    <img src="diagrams/example.png" alt="Fallback for a missing file">
+  </fastdraw-diagram>
+
+  <p>A file with mistakes in it.</p>
+  <fastdraw-diagram id="broken" src="diagrams/broken.fdraw">
+    <img src="diagrams/example.png" alt="Fallback for a broken file">
+  </fastdraw-diagram>
+  <div style="height: 1200px"></div>
+</body>
+</html>

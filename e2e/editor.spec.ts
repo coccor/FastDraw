@@ -407,6 +407,18 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   expect(errors).toEqual([]);
 });
 
+test('spaces in a text are drawn on the canvas as written, and an indented cell keeps its spaces through the panel', async ({ page }) => {
+  await paste(page, 'canvas 600x300\na: text "abc" at 40,40 font=mono\nb: text "    abc" at 40,70 font=mono\nt: table "T" at 40,120\n  | "x" "    y"\n');
+  const len = (s: string) => page.locator('svg.canvas text').evaluateAll((ts, s) => (ts.find((t) => t.textContent === s) as SVGTextElement).getComputedTextLength(), s);
+  expect(await len('    abc')).toBeGreaterThan(2 * await len('abc')); // four spaces drawn before "abc", not dropped
+  await page.mouse.click(...Object.values(await corner(page, 't')) as [number, number]);
+  const row = page.getByLabel('Row 1', { exact: true });
+  await expect(row).toHaveValue('x |     y');
+  await row.fill('x |       y');
+  await row.press('Enter');
+  expect(await source(page)).toContain('  | "x" "      y"');
+});
+
 test('a table can be placed from the components gallery', async ({ page }) => {
   await pinSidebar(page);
   await paste(page, SMALL);
@@ -1124,4 +1136,13 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await expect(cards).toHaveCount(13);
   await card('This diagram').click();
   await expect.poll(async () => (await diskText(page, SEQ)).split('\n')[0]).toBe(repoText(SEQ).split('\n')[0]);
+});
+
+test('text on the canvas is drawn as written: no ligatures, as wide as it is measured', async ({ page }) => {
+  // `->`, `>=`, `...` and `--` are ligatures in Geist Mono; drawn as one glyph they would take one cell, not two or three
+  await paste(page, 'text "|->>=...--|" at 40,40 font=mono\ntext "|aaaaaaaaa|" at 40,80 font=mono\n');
+  await page.evaluate(() => document.fonts.ready);
+  const widths = await page.locator('svg.canvas text').evaluateAll((ts) => ts.map((t) => (t as SVGTextElement).getComputedTextLength()));
+  expect(widths).toHaveLength(2);
+  expect(Math.abs(widths[0] - widths[1])).toBeLessThan(0.5);
 });

@@ -7,7 +7,7 @@ import { parseStatements } from '../src/parse.ts';
 import { buildScene } from '../src/scene.ts';
 import { renderSvg } from '../src/render.ts';
 import { check } from '../src/check.ts';
-import { parseLook } from '../src/look.ts';
+import { parseLook, color } from '../src/look.ts';
 // @ts-expect-error a plain JS tool
 import { generate } from '../tools/bundle-looks.mjs';
 
@@ -128,6 +128,36 @@ test('look properties: depth lands lines on the slab, plates, stops, echo and ca
   assert.deepEqual(look('style arrow line stroke=ink tail=stop\nstyle node shape=rect shade=ink depth=4 inner=ink corners=plus offset=3,3 blend=multiply halftone=ink').issues, []);
 });
 
+test('a zone caption has a plate as wide as its words, in the zone\'s own colour when it sits inside', async () => {
+  const { measureText } = await import('../src/scene.ts');
+  const plates = (src: string) => [...renderSvg(buildScene(src, null)).matchAll(/<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="\d+" rx="2" fill="([^"]+)"\/>/g)].map((m) => ({ x: +m[1], w: +m[2], fill: m[3] }));
+  // measured in the font as drawn: narrow letters, dots and slashes count for what they are (it was 152 wide)
+  const look = defaultLook();
+  assert.ok(Math.abs(measureText(look, '1. The project on disk', 11, 'sans', 600, 0) - 113) < 2);
+  assert.ok(measureText(look, 'iiii', 11, 'sans', 600, 0) < measureText(look, 'MMMM', 11, 'sans', 600, 0) / 2);
+  assert.equal(measureText(look, 'ab', 10, 'mono', 400, 0), 12);
+  assert.equal(measureText(look, 'ab', 10, 'mono', 400, 0.1), 13); // spacing between letters
+  for (const lk of ['', 'look night\n']) {
+    const [paper, tint] = plates(`${lk}z: zone ".pz/state/ · outlives runs" at 40,40 300x120 fill=accent/0.05 stroke=accent\n`);
+    assert.equal(paper.w, Math.ceil(measureText(look, '.pz/state/ · outlives runs', 11, 'sans', 600, 0) + 12));
+    assert.equal(paper.x, 52); // left-aligned: the words start 6px into the plate, 18px into the zone
+    // inside the zone the plate is paper with the zone's tint over it, so it reads as the zone itself
+    assert.equal(tint.w, paper.w);
+    // (on Night the tint is mixed to keep its hue, so it is not a plain 0.05 alpha; it is the zone's own fill)
+    assert.equal(tint.fill, color(lk ? bundledLook('night')! : look, 'accent/0.05'));  }
+  // a caption on the edge keeps a plain paper plate, its tint would show outside the zone
+  const edge = renderSvg(buildScene('look engraved\nz: zone "Area" at 40,40 300x120\n', null));
+  assert.equal([...edge.matchAll(/rx="2"/g)].length, 1);
+  // a font named after an Object property is just an unknown family, measured as the bundled one for its role
+  for (const name of ['constructor', '__proto__', 'toString']) {
+    const odd = parseLook(`font sans "${name}"\nfont mono "${name}"\nfont serif "${name}"\nstyle zone shape=rect title.pos=top\n`);
+    assert.equal(measureText(odd, 'ab', 10, 'sans', 600, 0), measureText(look, 'ab', 10, 'sans', 600, 0), name);
+    assert.equal(measureText(odd, 'ab', 10, 'mono', 400, 0), 12, name);
+    assert.ok(measureText(odd, 'ab', 10, 'serif', 400, 0) > 0, name);
+    assert.match(renderSvg(buildScene('z: zone "Area" at 40,40 200x100\n', odd)), /Area/);
+  }
+});
+
 test('a tag on a shape of any size is placed in bounded time', () => {
   // a diamond two billion pixels across: placing its corner tag samples the outline, and that sampling must not
   // grow with the shape (it used to run out of memory)
@@ -137,4 +167,70 @@ test('a tag on a shape of any size is placed in bounded time', () => {
   assert.ok(performance.now() - t0 < 2000, `took ${Math.round(performance.now() - t0)}ms`);
   // and an ordinary one is still moved clear of its outline, exactly as before
   assert.match(renderSvg(buildScene('d: decision "Ship?" at 40,40 200x96 tag=Q\n', null)), />Q</);
+});
+
+// A colour as drawn: an rgba laid over an opaque backdrop, as linear sRGB and OKLab.
+const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const linear = (v: number) => (v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+function drawn(c: string, over: string): { lin: number[]; lab: [number, number, number] } {
+  const m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(c)!, b = hexRgb(over), a = +m[4];
+  const [r, g, bl] = [1, 2, 3].map((i) => linear(+m[i] * a + b[i - 1] * (1 - a)));
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl), mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl);
+  return { lin: [r, g, bl], lab: [0.2104542553 * l + 0.793617785 * mm - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * mm + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * mm - 0.808675766 * s] };
+}
+// The hue (degrees) and chroma of a colour as drawn, in OKLCH.
+function drawnLch(c: string, over: string): [number, number] {
+  const [, A, B] = drawn(c, over).lab;
+  return [((Math.atan2(B, A) * 180) / Math.PI + 360) % 360, Math.hypot(A, B)];
+}
+// WCAG contrast ratio between two linear-sRGB colours
+const lum = ([r, g, b]: number[]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+const contrast = (x: number[], y: number[]) => { const [hi, lo] = [lum(x), lum(y)].sort((p, q) => q - p); return (hi + 0.05) / (lo + 0.05); };
+const hueGap = (x: number, y: number) => Math.min(Math.abs(x - y), 360 - Math.abs(x - y));
+
+test('a tint keeps its hue on a dark page: amber/0.1 over navy is a dark amber, not grey', () => {
+  const night = bundledLook('night')!, paper = night.colors.get('paper')!, card = night.colors.get('card')!;
+  for (const name of ['amber', 'violet', 'rose', 'teal']) {
+    const [hue] = drawnLch(`rgba(${[1, 3, 5].map((i) => parseInt(night.colors.get(name)!.slice(i, i + 2), 16))},1)`, paper);
+    for (const [over, under] of [[undefined, paper], ['card', card]] as const) {
+      const [h, c] = drawnLch(color(night, `${name}/0.1`, over), under);
+      assert.ok(hueGap(h, hue) < 6, `${name}/0.1 over ${under} has hue ${h.toFixed(0)}, the tint's is ${hue.toFixed(0)}`);
+      assert.ok(c > 0.012, `${name}/0.1 over ${under} is nearly grey (chroma ${c.toFixed(3)})`);
+    }
+  }
+  // grey tints are a plain blend, as before
+  assert.equal(color(night, 'ink/0.03'), 'rgba(226,232,240,0.03)');
+});
+
+test('low tints on a dark page stay told apart: each keeps its hue, distinct from the others, with ink readable on it', () => {
+  const night = bundledLook('night')!, names = ['rose', 'amber', 'teal', 'violet', 'link'];
+  const ink = drawn('rgba(0,0,0,0)', night.colors.get('ink')!).lin;
+  for (const over of ['paper', 'card']) {
+    const under = night.colors.get(over)!;
+    const seen = names.map((name) => {
+      const c = color(night, `${name}/0.1`, over === 'paper' ? undefined : over);
+      const [hue] = drawnLch(`rgba(${hexRgb(night.colors.get(name)!)},1)`, under), [h] = drawnLch(c, under);
+      assert.ok(hueGap(h, hue) < 6, `${name}/0.1 over ${over} has hue ${h.toFixed(0)}, the tint's is ${hue.toFixed(0)}`);
+      const d = drawn(c, under);
+      assert.ok(contrast(d.lin, ink) >= 4.5, `ink on ${name}/0.1 over ${over}: contrast ${contrast(d.lin, ink).toFixed(2)}`);
+      return [name, d.lab] as const;
+    });
+    for (const [i, [a, x]] of seen.entries()) for (const [b, y] of seen.slice(i + 1)) {
+      const dE = Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+      assert.ok(dE >= 0.04, `${a}/0.1 and ${b}/0.1 over ${over} are only ${dE.toFixed(3)} apart in OKLab`);
+    }
+  }
+});
+
+test('tints on a light page are a plain alpha blend, unchanged; canvas tint= chooses either way', () => {
+  for (const [name, look] of looks()) if (name !== 'night') assert.equal(color(look, '#fbbf24/0.1'), 'rgba(251,191,36,0.1)', name);
+  assert.equal(color(parseLook('canvas paper=#0b1226 tint=alpha'), '#fbbf24/0.1'), 'rgba(251,191,36,0.1)');
+  assert.notEqual(color(parseLook('canvas paper=#ffffff tint=hue'), '#fbbf24/0.1'), 'rgba(251,191,36,0.1)');
+});
+
+test('row and cell tints in a table are mixed against the table\'s fill', () => {
+  const svg = renderSvg(buildScene('look night\nt: table "t" at 0,0\n  | a "x" fill=amber/0.15\n  | b "y" fill.1=amber/0.15\n', null));
+  const tint = color(bundledLook('night')!, 'amber/0.15', '#131c38');
+  assert.notEqual(tint, color(bundledLook('night')!, 'amber/0.15'));
+  assert.equal(svg.split(`fill="${tint}"`).length - 1, 2, 'the row and the cell tint use the colour mixed over the card');
 });

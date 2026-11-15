@@ -42,3 +42,38 @@ export function fontMeta(b: Uint8Array): FontMeta | null {
     return { family, weight: weight >= 1 && weight <= 1000 ? weight : 400, italic };
   } catch { return null; }
 }
+
+// The ligature features a browser turns off for font-variant-ligatures: none. Diagrams show code,
+// command lines and SQL, so `--`, `->`, `>=` and `...` must be drawn as the characters written.
+const LIGATURES = new Set(['liga', 'clig', 'dlig', 'hlig', 'calt']);
+
+// A copy of a TTF or OTF file with its ligature features renamed so no shaper applies them, for
+// the PNG renderer (resvg), which cannot turn them off from the SVG. Null when the file has none
+// to turn off, or cannot be read. Only the four-letter tags in the GSUB feature list change.
+export function withoutLigatures(b: Uint8Array): Uint8Array | null {
+  try {
+    const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+    const tag = dv.getUint32(0);
+    if (tag !== 0x00010000 && tag !== 0x4f54544f && tag !== 0x74727565) return null;
+    const n = dv.getUint16(4);
+    if (12 + n * 16 > b.length) return null;
+    let gsub = -1;
+    for (let i = 0; i < n; i++) {
+      const o = 12 + i * 16;
+      if (String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]) === 'GSUB') gsub = dv.getUint32(o + 8);
+    }
+    if (gsub < 0 || gsub + 10 > b.length) return null;
+    const list = gsub + dv.getUint16(gsub + 6);
+    if (list + 2 > b.length) return null;
+    const count = dv.getUint16(list);
+    if (list + 2 + count * 6 > b.length) return null;
+    let out: Uint8Array | null = null;
+    for (let i = 0; i < count; i++) {
+      const r = list + 2 + i * 6;
+      if (!LIGATURES.has(String.fromCharCode(b[r], b[r + 1], b[r + 2], b[r + 3]))) continue;
+      out ??= b.slice();
+      out.set([0x7a, 0x7a, 0x7a, 0x7a], r); // 'zzzz': a tag no shaper asks for
+    }
+    return out;
+  } catch { return null; }
+}
