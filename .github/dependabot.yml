@@ -1,0 +1,21 @@
+# Weekly dependency updates. Minor and patch bumps arrive as one grouped PR per ecosystem; a major
+# bump arrives as its own PR. Nothing merges automatically: every PR goes through CI and review.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
