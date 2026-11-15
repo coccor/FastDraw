@@ -3,7 +3,7 @@
 The editor runs in the browser at https://fastdraw.dev/edit/. It is a static site with no server: it reads and writes `.fdraw` files on your computer.
 
 <p align="center">
-  <img src="../compare/editor-default-look.png" alt="The FastDraw editor with a three-box diagram open, a style panel on the left and a toolbar on top" width="860">
+  <img src="../assets/editor.png" alt="The FastDraw editor with a deployment diagram open, one card selected and its style panel on the left" width="860">
 </p>
 
 In Chrome and Edge the editor saves in place and re-reads the file about once a second, so an

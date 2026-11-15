@@ -8,4 +8,5 @@ dist-embed/
 test-results/
 playwright-report/
 !assets/*.png
+!assets/gallery/*.png
 dist/

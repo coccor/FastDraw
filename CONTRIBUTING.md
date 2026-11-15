@@ -50,5 +50,5 @@ Pull requests need the CI checks to pass before they merge. A change in behaviou
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
 | `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
-| `assets/` | The icon, and the diagrams shown in the README with their sources |
+| `assets/` | The icon, the diagrams shown in the README with their sources, the gallery renders and the editor screenshot |
 | `test/`, `e2e/` | Core tests and editor tests |

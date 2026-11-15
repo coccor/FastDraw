@@ -71,11 +71,12 @@ shell can read the language from https://fastdraw.dev/llms.txt.
 
 ## Gallery
 
-Written by agents from the guides alone; sources are in [`examples/kinds/`](examples/kinds).
+Written by agents from the guides alone and drawn in the built-in look; sources are in
+[`examples/kinds/`](examples/kinds).
 
 | | | |
 |:---:|:---:|:---:|
-| <img src="compare/kinds/sankey.png" alt="Sankey diagram" width="260"><br>Sankey | <img src="compare/kinds/db-schema.png" alt="Database schema" width="260"><br>Database schema | <img src="compare/kinds/swimlane.png" alt="Swimlane diagram" width="260"><br>Swimlane |
+| <img src="assets/gallery/deployment.png" alt="Deployment diagram of a checkout service across three zones" width="260"><br>Deployment | <img src="assets/gallery/db-schema.png" alt="Database schema with four tables and their foreign keys" width="260"><br>Database schema | <img src="assets/gallery/swimlane.png" alt="Swimlane diagram of publishing an article across four roles" width="260"><br>Swimlane |
 
 ## Documentation
 
