@@ -7,6 +7,7 @@ import { color } from '../../src/look.ts';
 import { MARKERS } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
+import { splitCells } from '../../src/edit.ts';
 import { find, stmtToks } from './ops.ts';
 import { IconField } from './IconPicker.tsx';
 import { ColorPicker } from './ColorPicker.tsx';
@@ -75,7 +76,7 @@ function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; on
     if (!text) return onChange(specs.filter((_, k) => k !== i));
     const parts = text.split('|').map((c) => c.trim());
     if (chart) return onChange(specs.map((r, k) => (k === i ? { ...r, cells: [parts[0]], vals: parts.slice(1).filter((v) => /^([+-]?\d*\.?\d+(,[+-]?\d*\.?\d+)?|_)$/.test(v)) } : r)));
-    const next: RowSpec = text === '---' ? { kind: 'rule', cells: [] } : { ...specs[i], kind: specs[i].kind === 'rule' ? 'row' : specs[i].kind, cells: text.split('|').map((c) => c.trim()) };
+    const next: RowSpec = text === '---' ? { kind: 'rule', cells: [] } : { ...specs[i], kind: specs[i].kind === 'rule' ? 'row' : specs[i].kind, cells: splitCells(v) };
     onChange(specs.map((r, k) => (k === i ? next : r)));
   };
   return (

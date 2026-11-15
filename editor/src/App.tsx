@@ -694,7 +694,7 @@ export function App() {
     const e = ops.find(scene, ed.id);
     if (!e || src === null) return null;
     if (ed.entry === undefined) return ops.editText(src, e, value);
-    if (ed.entry === 'title') return ops.setProps(src, scene, [ed.id], 'title', value.trim() || 'none');
+    if (ed.entry === 'title') return ops.setProps(src, scene, [ed.id], 'title', value.trim() ? value : 'none');
     return ops.setProps(src, scene, [ed.id], ed.entry, final && !value.trim() ? null : value); // emptied: the entry goes
   };
   // while typing, the diagram is redrawn with the new text, so the element grows around it

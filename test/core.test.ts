@@ -754,3 +754,28 @@ test('a step forward or backward moves past the next overlapping element in the 
   // comments and blank lines stay put
   assert.equal(moveStatementsPast('a: x\n// c\nb: y\n', [{ line: 1, anchor: 3, where: 'after' }]), '// c\nb: y\na: x\n');
 });
+
+test('spaces in a text are drawn as written: indentation and runs of spaces, in texts, cells and second lines', async () => {
+  const { splitCells } = await import('../src/edit.ts');
+  const { bundledFonts } = await import('../src/node.ts');
+  const { Resvg } = await import('@resvg/resvg-js');
+  const body = 'canvas 400x300\nt1: text "  orders:" at 40,40 font=mono\nt2: text "a b" at 40,60\nt: table "T" at 40,100\n  | "x    y" | "    z"\nn: node "N" sub="  a   b" at 200,40 160x64\n';
+  const sc = scene(body);
+  assert.equal(sc.texts.find((t) => t.id === 't1')!.text, '  orders:'); // the parser keeps them
+  const svg = renderSvg(sc);
+  for (const t of ['  orders:', 'x    y', '    z', '  a   b']) assert.match(svg, new RegExp(`<text xml:space="preserve"[^>]*>${t}</text>`), t);
+  assert.match(svg, /<text (?!xml:space)[^>]*>a b<\/text>/); // a plain text is left as it was
+  // in the PNG the indented text starts four characters to the right of the same text without the spaces
+  const left = (src: string) =>
+    new Resvg(renderSvg(scene(src), undefined, { background: false }), { font: { fontFiles: bundledFonts(), loadSystemFonts: false, defaultFontFamily: 'Geist' } }).getBBox()!.x;
+  const shift = left('canvas 200x60\nt: text "    abc" at 20,30 font=mono size=10') - left('canvas 200x60\nt: text "abc" at 20,30 font=mono size=10');
+  assert.ok(Math.abs(shift - 24) < 1.5, `indent drawn ${shift}px`); // four spaces of a 10px mono font
+  // the widths that size a table count the spaces
+  const w = (cell: string) => scene(`t: table "T" at 0,0\n  | "${cell}"`).shapes[0].w;
+  assert.ok(w('            abc') > w('abc'));
+  // the editor's row input: one space either side of "|" is the separator, the rest stays with the cell
+  assert.deepEqual(splitCells('  a |   b | c  '), ['  a', '  b', 'c']);
+  assert.deepEqual(splitCells('x    y |     z'), ['x    y', '    z']);
+  // and the write-back keeps them
+  assert.equal(fmtStmt(setText(parseStatements('a: text "x" at 0,0')[0].toks, '    y')), 'a: text "    y" at 0,0');
+});
