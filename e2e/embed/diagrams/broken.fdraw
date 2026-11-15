@@ -1,0 +1,3 @@
+a: node "A" at 40,40
+b: node "B" at 40,40 sideways
+a -> nowhere

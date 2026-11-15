@@ -4,5 +4,5 @@
     "strict": true, "noEmit": true, "allowImportingTsExtensions": true, "skipLibCheck": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["node", "vite/client"]
   },
-  "include": ["src", "editor/src", "test", "e2e", "tools/siteFiles.ts", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "editor/src", "test", "e2e", "tools/siteFiles.ts", "vite.config.ts", "vite.embed.config.ts", "playwright.config.ts"]
 }
