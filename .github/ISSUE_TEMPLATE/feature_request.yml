@@ -1,0 +1,16 @@
+name: Feature request
+description: A new kind of diagram, a language feature, an editor feature or a look
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you are trying to draw or do
+      description: The diagram or task, and where FastDraw falls short today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: Optional. How you picture it working, with example `.fdraw` text if it is about the language.

@@ -1,0 +1,24 @@
+name: Bug report
+description: Something is drawn wrong, a command fails, or the editor misbehaves
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: diagram
+    attributes:
+      label: Diagram
+      description: The smallest `.fdraw` text that shows the problem, and a screenshot if it is about drawing.
+      render: text
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: "Command-line tool (with the fastdraw and Node versions), editor (with the browser), or embed."
+    validations:
+      required: true

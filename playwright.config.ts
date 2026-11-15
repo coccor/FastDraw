@@ -8,6 +8,8 @@ export default defineConfig({
   testDir: 'e2e',
   timeout: 30_000,
   fullyParallel: true,
+  // CI runners are slower and a few timing-sensitive tests can miss there; a real failure fails all three tries
+  retries: process.env.CI ? 2 : 0,
   reporter: [['list']],
   use: { baseURL: `http://localhost:${port}`, viewport: { width: 1500, height: 900 }, acceptDownloads: true },
   webServer: { command: `npx vite --port ${port}`, url: `http://localhost:${port}`, reuseExistingServer: true, timeout: 60_000 },

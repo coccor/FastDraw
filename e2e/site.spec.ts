@@ -29,6 +29,9 @@ test('dragging a box in the small editor changes that box\'s line and no other',
   await expect(status).toHaveText('Nothing has changed yet. Drag a box on the canvas.');
   await expect(lines).toHaveCount(16);
   await expect(page.locator('.wb-ln.hit')).toHaveCount(0);
+  // measure the canvas only once web fonts have loaded and it is on screen, so the page cannot reflow mid-drag
+  await page.evaluate(() => document.fonts.ready);
+  await page.locator('.wb-canvas svg').scrollIntoViewIfNeeded();
   // Payments is at 984,112 and 144x64: take it by its middle and pull it 144px down
   const from = await onScreen(page, 984 + 72, 112 + 32), to = await onScreen(page, 984 + 72, 256 + 32);
   await page.mouse.move(from.x, from.y);
