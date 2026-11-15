@@ -35,6 +35,8 @@ test('a .fdraw file in a public repository comes back as an SVG with its fonts i
   assert.match(svg, /^<svg /);
   assert.match(svg, /@font-face\{font-family:'Geist';font-weight:\d+;font-style:normal;src:url\(data:font\/ttf;base64,/);
   assert.doesNotMatch(svg, /could not draw/);
+  // the fonts are cut to the diagram's characters: each far smaller than its file
+  for (const [, data] of svg.matchAll(/base64,([A-Za-z0-9+/=]+)\)/g)) assert.ok(data.length * 0.75 < 70_000, `${Math.round(data.length * 0.75)} bytes`);
 });
 
 test('?theme=dark and ?dark draw the dark version of the look', async () => {

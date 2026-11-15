@@ -16,6 +16,7 @@ import { loadExtendedIcons, extendedIconsLoaded } from '../src/extendedIcons.ts'
 import { darkCounterpart } from '../editor/src/embed/theme.ts';
 import { decodeShared, editorLink, type Shared } from '../editor/src/embed/share.ts';
 import { FACES } from '../editor/src/embed/faces.ts';
+import { subsetFont } from '../src/subset.ts';
 
 export type Deps = {
   /** The text at a raw.githubusercontent.com address, or null when there is none (404). */
@@ -155,11 +156,25 @@ export async function fontCss(svg: string, deps: Pick<Deps, 'font'>): Promise<st
     const best = pool.reduce((a, b) => (Math.abs(+b[1] - weight) < Math.abs(+a[1] - weight) ? b : a));
     want.add(best[3]);
   }
+  // each font cut down to the characters the diagram's text uses (the whole file when it cannot be cut)
+  const text = svgText(svg);
   const rules = await Promise.all(FACES.filter((f) => want.has(f[3])).map(async ([family, weight, style, file]) => {
     const bytes = await deps.font(file);
-    return bytes ? `@font-face{font-family:'${family}';font-weight:${weight};font-style:${style};src:url(data:font/ttf;base64,${base64(bytes)}) format('truetype')}` : '';
+    if (!bytes) return '';
+    const font = subsetFont(bytes, text) ?? bytes;
+    return `@font-face{font-family:'${family}';font-weight:${weight};font-style:${style};src:url(data:font/ttf;base64,${base64(font)}) format('truetype')}`;
   }));
   return rules.filter(Boolean).join('\n');
+}
+
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+/** Every character between the SVG's tags, entities decoded: what its text can draw (a little more is harmless). */
+export function svgText(svg: string): string {
+  return svg.replace(/<[^>]*>/g, '').replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (m, e: string) => {
+    if (e[0] !== '#') return ENTITIES[e] ?? m;
+    const c = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1);
+    return c > 0 && c <= 0x10ffff ? String.fromCodePoint(c) : '';
+  });
 }
 
 function base64(b: Uint8Array): string {
