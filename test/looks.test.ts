@@ -143,8 +143,8 @@ test('a zone caption has a plate as wide as its words, in the zone\'s own colour
     assert.equal(paper.x, 52); // left-aligned: the words start 6px into the plate, 18px into the zone
     // inside the zone the plate is paper with the zone's tint over it, so it reads as the zone itself
     assert.equal(tint.w, paper.w);
-    assert.match(tint.fill, /^rgba\(.*,0\.05\)$/);
-  }
+    // (on Night the tint is mixed to keep its hue, so it is not a plain 0.05 alpha; it is the zone's own fill)
+    assert.equal(tint.fill, color(lk ? bundledLook('night')! : look, 'accent/0.05'));  }
   // a caption on the edge keeps a plain paper plate, its tint would show outside the zone
   const edge = renderSvg(buildScene('look engraved\nz: zone "Area" at 40,40 300x120\n', null));
   assert.equal([...edge.matchAll(/rx="2"/g)].length, 1);
@@ -169,15 +169,23 @@ test('a tag on a shape of any size is placed in bounded time', () => {
   assert.match(renderSvg(buildScene('d: decision "Ship?" at 40,40 200x96 tag=Q\n', null)), />Q</);
 });
 
-// The hue (degrees) and chroma of a colour as drawn: an rgba laid over an opaque backdrop, in OKLCH.
-function drawnLch(c: string, over: string): [number, number] {
-  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(c)!, b = hex(over), a = +m[4];
-  const [r, g, bl] = [1, 2, 3].map((i) => (+m[i] * a + b[i - 1] * (1 - a)) / 255).map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+// A colour as drawn: an rgba laid over an opaque backdrop, as linear sRGB and OKLab.
+const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const linear = (v: number) => (v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+function drawn(c: string, over: string): { lin: number[]; lab: [number, number, number] } {
+  const m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(c)!, b = hexRgb(over), a = +m[4];
+  const [r, g, bl] = [1, 2, 3].map((i) => linear(+m[i] * a + b[i - 1] * (1 - a)));
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl), mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl);
-  const A = 1.9779984951 * l - 2.428592205 * mm + 0.4505937099 * s, B = 0.0259040371 * l + 0.7827717662 * mm - 0.808675766 * s;
+  return { lin: [r, g, bl], lab: [0.2104542553 * l + 0.793617785 * mm - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * mm + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * mm - 0.808675766 * s] };
+}
+// The hue (degrees) and chroma of a colour as drawn, in OKLCH.
+function drawnLch(c: string, over: string): [number, number] {
+  const [, A, B] = drawn(c, over).lab;
   return [((Math.atan2(B, A) * 180) / Math.PI + 360) % 360, Math.hypot(A, B)];
 }
+// WCAG contrast ratio between two linear-sRGB colours
+const lum = ([r, g, b]: number[]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+const contrast = (x: number[], y: number[]) => { const [hi, lo] = [lum(x), lum(y)].sort((p, q) => q - p); return (hi + 0.05) / (lo + 0.05); };
 const hueGap = (x: number, y: number) => Math.min(Math.abs(x - y), 360 - Math.abs(x - y));
 
 test('a tint keeps its hue on a dark page: amber/0.1 over navy is a dark amber, not grey', () => {
@@ -192,6 +200,26 @@ test('a tint keeps its hue on a dark page: amber/0.1 over navy is a dark amber, 
   }
   // grey tints are a plain blend, as before
   assert.equal(color(night, 'ink/0.03'), 'rgba(226,232,240,0.03)');
+});
+
+test('low tints on a dark page stay told apart: each keeps its hue, distinct from the others, with ink readable on it', () => {
+  const night = bundledLook('night')!, names = ['rose', 'amber', 'teal', 'violet', 'link'];
+  const ink = drawn('rgba(0,0,0,0)', night.colors.get('ink')!).lin;
+  for (const over of ['paper', 'card']) {
+    const under = night.colors.get(over)!;
+    const seen = names.map((name) => {
+      const c = color(night, `${name}/0.1`, over === 'paper' ? undefined : over);
+      const [hue] = drawnLch(`rgba(${hexRgb(night.colors.get(name)!)},1)`, under), [h] = drawnLch(c, under);
+      assert.ok(hueGap(h, hue) < 6, `${name}/0.1 over ${over} has hue ${h.toFixed(0)}, the tint's is ${hue.toFixed(0)}`);
+      const d = drawn(c, under);
+      assert.ok(contrast(d.lin, ink) >= 4.5, `ink on ${name}/0.1 over ${over}: contrast ${contrast(d.lin, ink).toFixed(2)}`);
+      return [name, d.lab] as const;
+    });
+    for (const [i, [a, x]] of seen.entries()) for (const [b, y] of seen.slice(i + 1)) {
+      const dE = Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+      assert.ok(dE >= 0.04, `${a}/0.1 and ${b}/0.1 over ${over} are only ${dE.toFixed(3)} apart in OKLab`);
+    }
+  }
 });
 
 test('tints on a light page are a plain alpha blend, unchanged; canvas tint= chooses either way', () => {

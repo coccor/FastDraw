@@ -181,11 +181,17 @@ function hueTint(rgb: RGB, alpha: number, over: RGB): string | null {
   const t = toOklab(rgb), b = toOklab(over);
   const ct = Math.hypot(t[1], t[2]), cb = Math.hypot(b[1], b[2]);
   if (ct < 0.05 || alpha <= 0 || alpha >= 1) return null;
-  const L = b[0] + (t[0] - b[0]) * alpha, h = Math.atan2(t[2], t[1]);
+  // Colour is seen less the darker it is, so on a dark backdrop the tint's share of chroma is raised (up to 3x on
+  // a page as dark as Night's) to read as strongly as the same tint does on a light page; otherwise rose and amber
+  // at 0.1 are both the same brown. Lightness moves half as much again, which gives cyans and greens (narrow in
+  // gamut when dark) room for that chroma and leaves text on the tint as readable. A light backdrop is unchanged.
+  const dark = Math.min(1, Math.max(0, (0.5 - b[0]) / 0.25)), boost = 1 + 2 * dark;
+  const L = b[0] + (t[0] - b[0]) * alpha * (1 + 0.5 * dark), h = Math.atan2(t[2], t[1]);
   // the backdrop's own colour counts only as far as it leans the tint's way, so a warm tint on a navy page is as
   // strong as it would be on a grey one, and an indigo tint on navy comes out as a plain blend would
   const lean = cb ? Math.max(0, (b[1] * t[1] + b[2] * t[2]) / (cb * ct)) : 0;
-  let C = ct * alpha + cb * lean * (1 - alpha), target = fromOklab([L, C * Math.cos(h), C * Math.sin(h)]);
+  // never more chroma than the tint colour itself has
+  let C = Math.min(ct, ct * alpha * boost + cb * lean * (1 - alpha)), target = fromOklab([L, C * Math.cos(h), C * Math.sin(h)]);
   while (!inGamut(target) && C > 0.001) { C *= 0.95; target = fromOklab([L, C * Math.cos(h), C * Math.sin(h)]); }
   target = target.map((v) => Math.min(255, Math.max(0, v))) as RGB;
   // the least opacity at or above the author's whose colour, blended over the backdrop, can reach the target
