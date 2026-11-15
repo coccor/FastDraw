@@ -66,11 +66,13 @@ export function measureText(look: Look, text: string, size: number, role: string
   const fam = (look.fonts.get(role) ?? role).toLowerCase();
   const chars = [...text];
   let em = 0;
-  if (fam.includes('mono') || (role === 'mono' && !FONT_WIDTHS[fam])) em = chars.length * 0.6;
+  // a family name comes from the look file, so only the table's own keys count (not "constructor" and the like)
+  const known = Object.hasOwn(FONT_WIDTHS, fam);
+  if (fam.includes('mono') || (role === 'mono' && !known)) em = chars.length * 0.6;
   else {
-    const byWeight = FONT_WIDTHS[fam] ?? FONT_WIDTHS[role === 'serif' ? 'newsreader' : 'geist'];
+    const byWeight = known ? FONT_WIDTHS[fam] : FONT_WIDTHS[role === 'serif' ? 'newsreader' : 'geist'];
     const near = Object.keys(byWeight).map(Number).sort((a, b) => Math.abs(a - weight) - Math.abs(b - weight) || b - a)[0];
-    const table = byWeight[near], fallback = table[WIDTH_CHARS.indexOf('o')];
+    const table = byWeight[near] ?? FONT_WIDTHS.geist[400], fallback = table[WIDTH_CHARS.indexOf('o')];
     for (const ch of chars) {
       const w = table[WIDTH_CHARS.indexOf(ch)] ?? -1;
       em += (w >= 0 ? w : ch.codePointAt(0)! >= 0x1100 ? 100 : fallback) / 100;

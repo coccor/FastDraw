@@ -148,6 +148,14 @@ test('a zone caption has a plate as wide as its words, in the zone\'s own colour
   // a caption on the edge keeps a plain paper plate, its tint would show outside the zone
   const edge = renderSvg(buildScene('look engraved\nz: zone "Area" at 40,40 300x120\n', null));
   assert.equal([...edge.matchAll(/rx="2"/g)].length, 1);
+  // a font named after an Object property is just an unknown family, measured as the bundled one for its role
+  for (const name of ['constructor', '__proto__', 'toString']) {
+    const odd = parseLook(`font sans "${name}"\nfont mono "${name}"\nfont serif "${name}"\nstyle zone shape=rect title.pos=top\n`);
+    assert.equal(measureText(odd, 'ab', 10, 'sans', 600, 0), measureText(look, 'ab', 10, 'sans', 600, 0), name);
+    assert.equal(measureText(odd, 'ab', 10, 'mono', 400, 0), 12, name);
+    assert.ok(measureText(odd, 'ab', 10, 'serif', 400, 0) > 0, name);
+    assert.match(renderSvg(buildScene('z: zone "Area" at 40,40 200x100\n', odd)), /Area/);
+  }
 });
 
 test('a tag on a shape of any size is placed in bounded time', () => {
