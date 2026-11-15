@@ -1,8 +1,9 @@
 // File-system loaders for the command-line tool. The rest of the core is browser-safe.
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { fontMeta } from './fontmeta.ts';
-import { dirname, resolve } from 'node:path';
+import { fontMeta, withoutLigatures } from './fontmeta.ts';
+import { dirname, resolve, join, basename } from 'node:path';
 import { parseLook, emptyLook } from './look.ts';
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
@@ -57,6 +58,22 @@ const isFont = (f: string) => /\.(ttf|otf)$/i.test(f);
 const listFonts = (dir: string) => (existsSync(dir) ? readdirSync(dir).filter(isFont).map((f) => resolve(dir, f)) : []);
 export const bundledFontDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'fonts');
 export const bundledFonts = () => listFonts(bundledFontDir);
+
+// Runs draw with the given font files as copies that have their ligatures turned off, so the PNG
+// shows `--`, `->` and `>=` as typed, as the SVG does with font-variant-ligatures: none. resvg only
+// takes font paths, so the copies go to a private temporary folder that is removed afterwards.
+export function withoutLigatureFonts<T>(files: string[], draw: (files: string[]) => T): T {
+  const dir = mkdtempSync(join(tmpdir(), 'fastdraw-fonts-'));
+  try {
+    return draw(files.map((f, i) => {
+      const copy = withoutLigatures(new Uint8Array(readFileSync(f)));
+      if (!copy) return f;
+      const out = join(dir, `${i}-${basename(f)}`);
+      writeFileSync(out, copy);
+      return out;
+    }));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+}
 
 // The font files a look brings with its `fontdir` lines, and a note for every family the look
 // names that neither those folders nor the bundled fonts provide.

@@ -1137,3 +1137,12 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await card('This diagram').click();
   await expect.poll(async () => (await diskText(page, SEQ)).split('\n')[0]).toBe(repoText(SEQ).split('\n')[0]);
 });
+
+test('text on the canvas is drawn as written: no ligatures, as wide as it is measured', async ({ page }) => {
+  // `->`, `>=`, `...` and `--` are ligatures in Geist Mono; drawn as one glyph they would take one cell, not two or three
+  await paste(page, 'text "|->>=...--|" at 40,40 font=mono\ntext "|aaaaaaaaa|" at 40,80 font=mono\n');
+  await page.evaluate(() => document.fonts.ready);
+  const widths = await page.locator('svg.canvas text').evaluateAll((ts) => ts.map((t) => (t as SVGTextElement).getComputedTextLength()));
+  expect(widths).toHaveLength(2);
+  expect(Math.abs(widths[0] - widths[1])).toBeLessThan(0.5);
+});

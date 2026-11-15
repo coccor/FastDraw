@@ -61,6 +61,7 @@ font sans "Fira Sans"
 - Files must be **TTF or OTF**, one file per weight and style you use (for example Regular and SemiBold; add Italic if a style sets `italic=1`). Box titles use weight 600 by default. Use static files, not a single variable font.
 - The family name is read from inside the files, so `font sans "..."` must match it exactly. `fastdraw sizes team.look` lists the fonts and flags any family it found no file for; `fastdraw check` warns about it too.
 - Commit the font folder with the look, and keep the font's licence file beside it. Use fonts whose licence allows redistribution (for example the SIL Open Font License).
+- Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`, `->`, `>=`, `!=` and `...` are drawn as the characters written, never as one joined glyph, so code, command-line flags and SQL read as typed.
 - In the browser editor the look's fonts load when a folder is open. A diagram opened as a single file, pasted, or restored from an exported image is drawn with fallback fonts until its folder is opened.
 
 ### Styles

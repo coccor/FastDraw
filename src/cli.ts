@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf } from './node.ts';
+import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts } from './node.ts';
 import { buildScene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
@@ -82,7 +82,7 @@ if (cmd === 'check') {
   else {
     const { Resvg } = await import('@resvg/resvg-js');
     const fontFiles = [...bundledFonts(), ...(sc.fontFiles ?? [])];
-    const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng());
+    const png = withoutLigatureFonts(fontFiles, (files) => new Uint8Array(new Resvg(svg, { font: { fontFiles: files, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng()));
     writeFileSync(out, embed ? embedPng(png, payload) : png);
   }
   const notes = [out.endsWith('.svg') ? '' : `at ${scale}x`, transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
@@ -171,7 +171,7 @@ if (cmd === 'check') {
     const lf = lookFonts(file, look);
     for (const fam of lf.missing) console.log(`warning: no font file found for "${fam}"; it will be drawn in a fallback font`);
     const fontFiles = [...bundledFonts(), ...lf.files];
-    writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
+    writeFileSync(out, withoutLigatureFonts(fontFiles, (files) => new Resvg(svg, { font: { fontFiles: files, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng()));
   }
   console.log(`wrote ${out}: ${all.length} styles`);
 } else if (cmd === 'icons') {
