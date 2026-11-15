@@ -751,6 +751,8 @@ function footed(c: Conn, shapes: Shape[]): Conn {
   return moved ? { ...c, pts } : c;
 }
 
+const NO_LIGATURES ='font-variant-ligatures:none';
+
 // background: false leaves the page out (no paper, no dots), for an image laid over something else
 export function renderBody(sc: Scene, background = true): string {
   sc = legible(sc);
@@ -795,7 +797,9 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" filter="url(#fd-grain)" opacity="${Math.min(1, num(cv.grain, 0))}" pointer-events="none"/>`);
   }
   if (R.defs.size) out.splice(1, 0, `<defs>${hatchDefs()}</defs>`);
-  return out.join('\n');
+  // Text is drawn as written: no font turns `--`, `->`, `>=` or `...` into one glyph. The PNG
+  // renderer gets fonts with their ligatures turned off instead (withoutLigatureFonts).
+  return [`<g style="${NO_LIGATURES}">`, ...out, '</g>'].join('\n');
 }
 
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.

@@ -179,7 +179,7 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .group { display: flex; padding: 3px; gap: 1px; }
 .pct { min-width: 52px; padding: 0 6px; font-variant-numeric: tabular-nums; }
 
-.textedit { position: absolute; z-index: 5; border: 1.5px solid var(--accent); border-radius: 5px; padding: 3px 6px; resize: none; background: #fff; text-align: center; font-family: 'Geist', sans-serif; outline: none; }
+.textedit { position: absolute; z-index: 5; border: 1.5px solid var(--accent); border-radius: 5px; padding: 3px 6px; resize: none; background: #fff; text-align: center; font-family: 'Geist', sans-serif; font-variant-ligatures: none; outline: none; }
 .textedit.inplace { border: 0; border-radius: 3px; padding: 0; background: transparent; overflow: hidden; white-space: pre-wrap; caret-color: var(--accent); cursor: text; outline: 1.5px dashed var(--accent); outline-offset: 4px; box-shadow: 0 0 0 4px rgba(84, 72, 214, .08); }
 .textedit.inplace[wrap="off"] { white-space: pre; }
 .textedit.inplace::selection { background: rgba(84, 72, 214, .3); }
