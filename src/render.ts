@@ -13,22 +13,78 @@ import { canSketch, sketchSvg, rectD, ellipseD } from './sketch.ts';
 let R = { amt: 0, defs: new Map<string, string>() };
 const roughOf = (p: Props) => (p.sketch === '0' ? 0 : R.amt);
 
-// hatch=colour fills a shape with diagonal pencil lines; hatch.gap and hatch.sw space and weigh them.
-function hatchFill(look: Look, p: Props): string | null {
-  if (!p.hatch || p.hatch === 'none') return null;
-  const c = col(look, p.hatch), gap = num(p['hatch.gap'], 6), sw = num(p['hatch.sw'], 1), key = `${c}|${gap}|${sw}`;
+// A fill pattern, defined once per render however many shapes use it. kind is hatch (diagonal lines,
+// a = gap, b = line weight) or dots (a halftone, a = gap, b = dot radius).
+function pattern(kind: 'hatch' | 'dots', c: string, a: number, b: number): string {
+  const key = `${kind}|${c}|${a}|${b}`;
   let id = R.defs.get(key);
   if (!id) {
-    id = `fd-hatch-${R.defs.size}`;
+    id = `fd-${kind}-${R.defs.size}`;
     R.defs.set(key, id);
   }
   return `url(#${id})`;
 }
+// hatch=colour fills a shape with diagonal pencil lines; hatch.gap and hatch.sw space and weigh them.
+function hatchFill(look: Look, p: Props): string | null {
+  if (!p.hatch || p.hatch === 'none') return null;
+  return pattern('hatch', col(look, p.hatch), num(p['hatch.gap'], 6), num(p['hatch.sw'], 1));
+}
+// halftone=colour fills a shape with a field of printed dots; halftone.gap spaces them, halftone.r sizes them.
+function dotFill(look: Look, p: Props): string | null {
+  if (!p.halftone || p.halftone === 'none') return null;
+  return pattern('dots', col(look, p.halftone), Math.max(2, num(p['halftone.gap'], 6)), num(p['halftone.r'], 1.05));
+}
 function hatchDefs(): string {
   return [...R.defs].map(([key, id]) => {
-    const [c, gap, sw] = key.split('|');
-    return `<pattern id="${id}" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="${gap}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"/></pattern>`;
+    const [kind, c, a, b] = key.split('|');
+    if (kind === 'dots') return `<pattern id="${id}" width="${a}" height="${a}" patternUnits="userSpaceOnUse"><circle cx="${+a / 4}" cy="${+a / 4}" r="${b}" fill="${c}"/><circle cx="${(+a * 3) / 4}" cy="${(+a * 3) / 4}" r="${b}" fill="${c}"/></pattern>`;
+    return `<pattern id="${id}" width="${a}" height="${a}" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="${a}" stroke="${c}" stroke-width="${b}" stroke-linecap="round"/></pattern>`;
   }).join('');
+}
+const BLEND = ' style="mix-blend-mode:multiply"';
+const blendOf = (p: Props) => (p.blend === 'multiply' ? BLEND : '');
+// The same shape somewhere else: for a slab under it, a shadow beside it, a fill printed out of register.
+const shifted = (s: Shape, dx: number, dy: number): Shape => ({ ...s, x: s.x + dx, y: s.y + dy, poly: s.poly?.map((q) => ({ x: q.x + dx, y: q.y + dy })) });
+const boxy = (s: Shape) => s.shape !== 'polygon' && s.shape !== 'arc';
+
+// What is drawn under a shape before the shape itself:
+//   shade=colour  a shadow of fine diagonal lines down its right and bottom (shade.size, shade.gap, shade.sw)
+//   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
+function underlay(look: Look, s: Shape): string[] {
+  const p = s.p, out: string[] = [];
+  if (p.shade && p.shade !== 'none') {
+    const k = num(p['shade.size'], 5);
+    out.push(outlinePlain(shifted(s, k, k), `fill="${pattern('hatch', col(look, p.shade), num(p['shade.gap'], 2.6), num(p['shade.sw'], 0.6))}" stroke="none"`));
+  }
+  const d = num(p.depth, 0);
+  if (d > 0) {
+    const under = shifted(s, 0, d), paper = col(look, look.canvas.paper ?? 'paper');
+    let a = `fill="${col(look, p['depth.fill'] ?? 'ink/0.2')}" stroke="${col(look, p['depth.stroke'] ?? p.stroke)}"`;
+    if (p.stroke && p.stroke !== 'none') a += ` stroke-width="${num(p.sw, 1)}"`;
+    out.push(outlinePlain(under, `fill="${paper}"`), outlinePlain(under, a));
+  }
+  return out;
+}
+
+// What is drawn on a shape after its outline:
+//   inner=colour    a second, finer rule just inside the outline (inner.gap, inner.sw)
+//   corners=plus    a mark on each corner of a box: plus or square (corners.color, corners.size)
+function overlay(look: Look, s: Shape): string[] {
+  const p = s.p, out: string[] = [];
+  if (p.inner && p.inner !== 'none' && boxy(s)) {
+    const g = num(p['inner.gap'], 3.5);
+    if (s.w > g * 2 + 4 && s.h > g * 2 + 4) {
+      const inset: Shape = { ...s, x: s.x + g, y: s.y + g, w: s.w - g * 2, h: s.h - g * 2, p: { ...p, radius: String(Math.max(0, num(p.radius, 0) - g)) } };
+      out.push(outlinePlain(inset, `fill="none" stroke="${col(look, p.inner)}" stroke-width="${num(p['inner.sw'], 0.6)}"`));
+    }
+  }
+  if (p.corners && p.corners !== 'none' && (s.shape === 'rect' || s.shape === 'table')) {
+    const c = col(look, p['corners.color'] ?? p.stroke ?? 'ink'), k = num(p['corners.size'], p.corners === 'plus' ? 7 : 5) / 2;
+    for (const [x, y] of [[s.x, s.y], [s.x + s.w, s.y], [s.x, s.y + s.h], [s.x + s.w, s.y + s.h]]) {
+      out.push(p.corners === 'plus' ? `<path d="M ${x - k},${y} H ${x + k} M ${x},${y - k} V ${y + k}" stroke="${c}" stroke-width="1.2" fill="none"/>` : `<rect x="${x - k}" y="${y - k}" width="${k * 2}" height="${k * 2}" fill="${c}"/>`);
+    }
+  }
+  return out;
 }
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -191,6 +247,7 @@ function drawTable(look: Look, s: Shape): string {
   const p = s.p, out: string[] = [], rows = s.rows ?? [], cols = s.cols ?? [], headH = s.headH ?? 0;
   const paper = col(look, look.canvas.paper ?? 'paper'), stroke = col(look, p.stroke), sw = num(p.sw, 1);
   const r = Math.min(num(p.radius, 0), s.w / 2, s.h / 2), x2 = s.x + s.w;
+  out.push(...underlay(look, s));
   out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} fill="${paper}"/>`);
   out.push(`<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} fill="${col(look, p.fill)}"/>`);
   if (headH) {
@@ -236,6 +293,7 @@ function drawTable(look: Look, s: Shape): string {
   if (p.stroke && p.stroke !== 'none') border += ` stroke-width="${sw}"`;
   if (p.dash && p.dash !== 'none') border += ` stroke-dasharray="${esc(p.dash)}"`;
   out.push(roughOf(p) ? sketchSvg(rectD(s.x, s.y, s.w, s.h, r), border, roughOf(p)) : `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"${r ? ` rx="${r}"` : ''} ${border}/>`);
+  out.push(...overlay(look, s));
   return out.join('\n');
 }
 
@@ -310,8 +368,18 @@ function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'icon') return drawIconShape(look, s);
   const p = s.p, out: string[] = [];
   const paper = col(look, look.canvas.paper ?? 'paper');
+  out.push(...underlay(look, s));
   if (!s.back && p.mask !== '0' && p.fill && p.fill !== 'none') out.push(outline(s, `fill="${paper}"`));
-  out.push(outline(s, strokeAttrs(look, p), hatchFill(look, p) ?? undefined));
+  const under = hatchFill(look, p) ?? dotFill(look, p) ?? undefined;
+  // offset=dx,dy prints the fill out of register with the outline; blend=multiply lets inks overprint
+  const off = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(p.offset ?? ''), blend = blendOf(p);
+  if (off || blend) {
+    const f = off ? shifted(s, +off[1], +off[2]) : s;
+    if (p.fill && p.fill !== 'none') out.push(outlinePlain(f, `fill="${col(look, p.fill)}" stroke="none"${blend}`));
+    if (under) out.push(outlinePlain(f, `fill="${under}" stroke="none"${blend}`));
+    out.push(outline(s, strokeAttrs(look, { ...p, fill: 'none' })));
+  } else out.push(outline(s, strokeAttrs(look, p), under));
+  out.push(...overlay(look, s));
   let cxm = s.x + s.w / 2, cym = s.y + s.h / 2;
   if (s.shape === 'polygon' && s.poly && s.p.open !== '1') {
     // text sits at the centre of the outline's area, so it lands in the wide part of a triangle
@@ -344,8 +412,12 @@ function drawShape(look: Look, s: Shape): string {
     const tw = Math.ceil((textWidth(txt, title.size, title.font, title.weight, title.spacing) + 12) / 4) * 4;
     // a caption on the top edge: centred, or at the left or right corner with title.align
     const al = p['title.align'], mid = al === 'left' ? s.x + 12 + tw / 2 : al === 'right' ? s.x + s.w - 12 - tw / 2 : cxm;
-    out.push(`<rect x="${mid - tw / 2}" y="${s.y + 4}" width="${tw}" height="12" rx="2" fill="${paper}"/>`);
-    out.push(`<text x="${mid}" y="${s.y + 13}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
+    // title.dy moves the caption off the edge and title.fill colours its plate (none for no plate); a look that
+    // sets either gets a plate sized to its type, the others keep the 12px plate they have always had
+    const own = p['title.dy'] !== undefined || p['title.fill'] !== undefined;
+    const ty = s.y + num(p['title.dy'], 0), th = own ? Math.max(12, Math.ceil(title.size + 4)) : 12;
+    if (p['title.fill'] !== 'none') out.push(`<rect x="${mid - tw / 2}" y="${ty + 4}" width="${tw}" height="${th}" rx="2" fill="${col(look, p['title.fill'] ?? look.canvas.paper ?? 'paper')}"/>`);
+    out.push(`<text x="${mid}" y="${own ? r2(ty + 4 + th / 2 + title.size * 0.36) : s.y + 13}" text-anchor="middle" ${title.a}>${esc(txt)}</text>`);
   } else if (s.text || p.sub) {
     const lines = s.text ? (p['title.caps'] === '1' ? s.text.toUpperCase() : s.text).split('\n') : [];
     const lh = Math.round(title.size * 1.17);
@@ -435,10 +507,21 @@ export function tagWidth(look: Look, p: Props): number {
   return Math.ceil((textWidth(p.tag ?? '', t.size, t.font, 400, t.spacing) + 12) / 4) * 4;
 }
 
-// Points along a shape's outline, relative to its top-left corner; null for a plain box.
-function outlinePts(s: Shape): Pt[] | null {
+// Points along a shape's outline that fall inside the box `near`, relative to the shape's top-left corner; null
+// for a plain box. A diagram file is untrusted and a shape can be any size, so an edge is sampled at most
+// EDGE_SAMPLES times and only the points the caller can use are kept: neither the work nor the memory grows
+// with the size of the shape.
+const EDGE_SAMPLES = 20000;
+function outlinePts(s: Shape, near: { x0: number; x1: number; y0: number; y1: number }): Pt[] | null {
   const { w, h } = s, out: Pt[] = [];
-  const line = (a: Pt, b: Pt) => { const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2)); for (let i = 0; i <= n; i++) out.push({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }); };
+  const line = (a: Pt, b: Pt) => {
+    if (Math.max(a.x, b.x) < near.x0 || Math.min(a.x, b.x) > near.x1 || Math.max(a.y, b.y) < near.y0 || Math.min(a.y, b.y) > near.y1) return;
+    const n = Math.min(EDGE_SAMPLES, Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2)));
+    for (let i = 0; i <= n; i++) {
+      const q = { x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n };
+      if (q.x >= near.x0 && q.x <= near.x1 && q.y >= near.y0 && q.y <= near.y1) out.push(q);
+    }
+  };
   if (s.shape === 'ellipse') { for (let i = 0; i < 180; i++) { const t = (i / 180) * 2 * Math.PI; out.push({ x: w / 2 + (w / 2) * Math.cos(t), y: h / 2 + (h / 2) * Math.sin(t) }); } return out; }
   if (s.shape === 'diamond') { const c = [{ x: w / 2, y: 0 }, { x: w, y: h / 2 }, { x: w / 2, y: h }, { x: 0, y: h / 2 }]; c.forEach((a, i) => line(a, c[(i + 1) % 4])); return out; }
   if (s.shape === 'polygon' && s.poly) { const c = s.poly.map((q) => ({ x: q.x - s.x, y: q.y - s.y })); c.forEach((a, i) => line(a, c[(i + 1) % c.length])); return out; }
@@ -453,7 +536,8 @@ function outlinePts(s: Shape): Pt[] | null {
       else if (cmd === 'L') { const b = pt(); line(cur, b); cur = b; }
       else if (cmd === 'C') {
         const c1 = pt(), c2 = pt(), b = pt();
-        for (let k = 1; k <= 24; k++) { const t = k / 24, m = 1 - t; const q = { x: m * m * m * cur.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x, y: m * m * m * cur.y + 3 * m * m * t * c1.y + 3 * m * t * t * c2.y + t * t * t * b.y }; line(out.length ? out[out.length - 1] : cur, q); }
+        let prev = cur;
+        for (let k = 1; k <= 24; k++) { const t = k / 24, m = 1 - t; const q = { x: m * m * m * cur.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x, y: m * m * m * cur.y + 3 * m * m * t * c1.y + 3 * m * t * t * c2.y + t * t * t * b.y }; line(prev, q); prev = q; }
         cur = b;
       } else i++;
     }
@@ -464,10 +548,14 @@ function outlinePts(s: Shape): Pt[] | null {
 
 // The smallest top offset, from `from`, at which a tag of w x h at left offset x keeps `gap` clear of
 // the shape's outline (0 for a plain box, which has nothing inside to avoid).
+// The search goes at most CLEAR_SEARCH pixels down: a tag that has not found room by then is not going to sit in
+// its corner anyway, and the search must not grow with the height of the shape.
+const CLEAR_SEARCH = 400;
 function outlineClear(s: Shape, x: number, w: number, h: number, from: number, gap: number): number {
-  const pts = outlinePts(s);
+  const end = Math.min(s.h / 2, from + CLEAR_SEARCH);
+  const pts = outlinePts(s, { x0: x - gap, x1: x + w + gap, y0: from - gap, y1: end + h + gap });
   if (!pts) return 0;
-  for (let y = from; y < s.h / 2; y++) {
+  for (let y = from; y < end; y++) {
     if (!pts.some((q) => q.x > x - gap && q.x < x + w + gap && q.y > y - gap && q.y < y + h + gap)) return y;
   }
   return 0;
@@ -475,7 +563,7 @@ function outlineClear(s: Shape, x: number, w: number, h: number, from: number, g
 
 // An end marker drawn at tip, pointing away from `from`. trim is how much of the line to cut back so it
 // does not show through the marker.
-function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, paper: string): { svg: string; trim: number } {
+function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, paper: string, k = 1, ring2 = stroke): { svg: string; trim: number } {
   const dx = tip.x - from.x, dy = tip.y - from.y, len = Math.hypot(dx, dy) || 1;
   const ux = dx / len, uy = dy / len;
   // heads are one size whatever the line's weight, so a bold line and a thin one in the same diagram
@@ -494,8 +582,10 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   }
   switch (kind) {
     case 'none': return { svg: '', trim: 0 };
-    case 'open': return { svg: `<path d="M ${at(10, 5)} L ${at(0, 0)} L ${at(10, -5)}" ${line}/>`, trim: 0 };
-    case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11, 6)} ${at(11, -6)}" ${hollow}/>`, trim: 11 };
+    case 'open': return { svg: `<path d="M ${at(10 * k, 5 * k)} L ${at(0, 0)} L ${at(10 * k, -5 * k)}" ${line}/>`, trim: 0 };
+    case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11 * k, 6 * k)} ${at(11 * k, -6 * k)}" ${hollow}/>`, trim: 11 * k };
+    // a stop on a route: a ring the line runs into, in the colour of the boxes' outline
+    case 'stop': { const r = Math.max(4, sw / 2 + 3); return { svg: `<circle cx="${r2(tip.x)}" cy="${r2(tip.y)}" r="${r}" fill="${paper}" stroke="${ring2}" stroke-width="${Math.max(2, r2(sw * 0.45))}"/>`, trim: 0 }; }
     case 'diamond': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" ${hollow}/>`, trim: 16 };
     case 'diamond-solid': return { svg: `<polygon points="${at(0, 0)} ${at(8, 4.5)} ${at(16, 0)} ${at(8, -4.5)}" fill="${stroke}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`, trim: 16 };
     case 'dot': return { svg: ring(3.5, 3.5, `fill="${stroke}"`), trim: 3.5 };
@@ -506,7 +596,7 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
     case 'one-many': return { svg: crow + bar(16), trim: 0 };
     case 'zero-one': return { svg: bar(8) + ring(16, 4, hollow), trim: 0 };
     case 'zero-many': return { svg: crow + ring(17, 4, hollow), trim: 0 };
-    default: return { svg: `<polygon points="${at(0, 0)} ${at(10, 4)} ${at(10, -4)}" fill="${stroke}"/>`, trim: 7 };
+    default: return { svg: `<polygon points="${at(0, 0)} ${at(10 * k, 4 * k)} ${at(10 * k, -4 * k)}" fill="${stroke}"/>`, trim: 7 * k };
   }
 }
 
@@ -538,12 +628,18 @@ function drawConn(look: Look, c: Conn): string {
   const n = c.pts.length, paper = col(look, look.canvas.paper ?? 'paper');
   // a curve is many short steps: aim its ends along the last stretch of it, not the last step alone
   const hFrom = c.curve ? backAlong(c.pts, 10) : c.pts[n - 2], tFrom = c.curve ? backAlong([...c.pts].reverse(), 10) : c.pts[1];
-  const head = marker(c.headM, c.pts[n - 1], hFrom, sw, stroke, paper), tail = marker(c.tailM, c.pts[0], tFrom, sw, stroke, paper);
+  // head.size scales the arrowhead (a wide line needs a wide head); stop.color is the ring of a stop marker
+  const hk = Math.max(0.5, Math.min(num(p['head.size'], 1), 4)), ringCol = col(look, p['stop.color'] ?? p.stroke ?? 'muted');
+  const head = marker(c.headM, c.pts[n - 1], hFrom, sw, stroke, paper, hk, ringCol), tail = marker(c.tailM, c.pts[0], tFrom, sw, stroke, paper, hk, ringCol);
   const d = c.curve
     ? pathD(cutEnd(cutEnd(c.pts, head.trim).reverse(), tail.trim).reverse(), 0, 0, 0)
     : pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
-  const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}`;
+  const cap = p.cap === 'round' ? ' stroke-linecap="round" stroke-linejoin="round"' : '';
+  const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}${cap}${blendOf(p)}`;
   let s = roughOf(p) ? sketchSvg(d, a, roughOf(p)) : `<path d="${d}" ${a}/>`;
+  // casing=colour is a wider line underneath, so routes cross cleanly; double=colour is a finer line on top, making two rails
+  if (p.casing && p.casing !== 'none') s = `<path d="${d}" fill="none" stroke="${col(look, p.casing)}" stroke-width="${r2(sw + 2 * num(p['casing.width'], 2.5))}"${cap}/>\n` + s;
+  if (p.double && p.double !== 'none') s += `\n<path d="${d}" fill="none" stroke="${col(look, p.double)}" stroke-width="${num(p['double.sw'], r2(sw * 0.42))}"${cap}/>`;
   if (head.svg) s += '\n' + head.svg;
   if (tail.svg) s += '\n' + tail.svg;
   return s;
@@ -552,21 +648,112 @@ function drawConn(look: Look, c: Conn): string {
 function drawLabel(look: Look, c: Conn): string {
   const l = c.label!;
   const paper = col(look, look.canvas.paper ?? 'paper');
-  const fill = col(look, c.p['label.color'] ?? c.p.stroke ?? 'muted');
-  return `<rect x="${r2(l.x)}" y="${r2(l.y)}" width="${l.w}" height="${l.h}" rx="2" fill="${paper}"/>\n` +
-    `<text x="${r2(l.cx)}" y="${r2(l.baseline)}" text-anchor="middle" font-family="${fam(look, l.font)}" font-size="${l.size}" fill="${fill}"${l.spacing ? ` letter-spacing="${r2(l.spacing * l.size)}"` : ''}>${esc(l.text)}</text>`;
+  const p = c.p, fill = col(look, p['label.color'] ?? p.stroke ?? 'muted');
+  // label.fill and label.border make the label a plate (label.radius, label.pad); without them it is a patch of paper
+  const plate = (p['label.fill'] && p['label.fill'] !== 'none') || (p['label.border'] && p['label.border'] !== 'none');
+  const pad = plate ? num(p['label.pad'], 3) : 0, rx = num(p['label.radius'], 2);
+  const border = p['label.border'] && p['label.border'] !== 'none' ? ` stroke="${col(look, p['label.border'])}" stroke-width="${num(p['label.sw'], 1)}"` : '';
+  const weight = num(p['label.weight'], 400);
+  return `<rect x="${r2(l.x - pad)}" y="${r2(l.y - pad / 2)}" width="${l.w + pad * 2}" height="${l.h + pad}" rx="${Math.min(rx, (l.h + pad) / 2)}" fill="${plate && p['label.fill'] && p['label.fill'] !== 'none' ? col(look, p['label.fill']) : paper}"${border}/>\n` +
+    `<text x="${r2(l.cx)}" y="${r2(l.baseline)}" text-anchor="middle" font-family="${fam(look, l.font)}" font-size="${l.size}" fill="${fill}"${weight !== 400 ? ` font-weight="${weight}"` : ''}${p['label.italic'] === '1' ? ' font-style="italic"' : ''}${l.spacing ? ` letter-spacing="${r2(l.spacing * l.size)}"` : ''}>${esc(l.text)}</text>`;
 }
 
 function drawText(look: Look, t: TextEl): string {
   const a = textAttrs(look, t.p, '', { font: 'sans', size: 12, weight: 400, color: 'ink' });
   const anchor = t.p.anchor && t.p.anchor !== 'start' ? ` text-anchor="${esc(t.p.anchor)}"` : '';
   const rot = num(t.p.rotate, 0);
-  const body = t.text.split('\n').map((l, i) => `<text x="${t.ax}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}>${esc(l)}</text>`).join('\n');
+  const lines = t.text.split('\n'), blend = blendOf(t.p);
+  let body = lines.map((l, i) => `<text x="${t.ax}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}${blend}>${esc(l)}</text>`).join('\n');
+  if (t.p.echo && t.p.echo !== 'none') {
+    // echo=colour prints the text a second time underneath, a little off (echo.dx, echo.dy)
+    const dx = num(t.p['echo.dx'], 3), dy = num(t.p['echo.dy'], 3), ea = a.a.replace(/fill="[^"]*"/, () => `fill="${col(look, t.p.echo)}"`);
+    body = lines.map((l, i) => `<text x="${t.ax + dx}" y="${r2(t.ay + dy + i * a.size * 1.3)}"${anchor} ${ea}>${esc(l)}</text>`).join('\n') + '\n' + body;
+  }
   return rot === 90 || rot === -90 ? `<g transform="rotate(${rot} ${t.ax} ${t.ay})">${body}</g>` : body;
+}
+
+// A colour as numbers, laid over the page when it is see-through; null for anything that is not a plain colour.
+function rgbOf(look: Look, v: string | undefined, over?: [number, number, number]): [number, number, number] | null {
+  const c = color(look, v);
+  let m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (m) {
+    const h = m[1].length === 3 ? m[1].replace(/./g, (x) => x + x) : m[1];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  m = /^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/.exec(c);
+  if (!m) return null;
+  const al = m[4] === undefined ? 1 : +m[4], o = over ?? [255, 255, 255];
+  return [0, 1, 2].map((i) => +m![i + 1] * al + o[i] * (1 - al)) as [number, number, number];
+}
+function contrast(x: [number, number, number], y: [number, number, number]): number {
+  const lum = (c: number[]) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const p = lum(x), q = lum(y);
+  return (Math.max(p, q) + 0.05) / (Math.min(p, q) + 0.05);
+}
+const FAINT = 1.8; // below this contrast text is close to invisible: the checker's threshold too
+// Text laid on a filled box (a caption over the subject, a small chip on a card) has to stay readable whatever a
+// look fills that box with. So when the fill is the look's own choice for that style and the text's colour would
+// sink into it, the text takes the colour the box gives its title. A fill the diagram chose itself is left alone,
+// for the checker to report. The checker reads the scene through this, so it reports only what is really drawn.
+export function legible(sc: Scene): Scene {
+  const look = sc.look, paper = rgbOf(look, look.canvas.paper ?? 'paper') ?? [255, 255, 255];
+  const filled = (s: Shape) => !s.rows && s.shape !== 'legend' && s.shape !== 'chart' && s.shape !== 'icon' && !!s.p.fill && s.p.fill !== 'none';
+  // the last-drawn filled shape under a point, among the first upTo shapes
+  const under = (x: number, y: number, upTo: number) => {
+    for (let k = upTo - 1; k >= 0; k--) { const s = sc.shapes[k]; if (filled(s) && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return s; }
+    return undefined;
+  };
+  // the colour to use instead of c on top of shape `on`, or undefined when c reads well enough. A box whose own
+  // title is light on dark (it would vanish on the page) asks more of the text on it than one that is merely tinted.
+  const swap = (on: Shape | undefined, c: string) => {
+    if (!on || on.back || on.p.fill !== look.styles.get(on.style)?.props.fill) return undefined;
+    const bg = rgbOf(look, on.p.fill, paper), fg = bg && rgbOf(look, c, bg);
+    if (!bg || !fg) return undefined;
+    const tc = on.p['title.color'], trgb = tc ? rgbOf(look, tc, bg) : null, inverse = !!trgb && contrast(paper, trgb) < 2;
+    const now = contrast(bg, fg);
+    if (now >= (inverse ? 4.5 : FAINT)) return undefined;
+    // the main text takes the box's title colour, quieter text its second-line colour
+    const quiet = color(look, c) !== color(look, 'ink') ? on.p['sub.color'] : undefined;
+    return [quiet, tc, 'paper', 'ink', '#ffffff'].find((v) => { const k = v ? rgbOf(look, v, bg) : null; return k && contrast(bg, k) >= 3 && contrast(bg, k) > now; });
+  };
+  let changed = false;
+  const texts = sc.texts.map((t) => {
+    if (/\/0?\.[0-3]\d*$/.test(t.p.color ?? '')) return t; // a watermark is meant to be faint
+    const c = swap(under(t.x + t.w / 2, t.y + t.h / 2, sc.shapes.length), t.p.color ?? 'ink');
+    if (!c) return t;
+    changed = true;
+    return { ...t, p: { ...t.p, color: c } };
+  });
+  const shapes = sc.shapes.map((s, at) => {
+    // a box with no fill of its own shows the box under it
+    if (s.back || !s.text || s.rows || !boxy(s) || s.shape === 'icon' || s.shape === 'legend' || s.shape === 'chart' || (s.p.fill && s.p.fill !== 'none') || s.p['title.pos'] === 'top') return s;
+    const c = swap(under(s.x + s.w / 2, s.y + s.h / 2, at), s.p['title.color'] ?? 'ink');
+    if (!c) return s;
+    changed = true;
+    return { ...s, p: { ...s.p, 'title.color': c, ...(s.p.stroke && s.p.stroke !== 'none' ? { stroke: /\/[0-9.]+$/.test(c) ? c : c + '/0.6' } : {}) } };
+  });
+  return changed ? { ...sc, texts, shapes } : sc;
+}
+// A box with depth has its foot below its outline: a line that ends on the bottom edge ends on the foot instead,
+// so its arrowhead is not buried under the slab.
+function footed(c: Conn, shapes: Shape[]): Conn {
+  if (c.curve || c.pts.length < 2) return c;
+  const pts = c.pts.map((q) => ({ ...q }));
+  let moved = false;
+  for (const [i, j] of [[0, 1], [pts.length - 1, pts.length - 2]]) {
+    const q = pts[i], n = pts[j];
+    if (Math.abs(q.x - n.x) > 0.5 || n.y < q.y) continue; // only a line coming straight up into the edge
+    for (const s of shapes) {
+      const d = num(s.p.depth, 0);
+      if (d > 0 && !s.back && Math.abs(q.y - (s.y + s.h)) < 1 && q.x > s.x && q.x < s.x + s.w && n.y - q.y > d + 6) { q.y += d; moved = true; break; }
+    }
+  }
+  return moved ? { ...c, pts } : c;
 }
 
 // background: false leaves the page out (no paper, no dots), for an image laid over something else
 export function renderBody(sc: Scene, background = true): string {
+  sc = legible(sc);
   const look = sc.look, cv = look.canvas;
   const out: string[] = [];
   R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
@@ -576,15 +763,37 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<defs><pattern id="fd-dots" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="${col(look, cv.dots)}"/></pattern></defs>`);
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-dots)"/>`);
   }
+  // The page dressing below is drawn as pattern fills, one element each: a diagram file is untrusted and can be
+  // any size, so nothing here may grow with the extent of the picture.
+  if (background && cv.bars && cv.bars !== 'none') {
+    // bars=colour: the page as listing paper, a band of colour every other bargap
+    const gap = Math.max(8, num(cv.bargap, 32));
+    out.push(`<defs><pattern id="fd-bars" width="${gap * 2}" height="${gap * 2}" patternUnits="userSpaceOnUse"><rect width="${gap * 2}" height="${gap}" fill="${col(look, cv.bars)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-bars)"/>`);
+  }
+  if (background && cv.feed && cv.feed !== 'none') {
+    // feed=colour: sprocket holes down both edges, and the line where the strip tears off
+    const c = col(look, cv.feed), paper = col(look, cv.paper ?? 'paper');
+    const hole = (id: string, x: number) => `<pattern id="${id}" x="${x}" y="0" width="26" height="24" patternUnits="userSpaceOnUse"><circle cx="13" cy="12" r="4.2" fill="${paper}" stroke="${c}" stroke-width="1"/></pattern>`;
+    out.push(`<defs>${hole('fd-feed-l', sc.x)}${hole('fd-feed-r', sc.x + sc.w - 26)}</defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-l)"/><rect class="fd-page" x="${sc.x + sc.w - 26}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-r)"/>`);
+    out.push(`<path class="fd-page" d="M ${sc.x + 26},${sc.y} v ${sc.h} M ${sc.x + sc.w - 26},${sc.y} v ${sc.h}" stroke="${c}" stroke-width="1" stroke-dasharray="2 3" fill="none"/>`);
+  }
   for (const s of sc.shapes) if (s.back) out.push(drawShape(look, s));
   // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
-  const under = sc.conns.filter((c) => c.p.layer !== 'front'), over = sc.conns.filter((c) => c.p.layer === 'front');
+  const conns = sc.shapes.some((s) => num(s.p.depth, 0) > 0) ? sc.conns.map((c) => footed(c, sc.shapes)) : sc.conns;
+  const under = conns.filter((c) => c.p.layer !== 'front'), over = conns.filter((c) => c.p.layer === 'front');
   for (const c of under) out.push(drawConn(look, c));
   for (const c of under) if (c.label) out.push(drawLabel(look, c));
   for (const s of sc.shapes) if (!s.back) out.push(drawShape(look, s));
   for (const c of over) out.push(drawConn(look, c));
   for (const c of over) if (c.label) out.push(drawLabel(look, c));
   for (const t of sc.texts) out.push(drawText(look, t));
+  if (background && num(cv.grain, 0) > 0) {
+    // grain=0..1: the tooth of printed paper, laid over everything
+    out.push(`<defs><filter id="fd-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .25  0 0 0 0 .22  0 0 0 0 .2  0 0 0 .5 -.2"/></filter></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" filter="url(#fd-grain)" opacity="${Math.min(1, num(cv.grain, 0))}" pointer-events="none"/>`);
+  }
   if (R.defs.size) out.splice(1, 0, `<defs>${hatchDefs()}</defs>`);
   return out.join('\n');
 }

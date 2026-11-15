@@ -528,7 +528,17 @@ export function App() {
   useEffect(() => {
     if (!ready || kindOnce.current) return;
     kindOnce.current = true;
-    const kind = new URLSearchParams(location.search).get('kind');
+    const q = new URLSearchParams(location.search), kind = q.get('kind');
+    // `?from=site`: the diagram that was open in the small editor on the home page, handed over in this tab
+    if (q.get('from') === 'site') {
+      history.replaceState(null, '', location.pathname + location.hash);
+      try {
+        const o = JSON.parse(sessionStorage.getItem('fastdraw-from-site') ?? 'null');
+        sessionStorage.removeItem('fastdraw-from-site');
+        if (o && typeof o.text === 'string') newDiagram(o.text, typeof o.name === 'string' ? o.name.replace(/\.fdraw$/, '') : 'diagram');
+      } catch { /* nothing was handed over: the editor opens as usual */ }
+      return;
+    }
     if (!kind) return;
     history.replaceState(null, '', location.pathname + location.hash);
     const t = TEMPLATES.find((x) => x.kind === kind);

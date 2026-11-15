@@ -1037,8 +1037,8 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
-  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Headline', 'Night', 'Reference', 'Sketch', 'Whiteboard']);
-  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(6); // every card shows this diagram
+  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Engraved', 'Headline', 'Keys', 'Listing', 'Night', 'Offset', 'Reference', 'Shade', 'Sketch', 'Transit', 'Whiteboard']);
+  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(12); // every card shows this diagram
   await expect(page.getByRole('button', { name: 'Apply' })).toHaveCount(0);
   // hovering tries a look on the canvas without touching the source
   await card('Sketch').hover();
@@ -1111,7 +1111,7 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(13);
   await expect(page.locator('.lookcard > span').last()).toHaveText('This diagram’s look file · in use');
   await card('Sketch').click();
   await saved(page);
@@ -1121,7 +1121,7 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await expect(page.locator('.banner')).toHaveCount(0); // a bundled look needs no file, fonts or folder
   await expect(page.locator('.problems')).toHaveText('No problems');
   // the picker stayed open, and the look file is still there to go back to
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(13);
   await card('This diagram').click();
   await expect.poll(async () => (await diskText(page, SEQ)).split('\n')[0]).toBe(repoText(SEQ).split('\n')[0]);
 });

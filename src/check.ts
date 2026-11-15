@@ -3,7 +3,7 @@ import type { Issue, Look } from './look.ts';
 import { color } from './look.ts';
 import { textWidth } from './scene.ts';
 import { segHits } from './router.ts';
-import { iconBox, tagLayout, textBlock } from './render.ts';
+import { iconBox, tagLayout, textBlock, legible } from './render.ts';
 import type { Scene, Box, Pt, Conn, Shape } from './scene.ts';
 
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -36,6 +36,7 @@ function contrast(a: RGB, b: RGB): number {
 const FAINT = 1.8; // below this, text is close to invisible; ordinary body text is 4.5 and up
 
 export function check(sc: Scene): Issue[] {
+  sc = legible(sc);
   const out: Issue[] = [...sc.issues];
   const warn = (line: number, msg: string) => out.push({ line, level: 'warn', msg });
   const hint = (line: number, msg: string) => out.push({ line, level: 'hint', msg });
