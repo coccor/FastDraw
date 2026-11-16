@@ -17,6 +17,27 @@ import { sizesReport } from './sizes.ts';
 import { setup, detect, TARGETS, type Target } from './setup.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+// Linux under WSL: the browser is on the Windows side, which xdg-open usually cannot reach.
+function isWsl(): boolean {
+  if (process.platform !== 'linux') return false;
+  if (process.env.WSL_DISTRO_NAME || process.env.WSL_INTEROP) return true;
+  try { return /microsoft/i.test(readFileSync('/proc/sys/kernel/osrelease', 'utf8')); } catch { return false; }
+}
+
+// Open a link in the person's browser, trying each launcher in turn until one starts.
+function openBrowser(url: string) {
+  const fileProtocol = ['url.dll,FileProtocolHandler', url];
+  const tries: [string, string[]][] = process.platform === 'darwin' ? [['open', [url]]]
+    : process.platform === 'win32' ? [['rundll32', fileProtocol]]
+    : isWsl() ? [['wslview', [url]], ['rundll32.exe', fileProtocol], ['/mnt/c/Windows/System32/rundll32.exe', fileProtocol]]
+    : [['xdg-open', [url]]];
+  const next = (i: number) => {
+    if (i >= tries.length) { console.log('could not start a browser; open the link above'); return; }
+    spawn(tries[i][0], tries[i][1], { stdio: 'ignore', detached: true }).on('error', () => next(i + 1)).unref();
+  };
+  next(0);
+}
 const [cmd, ...args] = process.argv.slice(2);
 // every Phosphor icon, not only the first ~130 built-in ones, for check, render, icons and the rest
 const NAMED_ICONS = new Set(Object.keys(ICONS));
@@ -267,11 +288,8 @@ if (cmd === 'check') {
   const ei = args.indexOf('--editor');
   const editor = ei >= 0 ? args[ei + 1] : process.env.FASTDRAW_EDITOR ?? DEFAULT_EDITOR;
   const s = await serveFolder(dirname(resolve(file)), { editor, open: basename(file) });
-  console.log(`serving ${dirname(resolve(file))} to the editor until this stops (Ctrl-C)\n${s.url}`);
-  if (!args.includes('--no-browser')) {
-    const [prog, ...pre] = process.platform === 'darwin' ? ['open'] : process.platform === 'win32' ? ['rundll32', 'url.dll,FileProtocolHandler'] : ['xdg-open'];
-    spawn(prog, [...pre, s.url], { stdio: 'ignore', detached: true }).on('error', () => console.log('open the link above in your browser')).unref();
-  }
+  console.log(`serving ${dirname(resolve(file))} to the editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
+  if (!args.includes('--no-browser')) openBrowser(s.url);
   const stop = () => { s.close().then(() => process.exit(0)); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop);
 } else if (cmd === 'setup') {
@@ -282,5 +300,5 @@ if (cmd === 'check') {
   const targets = named.length ? (named as Target[]) : global ? ['claude' as Target] : detect(process.cwd());
   try { for (const l of setup(root, process.cwd(), targets, global)) console.log(l); }
   catch (e) { console.log((e as Error).message); process.exit(1); }
-  console.log('\nAsk your agent for a diagram, for example: "Draw this repo\'s architecture as docs/architecture.fdraw".');
+  console.log('\nAsk your agent for a diagram, for example: "Draw this repo\'s architecture as docs/diagrams/architecture.fdraw".');
 } else usage();

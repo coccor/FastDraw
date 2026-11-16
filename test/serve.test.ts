@@ -44,6 +44,21 @@ test('lists and reads the folder for the editor origin, skipping hidden folders'
   } finally { await s.close(); }
 });
 
+test('lists only files the editor can use, and skips build and dependency folders', async () => {
+  const dir = folder();
+  writeFileSync(join(dir, 'index.js'), '');
+  for (const d of ['node_modules', 'build', 'venv']) { mkdirSync(join(dir, d)); writeFileSync(join(dir, d, 'b.fdraw'), ''); }
+  mkdirSync(join(dir, 'docs', 'diagrams'), { recursive: true });
+  writeFileSync(join(dir, 'docs', 'diagrams', 'c.fdraw'), '');
+  writeFileSync(join(dir, 'docs', 'readme.md'), '');
+  const s = await serveFolder(dir, { editor: EDITOR });
+  try {
+    const l = await fetch(s.base + '/list', { headers: { Origin: EDITOR } });
+    const paths = ((await l.json()) as { files: { path: string }[] }).files.map((f) => f.path).sort();
+    assert.deepEqual(paths, ['a.fdraw', 'a.look', 'docs/diagrams/c.fdraw', 'icons/x y.svg', 'notes.txt']);
+  } finally { await s.close(); }
+});
+
 test('refuses other origins, a wrong token, and paths that leave the folder', async () => {
   const dir = folder();
   symlinkSync('/etc', join(dir, 'escape'));
