@@ -4,9 +4,9 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 
 ## How to work
 
-1. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
-2. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
-3. Run `fastdraw guide list` to see which kinds of diagram have their own guide. If yours is there, run `fastdraw guide <kind>` and follow it.
+1. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
+2. Choose the kind of diagram as described in "Choosing the kind" below (`fastdraw guide list` says what each kind shows), and agree it with the person before drawing. If the kind has its own guide, run `fastdraw guide <kind>` and follow it; where it differs from the general rules in this guide, the kind's guide wins.
+3. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
 4. Plan the composition on paper first: rows and columns, where the main thing sits.
 5. Write the file. A new diagram goes in `docs/diagrams/` (create the folder) unless the person names another place or the repo already keeps its `.fdraw` files somewhere. Never put it at the top of the repo: `fastdraw open` lends the diagram's whole folder to the editor.
 6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
@@ -19,6 +19,30 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
    Do not open anything before they choose.
 
 When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
+
+## Choosing the kind
+
+Choose by what the reader has to understand, not by a word in the request: a "request flow" or a "user flow" is not a flowchart. `fastdraw guide list` says what every kind shows. The usual choices:
+
+| The reader has to see | Kind |
+|---|---|
+| how a request moves through the parts of a system, step by step | `swimlane` with columns; `sequence` when the exact messages and replies matter; `architecture` when the parts and their connections matter more than the order |
+| decisions: yes/no questions and where each answer leads | `flowchart` |
+| work passing between people or teams | `swimlane` with rows; `process` when inputs, outputs and tools matter |
+| the parts of a system and what talks to what | `architecture`; where it runs: `deployment`; what plugs into a platform: `integration` |
+| a change to a system, before and after | `architecture-delta` |
+| data moving through a pipeline | `data-flow`; storage tiers: `medallion`; a whole data stack: `high-level` |
+| the states one thing goes through | `state` |
+| events in order, or a plan | `timeline`; `gantt` |
+| a hierarchy | `tree`; owners: `org-chart`; containment: `nested`; stacked levels: `layers` |
+| a data model | `er`; real tables: `db-schema`; classes: `uml-class` |
+| numbers | `bar`, `line`, `scatter`, `heatmap`, `sankey`, `treemap`, `waterfall` |
+
+- Name at least two kinds that could fit before you pick. When two fit, pick the one whose main axis is what the person asked about: order over time, structure, or decisions.
+- Draw a flowchart only when there are real yes/no questions. Steps in a row with no decision are a swimlane, or a process.
+- If a three-column table would say the same thing, write the table instead.
+
+**Agree the kind before drawing.** Unless the request already names it ("a sequence diagram of..."), tell the person in one short message which kind you would draw and the closest other kind, with a line on what each shows, and ask which they want (use your tool for asking a question if you have one, your pick first). If you cannot ask, draw your pick and say which other kind would also have worked.
 
 ## The file
 
