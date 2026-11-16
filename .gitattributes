@@ -1,1 +1,2 @@
 crates/fastdraw-render/data/* -text
+crates/fastdraw-render/tests/geometry.json -text

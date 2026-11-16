@@ -18,6 +18,11 @@ pub fn num_str(n: f64) -> String {
     }
 }
 
+/// `Math.round(n * 100) / 100`, FastDraw's `r2`.
+pub fn r2(n: f64) -> f64 {
+    round(n * 100.0) / 100.0
+}
+
 /// `Math.round`: halves go toward +Infinity, and results of -0 are kept.
 pub fn round(x: f64) -> f64 {
     if !x.is_finite() || x == 0.0 {
@@ -436,6 +441,21 @@ pub fn locale_cmp(a: &str, b: &str) -> Ordering {
 #[cfg(test)]
 #[allow(clippy::approx_constant)] // expected values are what Node prints
 mod tests {
+
+    #[test]
+    fn r2_rounds_to_hundredths() {
+        // 1.005 * 100 is 100.49999999999999 in binary floating point, so it rounds down
+        for (n, want) in [
+            (1.005, "1"),
+            (0.125, "0.13"),
+            (-0.004, "0"),
+            (2.5, "2.5"),
+            (-1.255, "-1.25"),
+            (f64::NAN, "NaN"),
+        ] {
+            assert_eq!(num_str(r2(n)), want, "r2({n})");
+        }
+    }
 
     #[test]
     fn min_max_follow_math() {

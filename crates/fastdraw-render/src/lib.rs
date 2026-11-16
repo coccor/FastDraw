@@ -9,6 +9,8 @@ pub mod icons;
 pub mod js;
 pub mod look;
 pub mod parse;
+pub mod router;
+pub mod sketch;
 
 /// One diagram to draw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
