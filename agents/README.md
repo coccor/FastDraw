@@ -1,14 +1,18 @@
 # Telling agents about FastDraw
 
-All three are thin pointers to `fastdraw guide`, so there is one place to maintain.
-`npx fastdraw setup` writes them into a repository; running it again updates them in place.
+There is one skill, in [`../plugins/fastdraw/skills/fastdraw/SKILL.md`](../plugins/fastdraw/skills/fastdraw/SKILL.md).
+It is a thin pointer to `fastdraw guide`, so there is one place to maintain. It reaches agents three ways:
 
-| Agent | Command | What it writes |
+| Agent | How | What it installs |
 |---|---|---|
-| Claude Code | `npx fastdraw setup claude` (`--global` for every repo) | `claude-skill/fastdraw/` as `.claude/skills/fastdraw/` |
-| Codex, OpenCode | `npx fastdraw setup agents` | `AGENTS-snippet.md` as a section of `AGENTS.md` |
+| Claude Code | `/plugin install fastdraw --marketplace coccor/fastdraw` | the `fastdraw` plugin from [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json), for the user |
+| Codex, OpenCode, Cursor and others | `npx skills add coccor/fastdraw -g` | the skill in `~/.agents/skills/fastdraw/` and each chosen agent's folder ([skills.sh](https://skills.sh) finds it through the plugin manifest) |
 | GitHub Copilot | `npx fastdraw setup copilot` | `AGENTS-snippet.md` as a section of `.github/copilot-instructions.md` |
+| A repository that commits its instructions | `npx fastdraw setup claude` or `setup agents` | the skill as `.claude/skills/fastdraw/`, or `AGENTS-snippet.md` as a section of `AGENTS.md` |
 | Chat assistants | none | Ask it to read https://fastdraw.dev/llms.txt first (or paste that file in), then paste the reply into the editor with "Paste diagram text" |
+
+The plugin has no `version`, so Claude Code users follow the commits on `main` when they update.
+`claude plugin validate .` checks the marketplace and the plugin.
 
 ## Diagrams on a docs site
 

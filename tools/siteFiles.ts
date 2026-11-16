@@ -27,7 +27,7 @@ How to use this file:
 
 - If you can run commands, use the command-line tool through npx; nothing needs installing first. Every \`fastdraw ...\` command below works as \`npx fastdraw ...\`. Always finish with \`npx fastdraw check <file>\` clean and look at the PNG from \`npx fastdraw render <file>\`.
 - If you cannot run commands, follow the guide without them: \`fastdraw guide <kind>\` is the page ${SITE}/guide/<kind>.md listed below, and the output of \`fastdraw sizes\` for the built-in look is at the end of this file. Check your own work by the rules in the guide. Give the person the finished diagram as one code block and tell them to paste it into ${SITE}/edit/ with "Paste diagram text".
-- To set up a repository so its coding agents always know about FastDraw, run \`npx fastdraw setup\` there.
+- To make a coding agent always know about FastDraw, install its skill: \`npx skills add coccor/fastdraw\` (Claude Code, Codex, OpenCode, Cursor and others), or in Claude Code \`/plugin install fastdraw --marketplace coccor/fastdraw\`.
 
 ## Guides for each kind of diagram
 

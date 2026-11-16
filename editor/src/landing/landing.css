@@ -73,6 +73,7 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em;
 .command { display: flex; align-items: center; gap: 10px; background: var(--grey); border: 1px solid var(--hair); border-radius: 999px; padding: 6px 6px 6px 18px; margin: 12px 0; max-width: 640px; }
 .command code { flex: 1; min-width: 0; background: none; padding: 0; color: var(--ink); font-size: 14.5px; overflow-x: auto; white-space: nowrap; text-align: left; }
 .command code::before { content: '$ '; color: var(--soft); }
+.command.slash code::before { content: none; }
 .copy { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: var(--box); border: 1px solid var(--stroke); border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--muted); }
 .copy:hover { color: var(--ink); border-color: var(--ink); }
 .command .copy { background: var(--ink); border-color: var(--ink); color: #fff; padding: 7px 14px; }

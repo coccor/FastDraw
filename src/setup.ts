@@ -73,7 +73,7 @@ export function setup(root: string, dir: string, targets: Target[], global = fal
       if (global) mkdirSync(base, { recursive: true });
       prepare(base, file);
       // the stamp goes right after the front matter, which has to stay first for Claude Code to read the skill
-      const skill = readFileSync(join(root, 'agents', 'claude-skill', 'fastdraw', 'SKILL.md'), 'utf8');
+      const skill = readFileSync(join(root, 'plugins', 'fastdraw', 'skills', 'fastdraw', 'SKILL.md'), 'utf8');
       writeFileSync(file, skill.replace(/^(---\r?\n[\s\S]*?\r?\n---\r?\n)/, `$1${stamp(version)}\n`));
       lines.push(`${was ? 'updated' : 'wrote'} ${show(file)}  (Claude Code skill)`);
     } else {

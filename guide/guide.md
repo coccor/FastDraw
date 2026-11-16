@@ -5,13 +5,14 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 ## How to work
 
 1. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
-2. Choose the kind of diagram as described in "Choosing the kind" below (`fastdraw guide list` says what each kind shows), and agree it with the person before drawing. If the kind has its own guide, run `fastdraw guide <kind>` and follow it; where it differs from the general rules in this guide, the kind's guide wins.
-3. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
-4. Plan the composition on paper first: rows and columns, where the main thing sits.
-5. Write the file. A new diagram goes in `docs/diagrams/` (create the folder) unless the person names another place or the repo already keeps its `.fdraw` files somewhere. Never put it at the top of the repo: `fastdraw open` lends the diagram's whole folder to the editor.
-6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
-7. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 6 until it is clean and looks good.
-8. When the diagram is done, tell the person where the file is and **ask what they want to do next**, with these three choices (use your tool for asking a question if you have one). Always ask; do not stop without it.
+2. When the diagram is of something in the code (a system, a request, a pipeline), first learn it as described in "Know the system first" below. Do not pick a kind from the request's wording alone.
+3. Choose the kind of diagram and its scope as described in "Choosing the kind" below (`fastdraw guide list` says what each kind shows), and agree them with the person before drawing. If the kind has its own guide, run `fastdraw guide <kind>` and follow it; where it differs from the general rules in this guide, the kind's guide wins.
+4. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
+5. Plan the composition on paper first: rows and columns, where the main thing sits.
+6. Write the file. A new diagram goes in `docs/diagrams/` (create the folder) unless the person names another place or the repo already keeps its `.fdraw` files somewhere. Never put it at the top of the repo: `fastdraw open` lends the diagram's whole folder to the editor.
+7. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
+8. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 7 until it is clean and looks good.
+9. When the diagram is done, tell the person where the file is and **ask what they want to do next**, with these three choices (use your tool for asking a question if you have one). Always ask; do not stop without it.
    - **Open in fastdraw.dev**: run `fastdraw open <file>` in the background. It opens the web editor at the diagram, with its look, and saves their edits into the same file. Read its output and give the person the link it prints, in case no browser window appeared. Read the file again before you change it after that.
    - **Preview as PNG**: open the PNG from `fastdraw render` in their image viewer (`xdg-open <file.png>` on Linux, `wslview` or `explorer.exe` under WSL, `open` on macOS, `start ""` on Windows).
    - **Nothing**: stop there.
@@ -20,9 +21,21 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 
 When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
 
+## Know the system first
+
+A diagram of a real system is only as good as your knowledge of it. Before choosing a kind, read enough of the code to list:
+
+- **The parts.** Every project, service, app, worker, job and store involved, and what each is for. A repo with several projects (a `src/` per service, a solution with many projects, a monorepo's `apps/` and `packages/`) means several parts: open each one, not only the first.
+- **How they talk.** For each connection: who calls whom, and how (HTTP or gRPC client, queue or topic, shared database, file, webhook, SDK of an outside service). Find it in the code that sends: HTTP clients and their base URLs, message publishers and subscribers, connection strings, configuration and deployment files.
+- **The paths through it.** Where a request or event enters, which parts it passes in which order, and where it ends. A system usually has several (a user request, a background job, an incoming webhook); note each one.
+
+If you can hand work to helpers that read code, give each project to one. Keep the list in your notes; the diagram is drawn from it.
+
+Then judge the size. When the list has more parts or paths than one readable picture holds (about a dozen boxes), do not shrink it to a few vague boxes such as "Backend" and "Services". Propose either an overview that names every part plus one diagram per main path, or one diagram of the path the person cares about.
+
 ## Choosing the kind
 
-Choose by what the reader has to understand, not by a word in the request: a "request flow" or a "user flow" is not a flowchart. `fastdraw guide list` says what every kind shows. The usual choices:
+Choose by what the reader has to understand, not by a word in the request: a "request flow" or a "user flow" is not a flowchart, and "architecture diagram" is often said of any picture of a system. `fastdraw guide list` says what every kind shows. The usual choices:
 
 | The reader has to see | Kind |
 |---|---|
@@ -42,7 +55,13 @@ Choose by what the reader has to understand, not by a word in the request: a "re
 - Draw a flowchart only when there are real yes/no questions. Steps in a row with no decision are a swimlane, or a process.
 - If a three-column table would say the same thing, write the table instead.
 
-**Agree the kind before drawing.** Unless the request already names it ("a sequence diagram of..."), tell the person in one short message which kind you would draw and the closest other kind, with a line on what each shows, and ask which they want (use your tool for asking a question if you have one, your pick first). If you cannot ask, draw your pick and say which other kind would also have worked.
+**Agree the kind and the scope before drawing.** Skip this only when the request names exactly one kind and nothing in it pulls toward another ("a sequence diagram of the login"). A request that mixes words of two kinds ("request flow architecture diagram": the order of a request, or the parts and their links?) names neither; ask. In one short message, using what you learned about the system:
+
+- the kind you would draw and the closest other kind, with a line on what each would show of *this* system;
+- when the system has several paths, which one to draw (name them);
+- when it is too big for one picture, the split you propose (an overview plus one per path).
+
+Use your tool for asking a question if you have one, your pick first. If you cannot ask, draw your pick and say which other kind, path or split would also have worked.
 
 ## The file
 

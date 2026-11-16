@@ -105,3 +105,15 @@ test('the newer-version check asks npm at most once a day and stays quiet when t
   assert.equal(asked, 3);
   assert.equal(cacheFile({ LOCALAPPDATA: 'C:/Users/a/AppData/Local' }, 'C:/Users/a', 'win32'), join('C:/Users/a/AppData/Local', 'fastdraw', 'latest.json'));
 });
+
+test('the Claude Code plugin carries the package version, and its skill is the one setup writes', () => {
+  const plugin = JSON.parse(readFileSync(join(root, 'plugins/fastdraw/.claude-plugin/plugin.json'), 'utf8'));
+  assert.equal(plugin.version, packageVersion(root), 'run: node tools/syncPluginVersion.ts');
+  const market = JSON.parse(readFileSync(join(root, '.claude-plugin/marketplace.json'), 'utf8'));
+  assert.equal(market.plugins[0].source, './plugins/fastdraw');
+  assert.equal(market.plugins[0].version, undefined, 'the version lives in plugin.json only');
+  const dir = mkdtempSync(join(tmpdir(), 'fdsetup-'));
+  setup(root, dir, ['claude']);
+  const written = readFileSync(join(dir, '.claude/skills/fastdraw/SKILL.md'), 'utf8').replace(/<!-- fastdraw-version: .* -->\n/, '');
+  assert.equal(written, readFileSync(join(root, 'plugins/fastdraw/skills/fastdraw/SKILL.md'), 'utf8'));
+});
