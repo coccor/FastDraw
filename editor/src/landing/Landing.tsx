@@ -233,11 +233,6 @@ export function Landing() {
         <section className="hero">
           <span className="kicker">Open source · for Claude Code, Codex and Copilot</span>
           <h1>Diagrams your agent writes <br /><em>as text.</em></h1>
-          <p className="lede">
-            A FastDraw diagram is a short text file that sits in your repository. Agents write it from a guide and
-            check it; you open the same file on a canvas and move things by hand. The editor below has one loaded:
-            drag a box and see which line of the file changes.
-          </p>
           <div className="start">
             <Command text="npx fastdraw setup claude" />
             <a className="btn focal big" href="edit/">Open the editor</a>

@@ -66,7 +66,7 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em;
 .kicker { font: 500 13px var(--mono); color: var(--accent-ink); background: var(--accent-tint); border-radius: 999px; padding: 5px 13px; }
 .hero h1 { margin-top: 26px; }
 .hero .lede { margin: 24px auto 0; }
-.start { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: center; margin: 34px 0 14px; }
+.start { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: center; margin: 40px 0 14px; }
 .start .command { margin: 0; min-width: 0; }
 
 /* a command, set as a rounded field */
