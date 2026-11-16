@@ -13,6 +13,7 @@
 //                        conns: [{pts, label: {x, y, w, h} | null}] } of the scene drawn (issues: every level).
 //   drawings/<key>.json  { svg, issues: [{line, level, msg}] (hints dropped), paper, bounds, fontFiles (repo-relative),
 //                        look: {path, text} | null } — what `render` returns.
+//   colors.json          [{ look, v, over, out }]: `color(look, v, over)` for the default look and night, sketch, engraved.
 //   share.json           [{ name, text, look, decoded }]: share-link fixtures and decodeShared(encodeShared(…)).
 //
 // <key> is the case id with every '/' replaced by '~' (caseKey). Paths inside issue messages are left absolute; the
@@ -197,6 +198,18 @@ for (const d of [
   { name: '', text: '' },
   { name: 'with-look.fdraw', text: 'look "./t.look"\na: node', look: { path: './t.look', text: 'color ink #000\n// “quoted” é' } },
 ] as Shared[]) share.push({ name: d.name, text: d.text, look: d.look ?? null, decoded: await decodeShared(await encodeShared(d)) });
+
+// colours: color(look, v, over) for a fixed list of inputs, in the default look and three bundled ones
+const COLOR_LOOKS: [string, Look][] = [['default', defaultLook()], ...['night', 'sketch', 'engraved'].map((n): [string, Look] => [n, bundledLook(n)!])];
+const COLOR_INPUTS: (string | undefined)[] = [
+  undefined, '', 'none', 'transparent', 'ink', 'muted', 'paper', 'card', 'accent', 'ink/0.2', 'muted/0.5', 'paper/0.3', 'card/1', 'accent/0.25',
+  '#fff', '#abc', '#aabbcc', '#AABBCC', '#12345678', '#abc/0.5', '#336699/0.1', '#336699/0.85', '#ff0000/.5', 'red', 'nosuchcolor', 'nosuchcolor/0.5',
+  'rgb(1,2,3)', 'rgb(1,2,3)/0.5', 'rgba(1,2,3,0.5)', 'ink/', 'ink/abc', 'ink/0.5/0.5', 'ink/2', 'ink/0', 'none/0.5', '#zzz', '#zzz/0.5', 'hsl(10,20%,30%)', ' ink', 'Ink',
+];
+const COLOR_OVERS: (string | undefined)[] = [undefined, 'paper', 'card', '#ffeedd', 'ink', 'card/0.5', 'none', 'nosuchcolor'];
+const colors: { look: string; v: string | null; over: string | null; out: string }[] = [];
+for (const [name, look] of COLOR_LOOKS) for (const v of COLOR_INPUTS) for (const over of COLOR_OVERS) colors.push({ look: name, v: v ?? null, over: over ?? null, out: color(look, v, over) });
+write('colors.json', colors);
 
 write('manifest.json', manifest);
 write('share.json', share);

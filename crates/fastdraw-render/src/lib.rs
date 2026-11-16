@@ -4,6 +4,7 @@
 use std::path::{Path, PathBuf};
 
 pub mod data;
+pub mod iconfiles;
 pub mod icons;
 pub mod js;
 pub mod look;

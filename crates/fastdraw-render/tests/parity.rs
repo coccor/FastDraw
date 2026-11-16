@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use fastdraw_render::js::{json_string, num_str};
-use fastdraw_render::look::{Look, bundled_look, default_look, parse_look};
+use fastdraw_render::look::{Look, bundled_look, color, default_look, parse_look};
 use fastdraw_render::parse::look_path;
 
 /// The repository root.
@@ -167,7 +167,7 @@ fn parse_matches() {
 }
 
 /// A look as the script writes it (`lookOut`): every field in the Look's key order, Maps as arrays of pairs, styles as
-/// objects, `dark` null when absent. `icons` and `images` are left out (see `looks_match`).
+/// objects, `icons` as names, `dark` null when absent. `images` are left out (see `looks_match`).
 fn look_json(look: &Look) -> json::Json {
     use json::Json;
     let s = |v: &str| Json::Str(v.to_string());
@@ -210,6 +210,10 @@ fn look_json(look: &Look) -> json::Json {
         ("fontDirs".into(), strs(&look.font_dirs)),
         ("canvas".into(), obj(&look.canvas)),
         ("styles".into(), Json::Arr(styles)),
+        (
+            "icons".into(),
+            Json::Arr(look.icons.keys().map(s).collect()),
+        ),
         ("iconDirs".into(), strs(&look.icon_dirs)),
         ("guidance".into(), strs(&look.guidance)),
         ("issues".into(), Json::Arr(issues)),
@@ -217,15 +221,12 @@ fn look_json(look: &Look) -> json::Json {
     ])
 }
 
-/// The script's look dump without `icons` and `images`, in the same text form as `look_json`.
+/// The script's look dump without `images`, in the same text form as `look_json`.
 fn expected_look_json(want: &json::Json) -> json::Json {
     match want {
-        json::Json::Obj(o) => json::Json::Obj(
-            o.iter()
-                .filter(|(k, _)| k != "icons" && k != "images")
-                .cloned()
-                .collect(),
-        ),
+        json::Json::Obj(o) => {
+            json::Json::Obj(o.iter().filter(|(k, _)| k != "images").cloned().collect())
+        }
         other => other.clone(),
     }
 }
@@ -274,9 +275,8 @@ fn looks_match() {
             None if name == "default" => (*default_look()).clone(),
             None => (*bundled_look(name).unwrap()).clone(),
         };
-        // TODO(Task 5): compare `icons` as name lists once Look.icons has the built-in overlay (the script lists all
-        // of them; until then the Rust look holds only its own). `images` are filled from the icon folders by the
-        // caller (withIconImages), not by the look parser, so they are never compared here.
+        // `images` are filled from the icon folders by the caller (withIconImages), not by the look parser, so they
+        // are never compared here (the images stage compares them).
         failures.check(
             name,
             "look",
@@ -287,6 +287,39 @@ fn looks_match() {
     }
     assert!(n >= 10, "only {n} looks compared");
     failures.report("looks_match");
+}
+
+#[test]
+fn colors_match() {
+    let path = parity_dir().join("colors.json");
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        println!(
+            "{} is missing: run npm run rust:parity first",
+            path.display()
+        );
+        return;
+    };
+    let mut failures = Failures::default();
+    let mut n = 0;
+    for e in json::parse(&text).as_arr() {
+        let name = e.get("look").as_str().unwrap();
+        let look = match name {
+            "default" => default_look(),
+            _ => bundled_look(name).unwrap(),
+        };
+        let opt = |k: &str| e.get(k).as_str().map(str::to_string);
+        let (v, over) = (opt("v"), opt("over"));
+        let id = format!("{name} color({v:?}, {over:?})");
+        failures.check(
+            &id,
+            "color",
+            e.get("out").as_str().unwrap(),
+            &color(&look, v.as_deref(), over.as_deref()),
+        );
+        n += 1;
+    }
+    assert!(n >= 400, "only {n} colours compared");
+    failures.report("colors_match");
 }
 
 #[test]

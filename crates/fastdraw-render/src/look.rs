@@ -302,7 +302,7 @@ pub fn empty_look() -> Look {
         font_dirs: Vec::new(),
         canvas: Props::new(),
         styles: IndexMap::new(),
-        icons: IconMap::new(), // Task 5 adds the built-in icons
+        icons: IconMap::builtin(),
         icon_dirs: Vec::new(),
         images: IndexMap::new(),
         guidance: Vec::new(),
