@@ -4,14 +4,20 @@
 // The server listens on 127.0.0.1 only, under a random token, and answers only the editor's own origin.
 // It reads files inside the folder and writes only .fdraw and .look files there.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readdirSync, readFileSync, writeFileSync, statSync, lstatSync, realpathSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, statSync, lstatSync, realpathSync, existsSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
 import { join, resolve, sep, extname, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 
 export const DEFAULT_EDITOR = 'https://fastdraw.dev/edit/';
 
-const SKIP = new Set(['node_modules', '.git', 'dist', 'bin', 'obj', '.next', 'target']);
+// folders that never hold diagrams but can hold a great many files
+const SKIP = new Set([
+  'node_modules', 'dist', 'build', 'out', 'bin', 'obj', 'target', 'vendor', 'coverage',
+  'venv', '__pycache__', 'Pods', 'DerivedData',
+]);
 const MAX_FILES = 2000;
+const MAX_DIRS = 5000;
 const MAX_WRITE = 2 * 1024 * 1024;
 const WRITABLE = new Set(['.fdraw', '.look']);
 const TYPES: Record<string, string> = {
@@ -21,20 +27,23 @@ const TYPES: Record<string, string> = {
 
 export type Served = { url: string; base: string; port: number; close: () => Promise<void> };
 
-type Entry = { path: string; size: number; mtime: number };
-
-function list(root: string): Entry[] {
-  const out: Entry[] = [];
-  const walk = (dir: string, prefix: string, depth: number) => {
-    if (depth > 6) return;
-    for (const d of readdirSync(dir, { withFileTypes: true })) {
+// Only the files the editor can use (diagrams, looks, icons, fonts), found without blocking the
+// server: a diagram saved at the top of a big repo must not stall every other request while this runs.
+// The editor needs only the paths; it reads a file's time when it fetches the file.
+async function list(root: string): Promise<{ path: string }[]> {
+  const out: { path: string }[] = [];
+  let dirs = 0;
+  const walk = async (dir: string, prefix: string, depth: number): Promise<void> => {
+    if (depth > 6 || ++dirs > MAX_DIRS) return;
+    let entries;
+    try { entries = await readdir(dir, { withFileTypes: true }); } catch { return; }
+    for (const d of entries) {
       if (out.length >= MAX_FILES || d.name.startsWith('.')) continue;
-      const full = join(dir, d.name);
-      if (d.isDirectory()) { if (!SKIP.has(d.name)) walk(full, prefix + d.name + '/', depth + 1); }
-      else if (d.isFile()) { const s = statSync(full); out.push({ path: prefix + d.name, size: s.size, mtime: Math.floor(s.mtimeMs) }); }
+      if (d.isDirectory()) { if (!SKIP.has(d.name)) await walk(join(dir, d.name), prefix + d.name + '/', depth + 1); }
+      else if (d.isFile() && Object.hasOwn(TYPES, extname(d.name).toLowerCase())) out.push({ path: prefix + d.name });
     }
   };
-  walk(root, '', 0);
+  await walk(root, '', 0);
   return out;
 }
 
@@ -85,7 +94,10 @@ export function serveFolder(folder: string, opts: { editor?: string; open?: stri
         'Access-Control-Max-Age': '600',
       });
     }
-    if (rest === 'list' && req.method === 'GET') return send(200, JSON.stringify({ files: list(root) }), { 'Content-Type': 'application/json' });
+    if (rest === 'list' && req.method === 'GET') {
+      list(root).then((files) => send(200, JSON.stringify({ files }), { 'Content-Type': 'application/json' }), () => send(500));
+      return;
+    }
     if (!rest.startsWith('f/')) return send(404);
     const file = inside(root, rest.slice(2));
     if (!file) return send(403, 'outside the folder');
