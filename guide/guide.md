@@ -8,12 +8,12 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 2. To create or change a look (how styles are drawn), run `fastdraw guide look` instead of the steps below.
 3. Run `fastdraw guide list` to see which kinds of diagram have their own guide. If yours is there, run `fastdraw guide <kind>` and follow it.
 4. Plan the composition on paper first: rows and columns, where the main thing sits.
-5. Write the file.
+5. Write the file. A new diagram goes in `docs/diagrams/` (create the folder) unless the person names another place or the repo already keeps its `.fdraw` files somewhere. Never put it at the top of the repo: `fastdraw open` lends the diagram's whole folder to the editor.
 6. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
 7. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 6 until it is clean and looks good.
-8. When the diagram is done, tell the person where the file is and **ask what they want to do next**, with these three choices (use your tool for asking a question if you have one):
-   - **Preview as PNG**: open the PNG from `fastdraw render` in their image viewer (`xdg-open <file.png>` on Linux, `open` on macOS, `start ""` on Windows).
-   - **Open in fastdraw.dev**: run `fastdraw open <file>` in the background. It opens the web editor at the diagram, with its look, and saves their edits into the same file. Read the file again before you change it after that.
+8. When the diagram is done, tell the person where the file is and **ask what they want to do next**, with these three choices (use your tool for asking a question if you have one). Always ask; do not stop without it.
+   - **Open in fastdraw.dev**: run `fastdraw open <file>` in the background. It opens the web editor at the diagram, with its look, and saves their edits into the same file. Read its output and give the person the link it prints, in case no browser window appeared. Read the file again before you change it after that.
+   - **Preview as PNG**: open the PNG from `fastdraw render` in their image viewer (`xdg-open <file.png>` on Linux, `wslview` or `explorer.exe` under WSL, `open` on macOS, `start ""` on Windows).
    - **Nothing**: stop there.
 
    Do not open anything before they choose.
