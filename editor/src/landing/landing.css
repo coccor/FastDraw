@@ -83,8 +83,8 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 .wb-bar button:hover:not(:disabled) { border-color: var(--ink); }
 .wb-bar button:disabled { color: var(--soft); cursor: default; }
 .wb-open { margin-left: auto; font-size: 14px; }
-.wb-split { display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); }
-.wb-src { max-height: 470px; overflow: auto; padding: 12px 0; border-right: 1px solid var(--hair); font: 12.5px/1.9 var(--mono); font-variant-ligatures: none; background: color-mix(in srgb, var(--box) 60%, var(--page)); }
+.wb-split { display: grid; grid-template-columns: minmax(0, clamp(360px, 34%, 600px)) minmax(0, 1fr); }
+.wb-src { max-height: max(470px, 62vh); overflow: auto; padding: 12px 0; border-right: 1px solid var(--hair); font: 12.5px/1.9 var(--mono); font-variant-ligatures: none; background: color-mix(in srgb, var(--box) 60%, var(--page)); }
 .wb-ln { display: flex; white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 16px; }
 .wb-ln > span { flex: 0 0 44px; text-align: right; padding-right: 14px; color: var(--soft); user-select: none; }
 .wb-ln code { background: none; padding: 0; font: inherit; color: var(--muted); }
@@ -94,11 +94,17 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
 .wb-ln del { color: var(--del-ink); background: var(--del-bg); padding: 1px 3px; border-radius: 3px; margin-right: 4px; }
 .wb-ln ins { color: var(--add-ink); background: var(--add-bg); text-decoration: none; padding: 1px 3px; border-radius: 3px; }
 .wb-canvas { display: flex; align-items: center; justify-content: center; background: var(--page); min-height: 300px; }
-.wb-canvas svg { display: block; width: 100%; height: auto; max-height: 470px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.wb-canvas svg { display: block; width: 100%; height: auto; max-height: max(470px, 62vh); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .wb-canvas svg:focus { outline: none; }
 .wb-canvas:focus-within { box-shadow: inset 0 0 0 2px var(--accent-tint-2); }
 .wb-sel { fill: none; stroke: var(--accent); stroke-width: 1.5; pointer-events: none; }
 .wb-status { padding: 10px 16px; border-top: 1px solid var(--hair); font-size: 14px; color: var(--muted); }
+
+/* on wide screens the workbench grows past the text column, so the diagram is not drawn small */
+@media (min-width: 1400px) {
+  .wb { margin-inline: calc((100% - min(100vw - 64px, 2000px)) / 2); }
+  .wb-canvas { padding: 24px; }
+}
 
 /* looks: the same diagram, small, once per look */
 .lookgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); gap: 12px; margin-top: 28px; }
