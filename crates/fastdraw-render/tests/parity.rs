@@ -406,17 +406,18 @@ fn scenes_match() {
     failures.report("scenes_match");
 }
 
-/// `[r, g, b]` of a paper colour written `#rrggbb` or `#rgb`, else white (as `render` reads it, spec §4.1).
+/// `[r, g, b]` of a paper colour written `#rrggbb` or `#rgb` (as `render` reads it, spec §4.1).
 fn paper_rgb(c: &str) -> [u8; 3] {
     let h = c.strip_prefix('#').unwrap_or("");
+    // every paper the TypeScript gives is one of the two forms render reads, so white is never a fallback here
+    assert!(
+        (h.len() == 6 || h.len() == 3) && h.bytes().all(|b| b.is_ascii_hexdigit()),
+        "the TypeScript's paper {c:?} is not #rrggbb or #rgb"
+    );
     let hex = |s: &str| u8::from_str_radix(s, 16).unwrap();
-    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return [255, 255, 255];
-    }
     match h.len() {
         6 => [hex(&h[0..2]), hex(&h[2..4]), hex(&h[4..6])],
-        3 => [0, 1, 2].map(|i| hex(&h[i..=i]) * 17),
-        _ => [255, 255, 255],
+        _ => [0, 1, 2].map(|i| hex(&h[i..=i]) * 17),
     }
 }
 

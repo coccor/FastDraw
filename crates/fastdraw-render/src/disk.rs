@@ -1,6 +1,7 @@
 //! node.ts: the file-system loaders of the command-line tool (reading a diagram's look file, its icon and font
 //! folders), and the `node:path` functions they use, formatted as Node formats them on this platform.
 
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use crate::fontmeta::font_meta;
@@ -12,6 +13,8 @@ use crate::scene::{Scene, build_scene};
 
 /// A look file bigger than this is treated as unreadable (spec §4.1; the TypeScript has no limit).
 pub const MAX_LOOK_BYTES: u64 = 1_000_000;
+/// The biggest font file a look's `fontdir` may bring (node.ts lookFonts).
+const MAX_FONT_BYTES: u64 = 20_000_000;
 
 // ---- node:path -------------------------------------------------------------------------------------------------
 
@@ -197,24 +200,30 @@ pub fn look_folder(look_file: &Path, d: &str) -> Option<PathBuf> {
     if is_absolute(d) {
         return None;
     }
-    let home = dirname(&look_file.to_string_lossy());
-    let given = resolve_all(&[&home, d]);
-    // realpathSync: the containment check is on the real folders
-    let home_real = std::fs::canonicalize(&home).ok()?;
-    let dir_real = std::fs::canonicalize(&given).ok()?;
+    // realpathSync(dirname(lookFile)), then realpathSync(resolve(home, d)): the containment check is on the real
+    // folders, and `d` is resolved against the real home, so ".." through a linked look folder climbs from its target
+    let (home, home_real) = real_path(&dirname(&look_file.to_string_lossy()))?;
+    let (dir, dir_real) = real_path(&resolve_all(&[&home, d]))?;
     let rel = dir_real.strip_prefix(&home_real).ok()?;
-    let rel = rel.to_string_lossy();
-    if rel.starts_with("..") || !std::fs::symlink_metadata(&dir_real).ok()?.is_dir() {
+    if rel.to_string_lossy().starts_with("..")
+        || !std::fs::symlink_metadata(&dir_real).ok()?.is_dir()
+    {
         return None;
     }
-    // realpathSync keeps the path as given when no link is on the way; otherwise it is where the links lead
-    let real = strip_verbatim(&dir_real.to_string_lossy());
+    Some(PathBuf::from(dir))
+}
+
+/// `realpathSync(p)` as text, and the canonical path for comparisons. Node's realpathSync keeps the path as given
+/// (its case too) when no link is on the way; otherwise the text is where the links lead.
+fn real_path(given: &str) -> Option<(String, PathBuf)> {
+    let canonical = std::fs::canonicalize(given).ok()?;
+    let real = strip_verbatim(&canonical.to_string_lossy());
     let same = if WINDOWS {
         real.to_lowercase() == given.to_lowercase()
     } else {
         real == given
     };
-    Some(PathBuf::from(if same { given } else { real }))
+    Some((if same { given.to_string() } else { real }, canonical))
 }
 
 pub fn plain_files(
@@ -285,7 +294,7 @@ fn icon_files(look_file: &Path, look: &mut Look) -> Vec<(String, Vec<u8>)> {
             MAX_ICON_FILES - out.len(),
         ) {
             // a file that cannot be read after all is left out
-            if let Ok(bytes) = std::fs::read(&full) {
+            if let Some(bytes) = read_bounded(&full, MAX_ICON_BYTES as u64) {
                 out.push((full.to_string_lossy()[skip..].to_string(), bytes));
             }
         }
@@ -309,15 +318,16 @@ pub fn look_fonts(look_file: Option<&Path>, look: &Look) -> (Vec<PathBuf>, Vec<S
             .font_dirs
             .iter()
             .flat_map(|d| {
-                look_folder(lf, d)
-                    .map_or_else(Vec::new, |dir| plain_files(&dir, is_font, 20_000_000, 200))
+                look_folder(lf, d).map_or_else(Vec::new, |dir| {
+                    plain_files(&dir, is_font, MAX_FONT_BYTES, 200)
+                })
             })
             .collect(),
         None => Vec::new(),
     };
     let mut have: Vec<String> = crate::data::bundled_font_families().to_vec();
     for f in &files {
-        if let Some(m) = std::fs::read(f).ok().and_then(|b| font_meta(&b)) {
+        if let Some(m) = read_bounded(f, MAX_FONT_BYTES).and_then(|b| font_meta(&b)) {
             have.push(m.family.to_lowercase());
         }
     }
@@ -332,15 +342,33 @@ pub fn look_fonts(look_file: Option<&Path>, look: &Look) -> (Vec<PathBuf>, Vec<S
     (files, missing)
 }
 
+/// The bytes of a regular file of at most `max` bytes, read through one handle, or None. A FIFO, a device (a link to
+/// /dev/zero, say) or a file that grows past `max` while it is read is refused rather than read without end.
+pub fn read_bounded(path: &Path, max: u64) -> Option<Vec<u8>> {
+    // opening a FIFO waits for a writer, so only open what is a regular file now; O_NONBLOCK covers the race
+    if !std::fs::metadata(path).ok()?.is_file() {
+        return None;
+    }
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(target_os = "linux")]
+    std::os::unix::fs::OpenOptionsExt::custom_flags(&mut options, 0o4000); // O_NONBLOCK
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
+    std::os::unix::fs::OpenOptionsExt::custom_flags(&mut options, 0x0004); // O_NONBLOCK
+    let file = options.open(path).ok()?;
+    let st = file.metadata().ok()?;
+    if !st.is_file() || st.len() > max {
+        return None;
+    }
+    let mut bytes = Vec::with_capacity(st.len() as usize);
+    file.take(max + 1).read_to_end(&mut bytes).ok()?;
+    (bytes.len() as u64 <= max).then_some(bytes)
+}
+
 /// The look file's text, as `readFileSync(…, 'utf8')` reads it (a BOM kept, bad bytes as U+FFFD), or None when it
 /// cannot be read or is over `MAX_LOOK_BYTES`.
 fn read_text(full: &Path) -> Option<String> {
-    if std::fs::metadata(full).ok()?.len() > MAX_LOOK_BYTES {
-        return None;
-    }
-    std::fs::read(full)
-        .ok()
-        .map(|b| String::from_utf8_lossy(&b).into_owned())
+    read_bounded(full, MAX_LOOK_BYTES).map(|b| String::from_utf8_lossy(&b).into_owned())
 }
 
 /// `p.toLowerCase().endsWith('.look')`
@@ -364,8 +392,13 @@ pub fn read_look(file: &Path, p: Option<&str>) -> (Option<String>, bool) {
 
 /// The scene of a diagram whose text is `src` and whose file is `file`, with its look read from disk.
 pub fn load_scene(file: &Path, src: &str) -> Scene {
+    load_scene_read(file, src, read_look(file, look_path(src).as_deref()))
+}
+
+/// `load_scene` with the look already read: `read` is `read_look(file, look_path(src))`.
+pub fn load_scene_read(file: &Path, src: &str, read: (Option<String>, bool)) -> Scene {
     let p = look_path(src);
-    let (text, refused) = read_look(file, p.as_deref());
+    let (text, refused) = read;
     let look_file = text.as_ref().map(|_| {
         resolve(
             Path::new(&dirname(&file.to_string_lossy())),
@@ -403,11 +436,6 @@ pub fn load_scene(file: &Path, src: &str) -> Scene {
         }
     }
     sc
-}
-
-/// The text of the look file `p` names, read from the diagram's folder: `readLook` plus the 1 MB limit.
-pub fn read_look_text(file: &Path, p: Option<&str>) -> Option<String> {
-    read_look(file, p).0
 }
 
 // How a diagram at `file` names the look file `target`: a path from the diagram's folder.
@@ -488,6 +516,95 @@ mod tests {
         if linked {
             assert_eq!(look_folder(&look, "./link"), None);
         }
+        // a directory junction needs no privilege on Windows
+        #[cfg(windows)]
+        {
+            let junction = t.0.join("junction");
+            let made = std::process::Command::new("cmd")
+                .arg("/c")
+                .arg("mklink")
+                .arg("/J")
+                .arg(&junction)
+                .arg(&outside.0)
+                .output()
+                .is_ok_and(|o| o.status.success());
+            if made {
+                assert!(junction.is_dir());
+                assert_eq!(look_folder(&look, "./junction"), None);
+            } else {
+                println!("mklink /J failed: junction case skipped");
+            }
+        }
+    }
+
+    // a folder inside a linked look folder: ".." climbs from the link's target, as realpathSync makes it
+    #[test]
+    fn look_folders_through_a_linked_home() {
+        let t = TempDir::new("linked-home");
+        std::fs::create_dir_all(t.0.join("real/team/icons")).unwrap();
+        std::fs::create_dir_all(t.0.join("other")).unwrap();
+        let home = t.0.join("home");
+        #[cfg(unix)]
+        let linked = std::os::unix::fs::symlink(t.0.join("real/team"), &home).is_ok();
+        #[cfg(windows)]
+        let linked = std::process::Command::new("cmd")
+            .arg("/c")
+            .arg("mklink")
+            .arg("/J")
+            .arg(&home)
+            .arg(t.0.join("real").join("team"))
+            .output()
+            .is_ok_and(|o| o.status.success());
+        if !linked {
+            return;
+        }
+        let look = home.join("t.look");
+        let real_icons = strip_verbatim(
+            &std::fs::canonicalize(t.0.join("real/team/icons"))
+                .unwrap()
+                .to_string_lossy(),
+        );
+        assert_eq!(
+            look_folder(&look, "./icons"),
+            Some(PathBuf::from(real_icons))
+        );
+        assert_eq!(look_folder(&look, "../other"), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn devices_and_fifos_are_not_read() {
+        let t = TempDir::new("devices");
+        let diagram = t.0.join("d.fdraw");
+        std::os::unix::fs::symlink("/dev/zero", t.0.join("zero.look")).unwrap();
+        assert_eq!(read_look(&diagram, Some("./zero.look")), (None, false));
+        assert_eq!(read_bounded(Path::new("/dev/zero"), 10), None);
+        let fifo = t.0.join("pipe.look");
+        let made = std::process::Command::new("mkfifo")
+            .arg(&fifo)
+            .status()
+            .is_ok_and(|s| s.success());
+        if made {
+            assert_eq!(read_look(&diagram, Some("./pipe.look")), (None, false));
+            assert_eq!(read_bounded(&fifo, 10), None);
+        }
+        // in an icon folder: a link to a device is skipped
+        let lf = t.0.join("t.look");
+        std::fs::create_dir_all(t.0.join("icons")).unwrap();
+        std::fs::write(t.0.join("icons/a.svg"), b"<svg></svg>").unwrap();
+        std::os::unix::fs::symlink("/dev/zero", t.0.join("icons/z.svg")).unwrap();
+        let look = with_icons(&lf, parse_look("icondir \"./icons\"", "t.look"));
+        assert_eq!(look.images.keys().collect::<Vec<_>>(), ["a"]);
+    }
+
+    #[test]
+    fn bounded_reads() {
+        let t = TempDir::new("bounded");
+        let f = t.put("f.bin", b"12345");
+        assert_eq!(read_bounded(&f, 5).as_deref(), Some(&b"12345"[..]));
+        assert_eq!(read_bounded(&f, 4), None);
+        assert_eq!(read_bounded(&t.0, 100), None);
+        assert_eq!(read_bounded(&t.0.join("missing"), 100), None);
     }
 
     #[test]

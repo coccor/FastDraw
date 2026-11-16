@@ -73,17 +73,15 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// from disk as `loadScene` reads it; without one, as `buildScene(text, null, '')`. On a dark page the diagram is
 /// drawn in its look's dark counterpart when that can be read, else as on a light page.
 pub fn render(source: &Source) -> Drawing {
-    let text = source.text;
-    let sc = drawn_scene(source);
+    // the diagram's own look file, read once: what is drawn with and what is returned are the same text
+    let p = parse::look_path(source.text);
+    let own = source.file.map(|f| disk::read_look(f, p.as_deref()));
+    let sc = drawn(source, own.clone());
     // the diagram's own look file as read: the light text's, never the dark one
-    let p = parse::look_path(text);
-    let look = source
-        .file
-        .and_then(|f| disk::read_look_text(f, p.as_deref()))
-        .map(|text| LookFile {
-            path: p.clone().unwrap_or_default(),
-            text,
-        });
+    let look = own.and_then(|(text, _)| text).map(|text| LookFile {
+        path: p.unwrap_or_default(),
+        text,
+    });
     let paper = look::color(
         &sc.look,
         Some(sc.look.canvas.get("paper").map_or("paper", String::as_str)),
@@ -122,38 +120,57 @@ pub fn render(source: &Source) -> Drawing {
 /// The scene `render` draws (`drawnScene` in tools/rust-parity.ts), for the parity tests.
 #[doc(hidden)]
 pub fn drawn_scene(source: &Source) -> scene::Scene {
+    let p = parse::look_path(source.text);
+    drawn(
+        source,
+        source.file.map(|f| disk::read_look(f, p.as_deref())),
+    )
+}
+
+/// own: `read_look(file, look_path(text))` when there is a file.
+fn drawn(source: &Source, own: Option<(Option<String>, bool)>) -> scene::Scene {
     if source.dark {
-        dark_scene(source.text, source.file)
+        dark_scene(source.text, source.file, own)
     } else {
-        light_scene(source.text, source.file)
+        light_scene(source.text, source.file, own)
     }
 }
 
-/// Light: `loadScene`, or `buildScene` with no file.
-fn light_scene(text: &str, file: Option<&Path>) -> scene::Scene {
-    match file {
-        Some(f) => disk::load_scene(f, text),
-        None => scene::build_scene(text, None, ""),
+/// Light: `loadScene` (with `read`, the look file `text` names, already read), or `buildScene` with no file.
+fn light_scene(
+    text: &str,
+    file: Option<&Path>,
+    read: Option<(Option<String>, bool)>,
+) -> scene::Scene {
+    match (file, read) {
+        (Some(f), Some(read)) => disk::load_scene_read(f, text, read),
+        (Some(f), None) => disk::load_scene(f, text),
+        (None, _) => scene::build_scene(text, None, ""),
     }
 }
 
 /// Dark: the look's dark counterpart (`darkCounterpart`, as the embed decides it) when it can be read.
-fn dark_scene(text: &str, file: Option<&Path>) -> scene::Scene {
+fn dark_scene(
+    text: &str,
+    file: Option<&Path>,
+    own_read: Option<(Option<String>, bool)>,
+) -> scene::Scene {
     let r = parse::look_path(text);
     let r = r.as_deref();
     let bundled = r.is_some_and(look::is_bundled_look);
     // the diagram's own look: the built-in one, a bundled one, or the look file parsed (None when it cannot be read)
-    let own: Option<std::sync::Arc<look::Look>> = match (r.filter(|r| !r.is_empty()), file) {
+    let own: Option<std::sync::Arc<look::Look>> = match (r.filter(|r| !r.is_empty()), &own_read) {
         (None, _) => Some(look::default_look()),
         (Some(name), _) if bundled => look::bundled_look(name),
-        (Some(_), None) => None,
-        (Some(_), Some(f)) => {
-            disk::read_look_text(f, r).map(|t| std::sync::Arc::new(look::parse_look(&t, "")))
-        }
+        (Some(_), Some((Some(t), _))) => Some(std::sync::Arc::new(look::parse_look(t, ""))),
+        (Some(_), _) => None,
     };
     let d = share::dark_counterpart(r, own.as_deref());
     match (d, file) {
-        (Some(d), _) if look::is_bundled_look(&d) => light_scene(&parse::with_look(text, &d), file),
+        // a bundled look is not read from disk
+        (Some(d), _) if look::is_bundled_look(&d) => {
+            light_scene(&parse::with_look(text, &d), file, None)
+        }
         (Some(d), Some(f)) => {
             // relative to the look file's folder; with no look file of its own (cannot happen with a bundled or the
             // built-in look, whose dark lines are names) the embed resolves it against the diagram, so this does too
@@ -163,13 +180,15 @@ fn dark_scene(text: &str, file: Option<&Path>) -> scene::Scene {
             };
             let rel = disk::look_ref_text(f, &disk::resolve(&base, &d));
             // only a .look file can be read by loadScene, so any other dark path cannot be read: drawn as light
-            if disk::read_look_text(f, Some(&rel)).is_some() {
-                light_scene(&parse::with_look(text, &rel), file)
+            let dark_read = disk::read_look(f, Some(&rel));
+            if dark_read.0.is_some() {
+                // withLook writes `rel` so that lookPath reads it back, so dark_read is what loadScene would read
+                light_scene(&parse::with_look(text, &rel), file, Some(dark_read))
             } else {
-                light_scene(text, file)
+                light_scene(text, file, own_read)
             }
         }
-        _ => light_scene(text, file),
+        _ => light_scene(text, file, own_read),
     }
 }
 

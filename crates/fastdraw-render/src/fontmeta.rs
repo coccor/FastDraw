@@ -11,41 +11,45 @@ pub struct FontMeta {
 }
 
 // DataView reads: big-endian, and out of range is a RangeError (None here, which font_meta turns into "not a font").
-fn u16_at(b: &[u8], o: usize) -> Option<u16> {
+// Offsets are u64, so sums of a file's u32 offsets and u16 lengths cannot overflow, as JavaScript numbers do not.
+fn u16_at(b: &[u8], o: u64) -> Option<u16> {
+    let o = usize::try_from(o).ok()?;
     Some(u16::from_be_bytes([*b.get(o)?, *b.get(o.checked_add(1)?)?]))
 }
-fn u32_at(b: &[u8], o: usize) -> Option<u32> {
+fn u32_at(b: &[u8], o: u64) -> Option<u32> {
+    let o = usize::try_from(o).ok()?;
     Some(u32::from_be_bytes(
         b.get(o..o.checked_add(4)?)?.try_into().ok()?,
     ))
 }
 
 pub fn font_meta(b: &[u8]) -> Option<FontMeta> {
+    let size = b.len() as u64;
     let tag = u32_at(b, 0)?;
     if tag != 0x0001_0000 && tag != 0x4f54_544f && tag != 0x7472_7565 {
         return None; // TrueType, 'OTTO', 'true'
     }
-    let mut tables: HashMap<[u8; 4], usize> = HashMap::new();
-    let n = usize::from(u16_at(b, 4)?);
-    if 12 + n * 16 > b.len() {
+    let mut tables: HashMap<[u8; 4], u64> = HashMap::new();
+    let n = u64::from(u16_at(b, 4)?);
+    if 12 + n * 16 > size {
         return None;
     }
     for i in 0..n {
-        let o = 12 + i * 16;
+        let o = (12 + i * 16) as usize; // within the file: checked above
         tables.insert(
             [b[o], b[o + 1], b[o + 2], b[o + 3]],
-            u32_at(b, o + 8)? as usize,
+            u64::from(u32_at(b, o as u64 + 8)?),
         );
     }
     let name = *tables.get(b"name")?;
     // Font files are untrusted: every offset is checked against the file size, names are
     // capped, and a record is only decoded when it is one we still need.
-    if name + 6 > b.len() {
+    if name + 6 > size {
         return None;
     }
-    let count = usize::from(u16_at(b, name + 2)?);
-    let store = name + usize::from(u16_at(b, name + 4)?);
-    if name + 6 + count * 12 > b.len() {
+    let count = u64::from(u16_at(b, name + 2)?);
+    let store = name + u64::from(u16_at(b, name + 4)?);
+    if name + 6 + count * 12 > size {
         return None;
     }
     let mut found: HashMap<u32, String> = HashMap::new();
@@ -55,22 +59,26 @@ pub fn font_meta(b: &[u8]) -> Option<FontMeta> {
         i += 1;
         let platform = u16_at(b, r)?;
         let id = u16_at(b, r + 6)?;
-        let len = usize::from(u16_at(b, r + 8)?);
-        let off = store + usize::from(u16_at(b, r + 10)?);
+        let len = u64::from(u16_at(b, r + 8)?);
+        let off = store + u64::from(u16_at(b, r + 10)?);
         if (id != 1 && id != 16) || (platform != 3 && platform != 0 && platform != 1) {
             continue;
         }
         let key = u32::from(id) * 10 + u32::from(platform == 1); // prefer the Unicode records
-        if found.contains_key(&key) || len > 256 || off + len > b.len() {
+        if found.contains_key(&key) || len > 256 || off + len > size {
             continue;
         }
+        let bytes = &b[off as usize..(off + len) as usize]; // within the file: checked above
         let s: String = if platform == 1 {
             // String.fromCharCode of each byte: Latin-1
-            b[off..off + len].iter().map(|&c| char::from(c)).collect()
+            bytes.iter().map(|&c| char::from(c)).collect()
         } else {
             // UTF-16BE; a lone surrogate (which a Rust string cannot hold) becomes U+FFFD
-            let units =
-                (0..len / 2).map(|k| u16::from_be_bytes([b[off + 2 * k], b[off + 2 * k + 1]]));
+            let units = bytes
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|&u| u16::from_be_bytes(u));
             char::decode_utf16(units)
                 .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
                 .collect()
@@ -83,7 +91,7 @@ pub fn font_meta(b: &[u8]) -> Option<FontMeta> {
         .iter()
         .find_map(|k| found.get(k))?
         .clone();
-    let os2 = tables.get(b"OS/2").copied().filter(|&o| o + 64 <= b.len());
+    let os2 = tables.get(b"OS/2").copied().filter(|&o| o + 64 <= size);
     let weight = os2.map_or(Some(400), |o| u16_at(b, o + 4))?;
     let italic = os2.map_or(Some(false), |o| u16_at(b, o + 62).map(|v| v & 1 == 1))?;
     Some(FontMeta {
