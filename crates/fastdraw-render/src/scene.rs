@@ -115,7 +115,7 @@ pub enum RowKind {
 }
 
 /// One row of a table box. y and h are filled in by the layout; a 'rule' row is a dividing line with no height.
-/// On a chart a row is one series: id is its kind (bars, line, area, dots), cells[0] its name, vals its numbers.
+/// On a chart a row is one series: id is its kind (bars, line, area, dots), `cells[0]` its name, vals its numbers.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Row {
     pub id: Option<String>,

@@ -1,21 +1,37 @@
 #![forbid(unsafe_code)]
-//! FastDraw's diagram renderer, in Rust. Output matches the TypeScript renderer character for character.
+#![doc = include_str!("../README.md")]
 
 use std::path::{Path, PathBuf};
 
+// The internal modules mirror the TypeScript modules. They are public only so that the integration tests can reach
+// them, hidden from the documentation, and not part of the API: they may change in any release.
+#[doc(hidden)]
 pub mod chart;
+#[doc(hidden)]
 pub mod data;
+#[doc(hidden)]
 pub mod disk;
+#[doc(hidden)]
 pub mod fontmeta;
+#[doc(hidden)]
 pub mod iconfiles;
+#[doc(hidden)]
 pub mod icons;
+#[doc(hidden)]
 pub mod js;
+#[doc(hidden)]
 pub mod look;
+#[doc(hidden)]
 pub mod parse;
+#[doc(hidden)]
 pub mod render;
+#[doc(hidden)]
 pub mod router;
+#[doc(hidden)]
 pub mod scene;
+#[doc(hidden)]
 pub mod share;
+#[doc(hidden)]
 pub mod sketch;
 mod timsort;
 
@@ -248,6 +264,24 @@ fn parse_rgb_function(c: &str) -> Option<[u8; 3]> {
     Some([channel(parts[0])?, channel(parts[1])?, channel(parts[2])?])
 }
 
+/// The look path the diagram's look line names, as written (`look "./team.look"` gives `./team.look`), or `None`
+/// when the diagram has no look line or nothing follows `look`.
+///
+/// This is the path `render` reads when given a file, relative to the diagram's folder, so a host can check it
+/// (an absolute or UNC path, say) before rendering a diagram it does not trust. A bundled look's name (`look
+/// blueprint`) is returned as written too; it names no file.
+///
+/// ```
+/// use fastdraw_render::look_path;
+///
+/// let text = "look \"./team.look\"\na: rect at 0,0\n";
+/// assert_eq!(look_path(text).as_deref(), Some("./team.look"));
+/// assert_eq!(look_path("a: rect at 0,0\n"), None);
+/// ```
+pub fn look_path(text: &str) -> Option<String> {
+    parse::look_path(text)
+}
+
 /// The share link that opens a diagram in the online editor.
 pub fn editor_link(name: &str, text: &str, look: Option<&LookFile>) -> String {
     share::editor_link(name, text, look)
@@ -267,6 +301,18 @@ mod tests {
         let f = fonts();
         assert!(!f.is_empty());
         assert!(f.iter().all(|(n, b)| n.ends_with(".ttf") && b.len() > 1000));
+    }
+
+    #[test]
+    fn look_paths() {
+        let team = "look \"./team.look\"\na: rect at 0,0\n";
+        assert_eq!(look_path(team).as_deref(), Some("./team.look"));
+        let unc = "# c\nlook \"//server/share/t.look\"\n";
+        assert_eq!(look_path(unc).as_deref(), Some("//server/share/t.look"));
+        assert_eq!(look_path("look blueprint\n").as_deref(), Some("blueprint"));
+        assert_eq!(look_path("a: rect at 0,0\n"), None);
+        assert_eq!(look_path("look\n"), None);
+        assert_eq!(look_path(""), None);
     }
 
     #[test]

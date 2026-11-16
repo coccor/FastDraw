@@ -4,12 +4,13 @@
 standalone SVG, exactly as the `fastdraw` npm package of the same version draws it, without Node.
 
 It is a port of FastDraw's TypeScript renderer (parser, looks, icons, arrow router, sketch, charts, tables and
-SVG writer), not a binding to it. It has no unsafe code, starts no threads and makes no network calls; the
-bundled looks, icons, fonts and text widths are compiled in.
+SVG writer), not a binding to it. It has no unsafe code, starts no threads and opens no sockets itself (a look
+path naming a network share is read through the operating system like any file); the bundled looks, icons, fonts
+and text widths are compiled in.
 
 ## Use
 
-```rust
+```rust,no_run
 use std::path::Path;
 use fastdraw_render::{render, Source};
 
@@ -23,7 +24,9 @@ for issue in &drawing.issues {
 
 ## API
 
-```rust
+Only the items below (the documented items on docs.rs) are the crate's API.
+
+```rust,ignore
 pub struct Source<'a> { pub text: &'a str, pub file: Option<&'a Path>, pub dark: bool }
 
 pub struct Drawing {
@@ -39,6 +42,7 @@ pub enum Level { Error, Warning }
 pub struct LookFile { pub path: String, pub text: String } // path as written in the diagram
 
 pub fn render(source: &Source) -> Drawing;                 // never fails
+pub fn look_path(text: &str) -> Option<String>;            // the look line's path, as written
 pub fn editor_link(name: &str, text: &str, look: Option<&LookFile>) -> String;
 pub fn fonts() -> &'static [(&'static str, Vec<u8>)];      // inflated on first call
 pub const VERSION: &str;                                    // the crate's version = the npm package's
@@ -50,13 +54,16 @@ pub const VERSION: &str;                                    // the crate's versi
   `dark: true` the diagram is drawn in its look's dark counterpart, as `<fastdraw-diagram>` does on a dark
   page, or as on a light page when there is none. Paths in issue messages are written the way Node's
   `path.resolve` writes them on that platform.
+- **`look_path`** is the path the diagram's look line names, as written (`None` when it has no look line): the
+  file `render` reads, relative to the diagram's folder, when given a file.
 - **`editor_link`** is the `https://fastdraw.dev/edit/#fdraw=…` link that opens the diagram (and its look file)
   in the online editor.
 - **`fonts`** returns the bundled fonts (file name, TTF bytes), with ligatures removed so `->` and `>=` draw as
   typed. Text in the SVG names these families; load them into whatever rasterises the SVG.
 
-The other public modules (`parse`, `scene`, `render`, `look`, `js`, …) mirror the TypeScript modules and exist
-for the tests; they may change in any release.
+The crate's version follows the npm package's, so only these items keep semver. The other public modules
+(`parse`, `scene`, `render`, `look`, `js`, …) mirror the TypeScript modules, are hidden from the documentation,
+exist for the tests, and may change in any release.
 
 ## The guarantee
 
@@ -103,8 +110,8 @@ Rust change in the same pull request.
   FastDraw has no such limit.
 
 A look line may name an absolute or UNC path (`look "//server/share/team.look"`), and the crate reads it as
-FastDraw does. Whether to allow that is the host application's decision: check the diagram's look path (or the
-returned `look`) before rendering untrusted diagrams if it matters. Folders a look names (`icondir`, `fontdir`)
+FastDraw does. Whether to allow that is the host application's decision: check `look_path(text)` before calling
+`render` on a diagram it does not trust, if it matters. Folders a look names (`icondir`, `fontdir`)
 must stay inside the look's own folder, with no `..` out of it and no links.
 
 ## Licence
