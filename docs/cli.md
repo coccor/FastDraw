@@ -29,4 +29,9 @@ of working: write the file, run `check` until it is clean, then render and look 
 | GitHub Copilot | `npx fastdraw setup copilot` (adds a section to `.github/copilot-instructions.md`) |
 | Chat assistants | Ask it to read https://fastdraw.dev/llms.txt first, or paste that file in; then paste the reply into the editor with "Paste diagram text" |
 
+The files `setup` writes carry the version that wrote them. When they are older than the fastdraw
+running, `fastdraw guide` begins with a note saying so and giving the command to update them
+(`npx fastdraw@latest setup ...`). It also notes a newer release on npm, checked at most once a day;
+`FASTDRAW_NO_UPDATE_CHECK=1` turns that check off, and it is off on CI.
+
 More detail is in [`agents/README.md`](../agents/README.md).

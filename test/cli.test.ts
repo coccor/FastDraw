@@ -11,7 +11,8 @@ import { extractPng } from '../src/embed.ts';
 
 const CLI = new URL('../src/cli.ts', import.meta.url).pathname;
 const fastdraw = (...a: string[]) => {
-  const r = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, ...a], { encoding: 'utf8' });
+  // no asking npm for a newer version from the tests
+  const r = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, ...a], { encoding: 'utf8', env: { ...process.env, FASTDRAW_NO_UPDATE_CHECK: '1' } });
   return { out: r.stdout, code: r.status };
 };
 
