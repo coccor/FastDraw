@@ -2,7 +2,7 @@
 // writes out for a team to change. Its style names match the guides.
 export const DEFAULT_LOOK = `// FastDraw default look. Copy it with "fastdraw init-look" and change anything.
 // A cool light page, white cards with rounded corners and a two-tone icon, softly tinted zones,
-// slate greys for everything else and one indigo for the subject and the main path. Geist for names and details, Geist Mono for small technical labels.
+// slate greys for everything else and one tomato red for the subject and the main path. Geist for names and details, Geist Mono for small technical labels.
 
 canvas paper=paper dots=ink/0.07 dotgap=24
 
@@ -15,7 +15,7 @@ color card   #ffffff
 color ink    #0f172a
 color muted  #475569
 color soft   #94a3b8
-color accent #4f46e5
+color accent #dc2f2f
 color link   #0284c7
 color teal   #0d9488
 color amber  #d97706
@@ -30,10 +30,10 @@ font serif "Newsreader"
 style node shape=rect radius=10 size=144x64 fill=#ffffff stroke=ink/0.14 sw=1 sub.font=sans sub.color=muted
     tag.color=muted tag.border=ink/0.18 tag.font=mono icon.color=accent icon.fill=accent/0.14
     use="default box: a backend, service, component or step"
-style focal extends node fill=#e6e5fb stroke=accent sw=2 title.color=accent
+style focal extends node fill=#fde3e1 stroke=accent sw=2 title.color=accent
     tag.color=accent tag.border=accent/0.4 ghost.color=accent/0.10
     use="the one or two elements the diagram is about"
-style store extends node fill=#e7e8ea shape=path stroke=ink/0.18 icon.color=violet icon.fill=violet/0.14 tag.color=violet tag.border=violet/0.4
+style store extends node fill=#e7e8ea shape=path stroke=ink/0.18 icon.color=teal icon.fill=teal/0.14 tag.color=teal tag.border=teal/0.4
     path="M0,0.1 C0,-0.035 1,-0.035 1,0.1 L1,0.9 C1,1.035 0,1.035 0,0.9 Z M0,0.1 C0,0.235 1,0.235 1,0.1 C1,0.235 0,0.235 0,0.1"
     use="something that holds data or state"
 style cloud extends node fill=#e6f3f9 stroke=link/0.45 icon.color=link icon.fill=link/0.14 tag.color=link tag.border=link/0.4
@@ -51,7 +51,7 @@ style sticky-violet extends sticky fill=#ede9fe stroke=violet/0.35 use="a violet
 style step extends node size=160x48 use="flowchart action"
 style terminal extends node radius=24 size=160x48 fill=#ffffff stroke=ink/0.30
     use="flowchart start or end"
-style terminal-focal extends terminal fill=#e6e5fb stroke=accent sw=2 title.color=accent
+style terminal-focal extends terminal fill=#fde3e1 stroke=accent sw=2 title.color=accent
     use="the flowchart outcome that matters most"
 style decision shape=diamond size=200x96 fill=#ffffff stroke=ink/0.30 sw=1
     use="flowchart yes/no question; put the text on two short lines"

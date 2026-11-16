@@ -1,12 +1,12 @@
-// fastdraw.dev: says what FastDraw is, puts a small editor under it to try, then the looks, the kinds
-// of diagram, and how to set an agent up. The full editor lives at /edit/.
+// fastdraw.dev: says what FastDraw is, puts a small editor under it to try with the looks as pills beneath,
+// then the kinds of diagram, how to set an agent up, and the checker. The full editor lives at /edit/.
 import React, { useMemo, useRef, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { buildScene } from '../../../src/scene.ts';
 import { renderBody } from '../../../src/render.ts';
 import { TEMPLATES } from '../templates.ts';
 import { ThemeToggle } from '../ThemeToggle.tsx';
-import { useTheme } from '../theme.ts';
+import { useTheme, type Theme } from '../theme.ts';
 import { inTheme } from './inTheme.ts';
 import { Workbench, type Doc } from './Workbench.tsx';
 import checkout from './checkout.fdraw?raw';
@@ -31,6 +31,12 @@ function CopyButton({ text, label = 'Copy' }: { text: string | (() => Promise<st
 
 function Command({ text }: { text: string }) {
   return <div className="command"><code>{text}</code><CopyButton text={text} /></div>;
+}
+
+// a drawing of a diagram text, for thumbnails
+function draw(text: string, theme: Theme) {
+  const sc = buildScene(inTheme(text, theme), null);
+  return { body: renderBody(sc), box: `${sc.x} ${sc.y} ${sc.w} ${sc.h}` };
 }
 
 type Agent = { id: string; name: string; body: React.ReactNode };
@@ -94,15 +100,9 @@ function Setup() {
   );
 }
 
-const ASKS = [
-  "Draw this repo's architecture as docs/architecture.fdraw",
-  'Turn the signup flow in src/auth into a flowchart',
-  'Add the new billing service to docs/architecture.fdraw',
-];
-
 // '' is the built-in look, which needs no line in the file
 const LOOKS: { id: string; name: string; about: string }[] = [
-  { id: '', name: 'Built-in', about: 'Rounded cards, tinted zones and one indigo. Used when the file names no look.' },
+  { id: '', name: 'Built-in', about: 'Rounded cards, tinted zones and one tomato red. Used when the file names no look.' },
   { id: 'whiteboard', name: 'Whiteboard', about: 'Sticky-note colours, rounded boxes and curved lines.' },
   { id: 'sketch', name: 'Sketch', about: 'Outlines and lettering drawn by hand, for early ideas.' },
   { id: 'headline', name: 'Headline', about: 'Flat blocks under a serif headline, like a newspaper graphic.' },
@@ -116,31 +116,84 @@ const LOOKS: { id: string; name: string; about: string }[] = [
   { id: 'reference', name: 'Reference', about: 'The palette of diagram-design, the project FastDraw follows.' },
 ];
 
-// The diagram in the editor above, drawn small in each look. Choosing one writes the look line into the file.
-function Looks({ doc, pick }: { doc: Doc; pick: (id: string) => void }) {
+// Under the editor: one pill per look, each with the diagram drawn small in it. Choosing one writes the look line.
+function LookPills({ doc, pick }: { doc: Doc; pick: (id: string) => void }) {
   const theme = useTheme();
-  const thumbs = useMemo(() => LOOKS.map((l) => {
-    const sc = buildScene(inTheme((l.id ? `look ${l.id}\n` : '') + doc.body, theme), null);
-    return { body: renderBody(sc), box: `${sc.x} ${sc.y} ${sc.w} ${sc.h}` };
-  }), [doc.body, theme]);
+  const thumbs = useMemo(() => LOOKS.map((l) => draw((l.id ? `look ${l.id}\n` : '') + doc.body, theme)), [doc.body, theme]);
   const on = LOOKS.find((l) => l.id === doc.look) ?? LOOKS[0];
   return (
-    <section id="looks" className="block" aria-labelledby="looks-title">
-      <h2 id="looks-title">The look is one line at the top of the file</h2>
-      <p className="lede">
-        These are {LOOKS.length} drawings of the diagram in the editor above, one in each look that ships with FastDraw.
-        Choose one and a line such as <code>look engraved</code> is written at the top of the file; the built-in look
-        needs no line. A team can write its own <code>.look</code> file, and every diagram that names it follows it.
-      </p>
-      <div className="lookgrid" role="radiogroup" aria-label="Look">
+    <div id="looks" className="looks">
+      <div className="pills" role="radiogroup" aria-label="Look">
         {LOOKS.map((l, i) => (
-          <button key={l.name} role="radio" aria-checked={l.id === doc.look} className={l.id === doc.look ? 'on' : ''} onClick={() => pick(l.id)}>
-            <svg viewBox={thumbs[i].box} preserveAspectRatio="xMidYMid meet" aria-hidden="true" dangerouslySetInnerHTML={{ __html: thumbs[i].body }} />
-            <b>{l.name}</b>
+          <button key={l.name} role="radio" aria-checked={l.id === doc.look} className={'pill-look' + (l.id === doc.look ? ' on' : '')} onClick={() => pick(l.id)}>
+            <svg viewBox={thumbs[i].box} preserveAspectRatio="xMidYMid slice" aria-hidden="true" dangerouslySetInnerHTML={{ __html: thumbs[i].body }} />
+            {l.name}
           </button>
         ))}
       </div>
-      <p className="lookabout" role="status"><b>{on.name}.</b> {on.about}</p>
+      <p className="lookabout" role="status"><b>{on.name}.</b> {on.about} {on.id ? <>The file starts with <code>look {on.id}</code>.</> : <>The file needs no look line.</>}</p>
+    </div>
+  );
+}
+
+const SHOWN = ['architecture', 'swimlane', 'sankey', 'state', 'db-schema', 'gantt'];
+
+function Kinds({ current, pick }: { current: string | null; pick: (kind: string) => void }) {
+  const theme = useTheme();
+  const shown = useMemo(() => SHOWN.map((k) => TEMPLATES.find((t) => t.kind === k)).filter((t) => !!t)
+    .map((t) => ({ t, ...draw(t.text, theme) })), [theme]);
+  return (
+    <section id="kinds" className="band grey" aria-labelledby="kinds-title">
+      <div className="wrap">
+        <h2 id="kinds-title">A guide for <em>{TEMPLATES.length} kinds of diagram.</em></h2>
+        <p className="lede">
+          The agent reads the guide for the kind you ask for. Every example was written by an agent from its guide
+          and is in the repository unchanged. Choose one to load it into the editor above.
+        </p>
+        {/* the large drawings repeat names from the list below, so they are a mouse shortcut only */}
+        <div className="kindgrid" aria-hidden="true">
+          {shown.map(({ t, body, box }) => (
+            <div key={t.kind} className="kindcard" onClick={() => pick(t.kind)}>
+              <div className="kindart"><svg viewBox={box} preserveAspectRatio="xMidYMid meet" dangerouslySetInnerHTML={{ __html: body }} /></div>
+              <b>{t.title}</b>
+            </div>
+          ))}
+        </div>
+        <ul className="kinds">
+          {TEMPLATES.map((t) => (
+            <li key={t.kind}>
+              <button className={current === t.kind ? 'on' : ''} aria-pressed={current === t.kind} onClick={() => pick(t.kind)} title={t.about}>{t.title}</button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+// the checker's report on a broken copy of the diagram, then on the fixed one
+function Checker() {
+  const theme = useTheme();
+  const art = useMemo(() => draw(checkout, theme), [theme]);
+  return (
+    <section className="band grey" aria-labelledby="check-title">
+      <div className="wrap">
+        <h2 id="check-title">The agent runs the checker <em>before it answers.</em></h2>
+        <p className="lede">
+          <code>fastdraw check</code> reports overlapping boxes, text that does not fit and lines with no room, each
+          with its line number. The agent fixes them before you see the diagram.
+        </p>
+        <div className="check">
+          <div className="term" aria-label="A terminal session">
+            <div><b>$</b> fastdraw check docs/checkout.fdraw</div>
+            <div className="bad">line 9: "Cache" overlaps "Catalog" (line 8)</div>
+            <div className="dim"># the agent moves Cache back into the Data zone</div>
+            <div><b>$</b> fastdraw check docs/checkout.fdraw</div>
+            <div className="ok">ok: no problems found</div>
+          </div>
+          <div className="pane"><svg viewBox={art.box} preserveAspectRatio="xMidYMid meet" aria-hidden="true" dangerouslySetInnerHTML={{ __html: art.body }} /></div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -178,75 +231,57 @@ export function Landing() {
 
       <main>
         <section className="hero">
-          <h1>FastDraw is a text format for diagrams</h1>
-          <div className="intro">
-            <p className="lede">
-              Claude Code, Codex and Copilot write it from a guide and run a checker over the result. You can open the
-              same file on a canvas and move things by hand. The editor below has one loaded: drag a box and see
-              which line of the file changes.
-            </p>
-          </div>
+          <span className="kicker">Open source · for Claude Code, Codex and Copilot</span>
+          <h1>Diagrams your agent writes <br /><em>as text.</em></h1>
+          <p className="lede">
+            A FastDraw diagram is a short text file that sits in your repository. Agents write it from a guide and
+            check it; you open the same file on a canvas and move things by hand. The editor below has one loaded:
+            drag a box and see which line of the file changes.
+          </p>
           <div className="start">
             <Command text="npx fastdraw setup claude" />
-            <p className="small muted">Run this in your repository to add the skill for Claude Code. <a href="#setup">Codex, Copilot and chat assistants</a> are set up the same way.</p>
+            <a className="btn focal big" href="edit/">Open the editor</a>
           </div>
+          <p className="small muted">The command adds the skill for Claude Code. <a href="#setup">Codex, Copilot and chat assistants</a> are set up the same way.</p>
         </section>
 
-        <Workbench doc={doc} setDoc={set} onSettle={settle} />
+        <div className="stage">
+          <Workbench doc={doc} setDoc={set} onSettle={settle} />
+          <LookPills doc={settled} pick={pickLook} />
+        </div>
+      </main>
 
-        <Looks doc={settled} pick={pickLook} />
+      <Kinds current={doc.kind} pick={pickKind} />
 
-        <section id="kinds" className="block" aria-labelledby="kinds-title">
-          <h2 id="kinds-title">There is a guide for {TEMPLATES.length} kinds of diagram</h2>
-          <p className="lede">
-            The agent reads the guide for the kind you ask for. Each example was written by an agent from its guide
-            and is in the repository unchanged. Choose a name to load that example into the editor above.
-          </p>
-          <ul className="kinds">
-            {TEMPLATES.map((t) => (
-              <li key={t.kind}>
-                <button className={doc.kind === t.kind ? 'on' : ''} aria-pressed={doc.kind === t.kind} onClick={() => pickKind(t.kind)} title={t.about}>{t.title}</button>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="block why" aria-labelledby="why-title">
-          <h2 id="why-title">Why a text file</h2>
-          <div className="prose">
-            <p>
-              The diagram sits in the repository next to the code it describes, so a change to it shows up in a pull
-              request as a few changed lines. Moving a box by hand changes that box's line and no other. The agent
-              reads the file before its next edit, keeps your layout, and places only what it adds.
-            </p>
-            <p>
-              Exported PNG and SVG files carry the diagram text inside them, so either one can be opened and edited
-              again. The editor runs in your browser and reads and writes files on your machine. Nothing is uploaded.
-            </p>
-          </div>
-        </section>
-
-        <section id="setup" className="block" aria-labelledby="setup-title">
-          <h2 id="setup-title">Set up your agent</h2>
+      <section id="setup" className="band white" aria-labelledby="setup-title">
+        <div className="wrap">
+          <h2 id="setup-title">Set up <em>in three steps.</em></h2>
           <p className="lede">
             One command in your repository adds a short instruction file that points your agent at the guide. The tool
             runs through <code>npx</code>, so there is nothing else to install. It needs Node 20 or later.
           </p>
+          <ol className="steps">
+            <li><i>1</i><h3>Run one command in your repository</h3><p>Choose your agent below. Each command writes one short file and nothing else.</p></li>
+            <li><i>2</i><h3>Ask for a diagram</h3><p>“Draw this repo's architecture as docs/architecture.fdraw.” The agent reads the guide for that kind of diagram, writes the file and checks it.</p></li>
+            <li><i>3</i><h3>Open it and move things</h3><p><code>npx fastdraw open docs/architecture.fdraw</code> opens the editor. What you change is saved into the file, and the agent reads it before its next edit.</p></li>
+          </ol>
           <Setup />
-          <div className="next">
-            <div>
-              <h3>Then ask for a diagram</h3>
-              <ul className="asks">{ASKS.map((a) => <li key={a}>{a}</li>)}</ul>
-            </div>
-            <div>
-              <h3>Change it yourself</h3>
-              <p>This opens the diagram in the editor. What you change is saved into the file, and the agent reads it before its next edit.</p>
-              <Command text="npx fastdraw open docs/architecture.fdraw" />
-              <p className="muted">Or drop any <code>.fdraw</code> file onto the <a href="edit/">editor</a>.</p>
-            </div>
-          </div>
-        </section>
-      </main>
+        </div>
+      </section>
+
+      <Checker />
+
+      <section className="close" aria-labelledby="close-title">
+        <div className="wrap">
+          <h2 id="close-title">Set it up <em>in your repository.</em></h2>
+          <p>
+            The diagram sits next to the code it describes, so a change to it shows up in a pull request as a few
+            changed lines. Exported PNG and SVG files carry the diagram text inside them, so either one can be opened
+            and edited again. The editor runs in your browser; nothing is uploaded.
+          </p>
+          <Command text="npx fastdraw setup claude" />
+        </div>
+      </section>
 
       <footer>
         <p>FastDraw is open source under the MIT licence. <a href={REPO}>Source on GitHub</a>. The guide for agents is at <a href="llms.txt">llms.txt</a>.</p>

@@ -11,7 +11,7 @@ test('the landing page says what FastDraw is and sets up an agent', async ({ pag
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('FastDraw is a text format for diagrams');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diagrams your agent writes as text.');
   // the one command sits beside the headline
   await expect(page.locator('.hero .command code')).toHaveText('npx fastdraw setup claude');
   // the setup tabs switch the command
