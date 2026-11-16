@@ -199,4 +199,48 @@ ${CLOSE}`;
 .looks{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px}.looks figure{margin:0}.tile{background:#fff;border-radius:14px;padding:14px;aspect-ratio:1.6;display:flex;align-items:center}.looks figcaption{color:#fff;font-weight:600;margin-top:10px}`;
   writeFileSync(here + 'c.html', page('C. Walkthrough', "Yap's progress tabs drive the hero: Ask, Check, Move by hand, each a real screen. Then a section on where diagrams live today, set beside a grid of them, as Yap does with the camera roll.", body, css));
 }
-console.log('wrote a.html b.html c.html');
+// ---------- D. B's hero, A's look pills, B's guide; no colour band; one page per accent candidate ----------
+{
+  const ACCENTS: [string, string, string, string, string][] = [
+    // slug, name, accent, darker ink for text on white, pale tint for focal fills
+    ['vermilion', 'Vermilion', '#e4512b', '#c2401e', '#fde6df'],
+    ['teal', 'Teal', '#0f8b8d', '#0b6f71', '#dcf1f0'],
+    ['green', 'Green', '#15803d', '#116b33', '#def2e5'],
+    ['ochre', 'Ochre', '#b45309', '#924306', '#f9ebd9'],
+  ];
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
+  const favicon = readFileSync(root + 'editor/public/favicon.svg', 'utf8').replace(/<title>.*?<\/title>/, '');
+  for (const [slug, name, acc, ink, tint] of ACCENTS) {
+    const re = (h: string) => h.replace(/#4f46e5/gi, acc).replace(/#e6e5fb/gi, tint).replace(/79,70,229/g, rgb(acc));
+    const logo = re(favicon).replace('<svg ', '<svg class="logo" ');
+    const pills = LOOKS.slice(0, 5).map(([id, n], i) => `<span class="lp${i === 0 ? ' on' : ''}"><span class="thumb">${lookSvg(id)}</span>${n}</span>`).join('');
+    const swatches = ACCENTS.map(([s2, n2, a2]) => `<a href="d-${s2}.html" class="${s2 === slug ? 'on' : ''}"><i style="background:${a2}"></i>${n2}</a>`).join('');
+    const body = `<header class="top"><div class="brand">${logo}FastDraw</div><nav><span>How it works</span><span>Looks</span><span>Kinds</span><span>GitHub</span><span class="pill sm">Open the editor</span></nav></header>
+<section class="hero wrap"><span class="kicker">Open source · for Claude Code, Codex and Copilot</span><h1>Diagrams your agent writes <em>as text.</em></h1>
+  <p class="lede">A FastDraw diagram is a short text file that sits in your repository. Agents write it from a guide and check it; you open it on a canvas and move things by hand.</p>
+  <div class="cta"><div class="cmd"><span><b>$</b> npx fastdraw setup claude</span><span class="copy">Copy</span></div><span class="pill">Open the editor</span></div>
+  <div class="heroart card">${svg(DEMO)}<div class="filebar"><span class="mono">docs/checkout.fdraw</span><span>16 lines · checked</span></div></div>
+  <div class="looks">${pills}<span class="more">+7 more looks</span></div>
+</section>
+<section class="band grey"><div class="wrap"><h2>A guide for <em>44 kinds of diagram.</em></h2><p class="lede">The agent reads the guide for the kind you ask for. Every example below was written by an agent from its guide and is in the repository unchanged.</p>
+  <div class="kinds">${[['high-level', 'Architecture'], ['swimlane', 'Swimlane'], ['sankey', 'Sankey'], ['state', 'State machine'], ['db-schema', 'Database schema'], ['gantt', 'Gantt']].map(([k, n]) => `<figure><div class="kt">${kind(k)}</div><figcaption>${n}</figcaption></figure>`).join('')}</div>
+  <p class="index">Also: bar, data flow, dependency, deployment, ER, exploded, fishbone, heatmap, journey, kanban, layers, loop, org chart, pyramid, quadrant, radar, timeline, treemap, UML class, Venn, Wardley map and more.</p></div></section>
+<section class="band white"><div class="wrap"><h2>Set up <em>in three steps.</em></h2>${SETUP}</div></section>
+<section class="band grey"><div class="wrap"><h2>The agent runs the checker <em>before it answers.</em></h2><p class="lede"><code>fastdraw check</code> reports overlapping boxes, text that does not fit and lines with no room, each with its line number.</p>${CHECK}</div></section>
+${CLOSE}`;
+    const css = `:root{--accent:${acc};--accent-ink:${ink};--tint:${tint}}
+.top .logo{width:28px;height:28px}
+.hero{text-align:center;padding:64px 24px 100px}.kicker{font:500 13px var(--mono);color:var(--accent-ink);background:var(--tint);border-radius:999px;padding:5px 12px}
+.hero h1{margin-top:26px}.hero .lede{margin:22px auto 0}.cta{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:34px}.cta .cmd{background:var(--grey)}
+.heroart{margin:64px -60px 0;padding:34px 40px 0;border-radius:26px;overflow:hidden;background:#f6f7fb;text-align:left}.filebar{display:flex;justify-content:space-between;margin:20px -40px 0;padding:12px 22px;background:#fff;border-top:1px solid var(--hair);font-size:13px;color:var(--soft)}
+.looks{display:flex;gap:8px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+.lp{display:inline-flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:999px;background:#fff;border:1px solid var(--hair);font-weight:500;font-size:14.5px}
+.lp.on{background:var(--ink);color:#fff;border-color:var(--ink)}.lp .thumb{width:44px;height:26px;border-radius:999px;overflow:hidden;background:#f6f7fb;display:flex;align-items:center}.more{font-size:14px;color:var(--soft);align-self:center;margin-left:6px}
+.kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}.kinds figure{margin:0}.kt{background:#fff;border:1px solid var(--hair);border-radius:16px;aspect-ratio:1.5;display:flex;align-items:center;padding:14px;overflow:hidden}.kt svg{max-height:100%}
+.kinds figcaption{font-weight:600;font-size:15px;margin-top:10px}.index{margin-top:26px;font-size:15px;max-width:780px}
+.swatch{position:fixed;right:18px;bottom:18px;z-index:9;display:flex;gap:6px;background:#fff;border:1px solid var(--hair);border-radius:999px;padding:6px;box-shadow:0 12px 30px -16px rgba(0,0,0,.4)}
+.swatch a{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:500}.swatch a.on{background:var(--grey)}.swatch i{width:18px;height:18px;border-radius:50%}`;
+    writeFileSync(here + `d-${slug}.html`, page(`D. ${name}`, "B's hero, A's look pills under it, B's guide to the kinds; no colour band. The accent replaces indigo in the page, the logo and the built-in look's focal box and main path.", re(body) + `<div class="swatch">${swatches}</div>`, css));
+  }
+}
+console.log('wrote a.html b.html c.html d-*.html');

@@ -9,6 +9,7 @@ for (const n of process.argv.slice(2).length ? process.argv.slice(2) : ['a', 'b'
   await p.goto(`file://${dir}${n}.html`);
   await p.waitForLoadState('networkidle');
   await p.evaluate(() => document.fonts.ready);
+  await p.addStyleTag({ content: '.swatch{display:none!important}' });
   await p.screenshot({ path: `${dir}img/${n}.png`, fullPage: true });
   await p.screenshot({ path: `${dir}img/${n}-top.png` });
 }
