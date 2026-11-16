@@ -13,9 +13,9 @@ test('the landing page says what FastDraw is and sets up an agent', async ({ pag
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diagrams your agent writes as text.');
   // the one command sits beside the headline
-  await expect(page.locator('.hero .command code')).toHaveText('npx fastdraw setup claude');
+  await expect(page.locator('.hero .command code')).toHaveText('npx skills add coccor/fastdraw');
   // the setup tabs switch the command
-  await expect(page.locator('#setup-panel .command code').first()).toHaveText('npx fastdraw setup claude');
+  await expect(page.locator('#setup-panel .command code').first()).toHaveText('/plugin install fastdraw --marketplace coccor/fastdraw');
   await page.getByRole('tab', { name: 'GitHub Copilot' }).click();
   await expect(page.locator('#setup-panel .command code').first()).toHaveText('npx fastdraw setup copilot');
   expect(errors).toEqual([]);

@@ -73,7 +73,9 @@ function usage(): never {
                                           tell this repo's coding agents about FastDraw: a Claude Code
                                           skill, a section in AGENTS.md, or in Copilot's instructions.
                                           With no name, sets up the agents the repo already uses.
-                                          --global puts the Claude Code skill in ~/.claude for every repo`);
+                                          --global puts the Claude Code skill in ~/.claude for every repo.
+                                          Most people install the skill instead: npx skills add coccor/fastdraw,
+                                          or /plugin install fastdraw --marketplace coccor/fastdraw in Claude Code`);
   process.exit(2);
 }
 

@@ -29,8 +29,9 @@ function CopyButton({ text, label = 'Copy' }: { text: string | (() => Promise<st
   );
 }
 
+// a command to copy; a slash command is typed in the agent, so it gets no shell prompt
 function Command({ text }: { text: string }) {
-  return <div className="command"><code>{text}</code><CopyButton text={text} /></div>;
+  return <div className={text.startsWith('/') ? 'command slash' : 'command'}><code>{text}</code><CopyButton text={text} /></div>;
 }
 
 // a drawing of a diagram text, for thumbnails
@@ -44,22 +45,23 @@ const AGENTS: Agent[] = [
   {
     id: 'claude', name: 'Claude Code',
     body: <>
-      <p>Run this in your repository. It adds a skill at <code>.claude/skills/fastdraw</code> that Claude Code loads whenever a diagram is asked for.</p>
-      <Command text="npx fastdraw setup claude" />
-      <p className="muted">Add <code>--global</code> to put the skill in <code>~/.claude</code> for every repository.</p>
+      <p>Type this in Claude Code. It installs the FastDraw plugin for every repository; Claude Code loads its skill whenever a diagram is asked for.</p>
+      <Command text="/plugin install fastdraw --marketplace coccor/fastdraw" />
+      <p className="muted">Updates come through <code>/plugin</code>. On Claude Code older than 2.1.275, first run <code>/plugin marketplace add coccor/fastdraw</code>, then <code>/plugin install fastdraw@fastdraw</code>.</p>
     </>,
   },
   {
     id: 'agents', name: 'Codex and OpenCode',
     body: <>
-      <p>Run this in your repository. It adds a short Diagrams section to <code>AGENTS.md</code>, which Codex, OpenCode and other agents read on start.</p>
-      <Command text="npx fastdraw setup agents" />
+      <p>Run this in a terminal. It installs the FastDraw skill in <code>~/.agents/skills</code>, which Codex and OpenCode read, so it works in every repository.</p>
+      <Command text="npx skills add coccor/fastdraw -g" />
+      <p className="muted">Leave out <code>-g</code> to put the skill in the repository instead, for a team to commit. <code>npx skills update</code> updates it.</p>
     </>,
   },
   {
     id: 'copilot', name: 'GitHub Copilot',
     body: <>
-      <p>Run this in your repository. It adds the same section to <code>.github/copilot-instructions.md</code>.</p>
+      <p>Run this in your repository. It adds a short Diagrams section to <code>.github/copilot-instructions.md</code>.</p>
       <Command text="npx fastdraw setup copilot" />
     </>,
   },
@@ -231,13 +233,13 @@ export function Landing() {
 
       <main>
         <section className="hero">
-          <span className="kicker">Open source · for Claude Code, Codex and Copilot</span>
+          <span className="kicker">Open source · for Claude Code, Codex, OpenCode and Copilot</span>
           <h1>Diagrams your agent writes <br /><em>as text.</em></h1>
           <div className="start">
-            <Command text="npx fastdraw setup claude" />
+            <Command text="npx skills add coccor/fastdraw" />
             <a className="btn focal big" href="edit/">Open the editor</a>
           </div>
-          <p className="small muted">The command adds the skill for Claude Code. <a href="#setup">Codex, Copilot and chat assistants</a> are set up the same way.</p>
+          <p className="small muted">The command installs the FastDraw skill for the coding agents it finds: Claude Code, Codex, OpenCode, Cursor and others. <a href="#setup">Claude Code's plugin, Copilot and chat assistants</a> are below.</p>
         </section>
 
         <div className="stage">
@@ -252,11 +254,11 @@ export function Landing() {
         <div className="wrap">
           <h2 id="setup-title">Set up <em>in three steps.</em></h2>
           <p className="lede">
-            One command in your repository adds a short instruction file that points your agent at the guide. The tool
-            runs through <code>npx</code>, so there is nothing else to install. It needs Node 20 or later.
+            One command installs a short skill that points your agent at the guide, once for every repository. The
+            tool runs through <code>npx</code>, so there is nothing else to install. It needs Node 20 or later.
           </p>
           <ol className="steps">
-            <li><i>1</i><h3>Run one command in your repository</h3><p>Choose your agent below. Each command writes one short file and nothing else.</p></li>
+            <li><i>1</i><h3>Install the skill</h3><p>Choose your agent below. Each command installs one short skill file and nothing else.</p></li>
             <li><i>2</i><h3>Ask for a diagram</h3><p>“Draw this repo's architecture as docs/architecture.fdraw.” The agent reads the guide for that kind of diagram, writes the file and checks it.</p></li>
             <li><i>3</i><h3>Open it and move things</h3><p><code>npx fastdraw open docs/architecture.fdraw</code> opens the editor. What you change is saved into the file, and the agent reads it before its next edit.</p></li>
           </ol>
@@ -274,7 +276,7 @@ export function Landing() {
             changed lines. Exported PNG and SVG files carry the diagram text inside them, so either one can be opened
             and edited again. The editor runs in your browser; nothing is uploaded.
           </p>
-          <Command text="npx fastdraw setup claude" />
+          <Command text="npx skills add coccor/fastdraw" />
         </div>
       </section>
 

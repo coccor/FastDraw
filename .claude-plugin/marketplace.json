@@ -1,0 +1,12 @@
+{
+  "name": "fastdraw",
+  "description": "FastDraw: diagrams as small text files that people can edit visually.",
+  "owner": { "name": "coccor" },
+  "plugins": [
+    {
+      "name": "fastdraw",
+      "source": "./plugins/fastdraw",
+      "description": "Draw and edit .fdraw diagrams; checks and renders each one with the fastdraw CLI."
+    }
+  ]
+}

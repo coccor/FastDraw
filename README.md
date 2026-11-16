@@ -43,33 +43,51 @@ line number, so an agent can fix its own layout before anyone looks at it.
 
 ## Getting started
 
-FastDraw needs Node 20 or later.
+FastDraw needs Node 20 or later. Install the skill for your coding agent once; it then works in every
+repository.
+
+**Claude Code**, typed in a session:
 
 ```
-npx fastdraw setup                      # add FastDraw instructions for this repo's coding agents
+/plugin install fastdraw --marketplace coccor/fastdraw
+```
+
+On Claude Code older than 2.1.275, run `/plugin marketplace add coccor/fastdraw`, then
+`/plugin install fastdraw@fastdraw`.
+
+**Codex, OpenCode, Cursor and other agents**, in a terminal:
+
+```
+npx skills add coccor/fastdraw -g
+```
+
+It asks which of your agents to install for. Without `-g` the skill goes into the current repository
+instead, for a team to commit.
+
+**GitHub Copilot** reads only its instructions file, so run this in the repository:
+`npx fastdraw setup copilot`. Chat assistants without a shell can read the language from
+https://fastdraw.dev/llms.txt.
+
+Then ask your agent for a diagram. It runs the command-line tool through `npx`, so there is nothing
+else to install:
+
+```
 npx fastdraw check  docs/example.fdraw  # report problems, with line numbers
 npx fastdraw render docs/example.fdraw  # write example.png next to the file
 npx fastdraw open   docs/example.fdraw  # edit in the browser; changes save to the file
 ```
 
-`fastdraw setup` supports Claude Code, Codex, OpenCode and GitHub Copilot. Chat assistants without a
-shell can read the language from https://fastdraw.dev/llms.txt.
-
 ### Updating
 
-The instructions `setup` writes are short: they tell the agent to run `fastdraw guide`, and the guide,
-the kinds of diagram, the looks, `check` and `render` all come from the fastdraw that runs. Through
-`npx fastdraw` that is the newest release, so most of an update arrives by itself.
+The skill is short: it tells the agent to run `fastdraw guide`, and the guide, the kinds of diagram, the
+looks, `check` and `render` all come from the fastdraw that runs. Through `npx fastdraw` that is the
+newest release, so most of an update arrives by itself. The skill itself updates with
+`/plugin marketplace update fastdraw` in Claude Code (or turn on auto-update for the fastdraw marketplace
+under `/plugin`), and with `npx skills update` elsewhere.
 
-The instruction files themselves change only when `setup` runs again. Each one carries the version that
-wrote it, and when it is older than the fastdraw running, `fastdraw guide` starts with a note asking the
-agent to tell you. To update them, run this in the repository; it rewrites the skill and replaces only
-FastDraw's own section of `AGENTS.md` or Copilot's instructions:
-
-```
-npx fastdraw@latest setup                # or name them: setup claude agents copilot
-npx fastdraw@latest setup claude --global  # if you put the skill in ~/.claude
-```
+Files written by `npx fastdraw setup` (an older way to install, still used for Copilot) carry the version
+that wrote them. When they are older than the fastdraw running, `fastdraw guide` starts with a note asking
+the agent to tell you; run `npx fastdraw@latest setup` in the repository to update them.
 
 If fastdraw is installed on the PATH (`npm install -g fastdraw`), agents use that copy instead of `npx`.
 `fastdraw guide` checks npm for a newer release at most once a day and says so when there is one; update
