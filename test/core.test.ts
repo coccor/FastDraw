@@ -132,6 +132,12 @@ test('missing look file is an error, not a crash', () => {
   assert.match(renderSvg(sc), /<svg/);
 });
 
+test('a connector whose route is a single point draws nothing instead of throwing', () => {
+  const sc = scene('ic: icon "Caption" at 100,100 icon=database\n112,137 -> 112,137');
+  assert.doesNotThrow(() => renderSvg(sc));
+  assert.match(renderSvg(sc), /<svg/);
+});
+
 test('the three agent-written test diagrams still check clean', () => {
   for (const name of ['architecture', 'flowchart', 'sequence']) {
     const sc = loadScene(new URL(`../examples/test/${name}.fdraw`, import.meta.url).pathname);
