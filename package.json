@@ -1,6 +1,6 @@
 {
   "name": "fastdraw",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Diagrams that an AI agent writes as text and a person edits on a canvas",
   "keywords": [
     "diagram",
