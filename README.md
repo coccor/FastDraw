@@ -55,6 +55,26 @@ npx fastdraw open   docs/example.fdraw  # edit in the browser; changes save to t
 `fastdraw setup` supports Claude Code, Codex, OpenCode and GitHub Copilot. Chat assistants without a
 shell can read the language from https://fastdraw.dev/llms.txt.
 
+### Updating
+
+The instructions `setup` writes are short: they tell the agent to run `fastdraw guide`, and the guide,
+the kinds of diagram, the looks, `check` and `render` all come from the fastdraw that runs. Through
+`npx fastdraw` that is the newest release, so most of an update arrives by itself.
+
+The instruction files themselves change only when `setup` runs again. Each one carries the version that
+wrote it, and when it is older than the fastdraw running, `fastdraw guide` starts with a note asking the
+agent to tell you. To update them, run this in the repository; it rewrites the skill and replaces only
+FastDraw's own section of `AGENTS.md` or Copilot's instructions:
+
+```
+npx fastdraw@latest setup                # or name them: setup claude agents copilot
+npx fastdraw@latest setup claude --global  # if you put the skill in ~/.claude
+```
+
+If fastdraw is installed on the PATH (`npm install -g fastdraw`), agents use that copy instead of `npx`.
+`fastdraw guide` checks npm for a newer release at most once a day and says so when there is one; update
+with `npm install -g fastdraw@latest`. Set `FASTDRAW_NO_UPDATE_CHECK=1` to turn the check off; it is off on CI.
+
 ## Features
 
 - **Checker.** Finds layout problems by measuring the drawn picture, not just parsing the text.

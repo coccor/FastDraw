@@ -15,7 +15,8 @@ import { serveFolder, DEFAULT_EDITOR } from './serve.ts';
 import { spawn } from 'node:child_process';
 import { sizesReport } from './sizes.ts';
 import { about } from './guideKinds.ts';
-import { setup, detect, TARGETS, type Target } from './setup.ts';
+import { setup, detect, skillNotes, packageVersion, TARGETS, type Target } from './setup.ts';
+import { newerVersion } from './update.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -286,6 +287,15 @@ if (cmd === 'check') {
     process.exit(0);
   }
   if (!existsSync(file) || /[\\/]/.test(topic ?? '')) { console.log(`no guide called "${topic}". Topics: ${topics.join(', ')}`); process.exit(1); }
+  // the guide is what an agent reads first, so it carries the notes about versions: the repo's instructions
+  // being older than this fastdraw, or a newer fastdraw on npm
+  if (!topic) {
+    const version = packageVersion(root);
+    const notes = skillNotes(root, process.cwd());
+    const newer = await newerVersion(version);
+    if (newer) notes.push(`Note: fastdraw ${newer} is out; this is ${version}. Run it as npx fastdraw@latest, or update the installed one: npm install -g fastdraw@latest`);
+    if (notes.length) console.log(notes.join('\n') + '\n');
+  }
   console.log(readFileSync(file, 'utf8'));
 } else if (cmd === 'open') {
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--editor');
