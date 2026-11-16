@@ -207,6 +207,14 @@ ${CLOSE}`;
     ['teal', 'Teal', '#0f8b8d', '#0b6f71', '#dcf1f0'],
     ['green', 'Green', '#15803d', '#116b33', '#def2e5'],
     ['ochre', 'Ochre', '#b45309', '#924306', '#f9ebd9'],
+    ['tomato', 'Tomato', '#dc2f2f', '#b91f1f', '#fde3e1'],
+    ['raspberry', 'Raspberry', '#c81e5b', '#a3164a', '#fbe1ea'],
+    ['pink', 'Pink', '#e0457b', '#c22f63', '#fde4ed'],
+    ['copper', 'Copper', '#c2410c', '#9f3409', '#fce5d8'],
+    ['olive', 'Olive', '#667a16', '#526311', '#edf2d9'],
+    ['emerald', 'Emerald', '#059669', '#047a56', '#d9f3ea'],
+    ['petrol', 'Petrol', '#13616b', '#0e4e57', '#dcecee'],
+    ['cyan', 'Cyan', '#0e8fb0', '#0b7491', '#daf1f7'],
   ];
   const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
   const favicon = readFileSync(root + 'editor/public/favicon.svg', 'utf8').replace(/<title>.*?<\/title>/, '');
@@ -238,8 +246,8 @@ ${CLOSE}`;
 .lp.on{background:var(--ink);color:#fff;border-color:var(--ink)}.lp .thumb{width:44px;height:26px;border-radius:999px;overflow:hidden;background:#f6f7fb;display:flex;align-items:center}.more{font-size:14px;color:var(--soft);align-self:center;margin-left:6px}
 .kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}.kinds figure{margin:0}.kt{background:#fff;border:1px solid var(--hair);border-radius:16px;aspect-ratio:1.5;display:flex;align-items:center;padding:14px;overflow:hidden}.kt svg{max-height:100%}
 .kinds figcaption{font-weight:600;font-size:15px;margin-top:10px}.index{margin-top:26px;font-size:15px;max-width:780px}
-.swatch{position:fixed;right:18px;bottom:18px;z-index:9;display:flex;gap:6px;background:#fff;border:1px solid var(--hair);border-radius:999px;padding:6px;box-shadow:0 12px 30px -16px rgba(0,0,0,.4)}
-.swatch a{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:500}.swatch a.on{background:var(--grey)}.swatch i{width:18px;height:18px;border-radius:50%}`;
+.swatch{position:fixed;right:18px;bottom:18px;z-index:9;display:flex;flex-wrap:wrap;max-width:620px;gap:6px;background:#fff;border:1px solid var(--hair);border-radius:999px;padding:6px;box-shadow:0 12px 30px -16px rgba(0,0,0,.4)}
+.swatch{border-radius:22px}.swatch a{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:500}.swatch a.on{background:var(--grey)}.swatch i{width:18px;height:18px;border-radius:50%}`;
     writeFileSync(here + `d-${slug}.html`, page(`D. ${name}`, "B's hero, A's look pills under it, B's guide to the kinds; no colour band. The accent replaces indigo in the page, the logo and the built-in look's focal box and main path.", re(body) + `<div class="swatch">${swatches}</div>`, css));
   }
 }
