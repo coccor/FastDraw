@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use fastdraw_render::js::{json_string, num_str};
 use fastdraw_render::look::{Look, bundled_look, color, default_look, is_bundled_look, parse_look};
 use fastdraw_render::parse::{look_path, with_look};
+use fastdraw_render::render::render_svg;
 use fastdraw_render::scene::{Scene, build_scene};
 
 mod common;
@@ -394,12 +395,9 @@ fn dark_counterpart(r: Option<&str>, own: Option<&Look>) -> Option<String> {
     v.filter(|v| !v.is_empty() && Some(v.as_str()) != r)
 }
 
-/// The scenes of every case that reads no look file: noFile cases (`buildScene(input, null, '')`) and cases with no
+/// The scene of every case that reads no look file: noFile cases (`buildScene(input, null, '')`) and cases with no
 /// look line or a bundled look's name (`loadScene`, which reads nothing and adds no font warning for these looks).
-#[test]
-fn scenes_match() {
-    let mut failures = Failures::default();
-    let mut n = 0;
+fn for_each_scene(mut f: impl FnMut(&Case, Scene)) {
     for c in cases() {
         let bundled = c.look_path.as_deref().is_none_or(is_bundled_look);
         if !c.no_file && !bundled {
@@ -424,7 +422,15 @@ fn scenes_match() {
         } else {
             c.abs().to_string_lossy().into_owned()
         };
-        let sc = build_scene(&input, None, &file);
+        f(&c, build_scene(&input, None, &file));
+    }
+}
+
+#[test]
+fn scenes_match() {
+    let mut failures = Failures::default();
+    let mut n = 0;
+    for_each_scene(|c, sc| {
         let want = std::fs::read_to_string(
             parity_dir()
                 .join("scenes")
@@ -438,12 +444,40 @@ fn scenes_match() {
             &normalise(&dump(&scene_json(&sc))),
         );
         n += 1;
-    }
+    });
     println!("{n} scenes compared");
     if n > 0 {
         assert!(n >= 1000, "only {n} scenes compared");
     }
     failures.report("scenes_match");
+}
+
+/// The SVG of every case `scenes_match` covers: `renderSvg(scene)` against the script's `drawings/<key>.json`.
+#[test]
+fn drawings_match_without_disk() {
+    let mut failures = Failures::default();
+    let mut n = 0;
+    for_each_scene(|c, sc| {
+        let want = std::fs::read_to_string(
+            parity_dir()
+                .join("drawings")
+                .join(format!("{}.json", c.key())),
+        )
+        .unwrap();
+        let want = json::parse(&want);
+        failures.check(
+            &c.id,
+            "svg",
+            want.get("svg").as_str().unwrap(),
+            &render_svg(&sc),
+        );
+        n += 1;
+    });
+    println!("{n} drawings compared");
+    if n > 0 {
+        assert!(n >= 1000, "only {n} drawings compared");
+    }
+    failures.report("drawings_match_without_disk");
 }
 
 #[test]

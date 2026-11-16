@@ -5,6 +5,8 @@
 //   router  segHits, crosses, simplify, routeAround
 //   scene   textWidth, measureText, parseEnd, captionBox, extent and scene.ts's private helpers (sides, routes, curves, labels, tables)
 //   sort    `(a, b) => a - b` on number lists with NaN (V8's TimSort; the Rust port reproduces it)
+//   chart   niceStep
+//   render  renderSvg(buildScene(src)) for hand-written diagrams that reach what the examples do not
 // JSON has no NaN or Infinity: they are written as the strings "NaN", "Infinity" and "-Infinity".
 import { canSketch, roughPath, sketchSvg, rectD, ellipseD } from '../src/sketch.ts';
 import { segHits, crosses, simplify, routeAround } from '../src/router.ts';
@@ -12,6 +14,9 @@ import { textWidth, measureText, parseEnd, captionBox, extent, autoSides, sidePo
 import type { Pt, Box, Conn, End, Row, Shape } from '../src/scene.ts';
 import { emptyLook } from '../src/look.ts';
 import { FONT_WIDTHS } from '../src/fontWidths.ts';
+import { niceStep } from '../src/chart.ts';
+import { renderSvg } from '../src/render.ts';
+import { buildScene } from '../src/scene.ts';
 
 // A small fixed generator, so the generated inputs never change between runs.
 function lcg(seed: number): () => number {
@@ -265,7 +270,51 @@ function scene() {
   return { tw, mt, parseEnds, autos, sidePts, routes, curves, alongs, labels, tables, captions, extents };
 }
 
-const sections: Record<string, () => unknown> = { sketch, router, sort, scene };
+function chart() {
+  const spans = [1, 7, 95, 0.03, 1e6, 0, -3, NaN, Infinity, 1e-300, 12.5, 6, 6.000001];
+  return spans.flatMap((span) => [6, 4, 10].map((max) => ({ span, max, out: niceStep(span, max) })));
+}
+
+// Diagrams that reach the renderer's corners: spaces kept in text, every end marker, tags on outlines that are not
+// boxes, chart scales and series of every kind, plates, patterns and sketched lines.
+function render() {
+  const texts = [
+    'text "  indented  code" at 10,10\ntext "a  b" at 10,40 rotate=90\ntext "tab\there " at 10,70\ntext "echo  me" at 60,90 echo=accent anchor=middle\ntext "faint" at 0,120 color=ink/0.2 rotate=-90\ntext "two\\nlines" at 40,140 spacing=0.1 italic=1 weight=600 blend=multiply',
+  ];
+  const marks = ['arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'stop', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many', 'none', 'bogus'];
+  const conns = marks.map((m, i) => `a${i}: rect "A${i}" at 0,${i * 60} 80x40\nb${i}: rect "B${i}" at 240,${i * 60 + 10} 80x40 depth=6\na${i} -> b${i} "${m}" head=${m} tail=${marks[(i + 3) % marks.length]} head.size=1.5 casing=paper double=accent cap=round label.fill=soft label.border=ink label.weight=600 label.italic=1`).join('\n');
+  const shapes = [
+    'e: ellipse "Ellipse" sub="sub line" tag="TAG" at 0,0 120x60 fill=soft',
+    'd: diamond "Diamond" tag="T" at 140,0 100x80 hatch=accent hatch.gap=4',
+    'p: rect "Path" tag="PATH" at 260,0 120x80 shape=path path="M 0,0.3 C 0,0 1,0 1,0.3 L 1,1 L 0,1 Z" halftone=ink',
+    'z: rect "Zone" tag="Z" at 0,120 200x100 title.pos=top title.fill=accent title.align=left shade=ink depth=4 inner=accent corners=plus',
+    'z2: rect "Right" at 220,120 160x100 title.pos=top title.align=right title.dy=6 fill=soft corners=square radius=8',
+    'i: rect "Icon top" sub="s" at 0,240 120x80 icon=database icon.pos=top icon.style=duotone',
+    'i2: rect "Left" at 140,240 120x80 icon=settings title.align=left icon.width=2 icon.fill=soft',
+    'i3: rect at 280,240 60x60 icon=cloud icon.style=solid ghost="7"',
+    'a1: arc "Slice" at 0,340 120x120 from=30 to=200 inner=0.5',
+    'a2: arc at 140,340 120x120 from=0 to=360 inner=0.4',
+    'a3: arc at 280,340 120x120 from=-40 to=90 open=1',
+    'g: polygon "Tri" at 0,480 points=0,100;60,0;120,100 smooth=1 offset=3,3 fill=soft',
+    'g2: polygon at 140,480 points=0,0;60,40;120,0 open=1 smooth=1',
+    'f: rect "Offset" at 280,480 100x60 offset=2,-2 blend=multiply fill=accent/0.3 hatch=ink',
+    'tg: rect "A tag\\nthat is tight" tag="LONGER TAG" at 0,600 90x40',
+    'ic: icon "Caption" sub="under" at 140,600 icon=database fill=soft stroke=accent sw=1.5 title.caps=1',
+  ].join('\n');
+  const table = 'tb: table "Ledger\\nTwo lines" at 0,0 grid=1 title.align=left title.caps=1 align=center\n  | h "ID" "Name" "Note" fill=accent/0.1\n  | a "1" "Alpha" "" fill.2=accent/0.2 color.2=accent\n  | ---\n  | b "2" "Beta" "x" fill=none';
+  const legend = 'legend at 0,0 title="Key" line.accent="A line" dot.ink="A dot" swatch.soft="A swatch" rect="A style" text="Text style" arrow="Arrow"';
+  const charts = [
+    'c: chart "Stacked" at 60,60 400x200 x="Q1,Q2,Q3" stack=1 labels=1 ytitle="Units" unit="k" prefix="$"\n  | bars "One" 10 20 _ stroke=ink fill=soft\n  | bars "Two" 5 -8 12 fill.2=accent\n  | line "Trend" 12 18 15 dots=1 dash=4,2',
+    'c: chart at 60,60 400x200 x=0..10 xstep=2 y=-5..20 grid=both xunit=s step=0\n  | dots "Pts" 1,2 3,4,8 5,-2 9,19 fill=accent stroke=ink opacity=0.5\n  | area 0,0 4,10 10,5\n  | line "L" 2,3 _ 8,8',
+    'c: chart "Floating" at 60,60 400x200 x="a, b ,c,d" labels=1 grid=x key=0 bar.width=0.9 bar.radius=0\n  | bars 0,10 10,25 25,18 18,30\n  | dots 4 8 12 r=3',
+    'c: chart at 60,60 400x200 y=1e20..1e21 grid=0 yaxis=0 zero=0\n  | line 5 2 3 _ 4',
+    'c: chart at 60,60 400x200 x="only"\n  | bars "_" _ _',
+  ];
+  const sources = [...texts, conns, shapes, table, legend, ...charts];
+  return sources.flatMap((src) => [src, `look sketch\n${src}`].map((s) => ({ src: s, svg: renderSvg(buildScene(s, null, '')) })));
+}
+
+const sections: Record<string, () => unknown> = { sketch, router, sort, scene, chart, render };
 const out: Record<string, unknown> = {};
 for (const [name, fn] of Object.entries(sections)) out[name] = fn();
 const nonFinite = (_: string, v: unknown) => (typeof v === 'number' && !Number.isFinite(v) ? String(v) : v);

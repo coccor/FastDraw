@@ -1,8 +1,10 @@
 //! The geometry helpers against the TypeScript's answers (`tools/rust-cases.ts` writes `geometry.json`;
 //! `npm run rust:cases` regenerates it).
 
+use fastdraw_render::chart::nice_step;
 use fastdraw_render::js::{num_str, sort_numbers};
 use fastdraw_render::look::{Props, empty_look};
+use fastdraw_render::render::render_svg;
 use fastdraw_render::router::{Pt, Rect, crosses, route_around, seg_hits, simplify};
 use fastdraw_render::scene::{
     Conn, End, EndKind, Label, Row, RowKind, Shape, Side, auto_sides, build_scene, caption_box,
@@ -647,4 +649,47 @@ fn prototype_sides_route_as_one_direction() {
     );
     assert!(c.ushape);
     assert!(sc.issues.is_empty());
+}
+
+#[test]
+fn nice_step_matches() {
+    let all = cases();
+    let list = all.get("chart").as_arr();
+    assert!(list.len() >= 30);
+    for c in list {
+        let (span, max) = (c.get("span").as_num(), c.get("max").as_num());
+        assert_eq!(
+            num_str(nice_step(span, max)),
+            n(c.get("out")),
+            "niceStep({span}, {max})"
+        );
+    }
+}
+
+#[test]
+fn render_svg_matches() {
+    let all = cases();
+    let list = all.get("render").as_arr();
+    assert!(list.len() >= 20);
+    for c in list {
+        let src = c.get("src").as_str().unwrap();
+        let got = render_svg(&build_scene(src, None, ""));
+        let want = c.get("svg").as_str().unwrap();
+        if got != want {
+            let at = want
+                .chars()
+                .zip(got.chars())
+                .take_while(|(a, b)| a == b)
+                .count();
+            let from = at.saturating_sub(120);
+            let cut = |s: &str| s.chars().skip(from).take(240).collect::<String>();
+            panic!(
+                "render of {src:?} differs at character {at}
+  want: {:?}
+  got:  {:?}",
+                cut(want),
+                cut(&got)
+            );
+        }
+    }
 }

@@ -3,12 +3,14 @@
 
 use std::path::{Path, PathBuf};
 
+pub mod chart;
 pub mod data;
 pub mod iconfiles;
 pub mod icons;
 pub mod js;
 pub mod look;
 pub mod parse;
+pub mod render;
 pub mod router;
 pub mod scene;
 pub mod sketch;
