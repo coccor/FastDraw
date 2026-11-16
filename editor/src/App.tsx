@@ -1008,6 +1008,8 @@ export function App() {
   // ---- actions ------------------------------------------------------------
   const act = {
     setProp: (k: string, v: string | null) => src !== null && commit(ops.setProps(src, scene, sel, k, v)),
+    // the main text of the one selected element, typed in the sidebar
+    setText: (text: string) => { const e = ops.find(scene, sel[0]); if (src !== null && e) commit(ops.editText(src, e, text)); },
     setProps: (kv: Record<string, string | null>) => src !== null && commit(ops.setManyProps(src, scene, sel, kv)),
     setStyle: (n: string) => src !== null && commit(ops.setStyle(src, scene, sel, n)),
     setOp: (o: string) => src !== null && commit(ops.setOperator(src, scene, sel, o)),

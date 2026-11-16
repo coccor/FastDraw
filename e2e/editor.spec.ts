@@ -175,6 +175,26 @@ test('resize from an edge, and Shift keeps the proportions', async ({ page }) =>
   expect(lineOf(await source(page), 'user')).toContain('at 20,160 240x120');
 });
 
+test('panel: a zone\'s title and a box\'s text are typed in the sidebar', async ({ page }) => {
+  await pinSidebar(page);
+  await paste(page, 'canvas 900x420\nedge: zone "Edge" at 40,40 400x300\napi: node "Orders API" at 120,140\n');
+  await page.mouse.click(...Object.values(await corner(page, 'edge')) as [number, number]);
+  const title = page.locator('.panel').getByRole('textbox', { name: 'Title', exact: true });
+  await expect(title).toHaveValue('Edge');
+  await title.fill('Public edge');
+  await title.press('Enter');
+  expect(lineOf(await source(page), 'edge')).toContain('"Public edge"');
+  await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  const text = page.locator('.panel').getByRole('textbox', { name: 'Text', exact: true });
+  await expect(text).toHaveValue('Orders API');
+  // Shift+Enter starts a second line; Enter alone commits
+  await text.fill('Orders');
+  await text.press('Shift+Enter');
+  await text.pressSequentially('API');
+  await text.press('Enter');
+  expect(lineOf(await source(page), 'api')).toMatch(/"Orders\\nAPI"/);
+});
+
 test('panel: restyle, switch style, and the components gallery places shapes and lines', async ({ page }) => {
   await pinSidebar(page);
   await paste(page, SMALL);

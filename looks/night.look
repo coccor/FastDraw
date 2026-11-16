@@ -55,7 +55,7 @@ style decision shape=diamond size=200x96 fill=#131c38 stroke=ink/0.30 sw=1
 
 // ---- regions and markers --------------------------------------------------
 style zone shape=rect radius=16 fill=ink/0.03 stroke=ink/0.12 sw=1 layer=back
-    title.pos=top title.align=left title.font=sans title.size=11 title.weight=600 title.color=muted title.spacing=0 title.caps=0
+    title.pos=top title.align=left title.font=mono title.size=9 title.weight=400 title.color=ink/0.5 title.spacing=0.12 title.caps=1
     use="a labelled region drawn behind a group of boxes; always give WxH"
 style bar shape=rect radius=2 size=8x80 fill=accent/0.10 stroke=accent/0.6 sw=1
     use="sequence diagram activation bar, centred on a lifeline; always give WxH"

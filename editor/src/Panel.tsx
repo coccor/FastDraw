@@ -15,6 +15,7 @@ import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
   setProp: (k: string, v: string | null) => void;
+  setText: (text: string) => void;
   setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
   setOp: (op: string) => void;
@@ -81,14 +82,18 @@ function vivid(sc: Scene, names: string[]): string[] {
   });
 }
 
-export function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (v: string) => void }) {
+// A text input that commits when it loses focus or Enter is pressed. `multiline` gives a box that grows to
+// its lines, where Shift+Enter starts a new line.
+export function TextField({ label, value, onCommit, multiline }: { label: string; value: string; onCommit: (v: string) => void; multiline?: boolean }) {
   const [v, setV] = React.useState(value);
   React.useEffect(() => setV(value), [value]);
+  const done = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !(multiline && e.shiftKey)) { e.preventDefault(); (e.target as HTMLElement).blur(); } };
   return (
     <label className="field">
       <span>{label}</span>
-      <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)}
-        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+      {multiline
+        ? <textarea value={v} rows={Math.min(4, v.split('\n').length)} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} />
+        : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} />}
     </label>
   );
 }
@@ -359,7 +364,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
       {els.length === 1 && first.kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
-          <h4>Extra text</h4>
+          <h4>Text</h4>
+          <TextField label={first.el.shape === 'rect' && first.el.back ? 'Title' : 'Text'} value={first.el.text ?? ''} onCommit={act.setText} multiline />
           <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />
           <TextField label="Corner tag" value={p.tag ?? ''} onCommit={(v) => act.setProp('tag', v || null)} />
         </section>

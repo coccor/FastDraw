@@ -139,7 +139,7 @@ test('a zone caption has a plate as wide as its words, in the zone\'s own colour
   assert.equal(measureText(look, 'ab', 10, 'mono', 400, 0.1), 13); // spacing between letters
   for (const lk of ['', 'look night\n']) {
     const [paper, tint] = plates(`${lk}z: zone ".pz/state/ · outlives runs" at 40,40 300x120 fill=accent/0.05 stroke=accent\n`);
-    assert.equal(paper.w, Math.ceil(measureText(look, '.pz/state/ · outlives runs', 11, 'sans', 600, 0) + 12));
+    assert.equal(paper.w, Math.ceil(measureText(look, '.PZ/STATE/ · OUTLIVES RUNS', 9, 'mono', 400, 0.12) + 12));
     assert.equal(paper.x, 52); // left-aligned: the words start 6px into the plate, 18px into the zone
     // inside the zone the plate is paper with the zone's tint over it, so it reads as the zone itself
     assert.equal(tint.w, paper.w);
