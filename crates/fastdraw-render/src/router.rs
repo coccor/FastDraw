@@ -107,12 +107,18 @@ const BEND: f64 = 30.0; // cost of a turn, in px of extra length
 const SHARE: f64 = 160.0; // cost of running along a stretch another connector already uses
 const LANES: [f64; 3] = [CLEAR, CLEAR + 12.0, CLEAR + 24.0]; // tracks offered around each box
 
-/// Math.round, sorted ascending, without repeats (`new Set` keeps -0 as +0).
+/// `[...new Set(v.map(Math.round))].sort((a, b) => a - b)`: the Set keeps one NaN (at its first place) and
+/// folds -0 into +0; the sort is V8's, which is not a plain total order once a NaN is in the list.
 fn uniq(v: impl Iterator<Item = f64>) -> Vec<f64> {
-    let mut v: Vec<f64> = v.map(|n| js::round(n) + 0.0).collect();
-    v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    v.dedup();
-    v
+    let mut out: Vec<f64> = Vec::new();
+    for n in v {
+        let n = js::round(n) + 0.0;
+        if !out.iter().any(|&m| m == n || (m.is_nan() && n.is_nan())) {
+            out.push(n);
+        }
+    }
+    js::sort_numbers(&mut out);
+    out
 }
 
 /// Do two straight connector segments run along each other for some length?
@@ -133,15 +139,29 @@ fn shared(taken: &[(Pt, Pt)], a: Pt, b: Pt) -> bool {
     })
 }
 
+// `routeAround` indexes with numbers that can fall outside its arrays when an end is NaN (`indexOf(NaN)` is -1).
+// The TypeScript's rules, which are kept here: `dist` and `prev` are typed arrays, so an out-of-range read gives
+// undefined (every comparison with it is false and every sum NaN, the same as NaN here) and a write is dropped;
+// `xs[i]` and `ys[i]` on a plain array give undefined for a negative index, again read as NaN.
+
+/// `dist[s]`, undefined (NaN) out of range.
+fn at(dist: &[f64], s: i64) -> f64 {
+    usize::try_from(s)
+        .ok()
+        .and_then(|s| dist.get(s))
+        .copied()
+        .unwrap_or(f64::NAN)
+}
+
 // The heap of `routeAround` is an array heap ordered by the *current* `dist` of its states, as in the
 // TypeScript (a state's `dist` can drop after it was pushed, so the order is re-read, never cached).
 
-fn heap_push(heap: &mut Vec<usize>, dist: &[f64], s: usize) {
+fn heap_push(heap: &mut Vec<i64>, dist: &[f64], s: i64) {
     heap.push(s);
     let mut i = heap.len() - 1;
     while i > 0 {
         let p = (i - 1) >> 1;
-        if dist[heap[p]] <= dist[heap[i]] {
+        if at(dist, heap[p]) <= at(dist, heap[i]) {
             break;
         }
         heap.swap(p, i);
@@ -149,7 +169,7 @@ fn heap_push(heap: &mut Vec<usize>, dist: &[f64], s: usize) {
     }
 }
 
-fn heap_pop(heap: &mut Vec<usize>, dist: &[f64]) -> usize {
+fn heap_pop(heap: &mut Vec<i64>, dist: &[f64]) -> i64 {
     let top = heap[0];
     let last = heap.pop().unwrap();
     if !heap.is_empty() {
@@ -159,10 +179,10 @@ fn heap_pop(heap: &mut Vec<usize>, dist: &[f64]) -> usize {
             let l = 2 * i + 1;
             let r = l + 1;
             let mut m = i;
-            if l < heap.len() && dist[heap[l]] < dist[heap[m]] {
+            if l < heap.len() && at(dist, heap[l]) < at(dist, heap[m]) {
                 m = l;
             }
-            if r < heap.len() && dist[heap[r]] < dist[heap[m]] {
+            if r < heap.len() && at(dist, heap[r]) < at(dist, heap[m]) {
                 m = r;
             }
             if m == i {
@@ -178,7 +198,8 @@ fn heap_pop(heap: &mut Vec<usize>, dist: &[f64]) -> usize {
 /// d0/d1 point away from the shape at each end; None for a free end.
 /// taken: segments of connectors routed before this one, which this route prefers not to share.
 ///
-/// Like the TypeScript, this assumes finite coordinates (a NaN end has no place on the grid; None is returned).
+/// A NaN end is not found on the grid (`indexOf` gives -1), and the search then starts from the wrong point or
+/// finds nothing, exactly as the TypeScript does.
 pub fn route_around(
     p0: Pt,
     d0: Option<Pt>,
@@ -209,49 +230,68 @@ pub fn route_around(
                 .flat_map(|o| LANES.iter().flat_map(move |l| [o.y - l, o.y + o.h + l])),
         ),
     );
-    let (w, h) = (xs.len(), ys.len());
+    let (w, h) = (xs.len() as i64, ys.len() as i64);
     if w * h > 60000 {
         return None;
     }
-    let index = |v: &[f64], n: f64| v.iter().position(|&m| m == js::round(n));
-    let si = index(&xs, s.x)? + index(&ys, s.y)? * w;
-    let ei = index(&xs, e.x)? + index(&ys, e.y)? * w;
-    let pt = |i: usize| Pt {
-        x: xs[i % w],
-        y: ys[i / w],
+    // `indexOf` (strict equality, so -1 for NaN)
+    let index = |v: &[f64], n: f64| {
+        v.iter()
+            .position(|&m| m == js::round(n))
+            .map_or(-1, |i| i as i64)
+    };
+    let si = index(&xs, s.x) + index(&ys, s.y) * w;
+    let ei = index(&xs, e.x) + index(&ys, e.y) * w;
+    let pt = |i: i64| Pt {
+        x: if i % w >= 0 {
+            xs[(i % w) as usize]
+        } else {
+            f64::NAN
+        },
+        y: if i.div_euclid(w) >= 0 {
+            ys[i.div_euclid(w) as usize]
+        } else {
+            f64::NAN
+        },
     };
     let wide: Vec<Rect> = obstacles.iter().map(|o| grow(o, CLEAR - 1.0)).collect();
     let tight: Vec<Rect> = obstacles.iter().map(|o| grow(o, 2.0)).collect();
-    let free = |i: usize| i == si || i == ei || !wide.iter().any(|o| inside(o, pt(i)));
-    let open = |a: usize, b: usize| {
+    let free = |i: i64| i == si || i == ei || !wide.iter().any(|o| inside(o, pt(i)));
+    let open = |a: i64, b: i64| {
         let (pa, pb) = (pt(a), pt(b));
         !tight.iter().any(|o| seg_hits(pa, pb, o))
     };
 
     // Dijkstra over (grid point, direction of the last move): 0 = horizontal, 1 = vertical
-    let mut dist = vec![f64::INFINITY; w * h * 2];
-    let mut prev = vec![usize::MAX; w * h * 2];
-    let mut heap: Vec<usize> = Vec::new();
-    let start_dirs: &[usize] = match d0 {
+    let n = (w * h * 2) as usize;
+    let mut dist = vec![f64::INFINITY; n];
+    let mut prev = vec![-1i64; n];
+    let mut heap: Vec<i64> = Vec::new();
+    let start_dirs: &[i64] = match d0 {
         Some(d) if d.x != 0.0 => &[0],
         Some(_) => &[1],
         None => &[0, 1],
     };
     for &d in start_dirs {
-        dist[si * 2 + d] = 0.0;
-        heap_push(&mut heap, &dist, si * 2 + d);
+        let st = si * 2 + d;
+        if let Some(slot) = usize::try_from(st).ok().and_then(|st| dist.get_mut(st)) {
+            *slot = 0.0;
+        }
+        heap_push(&mut heap, &dist, st);
     }
-    let end_dir = d1.map(|d| usize::from(d.x == 0.0));
-    let mut goal = None;
+    let end_dir = d1.map(|d| i64::from(d.x == 0.0));
+    let mut goal = -1;
+    let mut found = false;
     while !heap.is_empty() {
         let s = heap_pop(&mut heap, &dist);
         let (i, dir) = (s >> 1, s & 1);
         if i == ei {
-            goal = Some(s);
+            goal = s;
+            found = true;
             break;
         }
-        let (x, y) = (i % w, i / w);
-        let mut steps: Vec<(usize, usize)> = Vec::with_capacity(4);
+        let (x, y) = (i % w, i.div_euclid(w));
+        let mut steps: Vec<(i64, i64)> = Vec::with_capacity(4);
         if x > 0 {
             steps.push((i - 1, 0));
         }
@@ -269,7 +309,7 @@ pub fn route_around(
                 continue;
             }
             let (a, b) = (pt(i), pt(j));
-            let mut cost = dist[s]
+            let mut cost = at(&dist, s)
                 + (a.x - b.x).abs()
                 + (a.y - b.y).abs()
                 + if nd != dir { BEND } else { 0.0 }
@@ -282,21 +322,22 @@ pub fn route_around(
                 cost += BEND;
             }
             let t = j * 2 + nd;
-            if cost < dist[t] {
-                dist[t] = cost;
-                prev[t] = s;
+            if cost < at(&dist, t) {
+                dist[t as usize] = cost;
+                prev[t as usize] = s;
                 heap_push(&mut heap, &dist, t);
             }
         }
     }
-    let mut s = goal?;
+    if !found {
+        return None;
+    }
+    // `for (let s = goal; s >= 0; s = prev[s])`
     let mut path = Vec::new();
-    loop {
+    let mut s = goal;
+    while s >= 0 {
         path.push(pt(s >> 1));
-        if prev[s] == usize::MAX {
-            break;
-        }
-        s = prev[s];
+        s = prev[s as usize];
     }
     path.reverse();
     let mut all = Vec::with_capacity(path.len() + 2);
@@ -337,5 +378,32 @@ mod tests {
             p(9.0, 4.0),
         ]);
         assert_eq!(got, vec![p(0.0, 0.0), p(9.0, 0.0), p(9.0, 4.0)]);
+    }
+
+    #[test]
+    fn a_nan_end_is_looked_up_as_minus_one_like_indexof() {
+        // from Node: the search starts from the wrong grid point and the route's first point stays NaN
+        let wall = Rect {
+            x: 100.0,
+            y: 60.0,
+            w: 40.0,
+            h: 100.0,
+        };
+        let got = route_around(
+            p(f64::NAN, 125.0),
+            None,
+            p(300.0, 125.0),
+            None,
+            &[wall],
+            &[],
+        )
+        .unwrap();
+        assert!(got[0].x.is_nan() && got[0].y == 125.0);
+        assert_eq!(&got[1..], &[p(300.0, 48.0), p(300.0, 125.0)]);
+        // NaN in y puts the start before the grid: no route
+        assert_eq!(
+            route_around(p(0.0, f64::NAN), None, p(300.0, 125.0), None, &[wall], &[]),
+            None
+        );
     }
 }

@@ -62,9 +62,12 @@ pub mod json {
         pub fn as_bool(&self) -> bool {
             matches!(self, Json::Bool(true))
         }
+        /// A number; the strings "NaN", "Infinity" and "-Infinity" (which JSON cannot hold) read as those values.
         pub fn as_num(&self) -> f64 {
             match self {
                 Json::Num(n) => *n,
+                Json::Str(s) if s == "Infinity" => f64::INFINITY,
+                Json::Str(s) if s == "-Infinity" => f64::NEG_INFINITY,
                 _ => f64::NAN,
             }
         }

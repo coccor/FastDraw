@@ -3,6 +3,8 @@
 
 use std::cmp::Ordering;
 
+pub use crate::timsort::sort_numbers;
+
 /// `String(n)`.
 pub fn num_str(n: f64) -> String {
     if n.is_nan() {

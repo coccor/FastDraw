@@ -3,6 +3,8 @@
 // tasks add keys. Run with `npm run rust:cases`; the output is deterministic, so `git diff` stays empty.
 //   sketch  canSketch, roughPath, sketchSvg, rectD, ellipseD
 //   router  segHits, crosses, simplify, routeAround
+//   sort    `(a, b) => a - b` on number lists with NaN (V8's TimSort; the Rust port reproduces it)
+// JSON has no NaN or Infinity: they are written as the strings "NaN", "Infinity" and "-Infinity".
 import { canSketch, roughPath, sketchSvg, rectD, ellipseD } from '../src/sketch.ts';
 import { segHits, crosses, simplify, routeAround } from '../src/router.ts';
 import type { Pt, Box } from '../src/scene.ts';
@@ -81,11 +83,42 @@ function router() {
     { name: 'end direction against the approach', p0: P(0, 0), d0: P(0, 1), p1: P(150, 80), d1: P(1, 0), obstacles: [{ x: 50, y: 30, w: 60, h: 60 }, { x: 120, y: 60, w: 20, h: 60 }], taken: [[P(0, 20), P(0, 200)]] },
     { name: 'around a box', p0: P(40, 100), d0: P(-1, 0), p1: P(160, 100), d1: P(1, 0), obstacles: [{ x: 70, y: 40, w: 60, h: 120 }], taken: [] },
   ];
+  const NaNx = (y: number): Pt => ({ x: NaN, y });
+  const wall: Box = { x: 100, y: 60, w: 40, h: 100 };
+  layouts.push(
+    { name: 'NaN x, free ends, one box', p0: NaNx(125), d0: null, p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN x, directions, two boxes', p0: NaNx(125), d0: P(1, 0), p1: P(200, 20), d1: null, obstacles: [wall, { x: 160, y: 40, w: 30, h: 30 }], taken: [] },
+    { name: 'NaN x at the far end', p0: P(0, 125), d0: null, p1: NaNx(40), d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN y', p0: P(0, NaN), d0: null, p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN both', p0: { x: NaN, y: NaN }, d0: null, p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN both ends', p0: NaNx(10), d0: null, p1: NaNx(90), d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN direction', p0: P(0, 125), d0: P(NaN, 0), p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
+    { name: 'Infinity end', p0: P(0, 125), d0: null, p1: P(Infinity, 125), d1: null, obstacles: [wall], taken: [] },
+    { name: '-Infinity end, no boxes', p0: P(-Infinity, 0), d0: null, p1: P(50, 50), d1: null, obstacles: [], taken: [] },
+    { name: 'NaN box edge (infinite box)', p0: P(0, 125), d0: null, p1: P(300, 125), d1: null, obstacles: [wall, { x: -Infinity, y: 0, w: Infinity, h: 10 }], taken: [] },
+    { name: 'NaN box position', p0: P(0, 125), d0: null, p1: P(300, 125), d1: null, obstacles: [wall, { x: NaN, y: 20, w: 10, h: 10 }], taken: [] },
+    { name: 'NaN box among many (a long sort)', p0: P(0, 0), d0: null, p1: P(400, 300), d1: null, obstacles: [...Array.from({ length: 14 }, (_, i): Box => ({ x: 20 + i * 27, y: 30 + (i * 53) % 220, w: 12, h: 18 })), { x: NaN, y: 150, w: 10, h: 10 }], taken: [] },
+  );
   const routes = layouts.map((l) => ({ ...l, out: routeAround(l.p0, l.d0, l.p1, l.d1, l.obstacles, l.taken) }));
   return { segs, crossing, simple, routes };
 }
 
-const sections: Record<string, () => unknown> = { sketch, router };
+function sort() {
+  const rnd = lcg(777);
+  const lists: number[][] = [[], [NaN], [3, NaN, 1], [NaN, 3, 2, 1], [1, 2, 3, NaN, 0, -1]];
+  for (let n = 2; n < 300; n += n < 40 ? 1 : 23) {
+    for (let k = 0; k < 3; k++) {
+      const v = Array.from({ length: n }, () => Math.floor(rnd() * 1000) - 500);
+      for (let j = 0; j < (k === 0 ? 0 : k * 2); j++) v[Math.floor(rnd() * n)] = NaN;
+      if (k === 2) v.sort((a, b) => a - b), v.reverse(), v[Math.floor(n / 2)] = NaN;
+      lists.push(v);
+    }
+  }
+  return lists.map((v) => ({ v, out: [...v].sort((a, b) => a - b) }));
+}
+
+const sections: Record<string, () => unknown> = { sketch, router, sort };
 const out: Record<string, unknown> = {};
 for (const [name, fn] of Object.entries(sections)) out[name] = fn();
-process.stdout.write(JSON.stringify(out, null, 0) + '\n');
+const nonFinite = (_: string, v: unknown) => (typeof v === 'number' && !Number.isFinite(v) ? String(v) : v);
+process.stdout.write(JSON.stringify(out, nonFinite) +'\n');

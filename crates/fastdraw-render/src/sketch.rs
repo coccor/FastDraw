@@ -205,26 +205,30 @@ pub fn rough_path(d: &str, amount: f64, pass: i32) -> String {
     s.out.join(" ")
 }
 
-/// `attrs.replace(/<name>="([^"]*)"/, ...)` and `.exec`: the first `name="..."` and its value.
-fn first_attr<'a>(
-    re: &'static OnceLock<Regex>,
-    pattern: &str,
-    attrs: &'a str,
-) -> Option<regex::Captures<'a>> {
-    re.get_or_init(|| Regex::new(pattern).unwrap())
-        .captures(attrs)
+/// `/fill="([^"]*)"/`
+fn re_fill() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(r#"fill="([^"]*)""#).unwrap())
+}
+
+/// `/stroke-width="([\d.]+)"/`
+fn re_width() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(r#"stroke-width="([0-9.]+)""#).unwrap())
 }
 
 /// A shape or line drawn by hand: the fill follows the first pass, then two strokes on top.
 /// attrs is the usual fill/stroke attribute string; under, if given, is painted between fill and strokes.
 pub fn sketch_svg(d: &str, attrs: &str, amount: f64, under: &str) -> String {
-    static FILL: OnceLock<Regex> = OnceLock::new();
-    static WIDTH: OnceLock<Regex> = OnceLock::new();
-    let fill = first_attr(&FILL, r#"fill="([^"]*)""#, attrs)
+    let first_fill = re_fill().captures(attrs);
+    let fill = first_fill
+        .as_ref()
         .map_or("none", |c| c.get(1).unwrap().as_str());
-    let fill_start = FILL.get().unwrap().find(attrs);
-    let stroke_attrs = match fill_start {
-        Some(m) => format!("{}fill=\"none\"{}", &attrs[..m.start()], &attrs[m.end()..]),
+    let stroke_attrs = match &first_fill {
+        Some(c) => {
+            let m = c.get(0).unwrap();
+            format!("{}fill=\"none\"{}", &attrs[..m.start()], &attrs[m.end()..])
+        }
         None => attrs.to_string(),
     };
     let has_stroke = !attrs.contains("stroke=\"none\"") && attrs.contains("stroke=\"");
@@ -250,7 +254,7 @@ pub fn sketch_svg(d: &str, attrs: &str, amount: f64, under: &str) -> String {
         ));
         // a dashed line drawn twice turns to mush, so it gets one pass
         if !dashed {
-            let thin = match first_attr(&WIDTH, r#"stroke-width="([0-9.]+)""#, &stroke_attrs) {
+            let thin = match re_width().captures(&stroke_attrs) {
                 Some(c) => {
                     let m = c.get(0).unwrap();
                     let w = js::to_number(c.get(1).unwrap().as_str());

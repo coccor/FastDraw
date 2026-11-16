@@ -1,6 +1,7 @@
 //! The geometry helpers against the TypeScript's answers (`tools/rust-cases.ts` writes `geometry.json`;
 //! `npm run rust:cases` regenerates it).
 
+use fastdraw_render::js::{num_str, sort_numbers};
 use fastdraw_render::router::{Pt, Rect, crosses, route_around, seg_hits, simplify};
 use fastdraw_render::sketch::{can_sketch, ellipse_d, rect_d, rough_path, sketch_svg};
 
@@ -36,6 +37,11 @@ fn rect(v: &Json) -> Rect {
 
 fn rects(v: &Json) -> Vec<Rect> {
     v.as_arr().iter().map(rect).collect()
+}
+
+/// Points as strings, so that NaN equals NaN.
+fn show(p: &[Pt]) -> Vec<(String, String)> {
+    p.iter().map(|p| (num_str(p.x), num_str(p.y))).collect()
 }
 
 fn args(v: &Json) -> Vec<f64> {
@@ -172,7 +178,31 @@ fn route_around_matches() {
             out => Some(pts(out)),
         };
         found += usize::from(want.is_some());
-        assert_eq!(got, want, "{name}");
+        assert_eq!(
+            got.as_deref().map(show),
+            want.as_deref().map(show),
+            "{name}"
+        );
     }
-    assert!(found >= 6, "only {found} layouts found a route");
+    assert!(found >= 8, "only {found} layouts found a route");
+}
+
+#[test]
+fn sort_numbers_matches_v8() {
+    let all = cases();
+    let lists = all.get("sort").as_arr();
+    assert!(lists.len() >= 100);
+    for c in lists {
+        let nums = |k: &str| -> Vec<String> {
+            c.get(k)
+                .as_arr()
+                .iter()
+                .map(|n| num_str(n.as_num()))
+                .collect()
+        };
+        let mut v: Vec<f64> = c.get("v").as_arr().iter().map(Json::as_num).collect();
+        sort_numbers(&mut v);
+        let got: Vec<String> = v.iter().map(|&n| num_str(n)).collect();
+        assert_eq!(got, nums("out"), "sort of {:?}", nums("v"));
+    }
 }
