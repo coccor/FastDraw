@@ -346,9 +346,6 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               {!sc.look.images.has(p.icon) && (
                 <>
                   <div className="sublabel">Icon colour</div>
-                  <div className="seg" style={{ marginBottom: 4 }}>
-                    <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
-                  </div>
                   <Swatches sc={sc} values={names} top={inks} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
                   <div className="sublabel">Icon tint</div>
                   <Swatches sc={sc} values={iconFills} top={topIconFills} current={p['icon.fill'] ?? 'none'}

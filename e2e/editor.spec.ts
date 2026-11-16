@@ -741,8 +741,6 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
   await expect(page.locator('svg.canvas g[fill="#e0457b"]')).toHaveCount(1);
   await expect(strokes.locator('.custom.on')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Text colour', exact: true }).click();
-  expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
   // a fill inside the icon's closed parts: a tint, any colour, or none
   const fills = page.getByRole('group', { name: 'Icon fill colours' });
   const tint = await fills.locator('.swatch').nth(1).getAttribute('aria-label');
