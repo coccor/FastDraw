@@ -97,7 +97,7 @@ test('text a diagram lays on a box stays readable when the look fills that box d
   // a small chip with no fill, sitting on the subject, follows it too
   assert.match(draw('transit', 'f: focal "Core" at 40,40 200x80\nchip: rect "4 in" at 180,48 40x16 fill=none stroke=ink/0.4 title.size=8 overlap=ok\n'), /fill="#ffffff"[^>]*>4 in</);
   // the built-in look draws exactly what the diagram says: its subject is a tint, nothing needs changing
-  assert.match(renderSvg(buildScene(body, null)), /fill="#0f172a" font-weight="600">Assess damage</);
+  assert.match(renderSvg(buildScene(body, null)), /fill="#121318" font-weight="600">Assess damage</);
   // and a fill the diagram chose itself is not second-guessed: the checker reports it instead
   const own = buildScene('f: focal "A" at 40,40 160x80 fill=accent\ntext "case" at 60,100 size=9 color=accent\n', null);
   assert.match(check(own).map((i) => i.msg).join('\n'), /almost the same colour as f behind it/);

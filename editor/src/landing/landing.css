@@ -2,7 +2,7 @@
    pill buttons, one tomato red for what matters, and yellow for the closing band. */
 @font-face { font-family: 'Geist Display'; font-weight: 100 900; src: url('../../../fonts/Geist-Variable.woff2') format('woff2'); }
 :root {
-  --page: #ffffff; --grey: #f3f3f5; --canvas: #f6f7fb;
+  --page: #ffffff; --grey: #f3f3f5; --canvas: #f3f3f5;
   --ink: #121318; --muted: #4b4f5c; --soft: #9095a3;
   --accent: #dc2f2f; --accent-ink: #b91f1f; --accent-tint: #fde3e1; --accent-tint-2: #fbcfca;
   --link: #3b4a5e; --box: #ffffff; --stroke: rgba(18, 19, 24, .16); --hair: rgba(18, 19, 24, .1);
