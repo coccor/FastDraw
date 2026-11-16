@@ -192,17 +192,19 @@ fn dark_scene(
     }
 }
 
-/// `#rrggbb` or `#rgb` as sRGB; anything else (which `color` should not give for a paper) is white.
+/// `#rrggbb`, `#rgb`, `#rrggbbaa`, `rgb(...)` or `rgba(...)` as sRGB, the alpha ignored; anything else is white.
 fn parse_paper(c: &str) -> [u8; 3] {
-    let hex = |s: &str| u8::from_str_radix(s, 16).ok();
-    let Some(h) = c
-        .strip_prefix('#')
-        .filter(|h| h.bytes().all(|b| b.is_ascii_hexdigit()))
-    else {
-        return [255, 255, 255];
+    const WHITE: [u8; 3] = [255, 255, 255];
+    let c = c.trim();
+    let Some(h) = c.strip_prefix('#') else {
+        return parse_rgb_function(c).unwrap_or(WHITE);
     };
+    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return WHITE;
+    }
+    let hex = |s: &str| u8::from_str_radix(s, 16).ok();
     let rgb = match h.len() {
-        6 => (hex(&h[0..2]), hex(&h[2..4]), hex(&h[4..6])),
+        6 | 8 => (hex(&h[0..2]), hex(&h[2..4]), hex(&h[4..6])),
         3 => {
             let one = |i: usize| hex(&h[i..=i]).map(|v| v * 17);
             (one(0), one(1), one(2))
@@ -211,8 +213,39 @@ fn parse_paper(c: &str) -> [u8; 3] {
     };
     match rgb {
         (Some(r), Some(g), Some(b)) => [r, g, b],
-        _ => [255, 255, 255],
+        _ => WHITE,
     }
+}
+
+/// `rgb(r, g, b)`, `rgba(r, g, b, a)` or `rgb(r g b / a)`: each channel a number (0 to 255) or a percentage,
+/// rounded and clamped; the alpha is ignored. None when it is not one of these.
+fn parse_rgb_function(c: &str) -> Option<[u8; 3]> {
+    let lower = c.to_ascii_lowercase();
+    let inner = lower
+        .strip_prefix("rgba(")
+        .or_else(|| lower.strip_prefix("rgb("))?
+        .strip_suffix(')')?;
+    let (colour, alpha) = match inner.split_once('/') {
+        Some((colour, alpha)) => (colour, Some(alpha)),
+        None => (inner, None),
+    };
+    let parts: Vec<&str> = colour
+        .split(|ch: char| ch == ',' || ch.is_ascii_whitespace())
+        .filter(|p| !p.is_empty())
+        .collect();
+    // three channels, and a fourth (the alpha) only when it is not after a `/`
+    if !(parts.len() == 3 || parts.len() == 4 && alpha.is_none()) {
+        return None;
+    }
+    let channel = |p: &str| -> Option<u8> {
+        let v = match p.strip_suffix('%') {
+            Some(n) => n.parse::<f64>().ok()? * 255.0 / 100.0,
+            None => p.parse::<f64>().ok()?,
+        };
+        // finite only: Rust's parse accepts "NaN" and "inf"
+        v.is_finite().then(|| v.round().clamp(0.0, 255.0) as u8)
+    };
+    Some([channel(parts[0])?, channel(parts[1])?, channel(parts[2])?])
 }
 
 /// The share link that opens a diagram in the online editor.
@@ -241,8 +274,23 @@ mod tests {
         assert_eq!(parse_paper("#0b1226"), [11, 18, 38]);
         assert_eq!(parse_paper("#FFF"), [255, 255, 255]);
         assert_eq!(parse_paper("#a0c"), [170, 0, 204]);
-        assert_eq!(parse_paper("#12345678"), [255, 255, 255]);
-        assert_eq!(parse_paper("rgba(1,2,3,0.5)"), [255, 255, 255]);
+        assert_eq!(parse_paper("#12345678"), [0x12, 0x34, 0x56]);
+        assert_eq!(parse_paper("#1234"), [255, 255, 255]);
+        assert_eq!(parse_paper("#1234567"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgba(1,2,3,0.5)"), [1, 2, 3]);
+        assert_eq!(parse_paper("rgb(11, 18, 38)"), [11, 18, 38]);
+        assert_eq!(parse_paper(" RGB(11 18 38 / 50%) "), [11, 18, 38]);
+        assert_eq!(parse_paper("rgb(100%, 0%, 50%)"), [255, 0, 128]);
+        assert_eq!(parse_paper("rgb(300, -4, 1.6)"), [255, 0, 2]);
+        assert_eq!(parse_paper("rgb(1, 2)"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgb(1, 2, 3, 4, 5)"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgb(1 2 3 4 / 5)"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgb(1, 2, x)"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgb(1, 2, 3"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgb(NaN, 2, 3)"), [255, 255, 255]);
+        assert_eq!(parse_paper("rgb(inf, 2, 3)"), [255, 255, 255]);
+        assert_eq!(parse_paper("hsl(1, 2%, 3%)"), [255, 255, 255]);
+        assert_eq!(parse_paper(""), [255, 255, 255]);
         assert_eq!(parse_paper("#zzzzzz"), [255, 255, 255]);
         assert_eq!(parse_paper("#+1+2+3"), [255, 255, 255]);
     }
