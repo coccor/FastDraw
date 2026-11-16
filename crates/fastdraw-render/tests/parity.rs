@@ -6,8 +6,9 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use fastdraw_render::js::{json_string, num_str};
-use fastdraw_render::look::{Look, bundled_look, color, default_look, parse_look};
-use fastdraw_render::parse::look_path;
+use fastdraw_render::look::{Look, bundled_look, color, default_look, is_bundled_look, parse_look};
+use fastdraw_render::parse::{look_path, with_look};
+use fastdraw_render::scene::{Scene, build_scene};
 
 mod common;
 use common::{json, read_parity, root};
@@ -17,7 +18,6 @@ fn parity_dir() -> PathBuf {
 }
 
 /// One case of `manifest.json`.
-#[allow(dead_code)] // fields are compared by later stages
 #[derive(Debug, Clone)]
 struct Case {
     id: String,
@@ -31,7 +31,6 @@ struct Case {
     look_path: Option<String>,
 }
 
-#[allow(dead_code)] // used by later stages
 impl Case {
     /// The diagram's absolute path.
     fn abs(&self) -> PathBuf {
@@ -69,7 +68,6 @@ fn cases() -> Vec<Case> {
 }
 
 /// Paths in messages, repo-relative: the absolute root becomes `<root>` and every '\' a '/'.
-#[allow(dead_code)] // used by later stages
 fn normalise(s: &str) -> String {
     let root = root().to_string_lossy().replace('\\', "/");
     s.replace('\\', "/").replace(&root, "<root>")
@@ -295,6 +293,157 @@ fn colors_match() {
     }
     assert!(n >= 400, "only {n} colours compared");
     failures.report("colors_match");
+}
+
+/// A number as `JSON.stringify` writes it: NaN and the infinities become null.
+fn num_json(n: f64) -> json::Json {
+    if n.is_finite() {
+        json::Json::Num(n)
+    } else {
+        json::Json::Null
+    }
+}
+
+/// A scene as the script writes it (`sceneOut`).
+fn scene_json(sc: &Scene) -> json::Json {
+    use json::Json;
+    let s = |v: &str| Json::Str(v.to_string());
+    let bx = |x: f64, y: f64, w: f64, h: f64| {
+        vec![
+            ("x".to_string(), num_json(x)),
+            ("y".into(), num_json(y)),
+            ("w".into(), num_json(w)),
+            ("h".into(), num_json(h)),
+        ]
+    };
+    let issues = sc
+        .issues
+        .iter()
+        .map(|i| {
+            Json::Obj(vec![
+                ("line".to_string(), Json::Num(f64::from(i.line))),
+                ("level".into(), s(i.level.as_str())),
+                ("msg".into(), s(&i.msg)),
+            ])
+        })
+        .collect();
+    let shapes = sc
+        .shapes
+        .iter()
+        .map(|sh| {
+            let mut o = vec![
+                ("id".to_string(), s(&sh.id)),
+                ("shape".into(), s(&sh.shape)),
+            ];
+            o.extend(bx(sh.x, sh.y, sh.w, sh.h));
+            Json::Obj(o)
+        })
+        .collect();
+    let texts = sc
+        .texts
+        .iter()
+        .map(|t| {
+            let mut o = vec![("id".to_string(), s(&t.id))];
+            o.extend(bx(t.x, t.y, t.w, t.h));
+            Json::Obj(o)
+        })
+        .collect();
+    let conns = sc
+        .conns
+        .iter()
+        .map(|c| {
+            let pts = c
+                .pts
+                .iter()
+                .map(|p| {
+                    Json::Obj(vec![
+                        ("x".to_string(), num_json(p.x)),
+                        ("y".into(), num_json(p.y)),
+                    ])
+                })
+                .collect();
+            let label = c
+                .label
+                .as_ref()
+                .map_or(Json::Null, |l| Json::Obj(bx(l.x, l.y, l.w, l.h)));
+            Json::Obj(vec![
+                ("pts".to_string(), Json::Arr(pts)),
+                ("label".into(), label),
+            ])
+        })
+        .collect();
+    let mut o = bx(sc.x, sc.y, sc.w, sc.h);
+    o.extend([
+        ("issues".to_string(), Json::Arr(issues)),
+        ("shapes".into(), Json::Arr(shapes)),
+        ("texts".into(), Json::Arr(texts)),
+        ("conns".into(), Json::Arr(conns)),
+    ]);
+    Json::Obj(o)
+}
+
+/// `darkCounterpart(ref, own)` (editor/src/embed/theme.ts) for a diagram in a bundled or the built-in look.
+fn dark_counterpart(r: Option<&str>, own: Option<&Look>) -> Option<String> {
+    let v = own.and_then(|l| l.dark.clone()).or_else(|| {
+        if r.is_some() {
+            None
+        } else {
+            Some("night".to_string())
+        }
+    });
+    v.filter(|v| !v.is_empty() && Some(v.as_str()) != r)
+}
+
+/// The scenes of every case that reads no look file: noFile cases (`buildScene(input, null, '')`) and cases with no
+/// look line or a bundled look's name (`loadScene`, which reads nothing and adds no font warning for these looks).
+#[test]
+fn scenes_match() {
+    let mut failures = Failures::default();
+    let mut n = 0;
+    for c in cases() {
+        let bundled = c.look_path.as_deref().is_none_or(is_bundled_look);
+        if !c.no_file && !bundled {
+            continue;
+        }
+        let mut input = c.input.clone();
+        if c.dark {
+            // drawnScene: the dark counterpart of the built-in or bundled look, drawn with withLook
+            let r = c.look_path.as_deref();
+            let own = match r {
+                None => Some(default_look()),
+                Some(name) => bundled_look(name),
+            };
+            match dark_counterpart(r, own.as_deref()) {
+                Some(d) if is_bundled_look(&d) => input = with_look(&input, &d),
+                Some(d) => panic!("{}: the dark look {d} is not bundled", c.id),
+                None => {}
+            }
+        }
+        let file = if c.no_file {
+            String::new()
+        } else {
+            c.abs().to_string_lossy().into_owned()
+        };
+        let sc = build_scene(&input, None, &file);
+        let want = std::fs::read_to_string(
+            parity_dir()
+                .join("scenes")
+                .join(format!("{}.json", c.key())),
+        )
+        .unwrap();
+        failures.check(
+            &c.id,
+            "scene",
+            &normalise(&dump(&json::parse(&want))),
+            &normalise(&dump(&scene_json(&sc))),
+        );
+        n += 1;
+    }
+    println!("{n} scenes compared");
+    if n > 0 {
+        assert!(n >= 1000, "only {n} scenes compared");
+    }
+    failures.report("scenes_match");
 }
 
 #[test]

@@ -1,16 +1,22 @@
-//! scene.ts, part 1: the scene types, text measuring, and the helpers `build_scene` leans on (sides, routes,
-//! curves, labels, table layout, connector ends). `look_path` and `with_look` live in parse.rs.
+//! scene.ts: the scene types, text measuring, the helpers `build_scene` leans on (sides, routes,
+//! curves, labels, table layout, connector ends), and `build_scene` itself. `look_path` and `with_look` live in parse.rs.
 //! The helpers are public so the crate's later modules (and tests) can reach them.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, OnceLock};
 
+use indexmap::IndexMap;
 use regex::Regex;
 
 use crate::data::{font_widths, width_chars};
+use crate::icons::{icon_matches, is_built_in};
 use crate::js::{self, num_str, round, to_number, utf16_len};
-use crate::look::{IssueLevel, Kind, Look, LookIssue, Props};
-use crate::router::{Pt, Rect};
+use crate::look::{
+    IssueLevel, Kind, Look, LookIssue, Props, bundled_look, bundled_look_names, default_look,
+    empty_look,
+};
+use crate::parse::{Stmt, TokKind, parse_statements};
+use crate::router::{Pt, Rect, crosses, route_around};
 
 /// The names `m[2] in DIRS` accepts besides the four sides: the properties of Object.prototype that match
 /// `[A-Za-z_][\w-]*` (`Object.getOwnPropertyNames(Object.prototype)`).
@@ -39,6 +45,7 @@ pub fn in_dirs(name: &str) -> bool {
 /// formula (it is not top or bottom, and falls through the left test). `DIRS[side]` is a function or object
 /// there, so `.x` and `.y` are undefined: arithmetic on them is NaN while the direction itself stays truthy
 /// (`dir()` returns it as Some(NaN, NaN) for that reason); `e.side === 'top'` style tests are all false.
+/// Two such directions are equal coordinate by coordinate (`undefined === undefined`), which `route` honours.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Side {
     Top,
@@ -495,7 +502,9 @@ pub fn route(c: &mut Conn, via: &[Pt]) -> Vec<Pt> {
             if h0 != h1 {
                 return vec![p0, corner(p0, p1, h0), p1];
             }
-            let same = d0.x == d1.x && d0.y == d1.y;
+            // a NaN coordinate is the `undefined` of a Side::Proto direction, and undefined === undefined
+            let eq = |a: f64, b: f64| a == b || (a.is_nan() && b.is_nan());
+            let same = eq(d0.x, d1.x) && eq(d0.y, d1.y);
             if same {
                 c.ushape = true;
                 let off = num(c.p.get("loop").map(String::as_str), 36.0);
@@ -1050,6 +1059,1774 @@ pub fn parse_end(raw: &str) -> Option<End> {
         v: m.get(4).map(|x| to_number(x.as_str())),
         ..base
     })
+}
+
+// ---- buildScene ---------------------------------------------------------------------------------------------------
+
+/// A legend with no size of its own, laid out once the content's width is known (the TypeScript's `legends` closures).
+struct LegendSpec {
+    /// the legend's index in `shapes`
+    shape: usize,
+    /// every style="label" pair of the statement
+    entries: Vec<(String, String)>,
+    fs: f64,
+    font: String,
+    titled: bool,
+}
+
+/// `/^(swatch|dot|line)\.(.+)$/`: a legend entry for something that is not a style of the look.
+fn adhoc(k: &str) -> Option<(&str, &str)> {
+    static ADHOC: OnceLock<Regex> = OnceLock::new();
+    let m = re(&ADHOC, r"^(swatch|dot|line)\.(.+)$").captures(k)?;
+    Some((m.get(1).unwrap().as_str(), m.get(2).unwrap().as_str()))
+}
+
+fn props(p: &[(&str, &str)]) -> Props {
+    p.iter()
+        .map(|&(k, v)| (k.to_string(), v.to_string()))
+        .collect()
+}
+
+/// `{ ...a, ...b }`: a's keys in their order, b's values over them, b's new keys last.
+fn spread(a: &Props, b: &Props) -> Props {
+    let mut p = a.clone();
+    for (k, v) in b {
+        p.insert(k.clone(), v.clone());
+    }
+    p
+}
+
+/// `Math.max(...xs)`: -Infinity for none, NaN if any is NaN.
+fn max_of(xs: impl IntoIterator<Item = f64>) -> f64 {
+    xs.into_iter().fold(f64::NEG_INFINITY, js::max)
+}
+
+fn shape_rect(s: &Shape) -> Rect {
+    Rect {
+        x: s.x,
+        y: s.y,
+        w: s.w,
+        h: s.h,
+    }
+}
+
+fn text_rect(t: &TextEl) -> Rect {
+    Rect {
+        x: t.x,
+        y: t.y,
+        w: t.w,
+        h: t.h,
+    }
+}
+
+/// The legend's layout at width `w_total`: its entries in rows, the legend's size following them.
+fn lay_out_legend(look: &Look, sh: &mut Shape, lg: &LegendSpec, w_total: f64) {
+    let items: Vec<LegendItem> = lg
+        .entries
+        .iter()
+        .map(|(k, label)| {
+            let item = |kind: Kind, sample: f64, props: Option<Props>| LegendItem {
+                style: k.clone(),
+                kind,
+                label: label.clone(),
+                x: 0.0,
+                baseline: 0.0,
+                sample,
+                props,
+            };
+            if let Some((what, c)) = adhoc(k) {
+                // an entry for something that is not a style of the look: a colour swatch, a dot or a line
+                if what == "line" {
+                    return item(
+                        Kind::Line,
+                        28.0,
+                        Some(props(&[("stroke", c), ("sw", "1.6"), ("head", "none")])),
+                    );
+                }
+                return item(
+                    Kind::Shape,
+                    14.0,
+                    Some(if what == "dot" {
+                        props(&[("shape", "dot"), ("fill", c), ("stroke", "none")])
+                    } else {
+                        props(&[
+                            ("shape", "rect"),
+                            ("fill", c),
+                            ("stroke", "none"),
+                            ("radius", "2"),
+                        ])
+                    }),
+                );
+            }
+            let st = &look.styles[k.as_str()];
+            let sample = match st.kind {
+                Kind::Line => 28.0,
+                Kind::Text => 16.0,
+                Kind::Shape if st.props.get("shape").map(String::as_str) == Some("diamond") => 22.0,
+                Kind::Shape => 14.0,
+            };
+            item(st.kind, sample, None)
+        })
+        .collect();
+    let widths: Vec<f64> = items
+        .iter()
+        .map(|it| it.sample + 6.0 + text_width(&it.label, lg.fs, &lg.font, 400.0, 0.0))
+        .collect();
+    let mut rows: Vec<Vec<usize>> = vec![Vec::new()];
+    let mut run = 0.0;
+    for (i, &w) in widths.iter().enumerate() {
+        let row = rows.last_mut().unwrap();
+        if !row.is_empty() && run + 20.0 + w > w_total {
+            rows.push(vec![i]);
+            run = w;
+        } else {
+            run += (if row.is_empty() { 0.0 } else { 20.0 }) + w;
+            row.push(i);
+        }
+    }
+    let mut items = items;
+    let first = sh.y + if lg.titled { 40.0 } else { 20.0 };
+    for (r, row) in rows.iter().enumerate() {
+        let sum = row.iter().fold(0.0, |a, &i| a + widths[i]);
+        let gap = if rows.len() == 1 && row.len() > 1 {
+            js::min(
+                64.0,
+                js::max(20.0, (w_total - sum) / (row.len() - 1) as f64),
+            )
+        } else {
+            24.0
+        };
+        let mut x = sh.x;
+        for &i in row {
+            items[i].x = round(x);
+            items[i].baseline = first + r as f64 * 20.0;
+            x += widths[i] + gap;
+        }
+    }
+    sh.w = w_total;
+    sh.h = (if lg.titled { 40.0 } else { 20.0 }) + (rows.len() - 1) as f64 * 20.0 + 12.0;
+    sh.legend = Some(items);
+}
+
+/// The scene as it is built, statement by statement.
+struct Builder {
+    look: Arc<Look>,
+    issues: Vec<LookIssue>,
+    shapes: Vec<Shape>,
+    texts: Vec<TextEl>,
+    conns: Vec<Conn>,
+    ids: HashSet<String>,
+    canvas_line: Option<u32>,
+    canvas_size: bool,
+    /// legends with no size of their own, laid out once the content's width is known
+    legends: Vec<LegendSpec>,
+    /// indexes of the shapes with no position
+    unplaced: Vec<usize>,
+}
+
+impl Builder {
+    fn err(&mut self, line: u32, msg: String) {
+        issue(&mut self.issues, line, IssueLevel::Error, msg);
+    }
+
+    fn warn(&mut self, line: u32, msg: String) {
+        issue(&mut self.issues, line, IssueLevel::Warn, msg);
+    }
+
+    /// The names of the look's styles of `kind` (or of every kind but lines), joined for a message.
+    fn style_names(&self, lines: bool) -> String {
+        self.look
+            .styles
+            .values()
+            .filter(|s| (s.kind == Kind::Line) == lines)
+            .map(|s| s.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    fn register(&mut self, id: Option<&str>, auto: &str, line: u32) -> String {
+        let final_id = id.map_or_else(|| format!("_{auto}{line}"), str::to_string);
+        if self.ids.contains(&final_id) {
+            self.err(
+                line,
+                format!("the id \"{final_id}\" is already used; ids must be unique"),
+            );
+        }
+        self.ids.insert(final_id.clone());
+        final_id
+    }
+
+    /// The diagram's look statement: which look it names, and that look's own problems.
+    fn look_statement(&mut self, look_stmt: &Stmt, named: bool, look_in: bool) {
+        let line = look_stmt.line;
+        let p = look_stmt
+            .toks
+            .get(1)
+            .map(|t| t.v.as_str())
+            .filter(|p| !p.is_empty());
+        let names = bundled_look_names().join(", ");
+        match p {
+            None => self.err(
+                line,
+                format!(
+                    "look needs a name or a path, e.g. look sketch or look \"./team.look\" (named looks: {names})"
+                ),
+            ),
+            Some(p) if !named && !look_in => {
+                let b = p.as_bytes();
+                let is_path = p.contains(['\\', '/'])
+                    || (b.len() >= 5 && b[b.len() - 5..].eq_ignore_ascii_case(b".look"));
+                self.err(
+                    line,
+                    if is_path {
+                        format!("look file not found: {p}")
+                    } else {
+                        format!(
+                            "no look named {p}; named looks: {names}, or give a path to a .look file"
+                        )
+                    },
+                );
+            }
+            Some(_) => {
+                let look = self.look.clone();
+                for i in &look.issues {
+                    self.issues.push(LookIssue {
+                        line,
+                        level: i.level,
+                        msg: format!("{} (in look, line {})", i.msg, i.line),
+                        file: i.file.clone(),
+                    });
+                }
+            }
+        }
+    }
+
+    fn statement(&mut self, st: &Stmt) {
+        let toks = &st.toks;
+        let first = &toks[0];
+        if first.t == TokKind::Word && first.v == "look" {
+            return;
+        }
+        if first.t == TokKind::Word && first.v == "canvas" {
+            self.canvas_statement(st);
+            return;
+        }
+        let mut i = 0;
+        let mut id: Option<&str> = None;
+        if first.t == TokKind::Word && first.v.ends_with(':') && utf16_len(&first.v) > 1 {
+            id = Some(&first.v[..first.v.len() - 1]);
+            i = 1;
+        }
+        let op_idx = toks
+            .iter()
+            .position(|t| t.t == TokKind::Word && (t.v == "->" || t.v == "--" || t.v == "<->"));
+        match op_idx {
+            Some(op_idx) => self.connector_statement(st, id, i, op_idx),
+            None => self.element_statement(st, id, i),
+        }
+    }
+
+    fn canvas_statement(&mut self, st: &Stmt) {
+        // the canvas has no size: the picture is as big as what is drawn. A WxH left from older files is ignored
+        self.canvas_line = Some(st.line);
+        // paper=, dots= and dotgap= on the diagram's canvas line override the look's background for this diagram
+        static SIZE: OnceLock<Regex> = OnceLock::new();
+        let mut bg = Props::new();
+        for t in &st.toks[1..] {
+            let key = t.k.as_deref().unwrap_or("");
+            if re(&SIZE, r"^[0-9]+x[0-9]+$").is_match(&t.v) {
+                self.canvas_size = true;
+            } else if t.t == TokKind::Prop && CANVAS_KEYS.contains(&key) {
+                bg.insert(key.to_string(), t.v.clone());
+            } else {
+                let keys: Vec<String> = CANVAS_KEYS.iter().map(|k| format!("{k}=")).collect();
+                let what = if t.t == TokKind::Prop {
+                    format!("{key}=")
+                } else {
+                    t.v.clone()
+                };
+                self.err(
+                    st.line,
+                    format!("canvas only takes {}; remove {what}", keys.join(", ")),
+                );
+            }
+        }
+        if !bg.is_empty() {
+            let mut look = (*self.look).clone();
+            look.canvas = spread(&look.canvas, &bg);
+            self.look = Arc::new(look);
+        }
+    }
+
+    fn connector_statement(&mut self, st: &Stmt, id: Option<&str>, i: usize, op_idx: usize) {
+        let (toks, line) = (&st.toks, st.line);
+        let a_tok = op_idx.checked_sub(1).and_then(|j| toks.get(j));
+        let b_tok = toks.get(op_idx + 1);
+        let (Some(a_tok), Some(b_tok)) = (a_tok, b_tok) else {
+            self.err(
+                line,
+                "a connector needs something on both sides, e.g. a -> b".into(),
+            );
+            return;
+        };
+        if op_idx < i + 1 {
+            self.err(
+                line,
+                "a connector needs something on both sides, e.g. a -> b".into(),
+            );
+            return;
+        }
+        let (Some(a), Some(b)) = (parse_end(&a_tok.v), parse_end(&b_tok.v)) else {
+            let bad = if parse_end(&a_tok.v).is_none() {
+                &a_tok.v
+            } else {
+                &b_tok.v
+            };
+            self.err(line, format!("cannot read the connector end \"{bad}\"; use an id, id.side, id.side@pos, id@pos or x,y"));
+            return;
+        };
+        let op = toks[op_idx].v.as_str();
+        let mut over = Props::new();
+        let mut text: Option<String> = None;
+        for t in &toks[op_idx + 2..] {
+            match t.t {
+                TokKind::Str => {
+                    if text.is_none() {
+                        text = Some(t.v.clone());
+                    }
+                }
+                TokKind::Prop => {
+                    over.insert(t.k.clone().unwrap(), t.v.clone());
+                }
+                TokKind::Word => self.err(
+                    line,
+                    format!(
+                        "unexpected word \"{}\" after the connector; properties look like key=value",
+                        t.v
+                    ),
+                ),
+            }
+        }
+        // a plain -- that ends on a table row is a relationship: right-angled, not a slanted line
+        let style_name = over.get("style").cloned().unwrap_or_else(|| {
+            if op == "--" {
+                if a.row.is_some() || b.row.is_some() {
+                    "relation".into()
+                } else {
+                    "line".into()
+                }
+            } else {
+                "arrow".into()
+            }
+        });
+        let style = match self.look.styles.get(&style_name) {
+            Some(s) if s.kind == Kind::Line => s.clone(),
+            _ => {
+                let names = self.style_names(true);
+                self.err(
+                    line,
+                    format!(
+                        "\"{style_name}\" is not a line style in the look; line styles: {names}"
+                    ),
+                );
+                return;
+            }
+        };
+        let p = spread(&style.props, &over);
+        let route = p.get("route").map(String::as_str);
+        if let Some(r) = route.filter(|r| !r.is_empty())
+            && !["ortho", "straight", "curve"].contains(&r)
+        {
+            self.err(
+                line,
+                format!("route={r} is not a route; use ortho, straight or curve"),
+            );
+        }
+        // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
+        let style_head = style.props.get("head").map(String::as_str);
+        let style_head = match style_head {
+            Some(h) if !h.is_empty() && h != "none" => h,
+            _ => "arrow",
+        };
+        // a style made for plain lines (head=none: a rule, a lifeline) never grows a head, even when written with ->
+        let plain =
+            style.props.get("head").map(String::as_str) == Some("none") && style_name != "line";
+        let head_m = over.get("head").cloned().unwrap_or_else(|| {
+            if op == "--" || plain {
+                "none".into()
+            } else {
+                style_head.into()
+            }
+        });
+        let tail_m = over.get("tail").cloned().unwrap_or_else(|| {
+            if op == "<->" {
+                head_m.clone()
+            } else if op == "--" {
+                "none".into()
+            } else {
+                style
+                    .props
+                    .get("tail")
+                    .cloned()
+                    .unwrap_or_else(|| "none".into())
+            }
+        });
+        for mk in [&head_m, &tail_m] {
+            if !MARKERS.contains(&mk.as_str()) {
+                self.err(
+                    line,
+                    format!(
+                        "\"{mk}\" is not an end marker; use one of: {}",
+                        MARKERS.join(", ")
+                    ),
+                );
+            }
+        }
+        let ok = |mk: &str| {
+            if MARKERS.contains(&mk) {
+                mk.to_string()
+            } else {
+                "arrow".to_string()
+            }
+        };
+        let id = self.register(id, "c", line);
+        let ortho = route.unwrap_or("ortho") == "ortho";
+        let curve = route == Some("curve");
+        self.conns.push(Conn {
+            id,
+            line,
+            style: style_name,
+            a,
+            b,
+            pts: Vec::new(),
+            head: head_m != "none",
+            tail: tail_m != "none",
+            head_m: ok(&head_m),
+            tail_m: ok(&tail_m),
+            ortho,
+            curve,
+            ushape: false,
+            text,
+            label: None,
+            p,
+        });
+    }
+
+    fn element_statement(&mut self, st: &Stmt, id: Option<&str>, mut i: usize) {
+        let (toks, line) = (&st.toks, st.line);
+        let Some(kind_tok) = toks.get(i).filter(|t| t.t == TokKind::Word) else {
+            self.err(line, "expected: id: style \"text\" at x,y".into());
+            return;
+        };
+        i += 1;
+        let style = match self.look.styles.get(&kind_tok.v) {
+            Some(s) if s.kind != Kind::Line => s.clone(),
+            _ => {
+                let names = self.style_names(false);
+                self.err(
+                    line,
+                    format!("unknown style \"{}\"; available: {names}", kind_tok.v),
+                );
+                return;
+            }
+        };
+        static ROW_ID: OnceLock<Regex> = OnceLock::new();
+        static ROW_VAL: OnceLock<Regex> = OnceLock::new();
+        static AT: OnceLock<Regex> = OnceLock::new();
+        static SIZE: OnceLock<Regex> = OnceLock::new();
+        let mut text: Option<String> = None;
+        let mut at: Option<Pt> = None;
+        let mut size: Option<(f64, f64)> = None;
+        let mut over = Props::new();
+        let mut rows: Vec<Row> = Vec::new();
+        while i < toks.len() {
+            let t = &toks[i];
+            if t.t == TokKind::Word && (t.v == "|" || t.v == "|=") {
+                rows.push(Row {
+                    id: None,
+                    kind: if t.v == "|" {
+                        RowKind::Row
+                    } else {
+                        RowKind::Head
+                    },
+                    cells: Vec::new(),
+                    vals: Vec::new(),
+                    p: Props::new(),
+                    y: 0.0,
+                    h: 0.0,
+                });
+                i += 1;
+                continue;
+            }
+            if let Some(row) = rows.last_mut() {
+                // everything after a "|" belongs to that row: an optional id, then one "text" per column
+                match t.t {
+                    TokKind::Str => row.cells.push(t.v.clone()),
+                    TokKind::Prop => {
+                        row.p.insert(t.k.clone().unwrap(), t.v.clone());
+                    }
+                    TokKind::Word => {
+                        if t.v == "---" && row.cells.is_empty() && row.id.is_none() {
+                            row.kind = RowKind::Rule;
+                        } else if row.id.is_none()
+                            && row.cells.is_empty()
+                            && re(&ROW_ID, r"^[A-Za-z_][A-Za-z0-9_-]*$").is_match(&t.v)
+                            && !in_dirs(&t.v)
+                        {
+                            row.id = Some(t.v.clone());
+                        } else if re(
+                            &ROW_VAL,
+                            r"^([+-]?[0-9]*\.?[0-9]+(,[+-]?[0-9]*\.?[0-9]+){0,2}|_)$",
+                        )
+                        .is_match(&t.v)
+                        {
+                            // a number, a pair (3,40), a triple (x,y,radius), or _ for no value
+                            row.vals.push(t.v.clone());
+                        } else {
+                            self.err(line, format!("unexpected word \"{}\" in a table row; a row is: | id \"cell\" \"cell\" (the id is optional, and cannot be top, bottom, left or right)", t.v));
+                        }
+                    }
+                }
+                i += 1;
+                continue;
+            }
+            match t.t {
+                TokKind::Str => {
+                    if text.is_none() {
+                        text = Some(t.v.clone());
+                    }
+                }
+                TokKind::Prop => {
+                    over.insert(t.k.clone().unwrap(), t.v.clone());
+                }
+                TokKind::Word if t.v == "at" => {
+                    i += 1;
+                    let v = toks.get(i).map_or("", |t| t.v.as_str());
+                    match re(&AT, r"^(-?[0-9]+(?:\.[0-9]+)?),(-?[0-9]+(?:\.[0-9]+)?)$").captures(v)
+                    {
+                        None => self.err(
+                            line,
+                            "after \"at\" write the position as x,y with no space, e.g. at 40,240"
+                                .into(),
+                        ),
+                        Some(m) => {
+                            at = Some(Pt {
+                                x: to_number(&m[1]),
+                                y: to_number(&m[2]),
+                            });
+                        }
+                    }
+                }
+                TokKind::Word
+                    if re(&SIZE, r"^[0-9]+(\.[0-9]+)?x[0-9]+(\.[0-9]+)?$").is_match(&t.v) =>
+                {
+                    let mut it = t.v.split('x').map(to_number);
+                    size = Some((it.next().unwrap(), it.next().unwrap()));
+                }
+                TokKind::Word => self.err(
+                    line,
+                    format!(
+                        "unexpected word \"{}\"; properties look like key=value and text goes in \"quotes\"",
+                        t.v
+                    ),
+                ),
+            }
+            i += 1;
+        }
+        let mut base = style.props.clone();
+        let mut style_name = style.name.clone();
+        if let Some(os) = over.get("style").filter(|s| !s.is_empty()) {
+            match self.look.styles.get(os) {
+                Some(s2) if s2.kind == style.kind => {
+                    base = spread(&base, &s2.props);
+                    style_name = s2.name.clone();
+                }
+                _ => {
+                    let msg = format!(
+                        "style={os} is not a {} style in the look",
+                        style.kind.as_str()
+                    );
+                    self.err(line, msg);
+                }
+            }
+        }
+        let p = spread(&base, &over);
+        if style.kind == Kind::Text {
+            self.text_element(line, id, style_name, p, text, at);
+        } else {
+            self.shape_element(line, id, style_name, p, over, text, at, size, rows);
+        }
+    }
+
+    fn text_element(
+        &mut self,
+        line: u32,
+        id: Option<&str>,
+        style_name: String,
+        p: Props,
+        text: Option<String>,
+        at: Option<Pt>,
+    ) {
+        let Some(at) = at else {
+            self.err(line, "text needs a position: at x,y".into());
+            return;
+        };
+        let prop = |k: &str| p.get(k).map(String::as_str);
+        let fs = num(prop("size"), 12.0);
+        let src = text.as_deref().unwrap_or("");
+        let lines: Vec<&str> = src.split('\n').collect();
+        let t2 = if prop("caps") == Some("1") {
+            src.to_uppercase()
+        } else {
+            src.to_string()
+        };
+        let font = prop("font").unwrap_or("sans");
+        let (weight, spacing) = (num(prop("weight"), 400.0), num(prop("spacing"), 0.0));
+        let w = max_of(
+            lines
+                .iter()
+                .map(|l| text_width(l, fs, font, weight, spacing)),
+        );
+        let anchor = prop("anchor").unwrap_or("start");
+        let x = if anchor == "middle" {
+            at.x - w / 2.0
+        } else if anchor == "end" {
+            at.x - w
+        } else {
+            at.x
+        };
+        let th = fs * 1.3 * lines.len() as f64;
+        // rotate=-90 reads upwards, rotate=90 downwards; the text turns about its "at" point
+        let rot = num(prop("rotate"), 0.0);
+        if let Some(r) = prop("rotate")
+            && ![0.0, 90.0, -90.0].contains(&rot)
+        {
+            let msg =
+                format!("rotate={r}: text can be turned by 90 (reading down) or -90 (reading up)");
+            self.err(line, msg);
+        }
+        let dx = x - at.x; // where the text starts, measured along its own baseline
+        let bx = if rot == -90.0 {
+            Rect {
+                x: at.x - fs,
+                y: at.y - dx - w,
+                w: th,
+                h: w,
+            }
+        } else if rot == 90.0 {
+            Rect {
+                x: at.x - th + fs,
+                y: at.y + dx,
+                w: th,
+                h: w,
+            }
+        } else {
+            Rect {
+                x,
+                y: at.y - fs,
+                w,
+                h: th,
+            }
+        };
+        let id = self.register(id, "t", line);
+        self.texts.push(TextEl {
+            x: bx.x,
+            y: bx.y,
+            w: bx.w,
+            h: bx.h,
+            id,
+            line,
+            style: style_name,
+            p,
+            text: t2,
+            ax: at.x,
+            ay: at.y,
+        });
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn shape_element(
+        &mut self,
+        line: u32,
+        id: Option<&str>,
+        style_name: String,
+        p: Props,
+        over: Props,
+        text: Option<String>,
+        at: Option<Pt>,
+        mut size: Option<(f64, f64)>,
+        rows: Vec<Row>,
+    ) {
+        static SIZE: OnceLock<Regex> = OnceLock::new();
+        if size.is_none()
+            && let Some(ps) = p.get("size").filter(|s| !s.is_empty())
+            && let Some(m) =
+                re(&SIZE, r"^([0-9]+(?:\.[0-9]+)?)x([0-9]+(?:\.[0-9]+)?)$").captures(ps)
+        {
+            size = Some((to_number(&m[1]), to_number(&m[2])));
+        }
+        let size0 = size;
+        let size = size.unwrap_or((120.0, 48.0));
+        let id = self.register(id, "s", line);
+        let mut sh = Shape {
+            x: at.map_or(0.0, |a| a.x),
+            y: at.map_or(0.0, |a| a.y),
+            w: size.0,
+            h: size.1,
+            id,
+            line,
+            style: style_name.clone(),
+            shape: p.get("shape").cloned().unwrap_or_else(|| "rect".into()),
+            text,
+            back: p.get("layer").map(String::as_str) == Some("back"),
+            legend: None,
+            rows: None,
+            cols: None,
+            head_h: None,
+            poly: None,
+            p,
+        };
+        self.icon_checks(line, &sh.p, &over);
+        if sh.shape == "polygon" {
+            self.polygon(line, &mut sh, size0.is_some());
+        }
+        if sh.shape == "arc" {
+            for k in ["from", "to", "inner"] {
+                if let Some(v) = sh.p.get(k)
+                    && to_number(v).is_nan()
+                {
+                    let msg = format!(
+                        "{k}={v} must be a number (from= and to= are degrees clockwise from the top; inner= is 0 to 1)"
+                    );
+                    self.err(line, msg);
+                }
+            }
+        }
+        if sh.shape == "table" {
+            layout_table(
+                &mut sh,
+                rows,
+                size0.map_or(0.0, |s| s.0),
+                &mut self.issues,
+                line,
+            );
+        } else if sh.shape == "chart" {
+            self.chart(line, &mut sh, rows, size0.is_some());
+        } else if !rows.is_empty() {
+            self.err(line, format!("rows (the parts starting with \"|\") only work on a table style; \"{style_name}\" is not one"));
+        }
+        if sh.shape == "legend" {
+            self.legend(line, &mut sh, &over, size0.is_some());
+        }
+        if at.is_none() {
+            self.unplaced.push(self.shapes.len());
+        }
+        self.shapes.push(sh);
+    }
+
+    fn icon_checks(&mut self, line: u32, p: &Props, over: &Props) {
+        let prop = |k: &str| p.get(k).map(String::as_str);
+        let look = self.look.clone();
+        let icon = prop("icon").filter(|i| !i.is_empty() && *i != "none");
+        let known = |i: &str| look.icons.get(i).is_some() || look.images.contains_key(i);
+        if let Some(icon) = icon
+            && !known(icon)
+        {
+            let all: Vec<&str> = look
+                .images
+                .keys()
+                .map(String::as_str)
+                .chain(look.icons.keys())
+                .collect();
+            // name the closest ones first: a team's folder can hold hundreds
+            let near = all
+                .iter()
+                .copied()
+                .filter(|n| icon_matches(n, icon) || (utf16_len(n) > 2 && icon.contains(n)));
+            let mut seen = HashSet::new();
+            let mut list: Vec<&str> = Vec::new();
+            for n in near.chain(all.iter().copied()) {
+                if list.len() == 40 {
+                    break;
+                }
+                if seen.insert(n) {
+                    list.push(n);
+                }
+            }
+            let folder = if !look.icon_dirs.is_empty() && look.images.is_empty() {
+                format!(
+                    " (the look's icon folder {} could not be read here)",
+                    look.icon_dirs.join(", ")
+                )
+            } else {
+                String::new()
+            };
+            let more = if all.len() > list.len() {
+                format!(
+                    ", and {} more (run \"fastdraw icons\" to see them all)",
+                    all.len() - list.len()
+                )
+            } else {
+                String::new()
+            };
+            self.err(
+                line,
+                format!(
+                    "there is no icon called \"{icon}\"{folder}; the look has: {}{more}",
+                    list.join(", ")
+                ),
+            );
+        }
+        if let Some(w) = prop("icon.width") {
+            let n = to_number(w);
+            if !(n > 0.0 && n <= 8.0) {
+                self.err(line, format!("icon.width={w}: the icon's line thickness in pixels, a number from 0.5 to 8 (e.g. icon.width=2)"));
+            }
+        }
+        let style = prop("icon.style");
+        if let Some(s) = style
+            && !["outline", "solid", "duotone"].contains(&s)
+        {
+            self.err(line, format!("icon.style={s}: an icon is drawn as an outline (the default), filled in one colour (icon.style=solid), or as an outline over a light tint (icon.style=duotone)"));
+        } else if let Some(s) = style.filter(|s| *s == "solid" || *s == "duotone")
+            && let Some(icon) = icon
+            && known(icon)
+            && !is_built_in(&look, icon)
+        {
+            self.warn(line, format!("icon {icon} is the look's own, with no {s} version (only the built-in icons have one), so it is drawn as it is; drop icon.style={s}"));
+        }
+        if let Some(pos) = prop("icon.pos").filter(|s| !s.is_empty())
+            && !["left", "top"].contains(&pos)
+        {
+            self.err(line, format!("icon.pos={pos}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)"));
+        }
+        for k in ["color", "weight", "font", "italic"] {
+            if over.contains_key(k) {
+                self.warn(line, format!("{k}= does nothing on a shape; its text is set with title.{k}= (and sub.{k}= for the second line)"));
+            }
+        }
+    }
+
+    fn polygon(&mut self, line: u32, sh: &mut Shape, sized: bool) {
+        // points are written relative to the element's position; a given WxH stretches them to fit
+        let rel: Vec<Pt> =
+            sh.p.get("points")
+                .map_or("", String::as_str)
+                .split(';')
+                .filter(|q| !q.is_empty())
+                .map(|q| {
+                    let mut it = q.split(',').map(to_number);
+                    Pt {
+                        x: it.next().unwrap_or(f64::NAN),
+                        y: it.next().unwrap_or(f64::NAN),
+                    }
+                })
+                .collect();
+        if rel.len() < 2 || rel.iter().any(|q| q.x.is_nan() || q.y.is_nan()) {
+            self.err(line, "a polygon needs its corners: points=x,y;x,y;x,y measured from its \"at\" position, e.g. points=60,0;120,100;0,100".into());
+            return;
+        }
+        let nw = max_of(rel.iter().map(|q| q.x));
+        let nh = max_of(rel.iter().map(|q| q.y));
+        if rel.iter().any(|q| q.x < 0.0 || q.y < 0.0) {
+            self.err(line, "polygon points cannot be negative; they are measured from the \"at\" position, which is the top-left of the shape".into());
+        }
+        if !sized {
+            sh.w = nw;
+            sh.h = nh;
+        }
+        let kx = if nw == 0.0 || nw.is_nan() {
+            1.0
+        } else {
+            sh.w / nw
+        };
+        let ky = if nh == 0.0 || nh.is_nan() {
+            1.0
+        } else {
+            sh.h / nh
+        };
+        sh.poly = Some(
+            rel.iter()
+                .map(|q| Pt {
+                    x: round((sh.x + q.x * kx) * 100.0) / 100.0,
+                    y: round((sh.y + q.y * ky) * 100.0) / 100.0,
+                })
+                .collect(),
+        );
+    }
+
+    #[allow(clippy::neg_cmp_op_on_partial_ord)] // NaN must fail the tests, as in the TypeScript
+    fn chart(&mut self, line: u32, sh: &mut Shape, rows: Vec<Row>, sized: bool) {
+        static RANGE: OnceLock<Regex> = OnceLock::new();
+        static RANGE_TEST: OnceLock<Regex> = OnceLock::new();
+        if !sized {
+            self.err(
+                line,
+                "a chart needs a size for its plot area: at x,y WxH".into(),
+            );
+        }
+        let p = &sh.p;
+        for k in ["step", "xstep"] {
+            if let Some(v) = p.get(k)
+                && !(to_number(v) > 0.0)
+            {
+                self.err(line, format!("{k}={v} must be a number above 0"));
+            }
+        }
+        for k in ["x", "y"] {
+            let v = p.get(k).map_or("", String::as_str);
+            if let Some(m) = re(&RANGE, r"^(-?[0-9.]+)\.\.(-?[0-9.]+)$").captures(v)
+                && !(to_number(&m[2]) > to_number(&m[1]))
+            {
+                self.err(line, format!("{k}={v} must run upwards, e.g. {k}=0..100"));
+            }
+        }
+        let n = match p.get("x").filter(|x| !x.is_empty()) {
+            Some(x) if !re(&RANGE_TEST, r"^-?[0-9.]+\.\.-?[0-9.]+$").is_match(x) => {
+                x.split(',').count()
+            }
+            _ => 0,
+        };
+        for r in &rows {
+            let name = |r: &Row| match r.cells.first().filter(|c| !c.is_empty()) {
+                Some(c) => format!("\"{c}\" "),
+                None => String::new(),
+            };
+            match r.id.as_deref() {
+                Some(id) if SERIES.contains(&id) => {
+                    if r.vals.is_empty() {
+                        self.err(line, format!("the {id} series {}has no numbers; write them after the name: | {id} \"Name\" 42 61 75", name(r)));
+                    } else if n > 0 && r.vals.len() != n && !r.vals[0].contains(',') {
+                        self.warn(
+                            line,
+                            format!(
+                                "the {id} series {}has {} values but x= names {n} categories",
+                                name(r),
+                                r.vals.len()
+                            ),
+                        );
+                    }
+                }
+                _ => self.err(line, format!("a chart row starts with the kind of series: {}; e.g. | bars \"Revenue\" 42 61 75", SERIES.join(", "))),
+            }
+        }
+        sh.rows = Some(rows);
+    }
+
+    fn legend(&mut self, line: u32, sh: &mut Shape, over: &Props, sized: bool) {
+        // one statement lays out a whole legend: every style="label" pair is an entry
+        let entries: Vec<(String, String)> = over
+            .iter()
+            .filter(|(k, _)| {
+                *k != "style" && (self.look.styles.contains_key(*k) || adhoc(k).is_some())
+            })
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        let prop = |k: &str| sh.p.get(k).map(String::as_str);
+        let empty = entries.is_empty();
+        let lg = LegendSpec {
+            shape: self.shapes.len(),
+            entries,
+            fs: num(prop("item.size"), 8.5),
+            font: prop("item.font").unwrap_or("sans").to_string(),
+            titled: prop("title").unwrap_or("none") != "none",
+        };
+        if sized {
+            let w = sh.w;
+            lay_out_legend(&self.look, sh, &lg, w);
+        } else {
+            self.legends.push(lg);
+        }
+        if empty {
+            self.warn(line, "this legend has no entries; add style=\"what it means\" for each style, e.g. focal=\"The main service\"".into());
+        }
+    }
+
+    /// The legends with no size of their own: as wide as the rest of the drawing, measured from the legend's own
+    /// left edge.
+    fn lay_out_legends(&mut self) {
+        for lg in std::mem::take(&mut self.legends) {
+            let rights: Vec<f64> = self
+                .shapes
+                .iter()
+                .filter(|o| o.shape != "legend")
+                .map(|o| o.x + o.w)
+                .chain(self.texts.iter().map(|t| t.x + t.w))
+                // rules and axes drawn between free points
+                .chain(self.conns.iter().flat_map(|c| {
+                    [&c.a, &c.b]
+                        .into_iter()
+                        .filter(|e| e.kind == EndKind::Point)
+                        .map(|e| e.pt.x)
+                }))
+                .collect();
+            let sh = &mut self.shapes[lg.shape];
+            let w = if rights.is_empty() {
+                920.0
+            } else {
+                js::max(200.0, round((max_of(rights) - sh.x) / 4.0) * 4.0)
+            };
+            lay_out_legend(&self.look, sh, &lg, w);
+        }
+    }
+
+    /// Fallback placement for shapes with no position: a row under everything else.
+    fn fallback_placement(&mut self) {
+        if self.unplaced.is_empty() {
+            return;
+        }
+        let unplaced = std::mem::take(&mut self.unplaced);
+        let placed: Vec<&Shape> = self
+            .shapes
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| !unplaced.contains(i))
+            .map(|(_, s)| s)
+            .collect();
+        let mut x = 40.0;
+        let y = if placed.is_empty() {
+            40.0
+        } else {
+            max_of(placed.iter().map(|s| s.y + s.h)) + 40.0
+        };
+        for i in unplaced {
+            let s = &mut self.shapes[i];
+            s.x = x;
+            s.y = y;
+            x += s.w + 40.0;
+            let msg = format!(
+                "{} has no position (\"at x,y\"); it was dropped in a row at {},{}",
+                s.id,
+                num_str(s.x),
+                num_str(s.y)
+            );
+            let line = s.line;
+            self.warn(line, msg);
+        }
+    }
+}
+
+// ---- connector resolution -------------------------------------------------
+
+/// One end of a connector: the connector's index and which end (false: a, true: b). It stands for the End
+/// object the TypeScript keys its maps and sets by.
+type EndRef = (usize, bool);
+
+fn end_of(conns: &[Conn], (ci, b): EndRef) -> &End {
+    if b { &conns[ci].b } else { &conns[ci].a }
+}
+
+fn end_mut(conns: &mut [Conn], (ci, b): EndRef) -> &mut End {
+    if b {
+        &mut conns[ci].b
+    } else {
+        &mut conns[ci].a
+    }
+}
+
+fn is_horiz(side: Option<Side>) -> bool {
+    side == Some(Side::Top) || side == Some(Side::Bottom)
+}
+
+fn side_key(e: &End) -> String {
+    format!(
+        "{}{}|{}",
+        e.id.as_deref().unwrap_or("undefined"),
+        e.row.as_deref().map_or(String::new(), |r| format!(".{r}")),
+        e.side.map_or("undefined", Side::as_str)
+    )
+}
+
+/// An end of a group of ends sharing a side: its connector, itself, and the connector's other end.
+struct Member {
+    c: usize,
+    e: EndRef,
+    o: EndRef,
+}
+
+struct Resolver<'s> {
+    shapes: &'s [Shape],
+    shape_by_id: HashMap<&'s str, (Rect, Option<&'s str>)>,
+    rows_by_id: HashMap<&'s str, &'s [Row]>,
+    conn_by_id: HashMap<String, usize>,
+    conns: Vec<Conn>,
+    issues: &'s mut Vec<LookIssue>,
+    /// segments already routed, so detours can keep off them
+    taken: Vec<(Pt, Pt)>,
+    done: HashSet<usize>,
+    bad: HashSet<usize>,
+}
+
+impl<'s> Resolver<'s> {
+    fn new(
+        shapes: &'s [Shape],
+        texts: &'s [TextEl],
+        conns: Vec<Conn>,
+        issues: &'s mut Vec<LookIssue>,
+    ) -> Self {
+        let mut shape_by_id = HashMap::new();
+        for s in shapes {
+            shape_by_id.insert(s.id.as_str(), (shape_rect(s), Some(s.shape.as_str())));
+        }
+        for t in texts {
+            let r = Rect {
+                x: t.x - 4.0,
+                y: t.y - 2.0,
+                w: t.w + 8.0,
+                h: t.h + 4.0,
+            };
+            shape_by_id.insert(t.id.as_str(), (r, None));
+        }
+        let conn_by_id = conns
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (c.id.clone(), i))
+            .collect();
+        let rows_by_id = shapes
+            .iter()
+            .filter_map(|s| s.rows.as_deref().map(|r| (s.id.as_str(), r)))
+            .collect();
+        Resolver {
+            shapes,
+            shape_by_id,
+            rows_by_id,
+            conn_by_id,
+            conns,
+            issues,
+            taken: Vec::new(),
+            done: HashSet::new(),
+            bad: HashSet::new(),
+        }
+    }
+
+    fn err(&mut self, line: u32, msg: String) {
+        issue(self.issues, line, IssueLevel::Error, msg);
+    }
+
+    fn warn(&mut self, line: u32, msg: String) {
+        issue(self.issues, line, IssueLevel::Warn, msg);
+    }
+
+    /// What an end attaches to: the whole shape, or one row of a table (with no shape of its own).
+    fn tgt(&self, e: &End) -> (Rect, Option<&'s str>) {
+        let id = e.id.as_deref().unwrap();
+        let (s, shape) = self.shape_by_id[id];
+        let r = e.row.as_deref().and_then(|row| {
+            self.rows_by_id
+                .get(id)
+                .and_then(|rows| rows.iter().find(|q| q.id.as_deref() == Some(row)))
+        });
+        match r {
+            Some(r) => (
+                Rect {
+                    x: s.x,
+                    y: r.y,
+                    w: s.w,
+                    h: r.h,
+                },
+                None,
+            ),
+            None => (s, shape),
+        }
+    }
+
+    /// Every end names something that exists: a shape (and a row it has), a text, or another line.
+    fn check_ends(&mut self) {
+        for ci in 0..self.conns.len() {
+            for which in [false, true] {
+                let e = end_of(&self.conns, (ci, which)).clone();
+                let line = self.conns[ci].line;
+                if e.kind != EndKind::Shape {
+                    continue;
+                }
+                let id = e.id.as_deref().unwrap();
+                if self.shape_by_id.contains_key(id) {
+                    if let Some(row) = e.row.as_deref() {
+                        let rows = self.rows_by_id.get(id).copied().unwrap_or(&[]);
+                        if !rows.iter().any(|r| r.id.as_deref() == Some(row)) {
+                            let have: Vec<&str> =
+                                rows.iter().filter_map(|r| r.id.as_deref()).collect();
+                            let tail = if have.is_empty() {
+                                " (only a table has rows; a side is top, bottom, left or right)"
+                                    .to_string()
+                            } else {
+                                format!("; its rows: {}", have.join(", "))
+                            };
+                            self.err(
+                                line,
+                                format!("{}: \"{id}\" has no row called \"{row}\"{tail}", e.raw),
+                            );
+                            self.bad.insert(ci);
+                        }
+                    }
+                    continue;
+                }
+                if self.conn_by_id.contains_key(id) {
+                    let em = end_mut(&mut self.conns, (ci, which));
+                    em.kind = EndKind::Conn;
+                    if em.v.is_none() {
+                        em.v = Some(0.5);
+                    }
+                    if e.side.is_some() {
+                        self.err(
+                            line,
+                            format!(
+                                "{}: \"{id}\" is a line, so it has no sides; use {id}@position",
+                                e.raw
+                            ),
+                        );
+                        self.bad.insert(ci);
+                    }
+                } else {
+                    self.err(
+                        line,
+                        format!("connector refers to \"{id}\", which does not exist"),
+                    );
+                    self.bad.insert(ci);
+                }
+            }
+        }
+        for ci in 0..self.conns.len() {
+            let c = &self.conns[ci];
+            if c.a.kind == EndKind::Rel && c.b.kind == EndKind::Rel {
+                let line = c.line;
+                self.err(
+                    line,
+                    "only one end of a connector can be relative (+dx,+dy)".into(),
+                );
+                self.bad.insert(ci);
+            }
+        }
+    }
+
+    /// The box an end attaches to; for an end on another line, the point along it (which it also takes as its own).
+    fn box_of(&mut self, r: EndRef) -> Option<Rect> {
+        let e = end_of(&self.conns, r);
+        match e.kind {
+            EndKind::Shape => Some(self.tgt(e).0),
+            EndKind::Point => Some(Rect {
+                x: e.pt.x,
+                y: e.pt.y,
+                w: 0.0,
+                h: 0.0,
+            }),
+            EndKind::Conn => {
+                let other = self.conn_by_id[e.id.as_deref().unwrap()];
+                let pt = point_along(&self.conns[other], e.v.unwrap());
+                end_mut(&mut self.conns, r).pt = pt;
+                Some(Rect {
+                    x: pt.x,
+                    y: pt.y,
+                    w: 0.0,
+                    h: 0.0,
+                })
+            }
+            EndKind::Rel => None,
+        }
+    }
+
+    fn resolve_pass(&mut self, batch: &[usize]) {
+        self.sides(batch);
+        let (groups, frac, single) = self.fan_out(batch);
+        for &ci in batch {
+            self.place_ends(ci, &frac);
+            self.keep_straight(ci, &groups, &frac, &single);
+            self.meet_free_ends(ci, &single);
+            self.route_conn(ci);
+        }
+    }
+
+    /// sides
+    fn sides(&mut self, batch: &[usize]) {
+        let rel_side = |r: Pt| {
+            if r.y.abs() >= r.x.abs() {
+                if r.y >= 0.0 { Side::Bottom } else { Side::Top }
+            } else if r.x >= 0.0 {
+                Side::Right
+            } else {
+                Side::Left
+            }
+        };
+        // a table row is reached from the left or right edge of the table, whichever faces the other end
+        let row_side = |me: Rect, other: Option<Rect>, rel: Pt| {
+            let right = match other {
+                Some(o) => cx(&o) >= cx(&me),
+                None => rel.x >= 0.0,
+            };
+            if right { Side::Right } else { Side::Left }
+        };
+        for &ci in batch {
+            let ba = self.box_of((ci, false));
+            let bb = self.box_of((ci, true));
+            let c = &mut self.conns[ci];
+            if c.a.kind == EndKind::Shape && c.a.side.is_none() {
+                c.a.side = Some(if c.a.row.is_some() {
+                    row_side(ba.unwrap(), bb, c.b.rel.unwrap_or(Pt { x: 0.0, y: 0.0 }))
+                } else if let Some(bb) = bb {
+                    auto_sides(&ba.unwrap(), &bb).0
+                } else {
+                    rel_side(c.b.rel.unwrap())
+                });
+                c.a.fanned = Some(true);
+            }
+            if c.b.kind == EndKind::Shape && c.b.side.is_none() {
+                let back =
+                    c.a.rel
+                        .map_or(Pt { x: 0.0, y: 0.0 }, |r| Pt { x: -r.x, y: -r.y });
+                c.b.side = Some(if c.b.row.is_some() {
+                    row_side(bb.unwrap(), ba, back)
+                } else if let Some(ba) = ba {
+                    auto_sides(&ba, &bb.unwrap()).1
+                } else {
+                    rel_side(back)
+                });
+                c.b.fanned = Some(true);
+            }
+        }
+    }
+
+    /// fan-out of ends that share a side and have no explicit position
+    #[allow(clippy::type_complexity)]
+    fn fan_out(
+        &mut self,
+        batch: &[usize],
+    ) -> (
+        IndexMap<String, Vec<Member>>,
+        HashMap<EndRef, f64>,
+        HashSet<EndRef>,
+    ) {
+        let mut groups: IndexMap<String, Vec<Member>> = IndexMap::new();
+        for &ci in batch {
+            for (e, o) in [((ci, false), (ci, true)), ((ci, true), (ci, false))] {
+                let end = end_of(&self.conns, e);
+                if end.kind != EndKind::Shape || end.v.is_some() {
+                    continue;
+                }
+                groups
+                    .entry(side_key(end))
+                    .or_default()
+                    .push(Member { c: ci, e, o });
+            }
+        }
+        let mut frac = HashMap::new();
+        let mut single = HashSet::new();
+        for (k, g) in &groups {
+            let horiz = k.ends_with("top") || k.ends_with("bottom");
+            if g.len() == 1 {
+                frac.insert(g[0].e, 0.5);
+                single.insert(g[0].e);
+                continue;
+            }
+            let mut order: Vec<(f64, usize)> = Vec::with_capacity(g.len());
+            for (idx, m) in g.iter().enumerate() {
+                let r = match self.box_of(m.o) {
+                    Some(b) if horiz => cx(&b),
+                    Some(b) => cy(&b),
+                    None => 0.0,
+                };
+                order.push((r, idx));
+            }
+            // (p, q) => p.r - q.r || p.idx - q.idx
+            js::sort_by(&mut order, |p, q| {
+                let d = p.0 - q.0;
+                if d == 0.0 || d.is_nan() {
+                    p.1 as f64 - q.1 as f64
+                } else {
+                    d
+                }
+            });
+            for (n, &(_, idx)) in order.iter().enumerate() {
+                frac.insert(g[idx].e, (n + 1) as f64 / (g.len() + 1) as f64);
+            }
+        }
+        (groups, frac, single)
+    }
+
+    /// Each end on a shape gets its point on its side and the direction it leaves in.
+    fn place_ends(&mut self, ci: usize, frac: &HashMap<EndRef, f64>) {
+        for which in [false, true] {
+            let r = (ci, which);
+            let e = end_of(&self.conns, r);
+            if e.kind != EndKind::Shape {
+                continue;
+            }
+            let (s, shape) = self.tgt(e);
+            let side = e.side.unwrap();
+            let v = e.v;
+            let pt = side_point(&s, shape, side, v, frac.get(&r).copied().unwrap_or(0.5));
+            let em = end_mut(&mut self.conns, r);
+            em.pt = pt;
+            em.dir = Some(side.dir());
+            if let Some(v) = v
+                && v > 1.0
+            {
+                let horiz = is_horiz(Some(side));
+                let (lo, hi) = if horiz {
+                    (s.x, s.x + s.w)
+                } else {
+                    (s.y, s.y + s.h)
+                };
+                if v < lo || v > hi {
+                    let e = end_of(&self.conns, r);
+                    let msg = format!(
+                        "{}: {} is outside the {} side of {}, which runs from {} to {}; the end was moved to the nearest point",
+                        e.raw,
+                        num_str(v),
+                        side.as_str(),
+                        e.id.as_deref().unwrap(),
+                        num_str(lo),
+                        num_str(hi)
+                    );
+                    let line = self.conns[ci].line;
+                    self.warn(line, msg);
+                }
+            }
+        }
+    }
+
+    /// keep a lone connector straight when the two things line up
+    #[allow(clippy::neg_cmp_op_on_partial_ord)] // NaN must fail the test, as in the TypeScript
+    fn keep_straight(
+        &mut self,
+        ci: usize,
+        groups: &IndexMap<String, Vec<Member>>,
+        frac: &HashMap<EndRef, f64>,
+        single: &HashSet<EndRef>,
+    ) {
+        let (ra, rb) = ((ci, false), (ci, true));
+        let (a, b) = (&self.conns[ci].a, &self.conns[ci].b);
+        let opposing = match (a.dir, b.dir) {
+            (Some(da), Some(db)) => da.x == -db.x && da.y == -db.y,
+            _ => false,
+        };
+        if a.kind != EndKind::Shape || b.kind != EndKind::Shape || !opposing {
+            return;
+        }
+        let ((sa, shape_a), (sb, shape_b)) = (self.tgt(a), self.tgt(b));
+        let horiz = is_horiz(a.side);
+        let lo = if horiz {
+            js::max(sa.x, sb.x)
+        } else {
+            js::max(sa.y, sb.y)
+        };
+        let hi = if horiz {
+            js::min(sa.x + sa.w, sb.x + sb.w)
+        } else {
+            js::min(sa.y + sa.h, sb.y + sb.h)
+        };
+        if !(hi > lo) {
+            return;
+        }
+        let (single_a, single_b) = (single.contains(&ra), single.contains(&rb));
+        let pos = if single_a && single_b {
+            let ca = if horiz { cx(&sa) } else { cy(&sa) };
+            let cb = if horiz { cx(&sb) } else { cy(&sb) };
+            let small = if if horiz { sa.w <= sb.w } else { sa.h <= sb.h } {
+                ca
+            } else {
+                cb
+            };
+            let other = if small == ca { cb } else { ca };
+            Some(if within(small, lo, hi) {
+                small
+            } else if within(other, lo, hi) {
+                other
+            } else {
+                (lo + hi) / 2.0
+            })
+        } else if !single_a && !single_b && a.v.is_none() && b.v.is_none() {
+            let ga = &groups[&side_key(a)];
+            let gb = &groups[&side_key(b)];
+            let same = ga.len() == gb.len() && ga.iter().all(|m| gb.iter().any(|n| n.c == m.c));
+            same.then(|| lo + (hi - lo) * frac[&ra])
+        } else if single_a && b.v.is_some() {
+            Some(if horiz { b.pt.x } else { b.pt.y })
+        } else if single_b && a.v.is_some() {
+            Some(if horiz { a.pt.x } else { a.pt.y })
+        } else {
+            None
+        };
+        if let Some(pos) = pos
+            && within(pos, lo, hi)
+        {
+            let v = Some(js::max(pos, 1.0001));
+            let (side_a, side_b) = (a.side.unwrap(), b.side.unwrap());
+            self.conns[ci].a.pt = side_point(&sa, shape_a, side_a, v, 0.5);
+            self.conns[ci].b.pt = side_point(&sb, shape_b, side_b, v, 0.5);
+        }
+    }
+
+    /// A lone end on a shape lines up with a free point or a point on a line at the other end, when its side
+    /// reaches that far.
+    fn meet_free_ends(&mut self, ci: usize, single: &HashSet<EndRef>) {
+        for (e, o) in [((ci, false), (ci, true)), ((ci, true), (ci, false))] {
+            let (ee, oe) = (end_of(&self.conns, e), end_of(&self.conns, o));
+            if ee.kind != EndKind::Shape
+                || !single.contains(&e)
+                || (oe.kind != EndKind::Point && oe.kind != EndKind::Conn)
+            {
+                continue;
+            }
+            let (s, shape) = self.tgt(ee);
+            let horiz = is_horiz(ee.side);
+            let pos = if horiz { oe.pt.x } else { oe.pt.y };
+            let (lo, hi) = if horiz {
+                (s.x, s.x + s.w)
+            } else {
+                (s.y, s.y + s.h)
+            };
+            if within(pos, lo + 2.0, hi - 2.0) {
+                let side = ee.side.unwrap();
+                end_mut(&mut self.conns, e).pt =
+                    side_point(&s, shape, side, Some(js::max(pos, 1.0001)), 0.5);
+            }
+        }
+    }
+
+    /// The relative ends, the via points, and the route (around boxes when the simple one cuts through one), then
+    /// the label.
+    fn route_conn(&mut self, ci: usize) {
+        let c = &mut self.conns[ci];
+        if c.a.kind == EndKind::Rel {
+            let r = c.a.rel.unwrap();
+            c.a.pt = Pt {
+                x: c.b.pt.x + r.x,
+                y: c.b.pt.y + r.y,
+            };
+        }
+        if c.b.kind == EndKind::Rel {
+            let r = c.b.rel.unwrap();
+            c.b.pt = Pt {
+                x: c.a.pt.x + r.x,
+                y: c.a.pt.y + r.y,
+            };
+        }
+        let line = c.line;
+        let mut via: Vec<Pt> = Vec::new();
+        if let Some(v) = c.p.get("via").filter(|v| !v.is_empty()) {
+            via = v
+                .split(';')
+                .map(|s| {
+                    let mut it = s.split(',').map(to_number);
+                    Pt {
+                        x: it.next().unwrap_or(f64::NAN),
+                        y: it.next().unwrap_or(f64::NAN),
+                    }
+                })
+                .collect();
+            if via.iter().any(|v| v.x.is_nan() || v.y.is_nan()) {
+                self.err(line, "via must look like via=x,y or via=x,y;x,y".into());
+                via = Vec::new();
+            }
+        }
+        let c = &self.conns[ci];
+        let (a, b) = (c.a.pt, c.b.pt);
+        if a.x == b.x && a.y == b.y {
+            let msg = format!(
+                "{} and {} meet at the same point ({},{}), so this line has no length and is not drawn; attach it to other sides",
+                c.a.raw,
+                c.b.raw,
+                num_str(a.x),
+                num_str(a.y)
+            );
+            self.warn(line, msg);
+        }
+        let c = &mut self.conns[ci];
+        c.pts = if c.curve {
+            curve_pts(
+                a,
+                c.a.dir,
+                b,
+                c.b.dir,
+                &via,
+                num(c.p.get("bend").map(String::as_str), f64::NAN),
+            )
+        } else {
+            route(c, &via)
+        };
+        // the simple route cuts through a box: find a way around (hand-set via points are left alone)
+        if c.ortho && via.is_empty() && !c.ushape {
+            let strictly_in = |o: &Shape, p: Pt| {
+                p.x > o.x + 1.0 && p.x < o.x + o.w - 1.0 && p.y > o.y + 1.0 && p.y < o.y + o.h - 1.0
+            };
+            // (an open outline is a line, not a box: nothing goes around it)
+            let mut obs: Vec<Rect> = self
+                .shapes
+                .iter()
+                .filter(|o| {
+                    !o.back
+                        && o.shape != "legend"
+                        && !(o.poly.is_some() && o.p.get("open").map(String::as_str) == Some("1"))
+                        && js::min(o.w, o.h) > 12.0
+                        && !strictly_in(o, a)
+                        && !strictly_in(o, b)
+                })
+                .map(shape_rect)
+                .collect();
+            // an icon's caption hangs below it: other lines go around it too
+            for o in self.shapes {
+                let cb = if Some(o.id.as_str()) != c.a.id.as_deref()
+                    && Some(o.id.as_str()) != c.b.id.as_deref()
+                {
+                    caption_box(o)
+                } else {
+                    None
+                };
+                if let Some(cb) = cb {
+                    obs.push(Rect {
+                        x: cb.x - 4.0,
+                        y: cb.y - 2.0,
+                        w: cb.w + 8.0,
+                        h: cb.h + 4.0,
+                    });
+                }
+            }
+            if crosses(&c.pts, &obs)
+                && let Some(alt) = route_around(a, c.a.dir, b, c.b.dir, &obs, &self.taken)
+            {
+                c.pts = alt;
+            }
+        }
+        if c.ortho {
+            for w in c.pts.windows(2) {
+                self.taken.push((w[0], w[1]));
+            }
+        }
+        let avoid: Vec<Rect> = self
+            .shapes
+            .iter()
+            .filter(|o| !o.back && o.shape != "legend")
+            .map(shape_rect)
+            .collect();
+        c.label = make_label(c, &avoid);
+        self.done.insert(ci);
+    }
+
+    /// The lines that start at shapes and points first, then those attached to them; a line attached to a line
+    /// that is itself attached to a line is not drawn. Returns the connectors drawn.
+    fn resolve(mut self) -> Vec<Conn> {
+        self.check_ends();
+        let good: Vec<usize> = (0..self.conns.len())
+            .filter(|i| !self.bad.contains(i))
+            .collect();
+        let refs_conn = |c: &Conn| c.a.kind == EndKind::Conn || c.b.kind == EndKind::Conn;
+        let first: Vec<usize> = good
+            .iter()
+            .copied()
+            .filter(|&i| !refs_conn(&self.conns[i]))
+            .collect();
+        self.resolve_pass(&first);
+        let second: Vec<usize> = good
+            .iter()
+            .copied()
+            .filter(|&i| refs_conn(&self.conns[i]))
+            .collect();
+        for &ci in &second {
+            for which in [false, true] {
+                let e = end_of(&self.conns, (ci, which));
+                if e.kind == EndKind::Conn {
+                    let id = e.id.clone().unwrap();
+                    if !self.done.contains(&self.conn_by_id[&id]) {
+                        let line = self.conns[ci].line;
+                        self.err(line, format!("\"{id}\" is itself attached to a line; attach to a line that starts at a shape or a point"));
+                        self.bad.insert(ci);
+                    }
+                }
+            }
+        }
+        let second: Vec<usize> = second
+            .into_iter()
+            .filter(|i| !self.bad.contains(i))
+            .collect();
+        self.resolve_pass(&second);
+        let done = self.done;
+        self.conns
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| done.contains(i))
+            .map(|(_, c)| c)
+            .collect()
+    }
+}
+
+/// look_in: the already-parsed look the diagram points to, or None if it could not be found.
+pub fn build_scene(src: &str, look_in: Option<Look>, file: &str) -> Scene {
+    let stmts = parse_statements(src);
+    let look_stmt = stmts.iter().find(|s| {
+        s.toks
+            .first()
+            .is_some_and(|t| t.v == "look" && t.t == TokKind::Word)
+    });
+    // a bare name is one of the looks that ship with FastDraw, whatever file a caller may have read
+    let named = bundled_look(
+        look_stmt
+            .and_then(|s| s.toks.get(1))
+            .map_or("", |t| t.v.as_str()),
+    );
+    let has_look_in = look_in.is_some();
+    let look: Arc<Look> = match (named.clone(), look_in) {
+        (Some(l), _) => l,
+        (None, Some(l)) => Arc::new(l),
+        (None, None) if look_stmt.is_some() => Arc::new(empty_look()),
+        (None, None) => default_look(),
+    };
+    let base_canvas = look.canvas.clone();
+    let mut b = Builder {
+        look,
+        issues: Vec::new(),
+        shapes: Vec::new(),
+        texts: Vec::new(),
+        conns: Vec::new(),
+        ids: HashSet::new(),
+        canvas_line: None,
+        canvas_size: false,
+        legends: Vec::new(),
+        unplaced: Vec::new(),
+    };
+    if let Some(ls) = look_stmt {
+        b.look_statement(ls, named.is_some(), has_look_in);
+    }
+    for st in &stmts {
+        b.statement(st);
+    }
+    b.lay_out_legends();
+    b.fallback_placement();
+
+    let Builder {
+        look,
+        mut issues,
+        shapes,
+        texts,
+        conns,
+        canvas_line,
+        canvas_size,
+        ..
+    } = b;
+    let conns = Resolver::new(&shapes, &texts, conns, &mut issues).resolve();
+
+    let shape_boxes: Vec<Rect> = shapes
+        .iter()
+        .map(shape_rect)
+        .chain(shapes.iter().filter_map(caption_box))
+        .collect();
+    let text_boxes: Vec<Rect> = texts.iter().map(text_rect).collect();
+    let ext = extent(&shape_boxes, &text_boxes, &conns);
+    Scene {
+        file: file.to_string(),
+        x: ext.x,
+        y: ext.y,
+        w: ext.w,
+        h: ext.h,
+        look,
+        canvas_line,
+        canvas_size: Some(canvas_size),
+        base_canvas: Some(base_canvas),
+        font_files: None,
+        shapes,
+        texts,
+        conns,
+        issues,
+    }
 }
 
 /// The caption under an icon shape: its text and second line, centred below the icon. None for any other shape.

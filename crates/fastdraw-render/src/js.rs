@@ -3,7 +3,7 @@
 
 use std::cmp::Ordering;
 
-pub use crate::timsort::sort_numbers;
+pub use crate::timsort::{sort_by, sort_numbers};
 
 /// `String(n)`.
 pub fn num_str(n: f64) -> String {

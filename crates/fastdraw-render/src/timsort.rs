@@ -1,33 +1,37 @@
-//! `v.sort((a, b) => a - b)` on numbers, as V8 does it: TimSort (array-sort.tq), a comparator result of NaN
-//! counting as 0. With NaN present the comparator is not a consistent order, so the result depends on the
-//! exact algorithm, which is reproduced here rather than approximated.
+//! `Array.prototype.sort` with a comparator, as V8 does it: TimSort (array-sort.tq), a comparator result of NaN
+//! counting as 0. When the comparator is not a consistent order (NaN among numbers, say) the result depends on
+//! the exact algorithm, which is reproduced here rather than approximated.
 
 const MIN_GALLOP_WINS: usize = 7;
 
 /// `v.sort((a, b) => a - b)`.
 pub fn sort_numbers(v: &mut [f64]) {
+    sort_by(v, |x, y| x - y);
+}
+
+/// `v.sort(cmp)`: `cmp` returns a number, negative when its first argument goes first; NaN counts as 0.
+pub fn sort_by<T: Copy>(v: &mut [T], cmp: impl Fn(T, T) -> f64) {
     TimSort {
         a: v,
+        cmp: |x, y| {
+            let d = cmp(x, y);
+            if d.is_nan() { 0.0 } else { d }
+        },
         min_gallop: MIN_GALLOP_WINS,
         runs: Vec::new(),
     }
     .sort();
 }
 
-struct TimSort<'a> {
-    a: &'a mut [f64],
+struct TimSort<'a, T, F> {
+    a: &'a mut [T],
+    cmp: F,
     min_gallop: usize,
     /// (base, length) of each pending run
     runs: Vec<(usize, usize)>,
 }
 
-/// The comparator `(a, b) => a - b`, with a NaN result read as 0.
-fn cmp(x: f64, y: f64) -> f64 {
-    let d = x - y;
-    if d.is_nan() { 0.0 } else { d }
-}
-
-impl TimSort<'_> {
+impl<T: Copy, F: Fn(T, T) -> f64> TimSort<'_, T, F> {
     fn sort(&mut self) {
         let mut remaining = self.a.len();
         if remaining < 2 {
@@ -63,12 +67,12 @@ impl TimSort<'_> {
             return 1;
         }
         let mut run = 2;
-        let mut order = cmp(self.a[low], self.a[low - 1]);
+        let mut order = (self.cmp)(self.a[low], self.a[low - 1]);
         let descending = order < 0.0;
         let mut previous = self.a[low];
         for idx in low + 1..high {
             let current = self.a[idx];
-            order = cmp(current, previous);
+            order = (self.cmp)(current, previous);
             if descending {
                 if order >= 0.0 {
                     break;
@@ -96,7 +100,7 @@ impl TimSort<'_> {
             let pivot = self.a[right];
             while left < right {
                 let mid = left + ((right - left) >> 1);
-                if cmp(pivot, self.a[mid]) < 0.0 {
+                if (self.cmp)(pivot, self.a[mid]) < 0.0 {
                     right = mid;
                 } else {
                     left = mid + 1;
@@ -147,14 +151,21 @@ impl TimSort<'_> {
         }
         self.runs.pop();
         // elements of A already in place
-        let k = gallop_right(self.a, self.a[base_b], base_a, len_a, 0);
+        let k = gallop_right(&self.cmp, self.a, self.a[base_b], base_a, len_a, 0);
         base_a += k;
         len_a -= k;
         if len_a == 0 {
             return;
         }
         // elements of B already in place
-        len_b = gallop_left(self.a, self.a[base_a + len_a - 1], base_b, len_b, len_b - 1);
+        len_b = gallop_left(
+            &self.cmp,
+            self.a,
+            self.a[base_a + len_a - 1],
+            base_b,
+            len_b,
+            len_b - 1,
+        );
         if len_b == 0 {
             return;
         }
@@ -166,7 +177,7 @@ impl TimSort<'_> {
     }
 
     fn merge_low(&mut self, base_a: usize, mut len_a: usize, base_b: usize, mut len_b: usize) {
-        let temp: Vec<f64> = self.a[base_a..base_a + len_a].to_vec();
+        let temp: Vec<T> = self.a[base_a..base_a + len_a].to_vec();
         let (mut dest, mut ct, mut cb) = (base_a, 0usize, base_b);
         self.a[dest] = self.a[cb];
         dest += 1;
@@ -184,7 +195,7 @@ impl TimSort<'_> {
             loop {
                 let (mut wins_a, mut wins_b) = (0usize, 0usize);
                 loop {
-                    if cmp(self.a[cb], temp[ct]) < 0.0 {
+                    if (self.cmp)(self.a[cb], temp[ct]) < 0.0 {
                         self.a[dest] = self.a[cb];
                         dest += 1;
                         cb += 1;
@@ -218,7 +229,7 @@ impl TimSort<'_> {
                     first = false;
                     min_gallop = (min_gallop - 1).max(1);
                     self.min_gallop = min_gallop;
-                    wins_a = gallop_right(&temp, self.a[cb], ct, len_a, 0);
+                    wins_a = gallop_right(&self.cmp, &temp, self.a[cb], ct, len_a, 0);
                     if wins_a > 0 {
                         self.a[dest..dest + wins_a].copy_from_slice(&temp[ct..ct + wins_a]);
                         dest += wins_a;
@@ -239,7 +250,7 @@ impl TimSort<'_> {
                     if len_b == 0 {
                         break 'merge false;
                     }
-                    wins_b = gallop_left(self.a, temp[ct], cb, len_b, 0);
+                    wins_b = gallop_left(&self.cmp, self.a, temp[ct], cb, len_b, 0);
                     if wins_b > 0 {
                         self.a.copy_within(cb..cb + wins_b, dest);
                         dest += wins_b;
@@ -270,7 +281,7 @@ impl TimSort<'_> {
     }
 
     fn merge_high(&mut self, base_a: usize, mut len_a: usize, base_b: usize, mut len_b: usize) {
-        let temp: Vec<f64> = self.a[base_b..base_b + len_b].to_vec();
+        let temp: Vec<T> = self.a[base_b..base_b + len_b].to_vec();
         // the cursors run down, and can pass zero by one, so they are signed
         let mut dest = (base_b + len_b) as isize - 1;
         let mut ct = len_b as isize - 1;
@@ -291,7 +302,7 @@ impl TimSort<'_> {
             loop {
                 let (mut wins_a, mut wins_b) = (0usize, 0usize);
                 loop {
-                    if cmp(temp[ct as usize], self.a[ca as usize]) < 0.0 {
+                    if (self.cmp)(temp[ct as usize], self.a[ca as usize]) < 0.0 {
                         self.a[dest as usize] = self.a[ca as usize];
                         dest -= 1;
                         ca -= 1;
@@ -325,7 +336,14 @@ impl TimSort<'_> {
                     first = false;
                     min_gallop = (min_gallop - 1).max(1);
                     self.min_gallop = min_gallop;
-                    let k = gallop_right(self.a, temp[ct as usize], base_a, len_a, len_a - 1);
+                    let k = gallop_right(
+                        &self.cmp,
+                        self.a,
+                        temp[ct as usize],
+                        base_a,
+                        len_a,
+                        len_a - 1,
+                    );
                     wins_a = len_a - k;
                     if wins_a > 0 {
                         dest -= wins_a as isize;
@@ -344,7 +362,7 @@ impl TimSort<'_> {
                     if len_b == 1 {
                         break 'merge true;
                     }
-                    let k = gallop_left(&temp, self.a[ca as usize], 0, len_b, len_b - 1);
+                    let k = gallop_left(&self.cmp, &temp, self.a[ca as usize], 0, len_b, len_b - 1);
                     wins_b = len_b - k;
                     if wins_b > 0 {
                         dest -= wins_b as isize;
@@ -386,7 +404,14 @@ impl TimSort<'_> {
 }
 
 /// The k with `a[base + k - 1] < key <= a[base + k]`, in the run `a[base..base + length]`, searching out from `hint`.
-fn gallop_left(a: &[f64], key: f64, base: usize, length: usize, hint: usize) -> usize {
+fn gallop_left<T: Copy, F: Fn(T, T) -> f64>(
+    cmp: &F,
+    a: &[T],
+    key: T,
+    base: usize,
+    length: usize,
+    hint: usize,
+) -> usize {
     let (mut last, mut offset) = (0usize, 1usize);
     let (last, offset) = if cmp(a[base + hint], key) < 0.0 {
         // a[hint] < key: gallop right until a[hint + last] < key <= a[hint + offset]
@@ -429,7 +454,14 @@ fn gallop_left(a: &[f64], key: f64, base: usize, length: usize, hint: usize) -> 
 }
 
 /// The k with `a[base + k - 1] <= key < a[base + k]`.
-fn gallop_right(a: &[f64], key: f64, base: usize, length: usize, hint: usize) -> usize {
+fn gallop_right<T: Copy, F: Fn(T, T) -> f64>(
+    cmp: &F,
+    a: &[T],
+    key: T,
+    base: usize,
+    length: usize,
+    hint: usize,
+) -> usize {
     let (mut last, mut offset) = (0usize, 1usize);
     let (last, offset) = if cmp(key, a[base + hint]) < 0.0 {
         // key < a[hint]: gallop left until a[hint - offset] <= key < a[hint - last]

@@ -5,9 +5,9 @@ use fastdraw_render::js::{num_str, sort_numbers};
 use fastdraw_render::look::{Props, empty_look};
 use fastdraw_render::router::{Pt, Rect, crosses, route_around, seg_hits, simplify};
 use fastdraw_render::scene::{
-    Conn, End, EndKind, Label, Row, RowKind, Shape, Side, auto_sides, caption_box, curve_pts,
-    extent, layout_table, make_label, measure_text, parse_end, point_along, route, side_point,
-    text_width,
+    Conn, End, EndKind, Label, Row, RowKind, Shape, Side, auto_sides, build_scene, caption_box,
+    curve_pts, extent, layout_table, make_label, measure_text, parse_end, point_along, route,
+    side_point, text_width,
 };
 use fastdraw_render::sketch::{can_sketch, ellipse_d, rect_d, rough_path, sketch_svg};
 
@@ -627,4 +627,24 @@ fn extent_matches() {
             assert_eq!(num_str(v), n(want.get(k)), "{k} of {c:?}");
         }
     }
+}
+
+/// Two ends on Object.prototype names ("constructor", "valueOf") both have `undefined` directions in the
+/// TypeScript, and `undefined === undefined`: route takes them as the same direction and draws a U.
+/// Expected values from Node: buildScene('a: node at 0,0\nc: node at 300,0\na.constructor -> c.valueOf\n').
+#[test]
+fn prototype_sides_route_as_one_direction() {
+    let sc = build_scene(
+        "a: node at 0,0\nc: node at 300,0\na.constructor -> c.valueOf\n",
+        None,
+        "",
+    );
+    let c = &sc.conns[0];
+    let got: Vec<(f64, f64)> = c.pts.iter().map(|p| (p.x, p.y)).collect();
+    assert_eq!(
+        got,
+        [(144.0, 32.0), (108.0, 32.0), (108.0, 32.0), (444.0, 32.0)]
+    );
+    assert!(c.ushape);
+    assert!(sc.issues.is_empty());
 }
