@@ -281,13 +281,11 @@ pub fn route_around(
     }
     let end_dir = d1.map(|d| i64::from(d.x == 0.0));
     let mut goal = -1;
-    let mut found = false;
     while !heap.is_empty() {
         let s = heap_pop(&mut heap, &dist);
         let (i, dir) = (s >> 1, s & 1);
         if i == ei {
             goal = s;
-            found = true;
             break;
         }
         let (x, y) = (i % w, i.div_euclid(w));
@@ -329,10 +327,10 @@ pub fn route_around(
             }
         }
     }
-    if !found {
+    // `if (goal < 0) return null`: a goal state of -1 or -2 (both ends NaN on the same row) is no route
+    if goal < 0 {
         return None;
     }
-    // `for (let s = goal; s >= 0; s = prev[s])`
     let mut path = Vec::new();
     let mut s = goal;
     while s >= 0 {
@@ -403,6 +401,17 @@ mod tests {
         // NaN in y puts the start before the grid: no route
         assert_eq!(
             route_around(p(0.0, f64::NAN), None, p(300.0, 125.0), None, &[wall], &[]),
+            None
+        );
+    }
+
+    #[test]
+    fn both_ends_nan_on_the_same_row_is_no_route() {
+        // from Node: the goal state is negative, which is null
+        let n = f64::NAN;
+        assert_eq!(route_around(p(n, n), None, p(n, n), None, &[], &[]), None);
+        assert_eq!(
+            route_around(p(n, 0.0), None, p(n, 0.0), None, &[], &[]),
             None
         );
     }

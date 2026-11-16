@@ -92,6 +92,9 @@ function router() {
     { name: 'NaN y', p0: P(0, NaN), d0: null, p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
     { name: 'NaN both', p0: { x: NaN, y: NaN }, d0: null, p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
     { name: 'NaN both ends', p0: NaNx(10), d0: null, p1: NaNx(90), d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN both ends, same point, no boxes', p0: { x: NaN, y: NaN }, d0: null, p1: { x: NaN, y: NaN }, d1: null, obstacles: [], taken: [] },
+    { name: 'NaN both ends, same point, one box', p0: { x: NaN, y: NaN }, d0: null, p1: { x: NaN, y: NaN }, d1: null, obstacles: [wall], taken: [] },
+    { name: 'NaN x, same row, one box', p0: NaNx(0), d0: null, p1: NaNx(0), d1: null, obstacles: [wall], taken: [] },
     { name: 'NaN direction', p0: P(0, 125), d0: P(NaN, 0), p1: P(300, 125), d1: null, obstacles: [wall], taken: [] },
     { name: 'Infinity end', p0: P(0, 125), d0: null, p1: P(Infinity, 125), d1: null, obstacles: [wall], taken: [] },
     { name: '-Infinity end, no boxes', p0: P(-Infinity, 0), d0: null, p1: P(50, 50), d1: null, obstacles: [], taken: [] },
@@ -121,4 +124,4 @@ const sections: Record<string, () => unknown> = { sketch, router, sort };
 const out: Record<string, unknown> = {};
 for (const [name, fn] of Object.entries(sections)) out[name] = fn();
 const nonFinite = (_: string, v: unknown) => (typeof v === 'number' && !Number.isFinite(v) ? String(v) : v);
-process.stdout.write(JSON.stringify(out, nonFinite) +'\n');
+process.stdout.write(JSON.stringify(out, nonFinite) + '\n');
