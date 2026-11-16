@@ -10,7 +10,7 @@ use fastdraw_render::js::{json_string, num_str};
 use fastdraw_render::look::{Look, bundled_look, color, default_look, parse_look};
 use fastdraw_render::parse::look_path;
 use fastdraw_render::scene::Scene;
-use fastdraw_render::{Drawing, Level, Source, drawn_scene, render};
+use fastdraw_render::{Drawing, Level, LookFile, Source, drawn_scene, editor_link, render};
 
 mod common;
 use common::{json, read_parity, root};
@@ -540,4 +540,69 @@ fn json_reads_what_json_stringify_writes() {
     assert!(o.get("c").as_bool());
     assert_eq!(o.get("d").as_str(), None);
     assert!(o.get("e").as_arr().is_empty());
+}
+
+/// Writes `target/parity/rust-links.json`: the share link this crate makes for each share fixture and for every
+/// distinct diagram input of the manifest, for `npm run rust:parity -- --check-links` to decode with `decodeShared`.
+#[test]
+fn writes_editor_links() {
+    let Some(share) = read_parity(&parity_dir().join("share.json")) else {
+        return;
+    };
+    let mut items: Vec<(String, String, Option<LookFile>)> = Vec::new();
+    let look_of = |v: &json::Json| match v {
+        json::Json::Obj(_) => Some(LookFile {
+            path: v.get("path").as_str().unwrap_or_default().to_string(),
+            text: v.get("text").as_str().unwrap_or_default().to_string(),
+        }),
+        _ => None,
+    };
+    for f in json::parse(&share).as_arr() {
+        items.push((
+            f.get("name").as_str().unwrap_or_default().to_string(),
+            f.get("text").as_str().unwrap_or_default().to_string(),
+            look_of(f.get("look")),
+        ));
+    }
+    for c in cases() {
+        let name = c.file.rsplit('/').next().unwrap_or_default().to_string();
+        let look = if c.no_file {
+            None
+        } else {
+            let (text, _) = fastdraw_render::disk::read_look(&c.abs(), c.look_path.as_deref());
+            text.map(|text| LookFile {
+                path: c.look_path.clone().unwrap_or_default(),
+                text,
+            })
+        };
+        if !items
+            .iter()
+            .any(|i| i.0 == name && i.1 == c.input && i.2 == look)
+        {
+            items.push((name, c.input.clone(), look));
+        }
+    }
+    let rows: Vec<String> = items
+        .iter()
+        .map(|(name, text, look)| {
+            let look_json = look.as_ref().map_or("null".to_string(), |l| {
+                format!(
+                    "{{\"path\":{},\"text\":{}}}",
+                    json_string(&l.path),
+                    json_string(&l.text)
+                )
+            });
+            format!(
+                "{{\"name\":{},\"text\":{},\"look\":{look_json},\"link\":{}}}",
+                json_string(name),
+                json_string(text),
+                json_string(&editor_link(name, text, look.as_ref()))
+            )
+        })
+        .collect();
+    std::fs::write(
+        parity_dir().join("rust-links.json"),
+        format!("[{}]", rows.join(",")),
+    )
+    .unwrap();
 }

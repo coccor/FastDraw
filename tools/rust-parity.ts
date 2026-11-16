@@ -35,13 +35,33 @@ import { loadScene, loadLook, lookFonts, lookRefText } from '../src/node.ts';
 import { parseLook, color, isBundledLook, bundledLook, defaultLook, BUNDLED_LOOK_NAMES, type Look, type Issue } from '../src/look.ts';
 import { renderSvg } from '../src/render.ts';
 import { darkCounterpart } from '../editor/src/embed/theme.ts';
-import { encodeShared, decodeShared, type Shared } from '../editor/src/embed/share.ts';
+import { encodeShared, decodeShared, editorLink, sharedInHash, type Shared } from '../editor/src/embed/share.ts';
 
 const started = performance.now();
 const root = resolve(import.meta.dirname, '..');
 const out = join(root, 'target', 'parity');
 const CASE_DIRS = ['examples', 'assets', 'crates/fastdraw-render/tests/coverage'];
 const MAX_LOOK_BYTES = 1_000_000; // spec §4.1: a look file over 1 MB is treated as unreadable
+
+// `--check-links`: decode every link the Rust test wrote to target/parity/rust-links.json with decodeShared and
+// compare with the inputs (as decodeShared normalises them: an empty name is 'diagram.fdraw', a name is cut at 200).
+if (process.argv.includes('--check-links')) {
+  const file = join(out, 'rust-links.json');
+  if (!existsSync(file)) { console.error(`${file} is missing: run npm run rust:parity, then cargo test --test parity`); process.exit(1); }
+  const rows = JSON.parse(readFileSync(file, 'utf8')) as { name: string; text: string; look: Shared['look'] | null; link: string }[];
+  const fail = (i: number, why: string): never => { console.error(`link ${i} (${JSON.stringify(rows[i].name)}): ${why}`); process.exit(1); };
+  for (const [i, r] of rows.entries()) {
+    if (!r.link.startsWith('https://fastdraw.dev/edit/#fdraw=')) fail(i, `unexpected link start: ${r.link.slice(0, 60)}`);
+    const data = sharedInHash(new URL(r.link).hash);
+    if (data === null) fail(i, 'no fdraw= in the link');
+    if (r.link !== (await editorLink('https://fastdraw.dev/edit/', { name: r.name, text: r.text, ...(r.look ? { look: r.look } : {}) })).replace(/#.*/, '#fdraw=' + data)) fail(i, 'href differs from editorLink');
+    const got = await decodeShared(data!);
+    const want: Shared = { name: r.name ? r.name.slice(0, 200) : 'diagram.fdraw', text: r.text, ...(r.look ? { look: r.look } : {}) };
+    if (JSON.stringify(got) !== JSON.stringify(want)) fail(i, `decoded ${JSON.stringify(got)?.slice(0, 200)} but expected ${JSON.stringify(want).slice(0, 200)}`);
+  }
+  console.log(`links ok (${rows.length})`);
+  process.exit(0);
+}
 
 // as the command-line tool does before drawing anything (spec §4.2)
 await loadExtendedIcons();

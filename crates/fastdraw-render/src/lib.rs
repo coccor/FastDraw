@@ -216,18 +216,25 @@ fn parse_paper(c: &str) -> [u8; 3] {
 }
 
 /// The share link that opens a diagram in the online editor.
-pub fn editor_link(_name: &str, _text: &str, _look: Option<&LookFile>) -> String {
-    todo!("editor_link is ported in a later task")
+pub fn editor_link(name: &str, text: &str, look: Option<&LookFile>) -> String {
+    share::editor_link(name, text, look)
 }
 
 /// The bundled fonts, inflated on first call.
 pub fn fonts() -> &'static [(&'static str, Vec<u8>)] {
-    todo!("fonts is ported in a later task")
+    data::fonts()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bundled_fonts() {
+        let f = fonts();
+        assert!(!f.is_empty());
+        assert!(f.iter().all(|(n, b)| n.ends_with(".ttf") && b.len() > 1000));
+    }
 
     #[test]
     fn papers() {
