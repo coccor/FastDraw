@@ -1,0 +1,15 @@
+[package]
+name = "fastdraw-render"
+version = "0.2.2"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/coccor/fastdraw"
+description = "FastDraw's diagram renderer, in Rust"
+include = ["src/**", "data/**", "README.md", "LICENSE", "licenses/**"]
+
+[dependencies]
+miniz_oxide = "0.9.1"
+indexmap = "2.14.2"
+ryu-js = "1.0.3"
+regex = "1.13.1"
+libm = "0.2.16"
