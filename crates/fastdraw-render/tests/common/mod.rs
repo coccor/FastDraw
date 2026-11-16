@@ -175,6 +175,20 @@ pub mod json {
             self.i += 4;
             u32::from_str_radix(t, 16).unwrap()
         }
+        /// The `\uXXXX` escape at the cursor when it is a low surrogate (then consumed); otherwise None, and nothing
+        /// is consumed.
+        fn low_surrogate(&mut self) -> Option<u32> {
+            let esc = self.s.get(self.i..self.i + 6)?;
+            if !esc.starts_with(b"\\u") {
+                return None;
+            }
+            let lo = u32::from_str_radix(std::str::from_utf8(&esc[2..]).ok()?, 16).ok()?;
+            if !(0xDC00..0xE000).contains(&lo) {
+                return None;
+            }
+            self.i += 6;
+            Some(lo)
+        }
         fn string(&mut self) -> String {
             assert!(self.eat("\""), "expected a string at {}", self.i);
             let mut out = Vec::new();
@@ -194,14 +208,15 @@ pub mod json {
                             b'f' => '\u{c}',
                             b'u' => {
                                 let hi = self.hex4();
-                                let cp = if (0xD800..0xDC00).contains(&hi)
-                                    && self.s[self.i..].starts_with(b"\\u")
-                                {
-                                    self.i += 2;
-                                    let lo = self.hex4();
-                                    0x10000 + ((hi - 0xD800) << 10) + (lo - 0xDC00)
+                                // a high surrogate pairs only with a low one right after it
+                                let lo = if (0xD800..0xDC00).contains(&hi) {
+                                    self.low_surrogate()
                                 } else {
-                                    hi
+                                    None
+                                };
+                                let cp = match lo {
+                                    Some(lo) => 0x10000 + ((hi - 0xD800) << 10) + (lo - 0xDC00),
+                                    None => hi,
                                 };
                                 // a lone surrogate (JSON.stringify escapes them) has no `char`
                                 char::from_u32(cp).unwrap_or('\u{FFFD}')

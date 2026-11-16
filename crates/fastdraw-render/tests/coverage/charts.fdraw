@@ -1,0 +1,31 @@
+# Charts: every series, both kinds of x axis, and every chart property.
+c1: chart "Revenue by quarter" at 80,80 360x200 x="Q1,Q2,Q3,Q4" y=0..100 step=25 prefix="$" unit="k" labels=1 bar.width=0.8 bar.radius=4 grid.color=#3355aa/0.1 xtitle="quarter" ytitle="thousands" title.size=14 title.color=#3355aa
+  | bars "North" 42 61 75 30 fill.2=#aa3333
+  | bars "South" 20 35 _ 50 stroke=#000 fill=#ffd400
+  | line "Target" 50 55 60 65 dash=4,2 dots=1 sw=1.5
+  | area "Trend" 10 20 30 40 fill=#00aa66/0.2
+  | dots "Points" 15 25 35 45 r=5
+c2: chart "Stacked" at 560,80 300x200 x="a,b,c" stack=1 key=0 grid=x
+  | bars "one" 1 2 3
+  | bars "two" 3 2 1
+  | bars "three" 2 _ 2
+c3: chart "Scatter" at 80,400 360x200 x=0..10 y=-5..5 xstep=2 xunit="s" grid=both zero=1 axis.size=11 axis.font=serif axis.color=#663399 axis.weight=600 axis.italic=1 axis.spacing=0.05
+  | dots "pairs" 1,2 3,-4 5,1,8 7,3 9,-1 opacity=0.5 fill.2=#aa3333
+  | line "curve" 0,0 2,3 4,-2 6,4 8,-3 10,0
+  | area "band" 0,1 5,3 10,1 stroke=#3355aa/0.5
+c4: chart "Floating steps" at 560,400 300x200 x="start,up,down,end" y=0..200 labels=1 value.size=10 value.font=sans value.color=#aa3333 value.weight=700 value.italic=1 value.spacing=0.05 tick.size=8 tick.font=sans tick.color=#3355aa tick.weight=600 tick.italic=1 tick.spacing=0.1
+  | bars 0,100 100,150 150,120 0,120
+c5: chart at 80,720 300x160 x="a,b" yaxis=0 grid=0 zero=0 fill=#f5f5f5
+  | bars -20 30
+  | line -10 10 15
+c6: chart "Negative" at 560,720 300x160 step=7 unit="%"
+  | bars "loss" -3 -8 4 12
+  | dots "single" 5
+c7: chart "Huge" at 80,960 300x160 x=1e20..2e20 y=1e16..2e16
+  | line 100000000000000000 200000000000000000 1000000000000000000000000000000
+  | dots 5 1e17 NaN
+c8: chart "Many ticks" at 560,960 300x160 x=0..1 xstep=0.001 step=0.0001 y=0..1
+  | area 0.1 0.9 .5
+c9: chart "Odd categories" at 80,1200 300x160 x=" a ,,b, c " grid=x
+  | bars 1 2 3 4
+  | line 4 3 2 1 dots=1

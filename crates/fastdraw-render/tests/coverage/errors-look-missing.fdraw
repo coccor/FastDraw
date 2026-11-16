@@ -1,0 +1,4 @@
+# a look file that is not there
+look "./missing.look"
+a: rect "A" at 40,40
+b: node "B" at 240,40

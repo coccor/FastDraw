@@ -1,0 +1,4 @@
+// a look file with bytes that are not UTF-8: ÿþÃ
+color ink #1a1a1a
+color café #aa3333
+style node shape=rect size=140x48 fill=café/0.2 stroke=ink title.color=café

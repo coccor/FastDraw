@@ -1,0 +1,6 @@
+# Drawn in looks/team.look, and on a dark page in looks/team-night.look (its dark line, read from the look's folder).
+look "./looks/team.look"
+a: node "Day" icon=sun at 40,40
+b: node "Night" icon=moon at 280,40
+c: icon icon=moon at 520,48 48x48 "moon"
+a -> b "switch"

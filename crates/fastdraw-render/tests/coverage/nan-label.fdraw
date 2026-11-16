@@ -1,0 +1,6 @@
+# Label positions that do not read as x,y: the label (and so the picture's extent) goes NaN in JavaScript.
+a: rect "A" at 40,40
+b: rect "B" at 300,40
+a -> b "one number" lpos=5
+a -> b "three" lpos=1,2,3
+a -> b "words" lpos=abc

@@ -1,0 +1,5 @@
+# The look names a dark version that does not exist, so the dark image is drawn in the light look.
+look "./looks/team-lost.look"
+a: node "A" at 40,40
+b: node "B" at 280,40
+a -> b

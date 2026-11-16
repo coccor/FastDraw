@@ -540,6 +540,15 @@ fn json_reads_what_json_stringify_writes() {
     assert!(o.get("c").as_bool());
     assert_eq!(o.get("d").as_str(), None);
     assert!(o.get("e").as_arr().is_empty());
+    // a pair is combined; a high surrogate followed by anything but a low one stands alone
+    assert_eq!(json::parse(r#""\ud83d\ude00""#).as_str(), Some("😀"));
+    assert_eq!(json::parse(r#""\uD800\u0041""#).as_str(), Some("\u{FFFD}A"));
+    assert_eq!(
+        json::parse(r#""\uD800\uD800x""#).as_str(),
+        Some("\u{FFFD}\u{FFFD}x")
+    );
+    assert_eq!(json::parse(r#""\uD800""#).as_str(), Some("\u{FFFD}"));
+    assert_eq!(json::parse(r#""\uDC00""#).as_str(), Some("\u{FFFD}"));
 }
 
 /// Writes `target/parity/rust-links.json`: the share link this crate makes for each share fixture and for every

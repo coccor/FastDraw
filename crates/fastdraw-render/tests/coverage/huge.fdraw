@@ -1,0 +1,8 @@
+# Coordinates and sizes far from the origin: numbers as JavaScript writes them (1e+21, 0.30000000000000004).
+a: rect "far" at 1000000000000000000000,0 160x64
+b: rect "near" at 0.1,0.2 0.30000000000000004x64
+c: rect "tiny" at 0.000001,0.0000001 1x1
+d: text "far text" at 123456789012345678901234,5
+a -> b
+b -> c route=curve
+e: rect "wide" at -100000000000000000000,-5 99999999999999999999x64

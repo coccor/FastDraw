@@ -15,6 +15,12 @@
 //                        look: {path, text} | null } — what `render` returns.
 //   colors.json          [{ look, v, over, out }]: `color(look, v, over)` for the default look and night, sketch, engraved.
 //   share.json           [{ name, text, look, decoded }]: share-link fixtures and decodeShared(encodeShared(…)).
+//   gen/                 cases this script writes rather than commits (a look file over 1 MB); in the manifest like any.
+//
+// Cases: every .fdraw under examples/, assets/, crates/fastdraw-render/tests/coverage/ and gen/.
+//   --coverage      also list what the TypeScript reads that no case uses (coverageReport); fails if any is not
+//                   explained in tests/coverage/UNCOVERED.md
+//   --check-links   only decode target/parity/rust-links.json (written by cargo test --test parity) and compare
 //
 // <key> is the case id with every '/' replaced by '~' (caseKey). Paths inside issue messages are left absolute; the
 // Rust test makes both sides repo-relative (`<root>`, '/' separators) before comparing.
@@ -30,10 +36,12 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync, statSync, 
 import { join, resolve, dirname, relative, sep, basename } from 'node:path';
 import { loadExtendedIcons } from '../src/extendedIcons.ts';
 import { parseStatements } from '../src/parse.ts';
-import { buildScene, lookPath, withLook, type Scene } from '../src/scene.ts';
+import { buildScene, lookPath, withLook, CANVAS_KEYS, MARKERS, SERIES, type Scene } from '../src/scene.ts';
 import { loadScene, loadLook, lookFonts, lookRefText } from '../src/node.ts';
-import { parseLook, color, isBundledLook, bundledLook, defaultLook, BUNDLED_LOOK_NAMES, type Look, type Issue } from '../src/look.ts';
+import { parseLook, emptyLook, color, isBundledLook, bundledLook, defaultLook, BUNDLED_LOOK_NAMES, type Look, type Issue } from '../src/look.ts';
 import { renderSvg } from '../src/render.ts';
+import { DEFAULT_LOOK } from '../src/defaultLook.ts';
+import { BUNDLED_LOOKS } from '../src/bundledLooks.ts';
 import { darkCounterpart } from '../editor/src/embed/theme.ts';
 import { encodeShared, decodeShared, editorLink, sharedInHash, type Shared } from '../editor/src/embed/share.ts';
 
@@ -41,6 +49,8 @@ const started = performance.now();
 const root = resolve(import.meta.dirname, '..');
 const out = join(root, 'target', 'parity');
 const CASE_DIRS = ['examples', 'assets', 'crates/fastdraw-render/tests/coverage'];
+// Cases made by this script, too big to commit: a diagram whose look file is over 1 MB (written by bigLookCase).
+const GEN_DIR = 'target/parity/gen';
 const MAX_LOOK_BYTES = 1_000_000; // spec §4.1: a look file over 1 MB is treated as unreadable
 
 // `--check-links`: decode every link the Rust test wrote to target/parity/rust-links.json with decodeShared and
@@ -49,6 +59,22 @@ if (process.argv.includes('--check-links')) {
   const file = join(out, 'rust-links.json');
   if (!existsSync(file)) { console.error(`${file} is missing: run npm run rust:parity, then cargo test --test parity`); process.exit(1); }
   const rows = JSON.parse(readFileSync(file, 'utf8')) as { name: string; text: string; look: Shared['look'] | null; link: string }[];
+  if (!rows.length) { console.error(`${file} has no links: run npm run rust:parity, then cargo test --test parity`); process.exit(1); }
+  // the rows must be exactly the share fixtures plus every diagram input of the manifest (with its look file as read),
+  // so this check does not depend on what the Rust test chose to write
+  const key = (name: string, text: string, look: Shared['look'] | null) => JSON.stringify([name, text, look ? [look.path, look.text] : null]);
+  const want = new Set<string>();
+  for (const s of JSON.parse(readFileSync(join(out, 'share.json'), 'utf8')) as { name: string; text: string; look: Shared['look'] | null }[]) want.add(key(s.name, s.text, s.look));
+  for (const c of JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')) as { file: string; input: string; noFile: boolean }[]) {
+    const p = lookPath(c.input), text = c.noFile ? null : readLookText(join(root, c.file), p);
+    want.add(key(basename(c.file), c.input, text === null ? null : { path: p!, text }));
+  }
+  const got = new Set(rows.map((r) => key(r.name, r.text, r.look)));
+  const missing = [...want].filter((k) => !got.has(k)), extra = [...got].filter((k) => !want.has(k));
+  if (missing.length || extra.length || got.size !== rows.length) {
+    console.error(`the links are not one per input: ${missing.length} inputs have none, ${extra.length} links are for no input, ${rows.length - got.size} repeat one${missing.length ? `; the first missing: ${missing[0].slice(0, 200)}` : ''}${extra.length ? `; the first extra: ${extra[0].slice(0, 200)}` : ''}`);
+    process.exit(1);
+  }
   const fail = (i: number, why: string): never => { console.error(`link ${i} (${JSON.stringify(rows[i].name)}): ${why}`); process.exit(1); };
   for (const [i, r] of rows.entries()) {
     if (!r.link.startsWith('https://fastdraw.dev/edit/#fdraw=')) fail(i, `unexpected link start: ${r.link.slice(0, 60)}`);
@@ -71,7 +97,7 @@ const caseKey = (id: string) => id.replaceAll('/', '~');
 const write = (path: string, data: unknown) => writeFileSync(join(out, path), JSON.stringify(data));
 
 // Every file under the case folders with the extension, repo-relative, sorted. A missing folder has none.
-function filesUnder(ext: string): string[] {
+function filesUnder(ext: string, dirs = CASE_DIRS): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -80,7 +106,7 @@ function filesUnder(ext: string): string[] {
       else if (e.isFile() && e.name.endsWith(ext)) found.push(repoRel(full));
     }
   };
-  for (const d of CASE_DIRS) if (existsSync(join(root, d))) walk(join(root, d));
+  for (const d of dirs) if (existsSync(join(root, d))) walk(join(root, d));
   return found.sort();
 }
 
@@ -106,17 +132,21 @@ function readLookText(file: string, p: string | undefined): string | null {
 }
 const tooBig = (full: string) => { try { return statSync(full).size > MAX_LOOK_BYTES; } catch { return false; } };
 
+// node.ts:loadScene's warning for a family the look names that no font file provides (checkBigLookBranch compares).
+const missingFontMsg = (fam: string) => `the look names the font "${fam}", but no TTF or OTF file for it was found, so text will be drawn in a fallback font; put its files in a folder next to the look and add  fontdir "./fonts"  to the look`;
+
 // Light: loadScene, or buildScene with no file.
 function lightScene(file: string, input: string, noFile: boolean): Scene {
   if (noFile) return buildScene(input, null, '');
   const p = lookPath(input);
   if (p && p.toLowerCase().endsWith('.look') && tooBig(resolve(dirname(file), p))) {
-    // No example has a look this big. loadScene would read it; the contract treats it as missing, which is
-    // loadScene's path for a look file it cannot read: buildScene says "look file not found", then the fonts.
+    // Only the generated case (bigLookCase) has a look this big. loadScene would read it; the contract treats it as
+    // missing, which is loadScene's path for a look file it cannot read: buildScene says "look file not found", then
+    // the fonts. A copy of node.ts:loadScene (its font message word for word); checkBigLookBranch holds it to that.
     const sc = buildScene(input, null, file);
     const fonts = lookFonts(undefined, sc.look);
     sc.fontFiles = fonts.files;
-    for (const fam of fonts.missing) sc.issues.push({ line: 1, level: 'warn', msg: `the look names the font "${fam}", but no TTF or OTF file for it was found, so text will be drawn in a fallback font; put its files in a folder next to the look and add  fontdir "./fonts"  to the look` });
+    for (const fam of fonts.missing) sc.issues.push({ line: 1, level: 'warn', msg: missingFontMsg(fam) });
     return sc;
   }
   return loadScene(file, input);
@@ -172,19 +202,82 @@ function lookOut(look: Look) {
 rmSync(out, { recursive: true, force: true });
 for (const d of ['looks', 'scenes', 'drawings']) mkdirSync(join(out, d), { recursive: true });
 
+// The generated case: a diagram whose look file is just over 1 MB, so it is drawn as if the file could not be read.
+// Not committed (1 MB of fixture); tests/parity.rs reads the same files through the manifest's paths.
+function bigLookCase(): void {
+  const dir = join(root, GEN_DIR, 'big-look');
+  mkdirSync(dir, { recursive: true });
+  const head = 'color ink #b4441b\nstyle node shape=rect fill=ink/0.1 size=120x48\n', pad = '// padding\n';
+  writeFileSync(join(dir, 'big.look'), head + pad.repeat(Math.ceil((MAX_LOOK_BYTES + 1 - head.length) / pad.length)));
+  writeFileSync(join(dir, 'big.fdraw'), 'look "./big.look"\na: node "too big a look" at 40,40\nb: rect "plain" at 240,40\na -> b\n');
+}
+
+// lightScene's over-1 MB branch copies node.ts:loadScene. Hold it to loadScene: for the generated case it must give
+// what loadScene gives when the same look path cannot be read at all (the diagram moved to a folder with no look),
+// and loadScene's warning for a missing font must still read as missingFontMsg.
+function checkBigLookBranch(): void {
+  const fail = (why: string): never => { console.error(`the over-1 MB branch no longer matches node.ts:loadScene: ${why}`); process.exit(1); };
+  const big = join(root, GEN_DIR, 'big-look', 'big.fdraw'), input = readFileSync(big, 'utf8');
+  const elsewhere = join(root, GEN_DIR, 'no-look');
+  mkdirSync(elsewhere, { recursive: true });
+  const a = lightScene(big, input, false), b = loadScene(join(elsewhere, 'big.fdraw'), input);
+  const sig = (sc: Scene) => JSON.stringify([sceneOut(sc), sc.fontFiles ?? []]);
+  if (sig(a) !== sig(b)) fail(`${sig(a).slice(0, 300)}\n  loadScene: ${sig(b).slice(0, 300)}`);
+  writeFileSync(join(elsewhere, 'font.look'), 'font sans "No Such Family"\n');
+  const msgs = loadScene(join(elsewhere, 'font.fdraw'), 'look "./font.look"\na: rect at 0,0\n').issues.map((i) => i.msg);
+  if (!msgs.includes(missingFontMsg('No Such Family'))) fail(`loadScene's font warning is now ${JSON.stringify(msgs)}`);
+  rmSync(elsewhere, { recursive: true, force: true });
+}
+bigLookCase();
+checkBigLookBranch();
+
+// what the cases use, for --coverage
+const seen = { props: new Set<string>(), canvas: new Set<string>(), heads: new Set<string>(), shapes: new Set<string>(), markers: new Set<string>(), series: new Set<string>(), msgs: new Set<string>() };
+const seeLook = (look: Look) => {
+  for (const st of look.styles.values()) for (const k of Object.keys(st.props)) seen.props.add(k);
+  for (const k of Object.keys(look.canvas)) seen.canvas.add(k);
+  for (const i of look.issues) seen.msgs.add(i.msg);
+};
+const seeLookSource = (text: string) => {
+  for (const st of parseStatements(text)) {
+    const [head, ...rest] = st.toks;
+    if (head.t !== 'word') continue;
+    seen.heads.add(head.v);
+    if (head.v === 'dark' && rest[0]) seen.heads.add(isBundledLook(rest[0].v) ? 'dark by name' : 'dark by path');
+    if (head.v === 'style') for (const t of rest.slice(1)) if (t.t === 'word' && ['extends', 'line', 'text', 'shape'].includes(t.v)) seen.heads.add(`style ${t.v}`);
+  }
+};
+const seeCase = (input: string, sc: Scene) => {
+  for (const st of parseStatements(input)) {
+    const canvas = st.toks[0]?.t === 'word' && st.toks[0].v === 'canvas';
+    for (const t of st.toks) if (t.t === 'prop') (canvas ? seen.canvas : seen.props).add(t.k!);
+  }
+  for (const s of sc.shapes) {
+    seen.shapes.add(s.shape);
+    for (const e of s.legend ?? []) { const sh = (e.props ?? sc.look.styles.get(e.style)?.props)?.shape; if (sh) seen.shapes.add(sh); }
+    if (s.shape === 'chart') for (const r of s.rows ?? []) if (r.id) seen.series.add(r.id);
+  }
+  for (const c of sc.conns) { seen.markers.add(c.head ? c.headM : 'none'); seen.markers.add(c.tail ? c.tailM : 'none'); }
+  for (const i of sc.issues) { seen.msgs.add(i.msg); seen.msgs.add(i.msg.replace(/ \(in look, line \d+\)$/, '')); }
+};
+seeLookSource(DEFAULT_LOOK);
+for (const text of Object.values(BUNDLED_LOOKS)) seeLookSource(text);
+
 // looks
 const lookIndex: { name: string; file: string | null; path: string }[] = [];
 const putLook = (name: string, file: string | null, path: string, look: Look) => { lookIndex.push({ name, file, path }); write(`looks/${name}.json`, lookOut(look)); };
 putLook('default', null, 'default look', defaultLook());
 for (const name of BUNDLED_LOOK_NAMES) putLook(name, null, `${name} look`, bundledLook(name)!);
-for (const f of filesUnder('.look')) { const abs = join(root, f); putLook(caseKey(f), f, abs, loadLook(abs)); }
+for (const f of filesUnder('.look')) { const abs = join(root, f); putLook(caseKey(f), f, abs, loadLook(abs)); seeLookSource(readFileSync(abs, 'utf8')); }
+for (const name of ['default', ...BUNDLED_LOOK_NAMES]) seeLook(name === 'default' ? defaultLook() : bundledLook(name)!);
+for (const f of filesUnder('.look')) seeLook(loadLook(join(root, f)));
 write('looks/index.json', lookIndex);
 
 // cases
 type Case = { id: string; file: string; input: string; dark: boolean; noFile: boolean; lookPath: string | null };
 const manifest: Case[] = [];
 const share: { name: string; text: string; look: Shared['look'] | null; decoded: Shared | null }[] = [];
-for (const file of filesUnder('.fdraw')) {
+for (const file of [...filesUnder('.fdraw'), ...filesUnder('.fdraw', [GEN_DIR])]) {
   const abs = join(root, file);
   const text = readFileSync(abs, 'utf8');
   const variants: [string, string][] = [['own', text], ...BUNDLED_LOOK_NAMES.map((n): [string, string] => [n, withLook(text, n)]), ['builtin', withoutLook(text)]];
@@ -193,6 +286,7 @@ for (const file of filesUnder('.fdraw')) {
   cases.push({ id: `${file}@own-nofile`, file, input: text, dark: false, noFile: true, lookPath: lookPath(text) ?? null });
   for (const c of cases) {
     const sc = drawnScene(abs, c.input, c.dark, c.noFile);
+    seeCase(c.input, sc);
     // the diagram's own look file as read: the light text's, never the dark one
     const p = lookPath(c.input);
     const lookText = c.noFile ? null : readLookText(abs, p);
@@ -234,3 +328,139 @@ write('colors.json', colors);
 write('manifest.json', manifest);
 write('share.json', share);
 console.log(`${manifest.length} cases, ${lookIndex.length} looks, ${share.length} share fixtures in ${((performance.now() - started) / 1000).toFixed(1)} s -> ${repoRel(out)}`);
+if (process.argv.includes('--coverage') && coverageReport()) process.exit(1);
+
+// ---- --coverage: what the TypeScript reads that no case uses (spec §8.3) -----------------------------------------
+// Lists (a) every property key scene.ts, render.ts and chart.ts read (and the canvas keys look.ts reads), (b) every look
+// statement, (c) every shape kind, line marker and chart series, (d) every message buildScene, parseLook and loadScene
+// can report; then prints the entries no case uses or triggers. An entry explained in tests/coverage/UNCOVERED.md
+// (written there in backticks) is listed as such; any other makes the run fail.
+function coverageReport(): number {
+  const src = (f: string) => readFileSync(join(root, 'src', f), 'utf8');
+  const [sceneSrc, renderSrc, chartSrc, lookSrc, nodeSrc] = ['scene.ts', 'render.ts', 'chart.ts', 'look.ts', 'node.ts'].map(src);
+  const entries: { id: string; used: boolean }[] = [];
+  const add = (id: string, used: boolean) => { if (!entries.some((e) => e.id === id)) entries.push({ id, used }); };
+
+  // (a) property keys. Read as p.key, p['key'], x.p.key, props.key, sp.key, over.key, row.p[`fill.${…}`] (fill.N), as
+  // textAttrs(look, p, 'prefix.') (prefix + size, spacing, font, color, weight, italic), and from literal key lists.
+  const keys = new Set<string>(), canvasKeys = new Set<string>();
+  const NOT_KEYS = new Set(['idx', 'length']); // fields of points and arrays that the patterns also catch
+  for (const s of [sceneSrc, renderSrc, chartSrc]) {
+    for (const m of s.matchAll(/\b(?:p|props|sp|over|\w+\.p|style\.props)(?:\?\.|\.)([a-zA-Z_]\w*)\b(?!\()/g)) if (!NOT_KEYS.has(m[1])) keys.add(m[1]);
+    for (const m of s.matchAll(/\b(?:p|\w+\.p|sp|over)\[\s*'([^']+)'\s*\]/g)) keys.add(m[1]);
+    for (const m of s.matchAll(/\b(?:p|\w+\.p)\[\s*`([\w.]+)\$\{[^}]*\}`\s*\]/g)) keys.add(m[1] + 'N');
+    // the prefix is textAttrs' first literal argument (the props given may be an object literal with keys of its own)
+    for (const m of s.matchAll(/\btextAttrs\(/g)) {
+      const pre = topLiterals(s, m.index + m[0].length, false)[0];
+      if (pre) for (const k of ['size', 'spacing', 'font', 'color', 'weight', 'italic']) keys.add(pre.slice(1, -1) + k);
+    }
+    for (const m of s.matchAll(/for \(const k of \[([^\]]*)\]\)/g)) for (const q of m[1].matchAll(/'([^']+)'/g)) keys.add(q[1]);
+    for (const m of s.matchAll(/\b(?:cv|look\.canvas)(?:\?\.|\.)([a-zA-Z_]\w*)/g)) canvasKeys.add(m[1]);
+  }
+  for (const m of lookSrc.matchAll(/\blook\.canvas\.([a-zA-Z_]\w*)/g)) canvasKeys.add(m[1]);
+  for (const k of CANVAS_KEYS) canvasKeys.add(k);
+  // legend entries for things that are not styles: swatch.colour=, dot.colour=, line.colour=
+  for (const m of sceneSrc.matchAll(/\/\^\(((?:\w+\|)+\w+)\)\\\.\(\.\+\)\$\//g)) for (const k of m[1].split('|')) keys.add(`${k}.*`);
+  const usedKey = (k: string) => {
+    if (/\.N$/.test(k)) return [...seen.props].some((u) => u.startsWith(k.slice(0, -1)) && /^\d+$/.test(u.slice(k.length - 1)));
+    if (k.endsWith('.*')) return [...seen.props].some((u) => u.startsWith(k.slice(0, -1)));
+    return seen.props.has(k);
+  };
+  for (const k of [...keys].sort()) add(`prop ${k}`, usedKey(k));
+  for (const k of [...canvasKeys].sort()) add(`canvas ${k}`, seen.canvas.has(k));
+
+  // (b) look statements: every head parseLook knows, dark by name and by path, and style's extends and kinds
+  const from = lookSrc.indexOf('export function parseLook'), parseLookSrc = lookSrc.slice(from, lookSrc.indexOf('\n}\n', from));
+  for (const m of parseLookSrc.matchAll(/head\.v === '(\w+)'/g)) add(`statement ${m[1]}`, seen.heads.has(m[1]));
+  for (const k of ['dark by name', 'dark by path', 'style extends', 'style line', 'style text', 'style shape']) add(`statement ${k}`, seen.heads.has(k));
+
+  // (c) shape kinds (from the code and the built-in styles), markers, series
+  const kinds = new Set<string>();
+  for (const s of [sceneSrc, renderSrc, chartSrc]) for (const m of s.matchAll(/\bshape === '([\w-]+)'/g)) kinds.add(m[1]);
+  for (const st of emptyLook().styles.values()) if (st.props.shape) kinds.add(st.props.shape);
+  for (const k of [...kinds].sort()) add(`shape ${k}`, seen.shapes.has(k));
+  for (const k of MARKERS) add(`marker ${k}`, seen.markers.has(k));
+  for (const k of SERIES) add(`series ${k}`, seen.series.has(k));
+
+  // (d) messages: each string or template literal given to err(…)/warn(…) in scene.ts and parseLook, and set as a
+  // message in node.ts; matched against every issue the cases report (a look's own issues, too)
+  const templates: string[] = [];
+  const calls: [string, RegExp][] = [[sceneSrc, /\b(?:err|warn)\(/g], [parseLookSrc, /\berr\(/g], [nodeSrc, /\bmsg(?::|\s*=)\s*(?=[`'])/g]];
+  for (const [s, call] of calls) for (const m of s.matchAll(call)) templates.push(...topLiterals(s, m.index + m[0].length, m[0].startsWith('msg')));
+  // a message counts for the template it matches with the most fixed text, so the loose "cannot read …" is not
+  // credited with "cannot read the connector end …"
+  const tpl = templates.map((t) => ({ id: `message ${templateText(t)}`, re: new RegExp(`^${templateRegex(t)}$`), fixed: templateParts(t).join('').length }));
+  const hit = new Set<string>();
+  for (const m of seen.msgs) {
+    const best = tpl.filter((t) => t.re.test(m)).sort((a, b) => b.fixed - a.fixed)[0];
+    if (best) hit.add(best.id);
+  }
+  for (const t of tpl) add(t.id, hit.has(t.id));
+
+  // report
+  const explainedFile = join(root, 'crates/fastdraw-render/tests/coverage/UNCOVERED.md');
+  const explained = existsSync(explainedFile) ? readFileSync(explainedFile, 'utf8') : '';
+  const unused = entries.filter((e) => !e.used);
+  const open = unused.filter((e) => !explained.includes('`' + e.id + '`')), told = unused.filter((e) => !open.includes(e));
+  console.log(`coverage: ${entries.length} entries, ${entries.length - unused.length} used, ${told.length} explained in UNCOVERED.md, ${open.length} not used`);
+  for (const e of open) console.log(`  not used: ${e.id}`);
+  for (const e of entries) if (e.used && explained.includes('`' + e.id + '`')) console.log(`  used now, so drop it from UNCOVERED.md: ${e.id}`);
+  return open.length;
+}
+
+// The string and template literals at the top level of a call's arguments, from `i` (just after the open paren) to its
+// close; with `one`, only the literal at `i`.
+function topLiterals(s: string, i: number, one: boolean): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '\'' || c === '"' || c === '`') {
+      const end = skipLiteral(s, i);
+      if (depth === 0) out.push(s.slice(i, end));
+      if (one) return out;
+      i = end;
+      continue;
+    }
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') { if (depth === 0) return out; depth--; }
+    i++;
+  }
+  return out;
+}
+// The index just past the string or template literal that starts at s[i].
+function skipLiteral(s: string, i: number): number {
+  const q = s[i];
+  for (i++; i < s.length; i++) {
+    if (s[i] === '\\') { i++; continue; }
+    if (s[i] === q) return i + 1;
+    if (q === '`' && s[i] === '$' && s[i + 1] === '{') i = skipExpr(s, i + 2) - 1;
+  }
+  return i;
+}
+// The index just past the `}` that closes a template's ${…} whose body starts at s[i].
+function skipExpr(s: string, i: number): number {
+  let depth = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '\'' || c === '"' || c === '`') { i = skipLiteral(s, i); continue; }
+    if (c === '{') depth++;
+    else if (c === '}') { if (depth === 0) return i + 1; depth--; }
+    i++;
+  }
+  return i;
+}
+// A literal's text pieces and holes, in order (a hole as null).
+function templateParts(lit: string): (string | null)[] {
+  const parts: (string | null)[] = [];
+  let text = '';
+  for (let i = 1; i < lit.length - 1; i++) {
+    if (lit[i] === '\\') { text += lit[++i] === 'n' ? '\n' : lit[i]; continue; }
+    if (lit[0] === '`' && lit[i] === '$' && lit[i + 1] === '{') { parts.push(text, null); text = ''; i = skipExpr(lit, i + 2) - 1; continue; }
+    text += lit[i];
+  }
+  parts.push(text);
+  return parts;
+}
+function templateRegex(lit: string): string { return templateParts(lit).map((p) => (p === null ? '[\\s\\S]*?' : p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).join(''); }
+function templateText(lit: string): string { return templateParts(lit).map((p) => (p === null ? '…' : p)).join(''); }

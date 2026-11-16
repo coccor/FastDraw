@@ -1,0 +1,87 @@
+# Corners of the language an agent may still write: every Object.prototype name as a side, a crowded side,
+# markup and replacement patterns in text and colours, spaces kept in text, repeated keys, and comment rules.
+a: rect "A <&> \"q\" 'single'" at 40,40 160x64 fill=#ffffff sub="$' $` $& $$ $1"
+b: rect "B" at 400,40 160x64
+c: rect "C" at 40,300 160x64
+d: rect "D" at 400,300 160x64
+
+a.constructor -> b.__proto__
+a.__defineGetter__ -> c
+a.__defineSetter__@0.2 -> d.hasOwnProperty@0.8
+b.__lookupGetter__@500 -> c.__lookupSetter__
+b.isPrototypeOf -> d.propertyIsEnumerable route=curve
+c.toString -> d.valueOf route=straight
+c.toLocaleString@2000 -> a.top
+d.constructor -> d.toString
+a.left -> 0,0
+l: 600,500 -> 700,500
+l.constructor -> a
+l@constructor -> a
+q: table "proto rows" at 700,40
+  | constructor "constructor"
+  | hasOwnProperty "x"
+  | __proto__ "y"
+  | ok "ok"
+q.constructor.left -> a
+q.ok.toString -> a
+q.ok -> b.constructor
+
+# a crowded side: 36 lines (some to the same point) leave one side and fan out in order of where they go
+hub: rect "hub" at 40,700 160x400
+hub.right -> 900,600
+hub.right -> 900,1150
+hub.right -> 900,1100
+hub.right -> 900,1050
+hub.right -> 900,1000
+hub.right -> 900,950
+hub.right -> 900,900
+hub.right -> 900,850
+hub.right -> 900,800
+hub.right -> 900,750
+hub.right -> 900,700
+hub.right -> 900,650
+hub.right -> 900,600
+hub.right -> 900,1150
+hub.right -> 900,1100
+hub.right -> 900,1050
+hub.right -> 900,1000
+hub.right -> 900,950
+hub.right -> 900,900
+hub.right -> 900,850
+hub.right -> 900,800
+hub.right -> 900,750
+hub.right -> 900,700
+hub.right -> 900,650
+hub.right -> 900,600
+hub.right -> 900,1150
+hub.right -> 900,1100
+hub.right -> 900,1050
+hub.right -> 900,1000
+hub.right -> 900,950
+hub.right -> 900,900
+hub.right -> 900,850
+hub.right -> 900,800
+hub.right -> 900,750
+hub.right -> 900,700
+hub.right -> 900,650
+
+# text: markup, spaces and tabs kept, colours that look like replacement patterns
+t1: text "  two leading spaces" at 40,1200 font=mono
+t2: text "trailing  " at 40,1230
+t3: text "a	tab" at 40,1260
+t4: text "<b>&amp;</b>" at 40,1290 color="#aa3333" anchor="middle&"
+tb: table "cells" at 400,1200
+  | "  padded  " "x" color.2=$' fill.2=$&
+  | "<tag>" "&" color.1="#3355aa\""
+e1: rect "repeated" fill=#ff0000 fill=#00ff00 title.size=9 title.size=14 at 40,1340 160x48
+e2: rect "quoted // not a comment" fill="#ffd400" at 240,1340 160x48 // a comment
+e3: rect "escapes \"in\" \\ text" at 440,1340 160x48
+#not-a-comment
+#
+# a comment
+e4: rect "continued"
+  at 640,1340
+  160x48
+  // a comment on a continuation line
+  fill=#eef3ff
+a -> e4 "label with  two spaces"
