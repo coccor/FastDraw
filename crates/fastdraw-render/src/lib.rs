@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 pub mod data;
 pub mod js;
+pub mod parse;
 
 /// One diagram to draw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
