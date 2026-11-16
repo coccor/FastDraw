@@ -10,6 +10,7 @@ pub mod js;
 pub mod look;
 pub mod parse;
 pub mod router;
+pub mod scene;
 pub mod sketch;
 mod timsort;
 
