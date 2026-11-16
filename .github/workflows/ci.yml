@@ -98,9 +98,10 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Node 24, the release workflow's Node, so the TypeScript's answers are made here as they are at release
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Install Rust
         run: |
@@ -122,17 +123,17 @@ jobs:
       # something the TypeScript reads and tests/coverage/UNCOVERED.md does not explain it
       - run: npm run rust:parity -- --coverage
       - run: cargo fmt --check
-      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo clippy --all-targets --locked -- -D warnings
       # release: the parity suite takes about half as long as in debug
-      - run: cargo test --release
+      - run: cargo test --release --locked
         env:
           FASTDRAW_PARITY_REQUIRED: '1'
       # the share links cargo test wrote, decoded with FastDraw's decodeShared
       - run: npm run rust:parity -- --check-links
       - name: Package (and its size on crates.io, under 10 MB)
         run: |
-          cargo package -p fastdraw-render --list
-          cargo package -p fastdraw-render
+          cargo package -p fastdraw-render --locked --list
+          cargo package -p fastdraw-render --locked
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' crates/fastdraw-render/Cargo.toml | head -n 1)
           crate=target/package/fastdraw-render-$version.crate
           size=$(wc -c < "$crate")
