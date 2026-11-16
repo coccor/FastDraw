@@ -261,6 +261,87 @@ pub fn pow(x: f64, y: f64) -> f64 {
     libm::pow(x, y)
 }
 
+/// `Math.max(a, b)`: NaN if either is NaN, and +0 above -0.
+pub fn max(a: f64, b: f64) -> f64 {
+    if a.is_nan() || b.is_nan() {
+        f64::NAN
+    } else if a == 0.0 && b == 0.0 {
+        if a.is_sign_negative() { b } else { a }
+    } else if a > b {
+        a
+    } else {
+        b
+    }
+}
+
+/// `Math.min(a, b)`: NaN if either is NaN, and -0 below +0.
+pub fn min(a: f64, b: f64) -> f64 {
+    if a.is_nan() || b.is_nan() {
+        f64::NAN
+    } else if a == 0.0 && b == 0.0 {
+        if a.is_sign_negative() { a } else { b }
+    } else if a < b {
+        a
+    } else {
+        b
+    }
+}
+
+/// `parseFloat(s)`: the longest decimal prefix after leading white space, NaN when there is none.
+pub fn parse_float(s: &str) -> f64 {
+    let t = s.trim_start_matches(is_js_space);
+    let b = t.as_bytes();
+    let mut i = 0;
+    if matches!(b.first(), Some(b'+' | b'-')) {
+        i = 1;
+    }
+    let neg = b.first() == Some(&b'-');
+    if t[i..].starts_with("Infinity") {
+        return if neg {
+            f64::NEG_INFINITY
+        } else {
+            f64::INFINITY
+        };
+    }
+    let digits = |mut j: usize| {
+        while j < b.len() && b[j].is_ascii_digit() {
+            j += 1;
+        }
+        j
+    };
+    let int_end = digits(i);
+    let mut end = int_end;
+    let mut mantissa = int_end > i;
+    if b.get(end) == Some(&b'.') {
+        let frac_end = digits(end + 1);
+        if frac_end > end + 1 || mantissa {
+            mantissa = mantissa || frac_end > end + 1;
+            end = frac_end;
+        }
+    }
+    if !mantissa {
+        return f64::NAN;
+    }
+    if matches!(b.get(end), Some(b'e' | b'E')) {
+        let mut j = end + 1;
+        if matches!(b.get(j), Some(b'+' | b'-')) {
+            j += 1;
+        }
+        let exp_end = digits(j);
+        if exp_end > j {
+            end = exp_end;
+        }
+    }
+    let mut text = t[..end].to_string();
+    if text.ends_with('.') {
+        text.pop();
+    }
+    text.replace(".e", "e")
+        .replace(".E", "E")
+        .parse()
+        .unwrap_or(f64::NAN)
+}
+
 /// `Math.imul`.
 pub fn imul(a: i32, b: i32) -> i32 {
     a.wrapping_mul(b)
@@ -355,6 +436,34 @@ pub fn locale_cmp(a: &str, b: &str) -> Ordering {
 #[cfg(test)]
 #[allow(clippy::approx_constant)] // expected values are what Node prints
 mod tests {
+
+    #[test]
+    fn min_max_follow_math() {
+        assert!(max(f64::NAN, 1.0).is_nan() && min(1.0, f64::NAN).is_nan());
+        assert!(max(-0.0, 0.0).is_sign_positive() && max(0.0, -0.0).is_sign_positive());
+        assert!(min(0.0, -0.0).is_sign_negative() && min(-0.0, 0.0).is_sign_negative());
+        assert_eq!((max(0.0, -3.0), min(255.0, 300.5)), (0.0, 255.0));
+    }
+
+    #[test]
+    fn parse_float_takes_the_longest_prefix() {
+        for (s, want) in [
+            ("0.5", 0.5),
+            ("1.2.3", 1.2),
+            (".5", 0.5),
+            ("5.", 5.0),
+            ("  -2.5e2x", -250.0),
+            ("1e", 1.0),
+            ("1.e2", 100.0),
+            ("Infinityx", f64::INFINITY),
+            ("007", 7.0),
+        ] {
+            assert_eq!(parse_float(s), want, "{s}");
+        }
+        for s in [".", "..5", "", "-", "e5", "abc"] {
+            assert!(parse_float(s).is_nan(), "{s}");
+        }
+    }
     use super::*;
     use std::cmp::Ordering;
 

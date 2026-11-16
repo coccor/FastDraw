@@ -4,7 +4,9 @@
 use std::path::{Path, PathBuf};
 
 pub mod data;
+pub mod icons;
 pub mod js;
+pub mod look;
 pub mod parse;
 
 /// One diagram to draw.

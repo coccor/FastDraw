@@ -5,6 +5,8 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
+use fastdraw_render::js::{json_string, num_str};
+use fastdraw_render::look::{Look, bundled_look, default_look, parse_look};
 use fastdraw_render::parse::look_path;
 
 /// The repository root.
@@ -162,6 +164,129 @@ fn parse_matches() {
         );
     }
     failures.report("parse_matches");
+}
+
+/// A look as the script writes it (`lookOut`): every field in the Look's key order, Maps as arrays of pairs, styles as
+/// objects, `dark` null when absent. `icons` and `images` are left out (see `looks_match`).
+fn look_json(look: &Look) -> json::Json {
+    use json::Json;
+    let s = |v: &str| Json::Str(v.to_string());
+    let strs = |v: &[String]| Json::Arr(v.iter().map(|x| s(x)).collect());
+    let pairs = |m: &indexmap::IndexMap<String, String>| {
+        Json::Arr(m.iter().map(|(k, v)| Json::Arr(vec![s(k), s(v)])).collect())
+    };
+    let obj = |m: &indexmap::IndexMap<String, String>| {
+        Json::Obj(m.iter().map(|(k, v)| (k.clone(), s(v))).collect())
+    };
+    let styles = look
+        .styles
+        .values()
+        .map(|st| {
+            Json::Obj(vec![
+                ("name".into(), s(&st.name)),
+                ("kind".into(), s(st.kind.as_str())),
+                ("props".into(), obj(&st.props)),
+            ])
+        })
+        .collect();
+    let issues = look
+        .issues
+        .iter()
+        .map(|i| {
+            let mut o = vec![
+                ("line".to_string(), Json::Num(f64::from(i.line))),
+                ("level".into(), s(i.level.as_str())),
+                ("msg".into(), s(&i.msg)),
+            ];
+            if let Some(f) = &i.file {
+                o.push(("file".into(), s(f)));
+            }
+            Json::Obj(o)
+        })
+        .collect();
+    Json::Obj(vec![
+        ("colors".into(), pairs(&look.colors)),
+        ("fonts".into(), pairs(&look.fonts)),
+        ("fontDirs".into(), strs(&look.font_dirs)),
+        ("canvas".into(), obj(&look.canvas)),
+        ("styles".into(), Json::Arr(styles)),
+        ("iconDirs".into(), strs(&look.icon_dirs)),
+        ("guidance".into(), strs(&look.guidance)),
+        ("issues".into(), Json::Arr(issues)),
+        ("dark".into(), look.dark.as_deref().map_or(Json::Null, s)),
+    ])
+}
+
+/// The script's look dump without `icons` and `images`, in the same text form as `look_json`.
+fn expected_look_json(want: &json::Json) -> json::Json {
+    match want {
+        json::Json::Obj(o) => json::Json::Obj(
+            o.iter()
+                .filter(|(k, _)| k != "icons" && k != "images")
+                .cloned()
+                .collect(),
+        ),
+        other => other.clone(),
+    }
+}
+
+/// `dump`: JSON text with keys in order and numbers as `num_str`.
+fn dump(v: &json::Json) -> String {
+    use json::Json;
+    match v {
+        Json::Null => "null".into(),
+        Json::Bool(b) => b.to_string(),
+        Json::Num(n) => num_str(*n),
+        Json::Str(s) => json_string(s),
+        Json::Arr(a) => format!("[{}]", a.iter().map(dump).collect::<Vec<_>>().join(",")),
+        Json::Obj(o) => format!(
+            "{{{}}}",
+            o.iter()
+                .map(|(k, v)| format!("{}:{}", json_string(k), dump(v)))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+    }
+}
+
+#[test]
+fn looks_match() {
+    let dir = parity_dir().join("looks");
+    let Ok(index) = std::fs::read_to_string(dir.join("index.json")) else {
+        println!(
+            "{} is missing: run npm run rust:parity first",
+            dir.display()
+        );
+        return;
+    };
+    let index = json::parse(&index);
+    let mut failures = Failures::default();
+    let mut n = 0;
+    for e in index.as_arr() {
+        let name = e.get("name").as_str().unwrap();
+        let path = e.get("path").as_str().unwrap();
+        let want = json::parse(&std::fs::read_to_string(dir.join(format!("{name}.json"))).unwrap());
+        let got = match e.get("file").as_str() {
+            Some(file) => {
+                let src = std::fs::read_to_string(root().join(file)).unwrap();
+                parse_look(&src, path)
+            }
+            None if name == "default" => (*default_look()).clone(),
+            None => (*bundled_look(name).unwrap()).clone(),
+        };
+        // TODO(Task 5): compare `icons` as name lists once Look.icons has the built-in overlay (the script lists all
+        // of them; until then the Rust look holds only its own). `images` are filled from the icon folders by the
+        // caller (withIconImages), not by the look parser, so they are never compared here.
+        failures.check(
+            name,
+            "look",
+            &dump(&expected_look_json(&want)),
+            &dump(&look_json(&got)),
+        );
+        n += 1;
+    }
+    assert!(n >= 10, "only {n} looks compared");
+    failures.report("looks_match");
 }
 
 #[test]
