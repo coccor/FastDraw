@@ -76,10 +76,10 @@ fn replace_first(r: &Regex, s: &str, rep: &str) -> String {
 }
 
 /// Per render: how rough the look draws (canvas sketch=, 0 for clean lines) and the fill patterns it needs.
-pub struct RenderCtx {
-    pub amt: f64,
+struct RenderCtx {
+    amt: f64,
     /// pattern key -> id, in the order first asked for
-    pub defs: IndexMap<String, String>,
+    defs: IndexMap<String, String>,
 }
 
 impl RenderCtx {
@@ -2150,6 +2150,10 @@ fn cut_end(pts: Vec<Pt>, dist: f64) -> Vec<Pt> {
 }
 
 fn draw_conn(cx: &RenderCtx, look: &Look, c: &Conn) -> String {
+    // a line with fewer than two points (a route that simplified down to one) has nothing to draw
+    if c.pts.len() < 2 {
+        return String::new();
+    }
     let p = &c.p;
     let sw = num(g(p, "sw"), 1.2);
     let stroke = col(look, Some(g(p, "stroke").unwrap_or("muted")), None);

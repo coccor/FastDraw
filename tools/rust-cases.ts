@@ -310,7 +310,9 @@ function render() {
     'c: chart at 60,60 400x200 y=1e20..1e21 grid=0 yaxis=0 zero=0\n  | line 5 2 3 _ 4',
     'c: chart at 60,60 400x200 x="only"\n  | bars "_" _ _',
   ];
-  const sources = [...texts, conns, shapes, table, legend, ...charts];
+  // a route that simplifies to one point (the caption box is an obstacle): the line draws nothing
+  const onePoint = 'ic: icon "Caption" at 100,100 icon=database\n112,137 -> 112,137';
+  const sources = [...texts, conns, shapes, table, legend, ...charts, onePoint];
   return sources.flatMap((src) => [src, `look sketch\n${src}`].map((s) => ({ src: s, svg: renderSvg(buildScene(s, null, '')) })));
 }
 
