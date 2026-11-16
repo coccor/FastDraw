@@ -41,6 +41,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "rust:data": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/rust-data.ts",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
     "dev": "vite",
     "build:editor": "vite build && vite build -c vite.embed.config.ts --outDir dist-editor --emptyOutDir false",

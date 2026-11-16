@@ -3,6 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
+pub mod data;
 pub mod js;
 
 /// One diagram to draw.
