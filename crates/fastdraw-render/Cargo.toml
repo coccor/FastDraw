@@ -2,9 +2,14 @@
 name = "fastdraw-render"
 version = "0.2.2"
 edition = "2024"
+rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/coccor/fastdraw"
+homepage = "https://fastdraw.dev"
 description = "FastDraw's diagram renderer, in Rust"
+readme = "README.md"
+keywords = ["diagram", "svg", "fastdraw", "renderer", "flowchart"]
+categories = ["visualization", "graphics", "rendering"]
 include = ["src/**", "data/**", "README.md", "LICENSE", "licenses/**"]
 
 [dependencies]

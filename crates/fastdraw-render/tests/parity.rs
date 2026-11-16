@@ -69,10 +69,76 @@ fn cases() -> Vec<Case> {
         .collect()
 }
 
-/// Paths in messages, repo-relative: the absolute root becomes `<root>` and every '\' a '/'.
+/// Paths in messages, repo-relative: every '\' becomes a '/', then the absolute root `<root>`.
 fn normalise(s: &str) -> String {
     let root = root().to_string_lossy().replace('\\', "/");
-    s.replace('\\', "/").replace(&root, "<root>")
+    replace_root(&s.replace('\\', "/"), &root)
+}
+
+/// `s` with every `root` that is followed by a '/' or the end replaced by `<root>`, so a sibling folder
+/// (`<root>-old`) is left alone. On Windows the match ignores ASCII case: Node and Cargo may spell the drive
+/// letter (or a folder) differently, and the file system does not tell them apart.
+fn replace_root(s: &str, root: &str) -> String {
+    let (sb, rb) = (s.as_bytes(), root.as_bytes());
+    let same = |a: &[u8]| {
+        if cfg!(windows) {
+            a.eq_ignore_ascii_case(rb)
+        } else {
+            a == rb
+        }
+    };
+    let mut out = String::with_capacity(s.len());
+    let (mut i, mut from) = (0, 0);
+    while !rb.is_empty() && i + rb.len() <= sb.len() {
+        // root is UTF-8 and ASCII case folding leaves other bytes alone, so a match starts and ends on char
+        // boundaries
+        if same(&sb[i..i + rb.len()]) && matches!(sb.get(i + rb.len()), None | Some(b'/')) {
+            out.push_str(&s[from..i]);
+            out.push_str("<root>");
+            i += rb.len();
+            from = i;
+        } else {
+            i += 1;
+        }
+    }
+    out.push_str(&s[from..]);
+    out
+}
+
+/// `v` with every string normalised. Done before writing JSON, where a '\' would be doubled and the root
+/// would no longer match.
+fn normalise_json(v: &json::Json) -> json::Json {
+    use json::Json;
+    match v {
+        Json::Str(s) => Json::Str(normalise(s)),
+        Json::Arr(a) => Json::Arr(a.iter().map(normalise_json).collect()),
+        Json::Obj(o) => Json::Obj(
+            o.iter()
+                .map(|(k, v)| (k.clone(), normalise_json(v)))
+                .collect(),
+        ),
+        Json::Null => Json::Null,
+        Json::Bool(b) => Json::Bool(*b),
+        Json::Num(n) => Json::Num(*n),
+    }
+}
+
+#[test]
+fn root_is_replaced_only_as_a_whole_folder() {
+    assert_eq!(
+        replace_root("/r/a /r-old/b /rx x/r/c /r", "/r"),
+        "<root>/a /r-old/b /rx x<root>/c <root>"
+    );
+    if cfg!(windows) {
+        assert_eq!(
+            replace_root("c:/repo/a C:/REPO", "C:/Repo"),
+            "<root>/a <root>"
+        );
+    } else {
+        assert_eq!(replace_root("/R/a", "/r"), "/R/a");
+    }
+    let abs = root().join("x").join("y");
+    assert_eq!(normalise(&abs.to_string_lossy()), "<root>/x/y");
 }
 
 /// Where `want` and `got` first differ, with 80 characters of context on each side, or None when equal.
@@ -394,8 +460,8 @@ fn scenes_match() {
         failures.check(
             &c.id,
             "scene",
-            &normalise(&dump(&json::parse(&want))),
-            &normalise(&dump(&scene_json(&sc))),
+            &dump(&normalise_json(&json::parse(&want))),
+            &dump(&normalise_json(&scene_json(&sc))),
         );
         n += 1;
     }
@@ -505,8 +571,8 @@ fn drawings_match() {
         failures.check(
             &c.id,
             "drawing",
-            &normalise(&dump(&expected_drawing_json(&want))),
-            &normalise(&dump(&drawing_json(&got))),
+            &dump(&normalise_json(&expected_drawing_json(&want))),
+            &dump(&normalise_json(&drawing_json(&got))),
         );
         n += 1;
     }

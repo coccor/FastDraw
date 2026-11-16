@@ -351,7 +351,26 @@ pub fn read_bounded(path: &Path, max: u64) -> Option<Vec<u8>> {
     }
     let mut options = std::fs::OpenOptions::new();
     options.read(true);
-    #[cfg(target_os = "linux")]
+    // O_NONBLOCK is 0o4000 on these Linux architectures only (mips, sparc, alpha and hppa use other values, so they get
+    // no flag and rely on the regular-file check above)
+    #[cfg(all(
+        target_os = "linux",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "arm",
+            target_arch = "aarch64",
+            target_arch = "riscv32",
+            target_arch = "riscv64",
+            target_arch = "powerpc",
+            target_arch = "powerpc64",
+            target_arch = "s390x",
+            target_arch = "loongarch64",
+            target_arch = "m68k",
+            target_arch = "csky",
+            target_arch = "hexagon"
+        )
+    ))]
     std::os::unix::fs::OpenOptionsExt::custom_flags(&mut options, 0o4000); // O_NONBLOCK
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
     std::os::unix::fs::OpenOptionsExt::custom_flags(&mut options, 0x0004); // O_NONBLOCK
@@ -566,9 +585,15 @@ mod tests {
         );
         assert_eq!(
             look_folder(&look, "./icons"),
-            Some(PathBuf::from(real_icons))
+            Some(PathBuf::from(&real_icons))
         );
         assert_eq!(look_folder(&look, "../other"), None);
+        // ".." climbs from the real home (real/team), not the link's folder: real/team/icons, inside the real home.
+        // Resolved against the linked home it would be <t>/team/icons, which does not exist.
+        assert_eq!(
+            look_folder(&look, "../team/icons"),
+            Some(PathBuf::from(&real_icons))
+        );
     }
 
     #[cfg(unix)]

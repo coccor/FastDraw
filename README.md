@@ -126,6 +126,12 @@ Written by agents from the guides alone and drawn in the built-in look; sources 
 
 FastDraw is at version 0.x, and details of the language may still change.
 
+## Rust
+
+[`fastdraw-render`](crates/fastdraw-render) is the renderer as a Rust crate, for applications that draw
+diagrams without Node. It draws the same SVG as the npm package of the same version, character for character;
+CI checks that on Linux and Windows. See its [README](crates/fastdraw-render/README.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for building from source, running the tests and the
