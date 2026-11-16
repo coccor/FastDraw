@@ -749,8 +749,10 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await pickHex(page, 'Custom icon fill', '#ffd400');
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
   await expect(page.locator('svg.canvas path[fill="#ffd400"]')).toHaveCount(1); // the tint under the icon
+  // the store style tints its icon, so "none" is written out; leaving it off would bring the style's tint back
   await fills.getByRole('button', { name: 'none', exact: true }).click();
-  expect(lineOf(await source(page), 'db')).not.toContain('icon.fill');
+  expect(lineOf(await source(page), 'db')).toContain('icon.fill=none');
+  await expect(fills.getByRole('button', { name: 'none', exact: true })).toHaveClass(/\bon\b/);
   // the weight: a line thickness in pixels on screen, the nearest of the icon's weights
   await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.width=2');

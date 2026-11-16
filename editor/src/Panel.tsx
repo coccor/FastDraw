@@ -176,6 +176,9 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   // a stroke drawn by hand (any open outline) is only a line: it has no inside to fill and carries no text or icon
   const stroke = els.every((e) => e!.kind === 'shape' && !!e!.el.poly && e!.el.p.open === '1');
   const p = first.el.p;
+  // whether a selected element's style gives `key` a colour: then "none" has to be written out, as leaving the
+  // property off would bring the style's colour back
+  const styleTints = (key: string) => els.some((e) => { const v = sc.look.styles.get(e!.el.style)?.props[key]; return !!v && v !== 'none'; });
   // each of the look's colours once (two names for one colour show as one swatch); tints are the popover's shades
   const seen = new Set<string>();
   const names = [...sc.look.colors.keys()].filter((n) => {
@@ -221,7 +224,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
         <>
           {/* a solid icon is one filled shape: only its colour (stroke=) applies; fill= is the tint under an outline */}
-          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
+          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v !== 'none' ? v : styleTints('fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" /></section>}
           <section><h4>Colour</h4><Swatches sc={sc} values={names} top={inks} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></section>
           {!solidIcon && (
             <section>
@@ -349,7 +352,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
                   <Swatches sc={sc} values={names} top={inks} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
                   <div className="sublabel">Icon tint</div>
                   <Swatches sc={sc} values={iconFills} top={topIconFills} current={p['icon.fill'] ?? 'none'}
-                    onPick={(v) => act.setProp('icon.fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" />
+                    onPick={(v) => act.setProp('icon.fill', v !== 'none' ? v : styleTints('icon.fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" />
                   <div className="sublabel">Icon weight</div>
                   <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
                 </>
