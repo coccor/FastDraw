@@ -112,6 +112,12 @@ jobs:
       - run: npm run rust:data
       - run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/rust-cases.ts > crates/fastdraw-render/tests/geometry.json
       - run: git diff --exit-code crates/fastdraw-render
+      # the crate's copies of the licence texts (LICENSE, licenses/) equal the repository's, byte for byte
+      - name: The crate's licence files equal their sources
+        run: |
+          cmp LICENSE crates/fastdraw-render/LICENSE
+          for f in fonts/OFL-*.txt licenses/*; do cmp "$f" "crates/fastdraw-render/licenses/$(basename "$f")"; done
+          for f in crates/fastdraw-render/licenses/*; do n=$(basename "$f"); test -f "fonts/$n" || test -f "licenses/$n"; done
       # the TypeScript's answers for every parity case, in target/parity/; fails if the coverage fixtures miss
       # something the TypeScript reads and tests/coverage/UNCOVERED.md does not explain it
       - run: npm run rust:parity -- --coverage

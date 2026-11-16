@@ -42,12 +42,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npm publish --provenance --access public
-      # The Rust crate (crates/fastdraw-render), the same version as the npm package: checked as the ci.yml rust
-      # job checks it, then published to crates.io.
-      # CARGO_REGISTRY_TOKEN must be created as a secret in the `release` environment (Settings > Environments >
-      # release) before the next tag is pushed: a crates.io API token with the publish-new and publish-update
-      # scopes for fastdraw-render.
+      # The Rust crate (crates/fastdraw-render), the same version as the npm package, is checked as the ci.yml rust
+      # job checks it before anything is published, so a failing check stops both the npm and the crates.io publish.
       - name: Install Rust
         run: |
           rustup toolchain install stable --profile minimal
@@ -60,11 +56,21 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match crates/fastdraw-render/Cargo.toml version $version"
             exit 1
           fi
+      - name: The crate's licence files equal their sources
+        run: |
+          cmp LICENSE crates/fastdraw-render/LICENSE
+          for f in fonts/OFL-*.txt licenses/*; do cmp "$f" "crates/fastdraw-render/licenses/$(basename "$f")"; done
+          for f in crates/fastdraw-render/licenses/*; do n=$(basename "$f"); test -f "fonts/$n" || test -f "licenses/$n"; done
       - run: npm run rust:data && git diff --exit-code
       - run: npm run rust:parity
       - run: cargo test --release
         env:
           FASTDRAW_PARITY_REQUIRED: '1'
+      - run: cargo package -p fastdraw-render
+      - run: npm publish --provenance --access public
+      # CARGO_REGISTRY_TOKEN must be created as a secret in the `release` environment (Settings > Environments >
+      # release) before the next tag is pushed: a crates.io API token with the publish-new and publish-update
+      # scopes for fastdraw-render.
       - run: cargo publish -p fastdraw-render
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
