@@ -133,14 +133,14 @@ Field-by-field shapes of `Shape`, `Conn`, `TextEl`, `Label`, `End`, `Row` follow
     assert_eq!(utf16_cmp("Z", "a"), Ordering::Less); assert_eq!(utf16_cmp("\u{FF5E}", "😀"), Ordering::Greater);
     let mut v = vec!["b.svg", "A.svg", "a-b.svg", "a.svg", "10.svg", "2.svg"];
     v.sort_by(|a, b| locale_cmp(a, b));
-    assert_eq!(v, ["10.svg", "2.svg", "a.svg", "A.svg", "a-b.svg", "b.svg"]);
+    assert_eq!(v, ["10.svg", "2.svg", "a-b.svg", "a.svg", "A.svg", "b.svg"]);
 }
 ```
 
-(The `locale_cmp` expectation is `["10.svg","2.svg","a.svg","A.svg","a-b.svg","b.svg"].sort((a,b)=>a.localeCompare(b))` in Node; confirm it in Node before relying on it and use Node's order if it differs.)
+(Values checked in Node 22. ICU's order of printable ASCII, primary strength with lowercase first on ties, is `" _-,;:!?.'\"()[]{}@*/\&#%`^+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ"`; Node also sorts `a A a1 a10 a2 b B`.)
 
 - [ ] **Step 3: Run** `cargo test -p fastdraw-render js::` — expected: compile errors / FAIL.
-- [ ] **Step 4: Implement `js.rs`.** `num_str` via `ryu_js::Buffer` (handle NaN/±Infinity/-0 first). `hypot` ports V8's `MathHypot` (Torque: abs values, NaN/Infinity rules, max = largest; if max == 0 return 0; sum of `(v/max)^2` with Kahan compensation; `sqrt(sum) * max`). `to_number` follows ECMAScript StringToNumber (trim JS whitespace, empty → 0, `0x`/`0o`/`0b` integers, `Infinity` with sign, else decimal literal grammar parsed by Rust `f64::from_str` after validating the grammar). `locale_cmp`: key 1 = letters/digits only, case-folded (digits before letters); key 2 = punctuation sequence; key 3 = lowercase before uppercase at the first case difference; non-ASCII falls back to `utf16_cmp`.
+- [ ] **Step 4: Implement `js.rs`.** `num_str` via `ryu_js::Buffer` (handle NaN/±Infinity/-0 first). `hypot` ports V8's `MathHypot` (Torque: abs values, NaN/Infinity rules, max = largest; if max == 0 return 0; sum of `(v/max)^2` with Kahan compensation; `sqrt(sum) * max`). `to_number` follows ECMAScript StringToNumber (trim JS whitespace, empty → 0, `0x`/`0o`/`0b` integers, `Infinity` with sign, else decimal literal grammar parsed by Rust `f64::from_str` after validating the grammar). `locale_cmp`: punctuation is NOT ignored. Primary pass: compare character by character using each ASCII character's rank in the ICU order above with case folded (`a`/`A` same rank), shorter prefix first; if equal, tertiary pass: first position where case differs, lowercase first; non-ASCII characters rank after all ASCII by code point.
 - [ ] **Step 5: Run** `cargo test -p fastdraw-render js::` — expected: PASS. Also `cargo clippy --all-targets -- -D warnings`.
 - [ ] **Step 6: Commit** `git add Cargo.toml .gitignore crates && git commit -m "fastdraw-render: crate skeleton and JavaScript number and string semantics"`
 
@@ -174,7 +174,7 @@ Data files (all written with LF; deflated ones use raw deflate level 9 via Node'
     assert!(DEFAULT_LOOK.contains("dark night"));
 }
 #[test] fn widths_match_typescript() {
-    assert_eq!(width_chars().len(), 106);
+    assert_eq!(width_chars().len(), 109);
     let geist = &font_widths()["geist"];
     assert_eq!(geist[0].0, 400); assert_eq!(&geist[0].1[..3], &[25, 21, 35]);
     assert_eq!(font_widths()["libre franklin"][0].1[95], -1);
