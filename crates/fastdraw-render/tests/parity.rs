@@ -3,13 +3,14 @@
 //! Without `target/parity/manifest.json` the stages print a note and pass, unless `FASTDRAW_PARITY_REQUIRED=1`.
 
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use fastdraw_render::disk::with_icons;
 use fastdraw_render::js::{json_string, num_str};
-use fastdraw_render::look::{Look, bundled_look, color, default_look, is_bundled_look, parse_look};
-use fastdraw_render::parse::{look_path, with_look};
-use fastdraw_render::render::render_svg;
-use fastdraw_render::scene::{Scene, build_scene};
+use fastdraw_render::look::{Look, bundled_look, color, default_look, parse_look};
+use fastdraw_render::parse::look_path;
+use fastdraw_render::scene::Scene;
+use fastdraw_render::{Drawing, Level, Source, drawn_scene, render};
 
 mod common;
 use common::{json, read_parity, root};
@@ -149,7 +150,7 @@ fn parse_matches() {
 }
 
 /// A look as the script writes it (`lookOut`): every field in the Look's key order, Maps as arrays of pairs, styles as
-/// objects, `icons` as names, `dark` null when absent. `images` are left out (see `looks_match`).
+/// objects, `icons` and `images` as names, `dark` null when absent.
 fn look_json(look: &Look) -> json::Json {
     use json::Json;
     let s = |v: &str| Json::Str(v.to_string());
@@ -197,20 +198,14 @@ fn look_json(look: &Look) -> json::Json {
             Json::Arr(look.icons.keys().map(s).collect()),
         ),
         ("iconDirs".into(), strs(&look.icon_dirs)),
+        (
+            "images".into(),
+            Json::Arr(look.images.keys().map(|k| s(k)).collect()),
+        ),
         ("guidance".into(), strs(&look.guidance)),
         ("issues".into(), Json::Arr(issues)),
         ("dark".into(), look.dark.as_deref().map_or(Json::Null, s)),
     ])
-}
-
-/// The script's look dump without `images`, in the same text form as `look_json`.
-fn expected_look_json(want: &json::Json) -> json::Json {
-    match want {
-        json::Json::Obj(o) => {
-            json::Json::Obj(o.iter().filter(|(k, _)| k != "images").cloned().collect())
-        }
-        other => other.clone(),
-    }
 }
 
 /// `dump`: JSON text with keys in order and numbers as `num_str`.
@@ -246,21 +241,16 @@ fn looks_match() {
         let path = e.get("path").as_str().unwrap();
         let want = json::parse(&std::fs::read_to_string(dir.join(format!("{name}.json"))).unwrap());
         let got = match e.get("file").as_str() {
+            // loadLook: read as Node reads UTF-8 (bad bytes as U+FFFD), parsed, then the icon folders read
             Some(file) => {
-                let src = std::fs::read_to_string(root().join(file)).unwrap();
-                parse_look(&src, path)
+                let src = String::from_utf8_lossy(&std::fs::read(root().join(file)).unwrap())
+                    .into_owned();
+                with_icons(Path::new(path), parse_look(&src, path))
             }
             None if name == "default" => (*default_look()).clone(),
             None => (*bundled_look(name).unwrap()).clone(),
         };
-        // `images` are filled from the icon folders by the caller (withIconImages), not by the look parser, so they
-        // are never compared here (the images stage compares them).
-        failures.check(
-            name,
-            "look",
-            &dump(&expected_look_json(&want)),
-            &dump(&look_json(&got)),
-        );
+        failures.check(name, "look", &dump(&want), &dump(&look_json(&got)));
         n += 1;
     }
     assert!(n >= 10, "only {n} looks compared");
@@ -383,60 +373,24 @@ fn scene_json(sc: &Scene) -> json::Json {
     Json::Obj(o)
 }
 
-/// `darkCounterpart(ref, own)` (editor/src/embed/theme.ts) for a diagram in a bundled or the built-in look.
-fn dark_counterpart(r: Option<&str>, own: Option<&Look>) -> Option<String> {
-    let v = own.and_then(|l| l.dark.clone()).or_else(|| {
-        if r.is_some() {
-            None
-        } else {
-            Some("night".to_string())
-        }
-    });
-    v.filter(|v| !v.is_empty() && Some(v.as_str()) != r)
-}
-
-/// The scene of every case that reads no look file: noFile cases (`buildScene(input, null, '')`) and cases with no
-/// look line or a bundled look's name (`loadScene`, which reads nothing and adds no font warning for these looks).
-fn for_each_scene(mut f: impl FnMut(&Case, Scene)) {
-    for c in cases() {
-        let bundled = c.look_path.as_deref().is_none_or(is_bundled_look);
-        if !c.no_file && !bundled {
-            continue;
-        }
-        let mut input = c.input.clone();
-        if c.dark {
-            // drawnScene: the dark counterpart of the built-in or bundled look, drawn with withLook
-            let r = c.look_path.as_deref();
-            let own = match r {
-                None => Some(default_look()),
-                Some(name) => bundled_look(name),
-            };
-            match dark_counterpart(r, own.as_deref()) {
-                Some(d) if is_bundled_look(&d) => input = with_look(&input, &d),
-                Some(d) => panic!("{}: the dark look {d} is not bundled", c.id),
-                None => {}
-            }
-        }
-        let file = if c.no_file {
-            String::new()
-        } else {
-            c.abs().to_string_lossy().into_owned()
-        };
-        f(&c, build_scene(&input, None, &file));
-    }
-}
-
+/// Every case: the scene `render` draws against the script's `scenes/<key>.json`.
 #[test]
 fn scenes_match() {
     let mut failures = Failures::default();
     let mut n = 0;
-    for_each_scene(|c, sc| {
+    for c in cases() {
         let want = std::fs::read_to_string(
             parity_dir()
                 .join("scenes")
                 .join(format!("{}.json", c.key())),
         )
         .unwrap();
+        let abs = c.abs();
+        let sc = drawn_scene(&Source {
+            text: &c.input,
+            file: (!c.no_file).then_some(abs.as_path()),
+            dark: c.dark,
+        });
         failures.check(
             &c.id,
             "scene",
@@ -444,20 +398,95 @@ fn scenes_match() {
             &normalise(&dump(&scene_json(&sc))),
         );
         n += 1;
-    });
+    }
     println!("{n} scenes compared");
     if n > 0 {
-        assert!(n >= 1000, "only {n} scenes compared");
+        assert!(n >= 1500, "only {n} scenes compared");
     }
     failures.report("scenes_match");
 }
 
-/// The SVG of every case `scenes_match` covers: `renderSvg(scene)` against the script's `drawings/<key>.json`.
+/// `[r, g, b]` of a paper colour written `#rrggbb` or `#rgb`, else white (as `render` reads it, spec §4.1).
+fn paper_rgb(c: &str) -> [u8; 3] {
+    let h = c.strip_prefix('#').unwrap_or("");
+    let hex = |s: &str| u8::from_str_radix(s, 16).unwrap();
+    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return [255, 255, 255];
+    }
+    match h.len() {
+        6 => [hex(&h[0..2]), hex(&h[2..4]), hex(&h[4..6])],
+        3 => [0, 1, 2].map(|i| hex(&h[i..=i]) * 17),
+        _ => [255, 255, 255],
+    }
+}
+
+/// A drawing as the script writes it, with the paper as `[r, g, b]` and every path repo-relative.
+fn drawing_json(d: &Drawing) -> json::Json {
+    use json::Json;
+    let s = |v: &str| Json::Str(v.to_string());
+    let issues = d
+        .issues
+        .iter()
+        .map(|i| {
+            let level = match i.level {
+                Level::Error => "error",
+                Level::Warning => "warn",
+            };
+            Json::Obj(vec![
+                ("line".to_string(), Json::Num(f64::from(i.line))),
+                ("level".into(), s(level)),
+                ("msg".into(), s(&i.message)),
+            ])
+        })
+        .collect();
+    let font_files = d
+        .font_files
+        .iter()
+        .map(|f| s(&normalise(&f.to_string_lossy()).replacen("<root>/", "", 1)))
+        .collect();
+    let look = d.look.as_ref().map_or(Json::Null, |l| {
+        Json::Obj(vec![
+            ("path".to_string(), s(&l.path)),
+            ("text".into(), s(&l.text)),
+        ])
+    });
+    Json::Obj(vec![
+        ("issues".to_string(), Json::Arr(issues)),
+        (
+            "paper".into(),
+            Json::Arr(d.paper.iter().map(|&c| Json::Num(f64::from(c))).collect()),
+        ),
+        (
+            "bounds".into(),
+            Json::Arr(d.bounds.iter().map(|&b| num_json(b)).collect()),
+        ),
+        ("fontFiles".into(), Json::Arr(font_files)),
+        ("look".into(), look),
+    ])
+}
+
+/// The script's drawing in `drawing_json`'s form (the SVG is compared on its own).
+fn expected_drawing_json(want: &json::Json) -> json::Json {
+    use json::Json;
+    let paper = paper_rgb(want.get("paper").as_str().unwrap());
+    Json::Obj(vec![
+        ("issues".to_string(), want.get("issues").clone()),
+        (
+            "paper".into(),
+            Json::Arr(paper.iter().map(|&c| Json::Num(f64::from(c))).collect()),
+        ),
+        ("bounds".into(), want.get("bounds").clone()),
+        ("fontFiles".into(), want.get("fontFiles").clone()),
+        ("look".into(), want.get("look").clone()),
+    ])
+}
+
+/// Every case: `render` against the script's `drawings/<key>.json`, all fields.
 #[test]
-fn drawings_match_without_disk() {
+fn drawings_match() {
     let mut failures = Failures::default();
     let mut n = 0;
-    for_each_scene(|c, sc| {
+    for c in cases() {
         let want = std::fs::read_to_string(
             parity_dir()
                 .join("drawings")
@@ -465,19 +494,26 @@ fn drawings_match_without_disk() {
         )
         .unwrap();
         let want = json::parse(&want);
+        let abs = c.abs();
+        let got = render(&Source {
+            text: &c.input,
+            file: (!c.no_file).then_some(abs.as_path()),
+            dark: c.dark,
+        });
+        failures.check(&c.id, "svg", want.get("svg").as_str().unwrap(), &got.svg);
         failures.check(
             &c.id,
-            "svg",
-            want.get("svg").as_str().unwrap(),
-            &render_svg(&sc),
+            "drawing",
+            &normalise(&dump(&expected_drawing_json(&want))),
+            &normalise(&dump(&drawing_json(&got))),
         );
         n += 1;
-    });
+    }
     println!("{n} drawings compared");
     if n > 0 {
-        assert!(n >= 1000, "only {n} drawings compared");
+        assert!(n >= 1500, "only {n} drawings compared");
     }
-    failures.report("drawings_match_without_disk");
+    failures.report("drawings_match");
 }
 
 #[test]

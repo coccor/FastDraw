@@ -2912,3 +2912,135 @@ pub fn extent(shapes: &[Rect], texts: &[Rect], conns: &[Conn]) -> Rect {
         h: ((y1 + MARGIN) / 4.0).ceil() * 4.0 - y,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::iconfiles::with_icon_images;
+    use crate::look::{IssueLevel, parse_look};
+
+    /// A look file as loadScene hands it over: parsed, with one warning about an icon folder it could not use.
+    fn team_look() -> Look {
+        let mut l = parse_look(
+            "style node shape=rect\nbogus\nicon q \"M4 6h16\"\nicondir \"./icons\"\n",
+            "./t.look",
+        );
+        l.issues.push(LookIssue {
+            line: 0,
+            level: IssueLevel::Warn,
+            msg: "icon folder not used: ../out (icondir must be a folder inside the folder that holds the look file)"
+                .into(),
+            file: None,
+        });
+        l
+    }
+
+    fn issues(sc: &Scene) -> Vec<(u32, &'static str, String, Option<String>)> {
+        sc.issues
+            .iter()
+            .map(|i| (i.line, i.level.as_str(), i.msg.clone(), i.file.clone()))
+            .collect()
+    }
+
+    // Expected values printed by Node: buildScene(src, look, '') after loadExtendedIcons().
+    #[test]
+    fn a_look_files_issues_are_the_diagrams() {
+        let sc = build_scene(
+            "look \"./t.look\"\na: node icon=q icon.style=solid\nb: node icon=zzzq",
+            Some(team_look()),
+            "",
+        );
+        let got = issues(&sc);
+        let file = Some("./t.look".to_string());
+        assert_eq!(
+            got[0],
+            (
+                1,
+                "error",
+                "unknown look statement \"bogus\" (in look, line 2)".into(),
+                file
+            )
+        );
+        assert_eq!(
+            got[1],
+            (
+                1,
+                "warn",
+                "icon folder not used: ../out (icondir must be a folder inside the folder that holds the look file) (in look, line 0)".into(),
+                None
+            )
+        );
+        assert_eq!(
+            got[2],
+            (
+                2,
+                "warn",
+                "icon q is the look's own, with no solid version (only the built-in icons have one), so it is drawn as it is; drop icon.style=solid".into(),
+                None
+            )
+        );
+        let (line, level, msg, _) = &got[3];
+        assert_eq!((*line, *level), (3, "error"));
+        assert!(
+            msg.starts_with("there is no icon called \"zzzq\" (the look's icon folder ./icons could not be read here); the look has: active-directory, admin, "),
+            "{msg}"
+        );
+        assert!(
+            msg.ends_with(", and 1555 more (run \"fastdraw icons\" to see them all)"),
+            "{msg}"
+        );
+        assert_eq!(got.len(), 6);
+    }
+
+    #[test]
+    fn a_look_without_a_look_line_adds_no_issues_of_its_own() {
+        let sc = build_scene("a: node icon=q icon.style=duotone", Some(team_look()), "");
+        assert_eq!(
+            issues(&sc),
+            [
+                (
+                    1,
+                    "warn",
+                    "icon q is the look's own, with no duotone version (only the built-in icons have one), so it is drawn as it is; drop icon.style=duotone".to_string(),
+                    None
+                ),
+                (
+                    1,
+                    "warn",
+                    "a has no position (\"at x,y\"); it was dropped in a row at 40,40".into(),
+                    None
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn icon_files_come_first_and_drop_the_folder_note() {
+        let look = with_icon_images(
+            &team_look(),
+            vec![("Load Balancer.svg".into(), b"<svg></svg>".to_vec())],
+        );
+        let sc = build_scene(
+            "look \"./t.look\"\na: node icon=load-balancer icon.style=solid\nb: node icon=nosuch",
+            Some(look),
+            "",
+        );
+        let got = issues(&sc);
+        assert_eq!(
+            got[2].2,
+            "icon load-balancer is the look's own, with no solid version (only the built-in icons have one), so it is drawn as it is; drop icon.style=solid"
+        );
+        assert!(
+            got[3].2.starts_with(
+                "there is no icon called \"nosuch\"; the look has: load-balancer, active-directory, "
+            ),
+            "{}",
+            got[3].2
+        );
+        assert!(
+            got[3]
+                .2
+                .ends_with(", and 1556 more (run \"fastdraw icons\" to see them all)")
+        );
+    }
+}
