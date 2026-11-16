@@ -1,0 +1,38 @@
+look "../../looks/reference.look"
+
+// columns: 208px wide, x = 40, 248, 456, 664 (ends 872); names at y=124; header line y=140
+// steps 136x48, 36px inside their column; one step per row, rows 88px apart from y=164
+
+text "Placing an order" at 40,52 style=h1
+
+// ---- columns ---------------------------------------------------------------
+40,96 -- 872,96 stroke=ink/0.22
+40,140 -- 872,140 stroke=ink/0.22
+40,676 -- 872,676 stroke=ink/0.22
+40,96 -- 40,676 stroke=ink/0.22
+248,96 -- 248,676 style=rule
+456,96 -- 456,676 style=rule
+664,96 -- 664,676 style=rule
+872,96 -- 872,676 stroke=ink/0.22
+
+text "Browser" at 60,124 style=eyebrow size=9
+text "API gateway" at 268,124 style=eyebrow size=9
+text "Orders service" at 476,124 style=eyebrow size=9
+text "Payments" at 684,124 style=eyebrow size=9
+
+// ---- steps -----------------------------------------------------------------
+place:   node "Place order" sub="checkout page" at 76,164 136x48
+token:   node "Check token" sub="JWT · rate limit" at 284,252 136x48
+reserve: node "Reserve stock" sub="orders DB" at 492,340 136x48
+charge:  focal "Charge card" sub="Stripe" at 700,428 136x48
+confirm: node "Confirm order" sub="status=paid" at 492,516 136x48
+receipt: node "Show receipt" sub="order page" at 76,604 136x48
+
+// ---- flow ------------------------------------------------------------------
+place.right -> token.top "POST /orders" lpos=290,178
+token.right -> reserve.top "forward" lpos=486,266
+reserve.right -> charge.top "charge" style=primary lpos=691,354
+charge.left -> confirm.top "paid" style=return lpos=642,442
+confirm.left -> receipt.top "201 Created" style=return lpos=208,530
+
+legend at 40,708 node="Step" focal="What the request is for" arrow="Call" primary="Slowest call" return="Response"

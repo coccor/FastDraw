@@ -14,6 +14,7 @@ import { check } from './check.ts';
 import { serveFolder, DEFAULT_EDITOR } from './serve.ts';
 import { spawn } from 'node:child_process';
 import { sizesReport } from './sizes.ts';
+import { about } from './guideKinds.ts';
 import { setup, detect, TARGETS, type Target } from './setup.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -279,7 +280,11 @@ if (cmd === 'check') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');
   const topics = readdirSync(join(root, 'guide')).filter((f) => f.endsWith('.md') && f !== 'guide.md').map((f) => f.slice(0, -3)).sort();
-  if (topic === 'list') { console.log(topics.join('\n')); process.exit(0); }
+  if (topic === 'list') {
+    const width = Math.max(...topics.map((t) => t.length)) + 2;
+    for (const t of topics) console.log(t.padEnd(width) + about(readFileSync(join(root, 'guide', `${t}.md`), 'utf8'), t).line);
+    process.exit(0);
+  }
   if (!existsSync(file) || /[\\/]/.test(topic ?? '')) { console.log(`no guide called "${topic}". Topics: ${topics.join(', ')}`); process.exit(1); }
   console.log(readFileSync(file, 'utf8'));
 } else if (cmd === 'open') {
