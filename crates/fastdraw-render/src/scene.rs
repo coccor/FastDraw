@@ -12,12 +12,40 @@ use crate::js::{self, num_str, round, to_number, utf16_len};
 use crate::look::{IssueLevel, Kind, Look, LookIssue, Props};
 use crate::router::{Pt, Rect};
 
+/// The names `m[2] in DIRS` accepts besides the four sides: the properties of Object.prototype that match
+/// `[A-Za-z_][\w-]*` (`Object.getOwnPropertyNames(Object.prototype)`).
+const PROTO_NAMES: [&str; 12] = [
+    "constructor",
+    "__defineGetter__",
+    "__defineSetter__",
+    "hasOwnProperty",
+    "__lookupGetter__",
+    "__lookupSetter__",
+    "isPrototypeOf",
+    "propertyIsEnumerable",
+    "toString",
+    "valueOf",
+    "__proto__",
+    "toLocaleString",
+];
+
+/// `name in DIRS`: a side, or (as in the TypeScript, which tests an object literal) an Object.prototype name.
+pub fn in_dirs(name: &str) -> bool {
+    Side::from_name(name).is_some()
+}
+
+/// A side of a shape. `Proto` is a name `in DIRS` accepts only through the prototype chain ("constructor",
+/// "toString", ...): the TypeScript then holds that string as the side. `side_point` gives it the "right"
+/// formula (it is not top or bottom, and falls through the left test). `DIRS[side]` is a function or object
+/// there, so `.x` and `.y` are undefined: arithmetic on them is NaN while the direction itself stays truthy
+/// (`dir()` returns it as Some(NaN, NaN) for that reason); `e.side === 'top'` style tests are all false.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Side {
     Top,
     Bottom,
     Left,
     Right,
+    Proto(&'static str),
 }
 
 impl Side {
@@ -27,17 +55,21 @@ impl Side {
             Side::Bottom => "bottom",
             Side::Left => "left",
             Side::Right => "right",
+            Side::Proto(name) => name,
         }
     }
 
-    /// `side in DIRS` for the four sides (see `parse_end` for the prototype names).
+    /// The side `name` stands for when `name in DIRS`.
     pub fn from_name(s: &str) -> Option<Side> {
         match s {
             "top" => Some(Side::Top),
             "bottom" => Some(Side::Bottom),
             "left" => Some(Side::Left),
             "right" => Some(Side::Right),
-            _ => None,
+            _ => PROTO_NAMES
+                .iter()
+                .find(|&&n| n == s)
+                .map(|&n| Side::Proto(n)),
         }
     }
 
@@ -48,6 +80,10 @@ impl Side {
             Side::Bottom => Pt { x: 0.0, y: 1.0 },
             Side::Left => Pt { x: -1.0, y: 0.0 },
             Side::Right => Pt { x: 1.0, y: 0.0 },
+            Side::Proto(_) => Pt {
+                x: f64::NAN,
+                y: f64::NAN,
+            },
         }
     }
 }
@@ -428,7 +464,8 @@ pub fn side_point(s: &Rect, shape: Option<&str>, side: Side, v: Option<f64>, f: 
             x: s.x + inset,
             y: along,
         },
-        Side::Right => Pt {
+        // Side::Proto takes the TypeScript's final `return` too
+        Side::Right | Side::Proto(_) => Pt {
             x: s.x + s.w - inset,
             y: along,
         },
@@ -941,8 +978,8 @@ fn re(cell: &'static OnceLock<Regex>, pattern: &str) -> &'static Regex {
 }
 
 /// A connector end as written: a point, a relative offset, or a shape (with side, table row and position).
-/// Note: TypeScript's `m[2] in DIRS` also accepts Object.prototype names ("constructor", "toString", ...) as a
-/// side; here only the four real sides count, so those names read as a table row.
+/// Like the TypeScript's `m[2] in DIRS`, Object.prototype names ("constructor", "toString", ...) count as
+/// sides (`Side::Proto`).
 pub fn parse_end(raw: &str) -> Option<End> {
     let base = End {
         raw: raw.to_string(),

@@ -152,8 +152,8 @@ function scene() {
     for (const [text, spacing] of [['Hello → 日本 😀', 0.25], ['', 0]] as [string, number][]) mt.push({ fonts: {}, drop: role, text, size: 11, role, weight, spacing, out: measureText(look, text, 11, role, weight, spacing) });
   }
 
-  // 'a.constructor' and the like are left out: TypeScript's `in DIRS` takes Object.prototype names as sides
-  const ends = ['+0,260', '-40,+0', '-40,-20', 'a.left@0.3', 't.row2.right', 'a.top.left', '1,2,3', 'a', 'a.top', 'a@5', 'a.left@-3', 'a.top@1.2.3', 'a.right.right', 'a.x.y', '+1.5,-2.5', '+1,2', '-1,+2.5', '1.5,2', '-1,-2', '.5,1', 'a@', 'a-b_c.row-1', '1a', '_x.bottom@0.5', 'a.row.left@10', 'a.left.left', 'a.bottom@.', 'a.bottom@-', '+5,+6', '-5,-6.5', '5,-6', '', ' a', 'a ', 'a\n', 'é', 'a.é', '１,２', 'a.row.top', 'x.left.right@2'];
+  // 'in DIRS' takes Object.prototype names as sides: a.constructor, a.toString@0.3, t.valueOf.right
+  const ends = ['+0,260', '-40,+0', '-40,-20', 'a.left@0.3', 't.row2.right', 'a.top.left', '1,2,3', 'a', 'a.top', 'a@5', 'a.left@-3', 'a.top@1.2.3', 'a.right.right', 'a.x.y', '+1.5,-2.5', '+1,2', '-1,+2.5', '1.5,2', '-1,-2', '.5,1', 'a@', 'a-b_c.row-1', '1a', '_x.bottom@0.5', 'a.row.left@10', 'a.left.left', 'a.bottom@.', 'a.bottom@-', '+5,+6', '-5,-6.5', '5,-6', '', ' a', 'a ', 'a\n', 'é', 'a.é', '１,２', 'a.row.top', 'x.left.right@2', 'a.constructor', 'a.toString@0.3', 'a.__proto__.left', 't.valueOf.right', 'a.hasOwnProperty.left', 'a.toLocaleString@5', 'a.__proto__', 'a.__defineGetter__@-1', 'a.Constructor', 'a.constructor.constructor'];
   const parseEnds = ends.map((raw) => ({ raw, out: parseEnd(raw) }));
 
   const box = () => ({ x: int(-20, 200), y: int(-20, 200), w: int(0, 120), h: int(0, 120) });
@@ -162,7 +162,7 @@ function scene() {
   for (const [a, b] of [[{ x: 0, y: 0, w: 10, h: 10 }, { x: 10, y: 10, w: 10, h: 10 }], [{ x: 0, y: 0, w: 0, h: 0 }, { x: 0, y: 0, w: 0, h: 0 }], [{ x: NaN, y: 0, w: 10, h: 10 }, { x: 0, y: 30, w: 10, h: 10 }]]) autos.push({ a, b, out: autoSides(a, b) });
 
   const sidePts = [];
-  for (const shape of ['rect', 'diamond', 'ellipse', 'icon']) for (const side of ['top', 'bottom', 'left', 'right'] as const) {
+  for (const shape of ['rect', 'diamond', 'ellipse', 'icon']) for (const side of ['top', 'bottom', 'left', 'right', 'constructor', 'toString', '__proto__'] as const) {
     for (const s of [{ x: 10, y: 20, w: 100, h: 60 }, { x: 5.5, y: 7.25, w: 33, h: 0 }, { x: 0, y: 0, w: 0, h: 40 }]) for (const v of [undefined, 0, 0.25, 1, 1.0001, 12, 50, 130, 5000, -3, NaN]) for (const f of [0.5, 0.2]) sidePts.push({ s, shape, side, v, f, out: sidePoint({ ...s, shape }, side, v, f) });
   }
 
