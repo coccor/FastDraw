@@ -174,8 +174,9 @@ in one place, each with unit tests against values printed by Node:
   JavaScript does. `Array.prototype.sort` is stable (Rust's `sort_by` is too) and, without a comparator,
   compares UTF-16 strings.
 - **`localeCompare`** (sorting icon file names, `iconfiles.ts`) depends on ICU. The port uses an
-  approximation of ICU's root collation that is exact for ASCII file names: compare ignoring case and
-  punctuation, then punctuation, then lowercase before uppercase. Names outside ASCII fall back to code-point
+  approximation of ICU's root collation that is exact for ASCII file names: characters compare by their
+  rank in ICU's order of printable ASCII (punctuation first, then symbols, digits, letters, case folded),
+  then lowercase before uppercase at the first case difference. Names outside ASCII fall back to code-point
   order. This only matters when two files in one icon folder map to the same icon name; it is documented as
   the crate's one known difference.
 - **`JSON.stringify`** (one use in `scene.ts`, plus `withLook` and the share link): quotes and escapes as V8
