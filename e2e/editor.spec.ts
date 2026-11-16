@@ -181,6 +181,8 @@ test('panel: a zone\'s title and a box\'s text are typed in the sidebar', async 
   await page.mouse.click(...Object.values(await corner(page, 'edge')) as [number, number]);
   const title = page.locator('.panel').getByRole('textbox', { name: 'Title', exact: true });
   await expect(title).toHaveValue('Edge');
+  // a zone draws no second line, so it offers none
+  await expect(page.locator('.panel').getByRole('textbox', { name: 'Second line' })).toHaveCount(0);
   await title.fill('Public edge');
   await title.press('Enter');
   expect(lineOf(await source(page), 'edge')).toContain('"Public edge"');

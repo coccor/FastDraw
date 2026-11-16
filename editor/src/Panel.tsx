@@ -178,6 +178,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const p = first.el.p;
   // whether a selected element's style gives `key` a colour: then "none" has to be written out, as leaving the
   // property off would bring the style's colour back
+  // a caption across the top, as a zone has: its text is a title and it draws no second line
+  const caption = p['title.pos'] === 'top';
   const styleTints = (key: string) => els.some((e) => { const v = sc.look.styles.get(e!.el.style)?.props[key]; return !!v && v !== 'none'; });
   // each of the look's colours once (two names for one colour show as one swatch); tints are the popover's shades
   const seen = new Set<string>();
@@ -365,8 +367,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {els.length === 1 && first.kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
           <h4>Text</h4>
-          <TextField label={first.el.shape === 'rect' && first.el.back ? 'Title' : 'Text'} value={first.el.text ?? ''} onCommit={act.setText} multiline />
-          <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />
+          <TextField label={caption ? 'Title' : 'Text'} value={first.el.text ?? ''} onCommit={act.setText} multiline />
+          {!caption && <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />}
           <TextField label="Corner tag" value={p.tag ?? ''} onCommit={(v) => act.setProp('tag', v || null)} />
         </section>
       )}
