@@ -106,16 +106,17 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
   const cv = sc.look.canvas, on = (v: string | undefined) => !!v && v !== 'none';
   const x = -view.x / view.k, y = -view.y / view.k, w = window.innerWidth / view.k, h = window.innerHeight / view.k;
   const r = sc.x + sc.w - 26;
+  // no wrapping <g>: the diagram body stays the canvas's first group
   return (
-    <g pointerEvents="none">
-      {on(cv.dots) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-dots)" />}
-      {on(cv.bars) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-bars)" />}
+    <>
+      {on(cv.dots) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-dots)" pointerEvents="none" />}
+      {on(cv.bars) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-bars)" pointerEvents="none" />}
       {on(cv.feed) && <>
-        <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" />
-        <rect x={r} y={y} width={26} height={h} fill="url(#fd-feed-r)" />
-        <path d={`M ${sc.x + 26},${y} v ${h} M ${r},${y} v ${h}`} stroke={col(sc.look, cv.feed!)} strokeWidth={1} strokeDasharray="2 3" fill="none" />
+        <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" pointerEvents="none" />
+        <rect x={r} y={y} width={26} height={h} fill="url(#fd-feed-r)" pointerEvents="none" />
+        <path d={`M ${sc.x + 26},${y} v ${h} M ${r},${y} v ${h}`} stroke={col(sc.look, cv.feed!)} strokeWidth={1} strokeDasharray="2 3" fill="none" pointerEvents="none" />
       </>}
-    </g>
+    </>
   );
 }
 
