@@ -234,3 +234,15 @@ test('row and cell tints in a table are mixed against the table\'s fill', () => 
   assert.notEqual(tint, color(bundledLook('night')!, 'amber/0.15'));
   assert.equal(svg.split(`fill="${tint}"`).length - 1, 2, 'the row and the cell tint use the colour mixed over the card');
 });
+
+test('a zone\'s corner tag sits on its caption row, and a left caption starts after it', () => {
+  for (const lk of ['', 'look night\n']) {
+    const svg = renderSvg(buildScene(`${lk}z: zone "Public edge" at 40,40 360x200 tag=EDGE\n`, null));
+    const tag = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="2" fill="none"/.exec(svg)!;
+    const cap = /<text x="([\d.]+)"[^>]*>PUBLIC EDGE</.exec(svg)!;
+    const capPlate = /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="\d+" rx="2" fill="#/.exec(svg)!;
+    assert.ok(+capPlate[1] >= +tag[1] + +tag[3], `the caption plate starts at ${capPlate[1]}, inside the tag ending at ${+tag[1] + +tag[3]}`);
+    assert.ok(+cap[1] > +tag[1] + +tag[3]);
+    assert.ok(Math.abs(+tag[2] - 44) <= 1, 'the tag is level with the caption, 4px into the zone');
+  }
+});
