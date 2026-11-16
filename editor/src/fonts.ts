@@ -12,6 +12,7 @@ import newsItalic from '../../fonts/Newsreader-Italic.ttf?url';
 import geist400 from '../../fonts/Geist-Regular.ttf?url';
 import geist500 from '../../fonts/Geist-Medium.ttf?url';
 import geist600 from '../../fonts/Geist-SemiBold.ttf?url';
+import geist700 from '../../fonts/Geist-Bold.ttf?url';
 import mono400 from '../../fonts/GeistMono-Regular.ttf?url';
 import mono500 from '../../fonts/GeistMono-Medium.ttf?url';
 import serif from '../../fonts/InstrumentSerif-Regular.ttf?url';
@@ -23,7 +24,7 @@ const FACES: [string, number, string, string][] = [
   ['Libre Franklin', 600, 'normal', franklin600], ['Libre Franklin', 700, 'normal', franklin700],
   ['Newsreader', 400, 'normal', news400], ['Newsreader', 500, 'normal', news500], ['Newsreader', 600, 'normal', news600],
   ['Newsreader', 400, 'italic', newsItalic],
-  ['Geist', 400, 'normal', geist400], ['Geist', 500, 'normal', geist500], ['Geist', 600, 'normal', geist600],
+  ['Geist', 400, 'normal', geist400], ['Geist', 500, 'normal', geist500], ['Geist', 600, 'normal', geist600], ['Geist', 700, 'normal', geist700],
   ['Geist Mono', 400, 'normal', mono400], ['Geist Mono', 500, 'normal', mono500],
   ['Instrument Serif', 400, 'normal', serif], ['Instrument Serif', 400, 'italic', serifItalic],
   ['Sketch Hand', 400, 'normal', sketchHand],

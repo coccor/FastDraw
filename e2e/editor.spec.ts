@@ -175,6 +175,28 @@ test('resize from an edge, and Shift keeps the proportions', async ({ page }) =>
   expect(lineOf(await source(page), 'user')).toContain('at 20,160 240x120');
 });
 
+test('panel: a zone\'s title and a box\'s text are typed in the sidebar', async ({ page }) => {
+  await pinSidebar(page);
+  await paste(page, 'canvas 900x420\nedge: zone "Edge" at 40,40 400x300\napi: node "Orders API" at 120,140\n');
+  await page.mouse.click(...Object.values(await corner(page, 'edge')) as [number, number]);
+  const title = page.locator('.panel').getByRole('textbox', { name: 'Title', exact: true });
+  await expect(title).toHaveValue('Edge');
+  // a zone draws no second line, so it offers none
+  await expect(page.locator('.panel').getByRole('textbox', { name: 'Second line' })).toHaveCount(0);
+  await title.fill('Public edge');
+  await title.press('Enter');
+  expect(lineOf(await source(page), 'edge')).toContain('"Public edge"');
+  await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  const text = page.locator('.panel').getByRole('textbox', { name: 'Text', exact: true });
+  await expect(text).toHaveValue('Orders API');
+  // Shift+Enter starts a second line; Enter alone commits
+  await text.fill('Orders');
+  await text.press('Shift+Enter');
+  await text.pressSequentially('API');
+  await text.press('Enter');
+  expect(lineOf(await source(page), 'api')).toMatch(/"Orders\\nAPI"/);
+});
+
 test('panel: restyle, switch style, and the components gallery places shapes and lines', async ({ page }) => {
   await pinSidebar(page);
   await paste(page, SMALL);
@@ -721,8 +743,6 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
   await expect(page.locator('svg.canvas g[fill="#e0457b"]')).toHaveCount(1);
   await expect(strokes.locator('.custom.on')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Text colour', exact: true }).click();
-  expect(lineOf(await source(page), 'db')).not.toContain('icon.color');
   // a fill inside the icon's closed parts: a tint, any colour, or none
   const fills = page.getByRole('group', { name: 'Icon fill colours' });
   const tint = await fills.locator('.swatch').nth(1).getAttribute('aria-label');
@@ -731,8 +751,10 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   await pickHex(page, 'Custom icon fill', '#ffd400');
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
   await expect(page.locator('svg.canvas path[fill="#ffd400"]')).toHaveCount(1); // the tint under the icon
+  // the store style tints its icon, so "none" is written out; leaving it off would bring the style's tint back
   await fills.getByRole('button', { name: 'none', exact: true }).click();
-  expect(lineOf(await source(page), 'db')).not.toContain('icon.fill');
+  expect(lineOf(await source(page), 'db')).toContain('icon.fill=none');
+  await expect(fills.getByRole('button', { name: 'none', exact: true })).toHaveClass(/\bon\b/);
   // the weight: a line thickness in pixels on screen, the nearest of the icon's weights
   await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.width=2');

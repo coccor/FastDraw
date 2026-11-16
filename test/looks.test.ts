@@ -97,7 +97,7 @@ test('text a diagram lays on a box stays readable when the look fills that box d
   // a small chip with no fill, sitting on the subject, follows it too
   assert.match(draw('transit', 'f: focal "Core" at 40,40 200x80\nchip: rect "4 in" at 180,48 40x16 fill=none stroke=ink/0.4 title.size=8 overlap=ok\n'), /fill="#ffffff"[^>]*>4 in</);
   // the built-in look draws exactly what the diagram says: its subject is a tint, nothing needs changing
-  assert.match(renderSvg(buildScene(body, null)), /fill="#0f172a" font-weight="600">Assess damage</);
+  assert.match(renderSvg(buildScene(body, null)), /fill="#121318" font-weight="600">Assess damage</);
   // and a fill the diagram chose itself is not second-guessed: the checker reports it instead
   const own = buildScene('f: focal "A" at 40,40 160x80 fill=accent\ntext "case" at 60,100 size=9 color=accent\n', null);
   assert.match(check(own).map((i) => i.msg).join('\n'), /almost the same colour as f behind it/);
@@ -139,7 +139,7 @@ test('a zone caption has a plate as wide as its words, in the zone\'s own colour
   assert.equal(measureText(look, 'ab', 10, 'mono', 400, 0.1), 13); // spacing between letters
   for (const lk of ['', 'look night\n']) {
     const [paper, tint] = plates(`${lk}z: zone ".pz/state/ · outlives runs" at 40,40 300x120 fill=accent/0.05 stroke=accent\n`);
-    assert.equal(paper.w, Math.ceil(measureText(look, '.pz/state/ · outlives runs', 11, 'sans', 600, 0) + 12));
+    assert.equal(paper.w, Math.ceil(measureText(look, '.PZ/STATE/ · OUTLIVES RUNS', 9, 'mono', 400, 0.12) + 12));
     assert.equal(paper.x, 52); // left-aligned: the words start 6px into the plate, 18px into the zone
     // inside the zone the plate is paper with the zone's tint over it, so it reads as the zone itself
     assert.equal(tint.w, paper.w);
@@ -233,4 +233,16 @@ test('row and cell tints in a table are mixed against the table\'s fill', () => 
   const tint = color(bundledLook('night')!, 'amber/0.15', '#131c38');
   assert.notEqual(tint, color(bundledLook('night')!, 'amber/0.15'));
   assert.equal(svg.split(`fill="${tint}"`).length - 1, 2, 'the row and the cell tint use the colour mixed over the card');
+});
+
+test('a zone\'s corner tag sits on its caption row, and a left caption starts after it', () => {
+  for (const lk of ['', 'look night\n']) {
+    const svg = renderSvg(buildScene(`${lk}z: zone "Public edge" at 40,40 360x200 tag=EDGE\n`, null));
+    const tag = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="2" fill="none"/.exec(svg)!;
+    const cap = /<text x="([\d.]+)"[^>]*>PUBLIC EDGE</.exec(svg)!;
+    const capPlate = /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="\d+" rx="2" fill="#/.exec(svg)!;
+    assert.ok(+capPlate[1] >= +tag[1] + +tag[3], `the caption plate starts at ${capPlate[1]}, inside the tag ending at ${+tag[1] + +tag[3]}`);
+    assert.ok(+cap[1] > +tag[1] + +tag[3]);
+    assert.ok(Math.abs(+tag[2] - 44) <= 1, 'the tag is level with the caption, 4px into the zone');
+  }
 });

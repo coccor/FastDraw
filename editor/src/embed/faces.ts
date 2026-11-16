@@ -1,6 +1,6 @@
 // The fonts the bundled looks use, by the file names they have in fonts/ next to embed.js.
 export const FACES: [string, string, string, string][] = [
-  ['Geist', '400', 'normal', 'Geist-Regular.ttf'], ['Geist', '500', 'normal', 'Geist-Medium.ttf'], ['Geist', '600', 'normal', 'Geist-SemiBold.ttf'],
+  ['Geist', '400', 'normal', 'Geist-Regular.ttf'], ['Geist', '500', 'normal', 'Geist-Medium.ttf'], ['Geist', '600', 'normal', 'Geist-SemiBold.ttf'], ['Geist', '700', 'normal', 'Geist-Bold.ttf'],
   ['Geist Mono', '400', 'normal', 'GeistMono-Regular.ttf'], ['Geist Mono', '500', 'normal', 'GeistMono-Medium.ttf'],
   ['Newsreader', '400', 'normal', 'Newsreader-Regular.ttf'], ['Newsreader', '500', 'normal', 'Newsreader-Medium.ttf'],
   ['Newsreader', '600', 'normal', 'Newsreader-SemiBold.ttf'], ['Newsreader', '400', 'italic', 'Newsreader-Italic.ttf'],

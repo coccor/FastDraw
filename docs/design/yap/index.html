@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Home page after Yap Studio</title>
+<style>body{margin:0 auto;max-width:1100px;padding:40px 24px 80px;font:16px/1.6 system-ui,sans-serif;color:#121318;background:#fff}h1{font-size:34px;margin:0 0 8px}h2{margin:48px 0 10px}
+p,li{color:#4b4f5c;max-width:76ch}table{border-collapse:collapse;margin:20px 0;font-size:15px}td,th{border-top:1px solid #e3e4e8;padding:10px 12px;text-align:left;vertical-align:top}th{font-weight:600}
+figure{margin:24px 0}img{width:100%;border:1px solid #e3e4e8;border-radius:10px}figcaption{font-size:14px;color:#6b6f80;margin-top:6px}code{font:14px ui-monospace,monospace;background:#f3f3f5;padding:1px 5px;border-radius:4px}</style></head><body>
+<h1>The home page, after yapstudio.app</h1>
+<p>Three directions for fastdraw.dev that borrow from <a href="https://yapstudio.app/">Yap Studio</a>'s home page. They are static prototypes drawn with the real renderer; the live page has not changed. Open <code>a.html</code>, <code>b.html</code> and <code>c.html</code> for the full pages; <code>node docs/design/yap/build.ts</code> rebuilds them.</p>
+
+<h2>What Yap does that FastDraw's page does not</h2>
+<ul>
+<li><b>Type:</b> a heavy, tightly set sans headline that ends in an italic serif clause. All three directions use Geist 800 with Instrument Serif Italic, which is already in <code>fonts/</code>. The headlines stay plain statements, not Yap's two-beat slogans.</li>
+<li><b>Annotated product shot:</b> yellow monospace tags with leader lines naming what each part of the hero does. For FastDraw, each tag can be the box's actual line from the file.</li>
+<li><b>Style pills under the hero</b> (Headline, Editorial, Candy), which map directly onto looks.</li>
+<li><b>Full-width bands</b> alternating grey and white, one saturated colour band for the gallery, and a yellow closing band.</li>
+<li><b>Numbered setup cards</b> (1, 2, 3 in a serif numeral), <b>progress tabs</b> that advance on their own, a <b>sideways carousel</b> with captions, and a <b>dark card</b> for the "checked before you see it" step, which maps onto <code>fastdraw check</code>.</li>
+<li>Pill-shaped buttons. Yap's are black; here they stay indigo.</li>
+</ul>
+
+<h2>The three directions</h2>
+<table><tr><th></th><th>Opens on</th><th>Looks shown as</th><th>Cost</th></tr>
+<tr><td><b>A. Annotated</b></td><td>Headline and command, then the checkout diagram full width with five yellow tags, each one that box's source line.</td><td>Pills under the hero that redraw it</td><td>Closest to today's page: the tags would sit on the live Workbench canvas. About 3,900px tall.</td></tr>
+<tr><td><b>B. Bands</b></td><td>A centred headline and command over a large diagram in a file frame.</td><td>A sideways carousel of tall cards on an indigo band</td><td>Loudest; the indigo band becomes the brand moment. Longest page (about 4,800px), as kinds get their own grid.</td></tr>
+<tr><td><b>C. Walkthrough</b></td><td>Headline, then three progress tabs (Ask, Check, Move by hand) driving one screen: source beside canvas.</td><td>A four-up grid on an indigo band</td><td>Tells the agent loop best, but needs three real screens kept in step with the product, and a timer.</td></tr></table>
+
+<figure><img src="img/a.png" alt="Direction A, Annotated"><figcaption>A. Annotated</figcaption></figure>
+<figure><img src="img/b.png" alt="Direction B, Bands"><figcaption>B. Bands</figcaption></figure>
+<figure><img src="img/c.png" alt="Direction C, Walkthrough"><figcaption>C. Walkthrough</figcaption></figure>
+
+<h2>D. The mix (16 November 2026)</h2>
+<p>Picked: B's hero, A's look pills under it, B's guide to the kinds, no indigo band. Indigo is to be replaced. <code>d-vermilion.html</code>, <code>d-teal.html</code>, <code>d-green.html</code> and <code>d-ochre.html</code> are the same page with each candidate in the page, the logo and the built-in look's focal box and main path; a switcher in the corner flips between them.</p>
+<figure><img src="img/d-accents.png" alt="The top of direction D in vermilion, teal, green and ochre"><figcaption>D in the four candidate accents</figcaption></figure>
+
+<p><b>Picked and built on 16 November 2026: D in tomato (<code>#dc2f2f</code>).</b> Tomato replaces indigo across the brand: the site, the logo and favicon, the editor, the embed element, and the built-in and Night looks (Night uses <code>#ff6b5f</code>). Store icons in both looks moved from violet to teal. The hero's headline puts "as text." on its own line; the live small editor stays in the hero frame, the twelve looks sit under it as pills, and the kinds section shows six large examples above the list of all 44. The headline face is Geist Display (Geist's variable font, <code>fonts/Geist-Variable.woff2</code>), used on the site only.</p>
+<figure><img src="img/site-light.png" alt="fastdraw.dev as built: tomato accent, centred hero, editor with look pills, kinds, setup, checker and yellow closing band"><figcaption>As built, light</figcaption></figure>
+<figure><img src="img/site-dark.png" alt="fastdraw.dev as built, dark theme"><figcaption>As built, dark</figcaption></figure>
+
+<h2>Open questions</h2>
+<ul>
+<li>Yap's grey is warm, close to paper. These use a neutral grey (<code>#f3f3f5</code>) to stay off the paper look; the warm one is a one-line change if you want it.</li>
+<li>Parts mix across directions: for example, A's tagged hero with B's looks carousel and C's progress tabs in place of A's walkthrough list.</li>
+</ul>
+</body></html>

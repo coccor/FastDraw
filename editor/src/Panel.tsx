@@ -15,6 +15,7 @@ import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
   setProp: (k: string, v: string | null) => void;
+  setText: (text: string) => void;
   setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
   setOp: (op: string) => void;
@@ -81,14 +82,18 @@ function vivid(sc: Scene, names: string[]): string[] {
   });
 }
 
-export function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (v: string) => void }) {
+// A text input that commits when it loses focus or Enter is pressed. `multiline` gives a box that grows to
+// its lines, where Shift+Enter starts a new line.
+export function TextField({ label, value, onCommit, multiline }: { label: string; value: string; onCommit: (v: string) => void; multiline?: boolean }) {
   const [v, setV] = React.useState(value);
   React.useEffect(() => setV(value), [value]);
+  const done = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !(multiline && e.shiftKey)) { e.preventDefault(); (e.target as HTMLElement).blur(); } };
   return (
     <label className="field">
       <span>{label}</span>
-      <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)}
-        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+      {multiline
+        ? <textarea value={v} rows={Math.min(4, v.split('\n').length)} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} />
+        : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} />}
     </label>
   );
 }
@@ -171,6 +176,11 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   // a stroke drawn by hand (any open outline) is only a line: it has no inside to fill and carries no text or icon
   const stroke = els.every((e) => e!.kind === 'shape' && !!e!.el.poly && e!.el.p.open === '1');
   const p = first.el.p;
+  // whether a selected element's style gives `key` a colour: then "none" has to be written out, as leaving the
+  // property off would bring the style's colour back
+  // a caption across the top, as a zone has: its text is a title and it draws no second line
+  const caption = p['title.pos'] === 'top';
+  const styleTints = (key: string) => els.some((e) => { const v = sc.look.styles.get(e!.el.style)?.props[key]; return !!v && v !== 'none'; });
   // each of the look's colours once (two names for one colour show as one swatch); tints are the popover's shades
   const seen = new Set<string>();
   const names = [...sc.look.colors.keys()].filter((n) => {
@@ -216,7 +226,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
         <>
           {/* a solid icon is one filled shape: only its colour (stroke=) applies; fill= is the tint under an outline */}
-          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" /></section>}
+          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v !== 'none' ? v : styleTints('fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" /></section>}
           <section><h4>Colour</h4><Swatches sc={sc} values={names} top={inks} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></section>
           {!solidIcon && (
             <section>
@@ -341,13 +351,10 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               {!sc.look.images.has(p.icon) && (
                 <>
                   <div className="sublabel">Icon colour</div>
-                  <div className="seg" style={{ marginBottom: 4 }}>
-                    <button className={!p['icon.color'] ? 'on' : ''} title="Same colour as the text" onClick={() => act.setProp('icon.color', null)}>Text colour</button>
-                  </div>
                   <Swatches sc={sc} values={names} top={inks} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
                   <div className="sublabel">Icon tint</div>
                   <Swatches sc={sc} values={iconFills} top={topIconFills} current={p['icon.fill'] ?? 'none'}
-                    onPick={(v) => act.setProp('icon.fill', v === 'none' ? null : v)} custom="Custom icon fill" label="Icon fill colours" />
+                    onPick={(v) => act.setProp('icon.fill', v !== 'none' ? v : styleTints('icon.fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" />
                   <div className="sublabel">Icon weight</div>
                   <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
                 </>
@@ -359,8 +366,9 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
       {els.length === 1 && first.kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
         <section>
-          <h4>Extra text</h4>
-          <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />
+          <h4>Text</h4>
+          <TextField label={caption ? 'Title' : 'Text'} value={first.el.text ?? ''} onCommit={act.setText} multiline />
+          {!caption && <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />}
           <TextField label="Corner tag" value={p.tag ?? ''} onCommit={(v) => act.setProp('tag', v || null)} />
         </section>
       )}

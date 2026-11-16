@@ -1,6 +1,6 @@
 :root {
   --ink: #1b1d26; --mute: #6c7080; --line: #e2e4ea; --surface: #ffffff; --bg: #eef0f4;
-  --accent: #5448d6; --accent-soft: #ecebfb; --accent-ink: #3b30b8; --hover: #f3f4f8;
+  --accent: #dc2f2f; --accent-soft: #fde3e1; --accent-ink: #b91f1f; --hover: #f3f4f8;
   --warn-bg: #fff6e0; --warn-line: #ecd08a; --warn-ink: #8a5300; --bad: #b3261e; --good: #2b7a4b;
   --shadow: 0 1px 2px rgba(22, 24, 40, .06), 0 4px 14px rgba(22, 24, 40, .07);
 }
@@ -11,10 +11,10 @@ button, select, input, textarea { font: inherit; color: inherit; }
 button { border: 0; background: none; border-radius: 7px; padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 button:hover { background: var(--hover); }
 button:disabled { opacity: .38; cursor: default; background: none; }
-button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 button.on { background: var(--accent-soft); color: var(--accent-ink); }
 button.danger { color: var(--bad); }
-select, input { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 5px 7px; max-width: 100%; }
+select, input, textarea { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 5px 7px; max-width: 100%; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
 kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .muted { color: var(--mute); margin: 0; }
@@ -99,7 +99,8 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .field { display: block; margin-bottom: 6px; }
 .field:last-child { margin-bottom: 0; }
 .field span { display: block; font-size: 11px; color: var(--mute); margin-bottom: 2px; }
-.field input { width: 100%; }
+.field input, .field textarea { width: 100%; }
+.field textarea { display: block; resize: vertical; min-height: 32px; line-height: 1.4; }
 /* icon picker: a search box over a grid of tiles */
 .iconpicker { display: flex; flex-direction: column; gap: 6px; }
 .iconsearch { display: flex; gap: 4px; }
@@ -183,9 +184,9 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .pct { min-width: 52px; padding: 0 6px; font-variant-numeric: tabular-nums; }
 
 .textedit { position: absolute; z-index: 5; border: 1.5px solid var(--accent); border-radius: 5px; padding: 3px 6px; resize: none; background: #fff; text-align: center; font-family: 'Geist', sans-serif; font-variant-ligatures: none; outline: none; }
-.textedit.inplace { border: 0; border-radius: 3px; padding: 0; background: transparent; overflow: hidden; white-space: pre-wrap; caret-color: var(--accent); cursor: text; outline: 1.5px dashed var(--accent); outline-offset: 4px; box-shadow: 0 0 0 4px rgba(84, 72, 214, .08); }
+.textedit.inplace { border: 0; border-radius: 3px; padding: 0; background: transparent; overflow: hidden; white-space: pre-wrap; caret-color: var(--accent); cursor: text; outline: 1.5px dashed var(--accent); outline-offset: 4px; box-shadow: 0 0 0 4px rgba(220, 47, 47, .08); }
 .textedit.inplace[wrap="off"] { white-space: pre; }
-.textedit.inplace::selection { background: rgba(84, 72, 214, .3); }
+.textedit.inplace::selection { background: rgba(220, 47, 47, .3); }
 
 /* welcome and dialogs */
 .start, .modal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -279,11 +280,11 @@ button.primary:hover { background: var(--accent-ink); }
 html[data-theme="dark"] {
   color-scheme: dark;
   --ink: #e2e8f0; --mute: #94a3b8; --line: #263253; --surface: #131c38; --bg: #0b1226;
-  --accent: #8b8cff; --accent-soft: rgba(139, 140, 255, .16); --accent-ink: #c7c8ff; --hover: rgba(226, 232, 240, .07);
+  --accent: #ff6b5f; --accent-soft: rgba(255, 107, 95, .16); --accent-ink: #ffb4ab; --hover: rgba(226, 232, 240, .07);
   --warn-bg: #3a2e12; --warn-line: #7a5d1c; --warn-ink: #fcd58a; --bad: #f87171; --good: #4ade80;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .35);
 }
-html[data-theme="dark"] select, html[data-theme="dark"] input,
+html[data-theme="dark"] select, html[data-theme="dark"] input, html[data-theme="dark"] textarea,
 html[data-theme="dark"] .banner button, html[data-theme="dark"] .textedit,
 html[data-theme="dark"] .card { background: var(--surface); }
 html[data-theme="dark"] .hintbar { background: #e2e8f0; color: #0b1226; }

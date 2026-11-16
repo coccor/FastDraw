@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = new URL('..', import.meta.url);
 const CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('') + '·–—…→←↑↓•×’‘“”';
 const FILES = {
-  'geist': { 400: 'Geist-Regular', 500: 'Geist-Medium', 600: 'Geist-SemiBold' },
+  'geist': { 400: 'Geist-Regular', 500: 'Geist-Medium', 600: 'Geist-SemiBold', 700: 'Geist-Bold' },
   'libre franklin': { 400: 'LibreFranklin-Regular', 500: 'LibreFranklin-Medium', 600: 'LibreFranklin-SemiBold', 700: 'LibreFranklin-Bold' },
   'newsreader': { 400: 'Newsreader-Regular', 500: 'Newsreader-Medium', 600: 'Newsreader-SemiBold' },
   'instrument serif': { 400: 'InstrumentSerif-Regular' },

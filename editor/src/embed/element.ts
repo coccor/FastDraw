@@ -32,7 +32,7 @@ const CSS = `
 .view { position: absolute; inset: 0; touch-action: pan-y; cursor: default; outline: none; }
 .view.pannable { touch-action: none; cursor: grab; }
 .view.dragging { cursor: grabbing; }
-.view:focus-visible { box-shadow: inset 0 0 0 2px #4f46e5; }
+.view:focus-visible { box-shadow: inset 0 0 0 2px #dc2f2f; }
 .view svg { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; }
 .bar {
   position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 1px; padding: 3px;
@@ -47,16 +47,16 @@ const CSS = `
   all: unset; box-sizing: border-box; display: grid; place-items: center; width: 28px; height: 28px;
   border-radius: 7px; color: #52525b; cursor: pointer;
 }
-.bar button:hover, .bar a:hover { background: #eef2ff; color: #4f46e5; }
-.bar button:focus-visible, .bar a:focus-visible { outline: 2px solid #4f46e5; outline-offset: -1px; }
+.bar button:hover, .bar a:hover { background: #fde3e1; color: #dc2f2f; }
+.bar button:focus-visible, .bar a:focus-visible { outline: 2px solid #dc2f2f; outline-offset: -1px; }
 .bar button:disabled { opacity: 0.35; cursor: default; background: none; color: #52525b; }
 .bar .sep { width: 1px; height: 16px; margin: 0 3px; background: #e4e4e7; }
 .bar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .frame.dark .bar { background: rgba(24, 24, 27, 0.92); border-color: #3f3f46; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
 .frame.dark .bar button, .frame.dark .bar a { color: #a1a1aa; }
-.frame.dark .bar button:hover, .frame.dark .bar a:hover { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; }
+.frame.dark .bar button:hover, .frame.dark .bar a:hover { background: rgba(255, 107, 95, 0.2); color: #ffb4ab; }
 .frame.dark .bar .sep { background: #3f3f46; }
-.frame.dark .view:focus-visible { box-shadow: inset 0 0 0 2px #818cf8; }
+.frame.dark .view:focus-visible { box-shadow: inset 0 0 0 2px #ff6b5f; }
 `;
 
 const motion = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;

@@ -397,7 +397,14 @@ function drawShape(look: Look, s: Shape): string {
     out.push(`<text x="${s.x + s.w - 8}" y="${s.y + s.h - 4}" text-anchor="end" ${t.a}>${esc(p.ghost)}</text>`);
   }
   const title = textAttrs(look, p, 'title.', { font: 'sans', size: 12, weight: 600, color: 'ink' });
-  const tb = p.tag ? tagLayout(s, look, textBlock(s, title.size), title.size, cym + (iconBox(s)?.dy ?? 0)) : null;
+  let tb = p.tag ? tagLayout(s, look, textBlock(s, title.size), title.size, cym + (iconBox(s)?.dy ?? 0)) : null;
+  // with a caption across the top (a zone's), the tag sits on the caption's row at its left end, and a
+  // left-aligned caption starts after it, so the two never overlap
+  const capTop = !!s.text && p['title.pos'] === 'top';
+  const capOwn = p['title.dy'] !== undefined || p['title.fill'] !== undefined;
+  const capH = capOwn ? Math.max(12, Math.ceil(title.size + 4)) : 12, capY = num(p['title.dy'], 0) + 4;
+  if (tb && capTop) tb = { ...tb, x: 12, y: capY + Math.round((capH - tb.h) / 2) };
+  const tagRoom = tb && capTop ? tagWidth(look, p) + 4 : 0;
   if (tb) {
     const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
     const tw = tagWidth(look, p);
@@ -412,7 +419,7 @@ function drawShape(look: Look, s: Shape): string {
     // the plate is the text as drawn in the look's font plus 6px either side
     const tw = Math.ceil(measureText(look, txt, title.size, title.font, title.weight, title.spacing) + 12);
     // a caption on the top edge: centred, or at the left or right corner with title.align
-    const al = p['title.align'], mid = al === 'left' ? s.x + 12 + tw / 2 : al === 'right' ? s.x + s.w - 12 - tw / 2 : cxm;
+    const al = p['title.align'], mid = al === 'left' ? s.x + 12 + tagRoom + tw / 2 : al === 'right' ? s.x + s.w - 12 - tw / 2 : cxm;
     // title.dy moves the caption off the edge and title.fill colours its plate (none for no plate); a look that
     // sets either gets a plate sized to its type, the others keep the 12px plate they have always had
     const own = p['title.dy'] !== undefined || p['title.fill'] !== undefined;
