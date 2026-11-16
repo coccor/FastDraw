@@ -100,6 +100,25 @@ const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
 
 // The page's colour and dot grid. Choices are written to the diagram's canvas line (paper=, dots=),
 // so they override the look for this diagram only; picking the look's own colour drops the override.
+// The page dressing a look asks for (dots, listing bars, sprocket feed), stretched over the whole visible view
+// instead of the diagram's box. The patterns themselves come from renderBody's <defs>, so they match the export.
+function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: number } }) {
+  const cv = sc.look.canvas, on = (v: string | undefined) => !!v && v !== 'none';
+  const x = -view.x / view.k, y = -view.y / view.k, w = window.innerWidth / view.k, h = window.innerHeight / view.k;
+  const r = sc.x + sc.w - 26;
+  return (
+    <g pointerEvents="none">
+      {on(cv.dots) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-dots)" />}
+      {on(cv.bars) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-bars)" />}
+      {on(cv.feed) && <>
+        <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" />
+        <rect x={r} y={y} width={26} height={h} fill="url(#fd-feed-r)" />
+        <path d={`M ${sc.x + 26},${y} v ${h} M ${r},${y} v ${h}`} stroke={col(sc.look, cv.feed!)} strokeWidth={1} strokeDasharray="2 3" fill="none" />
+      </>}
+    </g>
+  );
+}
+
 function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string, string | null>) => void }) {
   const base = scene.baseCanvas ?? {}, cv = scene.look.canvas;
   const basePaper = base.paper ?? 'paper', paper = cv.paper ?? 'paper';
@@ -241,8 +260,8 @@ export function App() {
     return buildScene(ops.setLook(cur, p), p !== null && !isBundledLook(p) ? fl : null);
   }, [scene, lookPreview, cur, look, iconsReady]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
-  // the page layers are left out: the paper and dots fill the whole view instead
-  const body = useMemo(() => renderBody(shown).split('\n').filter((l) => !l.startsWith('<rect class="fd-page"')).join('\n'), [shown]);
+  // the page layers are left out: the paper, dots, bars and feed fill the whole view instead (see the canvas below)
+  const body = useMemo(() => renderBody(shown).split('\n').filter((l) => !/^<(rect|path) class="fd-page"/.test(l)).join('\n'), [shown]);
 
   // ---- saving and history -------------------------------------------------
   const save = useCallback((text: string) => {
@@ -1161,7 +1180,7 @@ export function App() {
       <svg ref={svgRef} className="canvas" style={{ cursor, background: col(shown.look, shown.look.canvas.paper ?? 'paper') }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
         onPointerLeave={() => setHover(null)} onContextMenu={onContext}>
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
-          {shown.look.canvas.dots && shown.look.canvas.dots !== 'none' && <rect x={-view.x / view.k} y={-view.y / view.k} width={window.innerWidth / view.k} height={window.innerHeight / view.k} fill="url(#fd-dots)" pointerEvents="none" />}
+          <PageLayers sc={shown} view={view} />
           <g ref={bodyRef} dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
           <g fill="transparent" stroke="transparent">
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
