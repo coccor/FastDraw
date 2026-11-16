@@ -54,6 +54,14 @@ test('darkLookOf follows the dark line, from the look file\'s folder', () => {
   assert.deepEqual(lookArg('night'), { name: 'night' });
 });
 
+test('fastdraw guide list says what each kind shows', () => {
+  const r = fastdraw('guide', 'list');
+  assert.equal(r.code, 0);
+  assert.match(r.out, /^flowchart +Shows a decision process/m);
+  assert.match(r.out, /^swimlane +Shows a process that passes between/m);
+  assert.ok(r.out.trim().split('\n').every((l) => /^[a-z-]+ +\S/.test(l)), 'every kind has a description');
+});
+
 test('fastdraw render --look and --dark', () => {
   const dir = mkdtempSync(join(tmpdir(), 'fd-cli-'));
   const f = join(dir, 'd.fdraw'), body = 'look sketch\na: node "A" at 40,40\n';

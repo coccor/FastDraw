@@ -5,16 +5,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { defaultLook } from '../src/look.ts';
 import { sizesReport } from '../src/sizes.ts';
+import { about } from '../src/guideKinds.ts';
 
 const SITE = 'https://fastdraw.dev';
-
-// The heading and first sentence of a guide, for the list of kinds.
-function about(md: string, name: string): { title: string; line: string } {
-  const lines = md.split('\n');
-  const title = (lines.find((l) => l.startsWith('# ')) ?? name).replace(/^# /, '');
-  const para = lines.slice(1).find((l) => l.trim()) ?? '';
-  return { title, line: (/^.*?[.!?](?=\s|$)/.exec(para)?.[0] ?? para).replace(/`/g, '') };
-}
 
 export function siteFiles(root: string): Map<string, string> {
   const dir = join(root, 'guide');
