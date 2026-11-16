@@ -1066,6 +1066,21 @@ test('the menu changes the background for this diagram and resets to the look', 
   expect(lineOf(await source(page), 'canvas')).toBe('');
 });
 
+test('a look with listing paper fills the whole canvas with its bars and sprocket feed', async ({ page }) => {
+  await openFolder(page, { 'd.fdraw': 'look listing\na: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n' });
+  const canvas = page.locator('svg.canvas');
+  const bars = canvas.locator('rect[fill="url(#fd-bars)"]');
+  await expect(bars).toHaveCount(1);
+  await expect(canvas.locator('#fd-bars')).toHaveCount(1);
+  // the bars cover the view, not just the diagram's box
+  const box = (await bars.boundingBox())!, view = (await canvas.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(view.width - 1);
+  expect(box.height).toBeGreaterThanOrEqual(view.height - 1);
+  await expect(canvas.locator('rect[fill="url(#fd-feed-l)"]')).toHaveCount(1);
+  await expect(canvas.locator('rect[fill="url(#fd-feed-r)"]')).toHaveCount(1);
+  await page.screenshot({ path: 'test-results/listing-canvas.png' });
+});
+
 test('the look picker: hover shows the diagram in a look, a click uses it at once, undo goes back', async ({ page }) => {
   const errors = noPageErrors(page);
   const PLAIN = SMALL.replace('canvas 900x420\n', '');
