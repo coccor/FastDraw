@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Search } from 'lucide-react';
 import type { Look } from '../../src/look.ts';
 import { isIconUri } from '../../src/iconfiles.ts';
-import { iconAddresses, isPublicWebUrl } from '../../src/webassets.ts';
+import { fetchWebIcons } from '../../src/webassets.ts';
 
 // an icon the look has on the web: named by its own address, or found in one of its sets
 const isWebIcon = (look: Look, n: string) => look.iconUrls.has(n) || !!look.listedIcons?.includes(n);
@@ -20,10 +20,8 @@ import { useExtendedIcons } from './useExtendedIcons.ts';
 export function IconGlyph({ look, name, size = 22, iconStyle = 'outline' }: { look: Look; name: string; size?: number; iconStyle?: IconStyle }) {
   const img = look.images.get(name);
   if (img) return isIconUri(img) ? <img src={img} width={size} height={size} alt="" draggable={false} /> : null;
-  // one of the look's web icons not fetched yet: shown straight from its address, as an image (no scripts run in
-  // an SVG drawn by <img>), only when it is scrolled into view
-  const web = isWebIcon(look, name) ? iconAddresses(look, name).find(isPublicWebUrl) : undefined;
-  if (web) return <img src={web} width={size} height={size} alt="" draggable={false} loading="lazy" referrerPolicy="no-referrer" />;
+  // one of the look's web icons not fetched yet: fetched the way the diagram's are, once it is in view
+  if (isWebIcon(look, name)) return <WebGlyph look={look} name={name} size={size} />;
   if (isBuiltIn(look, name)) {
     const { tint, front } = iconLayers(name, iconStyle);
     return (
@@ -38,6 +36,26 @@ export function IconGlyph({ look, name, size = 22, iconStyle = 'outline' }: { lo
       {(look.icons.get(name) ?? []).map((d, i) => <path key={i} d={d} />)}
     </svg>
   );
+}
+
+// A web icon in a tile: fetched through fetchWebIcons (public https only, no redirects or cookies, checked as an
+// SVG) when the tile scrolls into view, so a set of thousands asks only for what is seen; blank until then.
+function WebGlyph({ look, name, size }: { look: Look; name: string; size: number }) {
+  const [uri, setUri] = React.useState<string | null>(null);
+  const box = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    let stale = false;
+    const seen = new IntersectionObserver((es) => {
+      if (!es.some((e) => e.isIntersecting)) return;
+      seen.disconnect();
+      fetchWebIcons(look, [name]).then((w) => { if (!stale) setUri(w.uris[name] ?? null); });
+    });
+    seen.observe(el);
+    return () => { stale = true; seen.disconnect(); };
+  }, [look, name]);
+  return <span ref={box} style={{ display: 'inline-block', width: size, height: size }}>{uri && <img src={uri} width={size} height={size} alt="" draggable={false} />}</span>;
 }
 
 // Every icon the look has, as tiles to click, with a search box, in three tabs: Outline (the look's folder

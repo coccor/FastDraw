@@ -108,12 +108,18 @@ export function setListing(dir: string): { url: string; nameOf: (path: string) =
   const tpl = dir.includes('{name}') ? dir : `${dir.replace(/\/+$/, '')}/{name}.svg`;
   const m = /^https:\/\/cdn\.jsdelivr\.net\/(npm\/(?:@[^/@{}]+\/)?[^/@{}]+|gh\/[^/@{}]+\/[^/@{}]+)@([^/{}]+)(\/.*)$/i.exec(tpl);
   if (!m) return null;
-  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`^${m[3]!.split('{name}').map(esc).join('([a-z0-9-]{1,80})')}$`);
+  // matched by hand, not with a regular expression: the path is the template's fixed parts with the same name in
+  // every {name}, so the name's length follows from the path's
+  const parts = m[3]!.split('{name}'), fixed = parts.join('').length, k = parts.length - 1;
+  if (k > 3) return null;
   return {
     url: `https://data.jsdelivr.com/v1/packages/${m[1]}@${m[2]}?structure=flat`,
-    // every {name} in the path is the same name (devicon: icons/{name}/{name}-original.svg)
-    nameOf: (path) => { const r = re.exec(path); return r && r.slice(1).every((n) => n === r[1]) ? r[1]! : null; },
+    nameOf: (path) => {
+      const len = (path.length - fixed) / k;
+      if (path.length > 1000 || !Number.isInteger(len) || len < 1 || len > 80) return null;
+      const name = path.slice(parts[0]!.length, parts[0]!.length + len);
+      return /^[a-z0-9-]+$/.test(name) && parts.join(name) === path ? name : null;
+    },
   };
 }
 

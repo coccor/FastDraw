@@ -159,6 +159,11 @@ test("a set on jsDelivr is listed from jsDelivr's file list; a set elsewhere lis
   const dev = setListing('https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/{name}/{name}-original.svg')!;
   assert.equal(dev.nameOf('/icons/react/react-original.svg'), 'react');
   assert.equal(dev.nameOf('/icons/react/vue-original.svg'), null);
+  // matching is by length, never slow: a long path of name characters is simply not a match
+  const t0 = Date.now();
+  assert.equal(setListing('https://cdn.jsdelivr.net/npm/x@1/{name}-{name}-{name}.svg')!.nameOf('/' + 'a-'.repeat(400) + '!.svg'), null);
+  assert.ok(Date.now() - t0 < 50);
+  assert.equal(setListing('https://cdn.jsdelivr.net/npm/x@1/{name}/{name}/{name}/{name}.svg'), null);
   // not on jsDelivr, or no version to list
   assert.equal(setListing('https://raw.githubusercontent.com/k/c/abc/icons/{name}.svg'), null);
   assert.equal(setListing('https://cdn.jsdelivr.net/npm/simple-icons/icons/{name}.svg'), null);
