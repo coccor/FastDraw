@@ -160,6 +160,12 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .lookthumb { width: 100%; height: 84px; display: block; border-radius: 5px; background: #fff; }
 .lookactions { display: flex; align-items: center; gap: 8px; }
 .lookactions .muted { flex: 1; }
+.lookgh { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.lookgh h3 { margin: 0; font-size: 12px; font-weight: 600; }
+.lookgh form { display: flex; gap: 6px; }
+.lookgh input { flex: 1; min-width: 0; font: 12px 'Geist Mono', monospace; }
+.lookgh p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.lookgh button.link { align-self: flex-start; padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 
 /* save state, on the open diagram's tab, and problems */
 .savestate { position: relative; display: flex; align-items: center; gap: 6px; align-self: stretch; padding: 0 4px; cursor: help; }

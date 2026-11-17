@@ -57,6 +57,14 @@ test('a look file next to the diagram is read from the same repository', async (
   assert.match(svg, /#123456/);
 });
 
+test('a look named by its address on GitHub is read from there', async () => {
+  const seen: string[] = [];
+  const at = 'https://raw.githubusercontent.com/coccor/fastdraw-looks/main/t.look';
+  const svg = await text(await get('/gh/acme/app/main/a.fdraw', deps({ [RAW + 'a.fdraw']: `look "${at}"\na: node "A"`, [at]: 'color ink #123456\nstyle node fill=#fafafa stroke=ink' }, seen)));
+  assert.match(svg, /#123456/);
+  assert.deepEqual(seen, [RAW + 'a.fdraw', at]);
+});
+
 test('a look outside the repository, or not a .look file, is not read', async () => {
   for (const ref of ['../../../other/repo/main/x.look', 'https://evil.example/x.look', '../secrets.txt']) {
     const seen: string[] = [];

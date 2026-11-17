@@ -2,7 +2,7 @@
 import { byNumber } from './order.ts';
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
-import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
+import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES, isWebLook, movedLookUrl, LOOKS_REPO } from './look.ts';
 import { iconMatches } from './icons.ts';
 import { iconStandIn, iconSources } from './iconfiles.ts';
 import { isBuiltIn } from './iconStyle.ts';
@@ -348,7 +348,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   if (lookStmt) {
     const p = lookStmt.toks[1]?.v;
     if (!p) err(lookStmt.line, `look needs a name or a path, e.g. look sketch or look "./team.look" (named looks: ${BUNDLED_LOOK_NAMES.join(', ')})`);
-    else if (!named && !lookIn) err(lookStmt.line, /[\\/]|\.look$/i.test(p) ? `look file not found: ${p}` : `no look named ${p}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file`);
+    else if (!named && !lookIn) err(lookStmt.line, isWebLook(p) ? `the look at ${p} could not be fetched`
+      : movedLookUrl(p) ? `the ${p} look no longer ships with FastDraw; it is in ${LOOKS_REPO} on GitHub: look "${movedLookUrl(p)}"`
+      : /[\\/]|\.look$/i.test(p) ? `look file not found: ${p}` : `no look named ${p}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file`);
     else for (const i of look.issues) issues.push({ ...i, line: lookStmt.line, msg: `${i.msg} (in look, line ${i.line})` });
   }
 

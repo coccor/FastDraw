@@ -4,11 +4,11 @@ import { tmpdir, homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { fontMeta, withoutLigatures } from './fontmeta.ts';
 import { dirname, resolve, join, basename } from 'node:path';
-import { parseLook, emptyLook, isBundledLook, bundledLook, defaultLook, BUNDLED_LOOK_NAMES } from './look.ts';
+import { parseLook, emptyLook, isBundledLook, bundledLook, defaultLook, BUNDLED_LOOK_NAMES, isWebLook } from './look.ts';
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
-import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, webFaces, webFetch, hostOf, MAX_FONT_BYTES } from './webassets.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, webFaces, webFetch, fetchWebLook, hostOf, MAX_FONT_BYTES } from './webassets.ts';
 import type { WebIcons, Fetch } from './webassets.ts';
 import { createHash } from 'node:crypto';
 import { lstatSync, realpathSync } from 'node:fs';
@@ -70,14 +70,42 @@ function diskFetch(offline: boolean): Fetch {
   };
 }
 // the copy of a fetched file: named by its address, keeping the extension the PNG renderer goes by
-const cachePath = (url: string) => join(webCacheDir(), createHash('sha256').update(url).digest('hex').slice(0, 32) + (/\.(ttf|otf|svg)(?=\?|$)/i.exec(url)?.[0].toLowerCase() ?? ''));
+const cachePath = (url: string) => join(webCacheDir(), createHash('sha256').update(url).digest('hex').slice(0, 32) + (/\.(ttf|otf|svg|look)(?=\?|$)/i.exec(url)?.[0].toLowerCase() ?? ''));
+
+// A look a diagram names by web address (look "https://.../engraved.look") is read from its copy in the cache
+// folder, which fetchWebAssets fills. Online, it is fetched again on every run, since the file at an address such
+// as a branch on GitHub changes; offline, or when the address cannot be reached, the copy is used.
+async function fetchLookToCache(url: string, offline: boolean): Promise<string | undefined> {
+  const path = cachePath(url), had = existsSync(path);
+  if (offline) return had ? undefined : `${url}: not fetched (--offline) and not fetched before`;
+  try {
+    const text = await fetchWebLook(url);
+    if (text === null) return `there is no look file at ${url}`;
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, text);
+    return undefined;
+  } catch (e) {
+    return had ? `${hostOf(url)} could not be reached, so the copy of ${url} fetched before is used` : `the look at ${url} could not be fetched: ${(e as Error).message}`;
+  }
+}
+/** The copy in the cache folder of a look named by its web address (filled by fetchWebAssets). */
+export const webLookFile = (url: string): string => cachePath(url);
+/** Where the look a diagram at `file` names by `p` is read from: the cached copy of a web look, or a path from the diagram's folder. */
+const lookFileFor = (file: string, p: string): string => (isWebLook(p) ? cachePath(p) : resolve(dirname(file), p));
 
 // Fetch what the diagrams' looks name by web address: the icons each diagram uses, and the TTF and OTF files of
 // the look's fonts (the PNG renderer reads only those). Returns a note per host that could not be reached.
 // `files` are diagrams, or .look files (preview-look, sizes, icons), for which the icons the look names one by one
 // are fetched.
-export async function fetchWebAssets(files: string[], offline = false): Promise<string[]> {
+// `looks` are web looks named outside the diagrams (render --look https://...).
+export async function fetchWebAssets(files: string[], offline = false, looks: string[] = []): Promise<string[]> {
   const get = diskFetch(offline), notes = new Set<string>();
+  const webLooks = new Set(looks.filter(isWebLook));
+  for (const file of files) {
+    if (/\.look$/i.test(file)) continue;
+    try { const p = lookPath(readFileSync(file, 'utf8')); if (p && isWebLook(p)) webLooks.add(p); } catch { /* unreadable: loadScene says so */ }
+  }
+  for (const url of webLooks) { const n = await fetchLookToCache(url, offline); if (n) notes.add(n); }
   const wanted = new Map<string, { look: Look; names: Set<string> }>();
   for (const file of files) {
     if (/\.look$/i.test(file)) {
@@ -95,7 +123,7 @@ export async function fetchWebAssets(files: string[], offline = false): Promise<
     try { src = readFileSync(file, 'utf8'); } catch { continue; }
     const p = lookPath(src), r = readLook(file, p);
     if (r.text === null) continue;
-    const lookFile = resolve(dirname(file), p!), look = parseLook(r.text, p);
+    const lookFile = lookFileFor(file, p!), look = parseLook(r.text, p);
     if (!hasWebIcons(look) && !look.fontUrls.size) continue;
     const w = wanted.get(lookFile) ?? { look, names: new Set<string>() };
     for (const m of src.matchAll(/\bicon="?([\w-]+)/g)) w.names.add(m[1]!);
@@ -186,6 +214,7 @@ export function lookFonts(lookFile: string | undefined, look: Look): { files: st
 // Only files named *.look are ever read, so a diagram cannot pull in some other file.
 function readLook(file: string, p: string | undefined): { text: string | null; refused: boolean } {
   if (!p) return { text: null, refused: false };
+  if (isWebLook(p)) { try { return { text: readFileSync(cachePath(p), 'utf8'), refused: false }; } catch { return { text: null, refused: false }; } }
   if (!p.toLowerCase().endsWith('.look')) return { text: null, refused: true };
   try { return { text: readFileSync(resolve(dirname(file), p), 'utf8'), refused: false }; }
   catch { return { text: null, refused: false }; }
@@ -202,8 +231,8 @@ export function loadScene(file: string, srcIn?: string): Scene {
   }
   const p = lookPath(src);
   const r = readLook(file, p);
-  const sc = buildScene(src, r.text === null ? null : withIcons(resolve(dirname(file), p!), parseLook(r.text, p)), file);
-  const fonts = lookFonts(r.text === null ? undefined : resolve(dirname(file), p!), sc.look);
+  const sc = buildScene(src, r.text === null ? null : withIcons(lookFileFor(file, p!), parseLook(r.text, p)), file);
+  const fonts = lookFonts(r.text === null ? undefined : lookFileFor(file, p!), sc.look);
   sc.fontFiles = fonts.files;
   for (const fam of fonts.missing) {
     const at = sc.look.fontUrls.get(fam);
@@ -230,18 +259,21 @@ export function readSources(file: string, sc?: Scene, src?: string): { diagram: 
 export function lookFileOf(diagramFile: string): string | undefined {
   try {
     const p = lookPath(readFileSync(diagramFile, 'utf8'));
-    return p && p.toLowerCase().endsWith('.look') ? resolve(dirname(diagramFile), p) : undefined;
+    return p && isWebLook(p) ? cachePath(p) : p && p.toLowerCase().endsWith('.look') ? resolve(dirname(diagramFile), p) : undefined;
   } catch { return undefined; }
 }
 
 // A look named on the command line, in a diagram or in a look's `dark` line: one that ships with
-// FastDraw by its name, or a .look file by its full path. No look at all is the built-in one.
-export type LookRef = { name: string } | { file: string };
+// FastDraw by its name, a .look file by its full path, or a look on the web by its address (read from the copy
+// fetchWebAssets keeps in `file`). No look at all is the built-in one.
+export type LookRef = { name: string } | { file: string } | { url: string; file: string };
 
-// --look <name|path>: a bundled look's name, or a path to a .look file from the current folder.
+// --look <name|path|address>: a bundled look's name, a path to a .look file from the current folder, or the
+// https address of one.
 export function lookArg(v: string): LookRef | string {
   if (isBundledLook(v)) return { name: v };
-  if (!/\.look$/i.test(v)) return `no look named ${v}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file`;
+  if (isWebLook(v)) return { url: v, file: cachePath(v) };
+  if (!/\.look$/i.test(v)) return `no look named ${v}; named looks: ${BUNDLED_LOOK_NAMES.join(', ')}, or give a path to a .look file or its https address`;
   return existsSync(v) ? { file: resolve(v) } : `look file not found: ${v}`;
 }
 
@@ -249,12 +281,13 @@ export function lookArg(v: string): LookRef | string {
 export function lookOfDiagram(file: string, src: string): LookRef | undefined {
   const p = lookPath(src);
   if (p === undefined) return undefined;
-  return isBundledLook(p) ? { name: p } : { file: resolve(dirname(file), p) };
+  return isBundledLook(p) ? { name: p } : isWebLook(p) ? { url: p, file: cachePath(p) } : { file: resolve(dirname(file), p) };
 }
 
 // How a diagram at `file` names the look: a bare name, or a path from the diagram's folder.
 export function lookRefText(ref: LookRef, file: string): string {
   if ('name' in ref) return ref.name;
+  if ('url' in ref) return ref.url;
   const rel = relative(dirname(resolve(file)), ref.file).split(sep).join('/');
   return rel.startsWith('.') || isAbsolute(rel) ? rel : './' + rel;
 }
@@ -267,15 +300,15 @@ export function darkLookOf(ref: LookRef | undefined): LookRef | string {
   if (ref && 'name' in ref) { look = bundledLook(ref.name)!; name = `the ${ref.name} look`; }
   else if (ref) {
     if (!/\.look$/i.test(ref.file)) return `the look path must end in .look; ${ref.file} was not read`;
-    if (!existsSync(ref.file)) return `look file not found: ${ref.file}`;
-    look = parseLook(readFileSync(ref.file, 'utf8'), ref.file); name = basename(ref.file); from = ref.file;
+    if (!existsSync(ref.file)) return 'url' in ref ? `the look at ${ref.url} could not be fetched` : `look file not found: ${ref.file}`;
+    look = parseLook(readFileSync(ref.file, 'utf8'), ref.file); name = 'url' in ref ? ref.url : basename(ref.file); from = 'url' in ref ? undefined : ref.file;
   }
   const d = look.dark;
   if (!d) return ref && 'name' in ref
     ? `${name} has no dark version; draw the dark image with --look and a dark look instead`
     : `${name} has no dark version: ${how}`;
   if (isBundledLook(d)) return { name: d };
-  if (!from) return `${name} names a dark look by path (${d}), which only a look file can do`;
+  if (!from) return `${name} names a dark look by path (${d}), which only a look file on this computer can do`;
   const file = resolve(dirname(from), d);
   return existsSync(file) ? { file } : `the dark look of ${name} was not found: ${d}`;
 }

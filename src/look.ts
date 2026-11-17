@@ -316,6 +316,15 @@ let cachedDefault: Look | undefined;
 // bare word; anything with a slash or ending in .look is a file path.
 export const BUNDLED_LOOK_NAMES = Object.keys(BUNDLED_LOOKS);
 export const isBundledLook = (p: string | undefined): p is string => !!p && Object.hasOwn(BUNDLED_LOOKS, p);
+
+// Looks that shipped with FastDraw once and now live in their own repository, read from GitHub like any other.
+export const LOOKS_REPO = 'coccor/fastdraw-looks';
+export const MOVED_LOOKS = ['engraved', 'headline', 'keys', 'listing', 'offset', 'transit'];
+/** The address a diagram names a moved look by: look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look". */
+export const movedLookUrl = (name: string): string | undefined =>
+  MOVED_LOOKS.includes(name) ? `https://raw.githubusercontent.com/${LOOKS_REPO}/main/${name}.look` : undefined;
+/** A look named by its web address: an https address of a .look file. */
+export const isWebLook = (p: string | undefined): boolean => !!p && isWebUrl(p) && /^[^?#]*\.look(?:[?#]|$)/i.test(p);
 const bundledCache = new Map<string, Look>();
 export function bundledLook(name: string): Look | null {
   if (!isBundledLook(name)) return null;

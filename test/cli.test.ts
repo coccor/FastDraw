@@ -150,3 +150,31 @@ test('icons and fonts a look names by web address come from the cache folder; --
   assert.doesNotMatch(warm, /note:|icon lambda|font "Coverage Sans"/, warm);
   assert.match(warm, /ok: no problems found/);
 });
+
+test('a look named by web address is read from its copy in the cache folder; --offline never asks the network', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fd-weblook-')), cache = join(dir, 'cache');
+  const at = 'https://looks.example.com/team/main/brand.look';
+  writeFileSync(join(dir, 'a.fdraw'), `look "${at}"\na: node "A" at 20,20\n`);
+  const env = { ...process.env, FASTDRAW_NO_UPDATE_CHECK: '1', XDG_CACHE_HOME: cache };
+  const run = (...a: string[]) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, ...a], { encoding: 'utf8', env }).stdout;
+  const cold = run('check', join(dir, 'a.fdraw'), '--offline');
+  assert.match(cold, /note: https:\/\/looks\.example\.com\/team\/main\/brand\.look: not fetched \(--offline\) and not fetched before/);
+  assert.match(cold, /a\.fdraw:1 {2}error {2}the look at https:\/\/looks\.example\.com\/team\/main\/brand\.look could not be fetched/);
+  // the copy a fetch leaves: named by the address, ending in .look
+  const web = join(cache, 'fastdraw', 'web');
+  mkdirSync(web, { recursive: true });
+  writeFileSync(join(web, createHash('sha256').update(at).digest('hex').slice(0, 32) + '.look'), 'color ink #123456\nstyle node shape=rect size=144x64 fill=paper stroke=ink\n');
+  assert.match(run('check', join(dir, 'a.fdraw'), '--offline'), /ok: no problems found/);
+  const out = join(dir, 'a.svg');
+  assert.match(run('render', join(dir, 'a.fdraw'), '--offline', '-o', out), /wrote/);
+  assert.match(readFileSync(out, 'utf8'), /#123456/);
+  // --look takes an address too, and the note on what was drawn names it
+  assert.match(run('render', join(dir, 'a.fdraw'), '--offline', '--look', at, '-o', join(dir, 'b.svg')), /look https:\/\/looks\.example\.com\/team\/main\/brand\.look\)/);
+  // sizes, icons and preview-look take the address too, read from the same copy
+  assert.doesNotMatch(run('sizes', at, '--offline'), /look file not found|could not be fetched/);
+  assert.match(run('sizes', at, '--offline'), /node +shape=rect/);
+  assert.match(run('preview-look', at, '--offline', '-o', join(dir, 'sheet.png')), /wrote .*sheet\.png/);
+  // a look that used to ship says where it went
+  writeFileSync(join(dir, 'old.fdraw'), 'look keys\na: rect "A" at 20,20\n');
+  assert.match(run('check', join(dir, 'old.fdraw'), '--offline'), /the keys look no longer ships with FastDraw; it is in coccor\/fastdraw-looks on GitHub: look "https:\/\/raw\.githubusercontent\.com\/coccor\/fastdraw-looks\/main\/keys\.look"/);
+});

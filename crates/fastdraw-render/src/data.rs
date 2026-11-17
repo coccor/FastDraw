@@ -226,19 +226,7 @@ mod tests {
         let names: Vec<_> = bundled_looks().keys().copied().collect();
         assert_eq!(
             names,
-            [
-                "engraved",
-                "headline",
-                "keys",
-                "listing",
-                "night",
-                "offset",
-                "reference",
-                "shade",
-                "sketch",
-                "transit",
-                "whiteboard"
-            ]
+            ["night", "reference", "shade", "sketch", "whiteboard"]
         );
         assert!(DEFAULT_LOOK.contains("dark night"));
         assert!(DEFAULT_LOOK.starts_with("// FastDraw default look."));

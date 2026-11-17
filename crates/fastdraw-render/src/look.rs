@@ -916,6 +916,25 @@ pub fn bundled_look_names() -> Vec<&'static str> {
     bundled_looks().keys().copied().collect()
 }
 
+/// Looks that shipped with FastDraw once and now live in their own repository (look.ts `MOVED_LOOKS`).
+pub const LOOKS_REPO: &str = "coccor/fastdraw-looks";
+pub const MOVED_LOOKS: [&str; 6] = [
+    "engraved", "headline", "keys", "listing", "offset", "transit",
+];
+
+/// The address a diagram names a moved look by (look.ts `movedLookUrl`).
+pub fn moved_look_url(name: &str) -> Option<String> {
+    MOVED_LOOKS
+        .contains(&name)
+        .then(|| format!("https://raw.githubusercontent.com/{LOOKS_REPO}/main/{name}.look"))
+}
+
+/// A look named by its web address: an https address of a .look file (look.ts `isWebLook`).
+pub fn is_web_look(p: &str) -> bool {
+    let path = p.split(['?', '#']).next().unwrap_or("").as_bytes();
+    is_web_url(p) && path.len() >= 5 && path[path.len() - 5..].eq_ignore_ascii_case(b".look")
+}
+
 pub fn is_bundled_look(p: &str) -> bool {
     bundled_looks().contains_key(p)
 }
