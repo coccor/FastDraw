@@ -71,10 +71,19 @@ const cachePath = (url: string) => join(webCacheDir(), createHash('sha256').upda
 
 // Fetch what the diagrams' looks name by web address: the icons each diagram uses, and the TTF and OTF files of
 // the look's fonts (the PNG renderer reads only those). Returns a note per host that could not be reached.
+// `files` are diagrams, or .look files (preview-look, sizes, icons), for which the icons the look names one by one
+// are fetched.
 export async function fetchWebAssets(files: string[], offline = false): Promise<string[]> {
   const get = diskFetch(offline), notes = new Set<string>();
   const wanted = new Map<string, { look: Look; names: Set<string> }>();
   for (const file of files) {
+    if (/\.look$/i.test(file)) {
+      let text: string;
+      try { text = readFileSync(file, 'utf8'); } catch { continue; }
+      const look = parseLook(text, file);
+      if (hasWebIcons(look) || look.fontUrls.size) wanted.set(resolve(file), { look, names: new Set(look.iconUrls.keys()) });
+      continue;
+    }
     let src: string;
     try { src = readFileSync(file, 'utf8'); } catch { continue; }
     const p = lookPath(src), r = readLook(file, p);
@@ -101,7 +110,7 @@ export async function fetchWebAssets(files: string[], offline = false): Promise<
   return [...notes];
 }
 
-// Icons the look names by web address come from the cache `fetchLookAssets` filled; without it they are not
+// Icons the look names by web address come from the cache `fetchWebAssets` filled; without it they are not
 // read, and the built-in icon closest to each is drawn instead.
 const withIcons = (lookFile: string, look: Look): Look => {
   if (!look.iconDirs.length && !look.iconUrls.size) return look;

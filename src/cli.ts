@@ -194,6 +194,7 @@ if (cmd === 'check') {
     console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
   }
 } else if (cmd === 'sizes') {
+  if (args[0]) await fetchWeb([args[0]]);
   const look = !args[0] ? defaultLook() : args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
   const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);
   console.log(sizesReport(look, lf.missing));
@@ -206,6 +207,7 @@ if (cmd === 'check') {
   const file = args.find((a, i) => !a.startsWith('-') && args[i - 1] !== '-o');
   const oi = args.indexOf('-o');
   const out = oi >= 0 ? args[oi + 1] : (file ? file.replace(/\.look$/, '') : 'default') + '-preview.png';
+  if (file) await fetchWeb([file]);
   const look = file ? loadLook(file) : defaultLook();
   const errs = look.issues.filter((i) => i.level === 'error');
   if (errs.length) { for (const i of errs) console.log(`${file}:${i.line}  error  ${i.msg}`); process.exit(1); }
@@ -249,8 +251,9 @@ if (cmd === 'check') {
   });
   y += 60;
   heading('Icons');
-  // the named built-in icons and the look's own; the other ~1,400 Phosphor icons would fill pages (fastdraw icons <word> finds them)
-  [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n) || !isBuiltIn(look, n)).forEach((n, i) => {
+  // the look's icon files (its folder's, the first 44, and those it names by address), then the named built-in icons
+  // and the look's own outlines; the other ~1,400 Phosphor icons would fill pages (fastdraw icons <word> finds them)
+  [...new Set([...[...look.images.keys()].slice(0, 44), ...look.iconUrls.keys(), ...[...look.icons.keys()].filter((n) => NAMED_ICONS.has(n) || !isBuiltIn(look, n))])].forEach((n, i) => {
     const cx = 40 + (i % 11) * 80;
     if (i && i % 11 === 0) y += 60;
     L.push(`icon at ${cx + 20},${y} icon=${n}`);
@@ -283,8 +286,9 @@ if (cmd === 'check') {
 } else if (cmd === 'icons') {
   // icons [file.look] [word]: every icon a look offers, optionally only those that answer to the word (by name or meaning)
   const file = args[0]?.endsWith('.look') ? args[0] : undefined, word = (file ? args[1] : args[0])?.toLowerCase();
+  if (file) await fetchWeb([file]);
   const look = file ? loadLook(file) : defaultLook();
-  const names = [...new Set([...look.images.keys(), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
+  const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
   console.log(names.length ? names.join('\n') : `no icon${word ? ` for "${word}"` : ''}`);
 } else if (cmd === 'guide') {
   const topic = args[0];

@@ -20,7 +20,13 @@ export function sizesReport(look: Look, missingFonts: string[] = []): string {
   }
   out.push('\nfonts');
   for (const [role, fam] of look.fonts) out.push(`  ${role.padEnd(12)} ${fam}${missingFonts.includes(fam) ? '   (no font file found: will fall back)' : ''}`);
-  const own = [...look.images.keys()];
+  const own = [...look.images.keys()].filter((n) => !look.iconUrls.has(n));
+  const sets = look.iconDirs.filter((d) => /^https:/i.test(d));
+  if (sets.length || look.iconUrls.size) {
+    out.push('\nicons from the web (icon=name)');
+    if (look.iconUrls.size) out.push(`  ${[...look.iconUrls.keys()].join(', ')}`);
+    for (const d of sets) out.push(`  any file at ${d.includes('{name}') ? d : d.replace(/\/+$/, '') + '/{name}.svg'}, by its name`);
+  }
   if (own.length) out.push(`\nicons from the look's folders (${own.length}; "fastdraw icons <look> [word]" lists or searches them)\n  ${own.slice(0, 60).join(', ')}${own.length > 60 ? ', ...' : ''}`);
   out.push(`\n${own.length ? 'built-in icons' : 'icons'} (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
   if (look.guidance.length) { out.push('\nguidance from this look'); for (const g of look.guidance) out.push(`  - ${g}`); }
