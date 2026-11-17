@@ -76,6 +76,8 @@ pub struct Look {
     pub icon_dirs: Vec<String>,
     /// name -> https:// address of one SVG file (`icon name "https://..."`)
     pub icon_urls: IndexMap<String, String>,
+    /// `icons builtin=hidden`: the built-in icons stay drawable but are not offered
+    pub hide_built_ins: bool,
     /// icondir address -> the icon names it has, as the look lists them (`names="..."`)
     pub icon_set_names: IndexMap<String, Vec<String>>,
     /// family -> https:// address of its files, with {weight} and {style} (`font sans "Inter" "https://..."`)
@@ -311,6 +313,7 @@ pub fn empty_look() -> Look {
         icons: IconMap::builtin(),
         icon_dirs: Vec::new(),
         icon_urls: IndexMap::new(),
+        hide_built_ins: false,
         icon_set_names: IndexMap::new(),
         font_urls: IndexMap::new(),
         images: IndexMap::new(),
@@ -392,7 +395,7 @@ pub fn parse_look(src: &str, path: &str) -> Look {
             };
         }
         if head.t != TokKind::Word {
-            err!("a look statement must start with canvas, color, font, fontdir, style, icon, icondir, guidance or dark".to_string());
+            err!("a look statement must start with canvas, color, font, fontdir, style, icon, icons, icondir, guidance or dark".to_string());
             continue;
         }
         match head.v.as_str() {
@@ -493,6 +496,19 @@ pub fn parse_look(src: &str, path: &str) -> Look {
                         }
                     }
                     _ => err!("icon needs a name in small letters, e.g. icon queue \"M4 6h16 M4 12h16 M4 18h16\"".to_string()),
+                }
+            }
+            "icons" => {
+                // icons builtin=hidden: a vendor look offers only its own icons; diagrams that use a built-in one still draw
+                let v = match rest {
+                    [t] if t.t == TokKind::Prop && t.k.as_deref() == Some("builtin") => {
+                        Some(t.v.as_str())
+                    }
+                    _ => None,
+                };
+                match v {
+                    Some(v @ ("hidden" | "shown")) => look.hide_built_ins = v == "hidden",
+                    _ => err!("icons takes builtin=hidden (the built-in icons are not offered in the icon picker, the preview or the icon lists; diagrams that use one still draw) or builtin=shown".to_string()),
                 }
             }
             "fontdir" => match rest.first() {

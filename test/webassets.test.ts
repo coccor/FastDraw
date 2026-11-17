@@ -184,3 +184,16 @@ icon lambda "https://c.example/aws@3.3.0/AWSLambda.svg"`);
   assert.deepEqual(bad.issues.map((i) => i.msg.slice(0, 22)), ['names= lists the icons', 'icondir names= lists i']);
   assert.equal(bad.iconSetNames.size, 0);
 });
+
+test('icons builtin=hidden keeps the built-in icons drawable but answers a wrong name with the look\'s own', async () => {
+  const look = parseLook('icons builtin=hidden\nicon queue "M4 6h16"\nicon lambda "https://c.example/aws@3.3.0/AWSLambda.svg"');
+  assert.deepEqual(look.issues, []);
+  assert.equal(look.hideBuiltIns, true);
+  assert.equal(parseLook('icons builtin=shown').hideBuiltIns, false);
+  assert.equal(parseLook('').hideBuiltIns, false);
+  for (const bad of ['icons', 'icons builtin=gone', 'icons builtin=hidden extra', 'icons hidden']) assert.match(parseLook(bad).issues[0]?.msg ?? '', /^icons takes builtin=hidden/, bad);
+  const sc = buildScene('a: rect "DB" at 20,20 160x60 icon=database\nb: rect "?" at 220,20 160x60 icon=nosuch\n', withIconImages(look, [], { lambda: 'data:image/svg+xml;base64,PHN2Zy8+' }, true));
+  const errs = sc.issues.filter((i) => i.level === 'error').map((i) => i.msg);
+  assert.deepEqual(errs, ['there is no icon called "nosuch"; the look has: lambda, queue']);
+  assert.match(renderSvg(sc), /<path/); // database is still drawn
+});

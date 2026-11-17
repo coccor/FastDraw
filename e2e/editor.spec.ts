@@ -1242,3 +1242,20 @@ test('a shared link whose look names icons and fonts by web address fetches them
   expect(d?.look?.text).toContain('cdn.example.com');
   expect(errors).toEqual([]);
 });
+
+test('a look with icons builtin=hidden offers only its own icons in the picker, and its diagrams still draw built-in ones', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await page.route('https://cdn.example.com/**', (route) => route.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="#0078d4"/></svg>' }));
+  const { editorLink } = await import('../editor/src/embed/share.ts');
+  const look = 'icons builtin=hidden\nicon vault "https://cdn.example.com/set@1.0.0/vault.svg"\nicon queue "M4 6h16" "M4 12h16"\nstyle node shape=rect size=160x60';
+  const link = (await editorLink('http://x/edit/', { name: 'hidden.fdraw', text: 'look "./h.look"\na: node "Vault" icon=vault at 40,40\nb: node "DB" icon=database at 260,40\n', look: { path: './h.look', text: look } })).replace('http://x', '');
+  await page.goto(link);
+  await expect(page.getByText('No problems')).toBeVisible();
+  await page.getByRole('button', { name: 'Icon', exact: true }).click();
+  const grid = page.getByRole('radiogroup', { name: 'Icons' });
+  await expect(grid).toContainText("The look's icons");
+  await expect(grid).not.toContainText('Built in');
+  await expect(grid.getByRole('radio')).toHaveCount(2);
+  await expect(page.getByRole('tab', { name: 'Solid' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

@@ -1842,12 +1842,24 @@ impl Builder {
         } else if let Some(icon) = icon
             && !known(icon)
         {
-            let all: Vec<&str> = look
+            let every: Vec<&str> = look
                 .images
                 .keys()
                 .map(String::as_str)
                 .chain(look.icons.keys())
                 .collect();
+            // a look that hides the built-in icons suggests only its own, when it has some
+            let own: Vec<&str> = if look.hide_built_ins {
+                let mut seen = HashSet::new();
+                every
+                    .iter()
+                    .copied()
+                    .filter(|n| !is_built_in(&look, n) && seen.insert(*n))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            let all = if own.is_empty() { every } else { own };
             // name the closest ones first: a team's folder can hold hundreds
             let near = all
                 .iter()

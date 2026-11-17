@@ -1,0 +1,5 @@
+look "./hidden.look"
+a: node "Cloud" icon=cloud at 40,40
+b: node "Queue" icon=queue at 240,40
+c: node "Database" icon=database at 440,40
+d: node "Missing" icon=nosuch at 40,140

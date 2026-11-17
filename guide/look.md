@@ -234,6 +234,14 @@ icondir "./icons"
 
 Every `.svg` file directly in that folder becomes an icon, drawn exactly as the file looks, in its own colours. The icon's name is the file name in small letters with everything that is not a letter or digit turned into `-`, and a leading number-and-`icon-service-` prefix dropped: `10021-icon-service-Virtual-Machine.svg` is `icon=virtual-machine`, `Load Balancer.svg` is `icon=load-balancer`. `fastdraw icons team.look` lists them and `fastdraw icons team.look storage` searches. Commit the folder with the look. A shared link carries the folder's icons that the diagram uses inside it.
 
+**A look that offers only its own icons.** A vendor look (Azure, AWS) usually wants its own set offered, not the built-in outlines next to it:
+
+```
+icons builtin=hidden
+```
+
+The built-in icons are then left out of the editor's icon picker, `fastdraw preview-look`, `sizes` and `icons`, and a misspelt icon name is answered with the look's own icons. A diagram that already uses a built-in icon (`icon=database`) still draws it, so a diagram can move between looks without breaking. `icons builtin=shown` is the default.
+
 Either way:
 
 - A file icon keeps its colours; `icon.color=` does not apply to it.

@@ -265,6 +265,7 @@ fn look_json(look: &Look) -> json::Json {
         ),
         ("iconDirs".into(), strs(&look.icon_dirs)),
         ("iconUrls".into(), pairs(&look.icon_urls)),
+        ("hideBuiltIns".into(), Json::Bool(look.hide_built_ins)),
         (
             "iconSetNames".into(),
             Json::Arr(

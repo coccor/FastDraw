@@ -257,7 +257,7 @@ if (cmd === 'check') {
   // in a steady order: the look's named icons, its folder's files, then its sets' icons A to Z
   const ownIcons = [...new Set([...look.iconUrls.keys(), ...[...look.images.keys()].sort(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !isBuiltIn(look, n))])]
     .filter((n) => look.images.has(n) || look.icons.has(n)).slice(0, PREVIEW_ICONS);
-  const sheetIcons = ownIcons.length ? ownIcons : [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n));
+  const sheetIcons = ownIcons.length || look.hideBuiltIns ? ownIcons : [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n));
   sheetIcons.forEach((n, i) => {
     const cx = 40 + (i % 11) * 80;
     if (i && i % 11 === 0) y += 60;
@@ -269,7 +269,7 @@ if (cmd === 'check') {
   if (ownIcons.length) {
     const total = new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? [])]).size;
     y += 8;
-    L.push(`text ${JSON.stringify(`${total > ownIcons.length ? `the first ${ownIcons.length} of the look's ${total} icons; ` : ''}the built-in icons work too: fastdraw icons ${basename(file ?? '')} <word> finds them all`)} at 40,${y - 20} size=10 color=muted font=sans`);
+    L.push(`text ${JSON.stringify(`${total > ownIcons.length ? `the first ${ownIcons.length} of the look's ${total} icons; ` : ''}${look.hideBuiltIns ? 'the look hides the built-in icons (icons builtin=hidden); a diagram that uses one still draws' : `the built-in icons work too: fastdraw icons ${basename(file ?? '')} <word> finds them all`}`)} at 40,${y - 20} size=10 color=muted font=sans`);
     y += 12;
   }
   heading('Text');
@@ -300,7 +300,7 @@ if (cmd === 'check') {
   const file = args[0]?.endsWith('.look') ? args[0] : undefined, word = (file ? args[1] : args[0])?.toLowerCase();
   if (file) await fetchWeb([file]);
   const look = file ? loadLook(file) : defaultLook();
-  const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? []), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
+  const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !(look.hideBuiltIns && isBuiltIn(look, n)))])].filter((n) => !word || iconMatches(n, word));
   console.log(names.length ? names.join('\n') : `no icon${word ? ` for "${word}"` : ''}`);
 } else if (cmd === 'guide') {
   const topic = args[0];

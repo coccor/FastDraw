@@ -493,7 +493,10 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     const standIn = iconStandIn(look, p.icon);
     if (standIn) warn(st.line, `icon ${p.icon} is one of the look's icon files (${iconSources(look, p.icon)}), which could not be loaded here, so the built-in icon ${standIn} is drawn in its place`);
     else if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon) && !look.images.has(p.icon)) {
-      const all = [...look.images.keys(), ...look.icons.keys()];
+      const every = [...look.images.keys(), ...look.icons.keys()];
+      // a look that hides the built-in icons suggests only its own, when it has some
+      const own = look.hideBuiltIns ? [...new Set(every.filter((n) => !isBuiltIn(look, n)))] : [];
+      const all = own.length ? own : every;
       // name the closest ones first: a team's folder can hold hundreds
       const near = all.filter((n) => iconMatches(n, p.icon) || (n.length > 2 && p.icon.includes(n))), list = [...new Set([...near, ...all])].slice(0, 40);
       const folder = look.iconDirs.length && !look.images.size ? ` (the look's icon folder ${look.iconDirs.join(', ')} could not be read here)` : '';

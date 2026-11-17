@@ -16,6 +16,8 @@ export type Look = {
   icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
   iconDirs: string[]; // folders of SVG icon files, relative to the look file, or https:// addresses (see webassets.ts)
   iconUrls: Map<string, string>; // name -> https:// address of one SVG file (icon name "https://...")
+  // icons builtin=hidden: the built-in icons stay drawable but are not offered (icon picker, preview, sizes, icons)
+  hideBuiltIns: boolean;
   iconSetNames: Map<string, string[]>; // icondir address -> the icon names it has, as the look lists them (names="...")
   // the icon names the look's web sets have, from their file listings and names=; filled in by whoever fetched them
   listedIcons?: string[];
@@ -76,6 +78,7 @@ export function emptyLook(): Look {
     icons: new Map(Object.entries(ICONS)),
     iconDirs: [],
     iconUrls: new Map(),
+    hideBuiltIns: false,
     iconSetNames: new Map(),
     fontUrls: new Map(),
     images: new Map(),
@@ -97,7 +100,7 @@ export function parseLook(src: string, path = 'look'): Look {
   for (const st of parseStatements(src)) {
     const [head, ...rest] = st.toks;
     const err = (msg: string) => look.issues.push({ line: st.line, level: 'error', msg, file: path });
-    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icondir, guidance or dark'); continue; }
+    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icons, icondir, guidance or dark'); continue; }
     if (head.v === 'dark') {
       // dark night | dark "./team-night.look": the look `fastdraw render --dark` uses for the dark image
       const v = rest[0]?.v;
@@ -131,6 +134,13 @@ export function parseLook(src: string, path = 'look'): Look {
         else err(`icon ${name} takes the https:// address of an SVG file, e.g. icon ${name} "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg"`);
       } else if (!paths.length || paths.some((d) => !/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) || d.length > 4000) || paths.length > 12) err(`icon ${name} needs its outline as SVG path data in quotes, drawn in a 24x24 box, e.g. "M4 6h16 M4 12h16"`);
       else look.icons.set(name, paths);
+      continue;
+    }
+    if (head.v === 'icons') {
+      // icons builtin=hidden: a vendor look offers only its own icons; diagrams that use a built-in one still draw
+      const v = rest.length === 1 && rest[0]!.t === 'prop' && rest[0]!.k === 'builtin' ? rest[0]!.v : undefined;
+      if (v === 'hidden' || v === 'shown') look.hideBuiltIns = v === 'hidden';
+      else err('icons takes builtin=hidden (the built-in icons are not offered in the icon picker, the preview or the icon lists; diagrams that use one still draw) or builtin=shown');
       continue;
     }
     if (head.v === 'fontdir') {
