@@ -1,0 +1,4 @@
+# a group with its icon as a tab in the corner, the caption after it; and a box with an italic second line
+z: zone "AWS Cloud" at 40,40 400x200 icon=cloud icon.pos=corner icon.size=32 title.dy=4 sub.italic=1
+t: zone "Tagged" at 480,40 300x200 icon=database icon.pos=corner tag="VPC"
+a: rect "Lambda" sub="Orders" at 80,120 144x64 sub.italic=1

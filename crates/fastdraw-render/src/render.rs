@@ -1026,6 +1026,16 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
     if !set_not_none(g(p, "icon")) {
         return None;
     }
+    // icon.pos=corner: a tab in the top-left corner, as a group's icon is drawn in a cloud provider's diagrams
+    if g(p, "icon.pos") == Some("corner") {
+        return Some(IconBox {
+            x: s.x,
+            y: s.y,
+            size: num(g(p, "icon.size"), 24.0),
+            dx: 0.0,
+            dy: 0.0,
+        });
+    }
     let has_text =
         (truthy(s.text.as_deref()) || truthy(g(p, "sub"))) && g(p, "title.pos") != Some("top");
     let size = num(
@@ -1405,11 +1415,17 @@ fn draw_shape(cx: &mut RenderCtx, look: &Look, s: &Shape) -> String {
         t.x = 12.0;
         t.y = cap_y + round((cap_h - t.h) / 2.0);
     }
+    // a left-aligned caption starts after the tag, and after an icon in the corner (8px beyond the tab)
+    let corner = if cap_top && g(p, "icon.pos") == Some("corner") && set_not_none(g(p, "icon")) {
+        num(g(p, "icon.size"), 24.0) - 4.0
+    } else {
+        0.0
+    };
     let tag_room = if tb.is_some() && cap_top {
         tag_width(look, p) + 4.0
     } else {
         0.0
-    };
+    } + corner;
     if let Some(tb) = &tb {
         let t = text_attrs(look, p, "tag.", &td("mono", 7.0, 400.0, "muted"));
         let tw = tag_width(look, p);

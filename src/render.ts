@@ -301,6 +301,8 @@ function drawTable(look: Look, s: Shape): string {
 export function iconBox(s: Shape): { x: number; y: number; size: number; dx: number; dy: number } | null {
   const p = s.p;
   if (!p.icon || p.icon === 'none') return null;
+  // icon.pos=corner: a tab in the top-left corner, as a group's icon is drawn in a cloud provider's diagrams
+  if (p['icon.pos'] === 'corner') return { x: s.x, y: s.y, size: num(p['icon.size'], 24), dx: 0, dy: 0 };
   const hasText = !!(s.text || p.sub) && p['title.pos'] !== 'top';
   const size = num(p['icon.size'], hasText ? 20 : Math.max(8, Math.min(s.w, s.h, 96) - (s.style === 'icon' ? 0 : 16)));
   if (!hasText) return { x: s.x + (s.w - size) / 2, y: s.y + (s.h - size) / 2, size, dx: 0, dy: 0 };
@@ -404,7 +406,9 @@ function drawShape(look: Look, s: Shape): string {
   const capOwn = p['title.dy'] !== undefined || p['title.fill'] !== undefined;
   const capH = capOwn ? Math.max(12, Math.ceil(title.size + 4)) : 12, capY = num(p['title.dy'], 0) + 4;
   if (tb && capTop) tb = { ...tb, x: 12, y: capY + Math.round((capH - tb.h) / 2) };
-  const tagRoom = tb && capTop ? tagWidth(look, p) + 4 : 0;
+  // a left-aligned caption starts after the tag, and after an icon in the corner (8px beyond the tab)
+  const corner = capTop && p['icon.pos'] === 'corner' && p.icon && p.icon !== 'none' ? num(p['icon.size'], 24) - 4 : 0;
+  const tagRoom = (tb && capTop ? tagWidth(look, p) + 4 : 0) + corner;
   if (tb) {
     const t = textAttrs(look, p, 'tag.', { font: 'mono', size: 7, weight: 400, color: 'muted' });
     const tw = tagWidth(look, p);

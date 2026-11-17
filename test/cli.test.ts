@@ -196,3 +196,13 @@ test('render --look fetches the web fonts of the look it names, not those of the
   assert.doesNotMatch(warm, /note:/, warm);
   assert.match(warm, /wrote/);
 });
+
+test('render fetches the icons a look\'s styles set (a group\'s corner tab), not only those the diagram names', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fd-styleicon-'));
+  writeFileSync(join(dir, 'cloud.look'), 'icon tab "https://icons.example.com/tab.svg"\nstyle zone shape=rect fill=none stroke=ink title.pos=top title.align=left layer=back icon=tab icon.pos=corner\n');
+  writeFileSync(join(dir, 'a.fdraw'), 'look "./cloud.look"\nz: zone "Cloud" at 20,20 300x200\n');
+  const env = { ...process.env, FASTDRAW_NO_UPDATE_CHECK: '1', XDG_CACHE_HOME: join(dir, 'cache') };
+  const out = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, 'render', join(dir, 'a.fdraw'), '--offline', '-o', join(dir, 'a.png')], { encoding: 'utf8', env }).stdout;
+  // the diagram never says icon=, yet the tab its zone style draws is the one looked for
+  assert.match(out, /note: icons\.example\.com: not fetched \(--offline\)/, out);
+});

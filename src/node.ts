@@ -130,6 +130,8 @@ export async function fetchWebAssets(files: string[], offline = false, looks: st
     if (!hasWebIcons(look) && !look.fontUrls.size) continue;
     const w = wanted.get(lookFile) ?? { look, names: new Set<string>() };
     for (const m of src.matchAll(/\bicon="?([\w-]+)/g)) w.names.add(m[1]!);
+    // and those the look's styles set themselves (a group's tab, the icon a style gives every box of it)
+    for (const st of look.styles.values()) if (st.props.icon && st.props.icon !== 'none') w.names.add(st.props.icon);
     wanted.set(lookFile, w);
   }
   for (const [lookFile, { look, names }] of wanted) {

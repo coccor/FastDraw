@@ -237,7 +237,11 @@ export function App() {
   const [iconNote, setIconNote] = useState('');
   // Icons the look names by web address, fetched for the names the diagram uses (each address once per page).
   const [webIcons, setWebIcons] = useState<WebIcons>({ uris: {}, done: false, unreachable: [] });
-  const usedIcons = useMemo(() => [...new Set([...(src ?? '').matchAll(/\bicon="?([\w-]+)/g)].map((m) => m[1]!))].sort().join(' '), [src]);
+  // the icons the diagram names, and those the look's styles set themselves (a group's tab, a style's own icon)
+  const usedIcons = useMemo(() => [...new Set([
+    ...[...(src ?? '').matchAll(/\bicon="?([\w-]+)/g)].map((m) => m[1]!),
+    ...(parsedLook ? [...parsedLook.styles.values()].map((st) => st.props.icon).filter((n): n is string => !!n && n !== 'none') : []),
+  ])].sort().join(' '), [src, parsedLook]);
   useEffect(() => {
     if (!parsedLook || !hasWebIcons(parsedLook)) { setWebIcons({ uris: {}, done: false, unreachable: [] }); return; }
     let stale = false;
