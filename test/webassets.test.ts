@@ -141,4 +141,6 @@ test('nothing on the machine or the local network is fetched, and nothing over t
     assert.equal(opts!.referrerPolicy, 'no-referrer');
   } finally { globalThis.fetch = real; }
   assert.equal(hostOf('not a url'), 'an address in the look');
+  // fonts are loaded by the browser itself, so a private address never becomes a face
+  assert.deepEqual(webFaces(parseLook('font sans "A" "https://192.168.1.10/a-{weight}.ttf"\nfont mono "B" "https://localhost/b.ttf"\nfont serif "C" "https://f.example/c.ttf"')).map((f) => f.family), ['C']);
 });

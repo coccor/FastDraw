@@ -47,9 +47,14 @@ export function isPrivateHost(host: string): boolean {
   return h.includes(':') && (h === '::' || h === '::1' || /^f[cd]/.test(h) || /^fe[89ab]/.test(h) || h.startsWith('::ffff:'));
 }
 
+/** An https address whose host is not on the machine or the local network. */
+export function isPublicWebUrl(url: string): boolean {
+  try { const u = new URL(url.replace(/[{}]/g, '_')); return u.protocol === 'https:' && !isPrivateHost(u.hostname); } catch { return false; }
+}
+
 export const webFetch: Fetch = async (url, maxBytes) => {
+  if (!isPublicWebUrl(url)) throw new Error('not a public https address');
   const u = new URL(url);
-  if (u.protocol !== 'https:' || isPrivateHost(u.hostname)) throw new Error('not a public https address');
   // no cookies, no referrer and no redirects: the server learns only that someone opened a diagram with this
   // look, and cannot send the request on somewhere else
   const r = await fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error', signal: AbortSignal.timeout(15_000) });
@@ -126,6 +131,8 @@ export function webFaces(look: Look): WebFace[] {
   const out: WebFace[] = [];
   for (const [family, tpl] of look.fontUrls) {
     if (!/^[\w .-]{1,64}$/.test(family)) continue;
+    // the browser loads these itself (@font-face, FontFace), so the address gets the same check webFetch makes
+    if (!isPublicWebUrl(tpl)) continue;
     const fill = (w: number, s: string) => tpl.replaceAll('{weight}', String(w)).replaceAll('{style}', s);
     if (!tpl.includes('{weight}')) { out.push({ family, weight: 0, style: 'normal', url: fill(400, 'normal') }); continue; }
     for (const w of WEIGHTS) out.push({ family, weight: w, style: 'normal', url: fill(w, 'normal') });
