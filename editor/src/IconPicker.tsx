@@ -3,6 +3,12 @@ import { createPortal } from 'react-dom';
 import { Search } from 'lucide-react';
 import type { Look } from '../../src/look.ts';
 import { isIconUri } from '../../src/iconfiles.ts';
+import { fetchWebIcons } from '../../src/webassets.ts';
+
+// an icon the look has on the web: named by its own address, or found in one of its sets
+const isWebIcon = (look: Look, n: string) => look.iconUrls.has(n) || !!look.listedIcons?.includes(n);
+// the look's own icons: files from its folder and the web, then the outlines it draws itself
+const ownFiles = (look: Look) => [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !isBuiltIn(look, n))])];
 import { iconMatches, ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
 import { ICON_BOX, isBuiltIn, iconLayers } from '../../src/iconStyle.ts';
 import type { IconStyle } from '../../src/iconStyle.ts';
@@ -14,6 +20,8 @@ import { useExtendedIcons } from './useExtendedIcons.ts';
 export function IconGlyph({ look, name, size = 22, iconStyle = 'outline' }: { look: Look; name: string; size?: number; iconStyle?: IconStyle }) {
   const img = look.images.get(name);
   if (img) return isIconUri(img) ? <img src={img} width={size} height={size} alt="" draggable={false} /> : null;
+  // one of the look's web icons not fetched yet: fetched the way the diagram's are, once it is in view
+  if (isWebIcon(look, name)) return <WebGlyph look={look} name={name} size={size} />;
   if (isBuiltIn(look, name)) {
     const { tint, front } = iconLayers(name, iconStyle);
     return (
@@ -30,21 +38,43 @@ export function IconGlyph({ look, name, size = 22, iconStyle = 'outline' }: { lo
   );
 }
 
+// A web icon in a tile: fetched through fetchWebIcons (public https only, no redirects or cookies, checked as an
+// SVG) when the tile scrolls into view, so a set of thousands asks only for what is seen; blank until then.
+function WebGlyph({ look, name, size }: { look: Look; name: string; size: number }) {
+  const [uri, setUri] = React.useState<string | null>(null);
+  const box = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    let stale = false;
+    const seen = new IntersectionObserver((es) => {
+      if (!es.some((e) => e.isIntersecting)) return;
+      seen.disconnect();
+      fetchWebIcons(look, [name]).then((w) => { if (!stale) setUri(w.uris[name] ?? null); });
+    });
+    seen.observe(el);
+    return () => { stale = true; seen.disconnect(); };
+  }, [look, name]);
+  return <span ref={box} style={{ display: 'inline-block', width: size, height: size }}>{uri && <img src={uri} width={size} height={size} alt="" draggable={false} />}</span>;
+}
+
 // Every icon the look has, as tiles to click, with a search box, in three tabs: Outline (the look's folder
 // and own icons first, then the built-in ones), Solid and Duotone (the built-in icons, which have both).
 export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }: { look: Look; value: string | undefined; iconStyle: IconStyle; onPick: (name: string, style: IconStyle) => void; autoFocus?: boolean }) {
   const [q, setQ] = React.useState('');
   // open on the tab of the chosen icon; with none chosen, on outline
-  const [tab, setTab] = React.useState<IconStyle>(iconStyle);
-  React.useEffect(() => { if (value) setTab(iconStyle); }, [value, iconStyle]);
+  // solid and duotone are built-in icons only, so a look that hides those has outline alone
+  const [tab, setTab] = React.useState<IconStyle>(look.hideBuiltIns ? 'outline' : iconStyle);
+  React.useEffect(() => { if (value && !look.hideBuiltIns) setTab(iconStyle); }, [value, iconStyle, look.hideBuiltIns]);
   const match = (n: string) => iconMatches(n, q);
   const plain = tab === 'outline';
-  const folder = plain ? [...look.images.keys()].filter(match) : [];
+  const folder = plain ? ownFiles(look).filter(match) : [];
   // a name that is the search word, then one that starts with it, then one that has it inside, and last the icons
   // that only have it among their search words; alphabetical within each
   const word = q.trim().toLowerCase().replace(/\s+/g, '-');
   const rank = (n: string) => (!word || n === word ? 0 : n.startsWith(word) ? 1 : n.includes(word) ? 2 : 3);
-  const builtIn = [...look.icons.keys()].filter((n) => !look.images.has(n) && (plain || isBuiltIn(look, n))).filter(match).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
+  // a look with icons builtin=hidden offers only its own
+  const builtIn = [...look.icons.keys()].filter((n) => isBuiltIn(look, n) && !isWebIcon(look, n) && !look.hideBuiltIns).filter(match).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
   const first = folder[0] ?? builtIn[0];
   const on = (n: string) => value === n && iconStyle === tab;
   // keep the chosen icon in sight when the panel opens on a box that has one
@@ -58,14 +88,15 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
       <IconGlyph look={look} name={n} iconStyle={tab} />
     </button>
   );
-  const count = plain ? new Set([...look.images.keys(), ...look.icons.keys()]).size : builtIn.length;
+  const count = plain ? folder.length + builtIn.length : builtIn.length;
   return (
     <div className="iconpicker">
-      <div className="seg icontabs" role="tablist" aria-label="Icon set">
+      {/* the styles are the built-in icons' own, so a look that hides them has nothing to switch between */}
+      {!look.hideBuiltIns && <div className="seg icontabs" role="tablist" aria-label="Icon set">
         {([['outline', 'Outline'], ['solid', 'Solid'], ['duotone', 'Duotone']] as const).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}
-      </div>
+      </div>}
       <div className="iconsearch">
         <input type="search" autoFocus={autoFocus} aria-label="Search icons" placeholder="Search icons" title={`${count} icons; search by name or meaning`} value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -75,7 +106,7 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
           }} />
       </div>
       <div className="icongrid" ref={grid} role="radiogroup" aria-label={tab === 'solid' ? 'Solid icons' : tab === 'duotone' ? 'Duotone icons' : 'Icons'}>
-        {folder.length > 0 && <div className="iconhead">From the look's folder</div>}
+        {folder.length > 0 && <div className="iconhead">The look's icons</div>}
         {folder.map(tile)}
         {folder.length > 0 && builtIn.length > 0 && <div className="iconhead">Built in</div>}
         {builtIn.map(tile)}
@@ -96,14 +127,15 @@ export function IconField({ look, value, iconStyle, onPick }: { look: Look; valu
   const [open, setOpen] = React.useState(false);
   const remembered = useRecentIcons();
   useExtendedIcons(remembered.some((r) => !BUILT_IN_ICONS[r.name])); // a recent icon from the rest of Phosphor needs them
-  const has = (n: string) => look.icons.has(n) || look.images.has(n);
+  const has = (n: string) => look.icons.has(n) || look.images.has(n) || isWebIcon(look, n);
   const name = value && value !== 'none' ? value : undefined;
   const choose = (n: string, s: IconStyle) => { rememberIcon({ name: n, style: s }); onPick(n, s); };
   const quick: { name: string; style: IconStyle }[] = [];
   const offer = (r: { name: string; style: IconStyle }) => { if (has(r.name) && !quick.some((q) => q.name === r.name)) quick.push(r); };
   if (name) offer({ name, style: iconStyle });
-  remembered.forEach(offer);
-  STARTER_ICONS.forEach((n) => offer({ name: n, style: 'outline' }));
+  remembered.filter((r) => !(look.hideBuiltIns && isBuiltIn(look, r.name))).forEach(offer);
+  // a look that hides the built-in icons starts from its own
+  (look.hideBuiltIns ? ownFiles(look) : STARTER_ICONS).forEach((n) => offer({ name: n, style: 'outline' }));
   quick.splice(QUICK);
   return (
     <div className="iconquick" role="group" aria-label="Icons">

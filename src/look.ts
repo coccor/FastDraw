@@ -14,8 +14,18 @@ export type Look = {
   canvas: Props;
   styles: Map<string, Style>;
   icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
-  iconDirs: string[]; // folders of SVG icon files, relative to the look file
+  iconDirs: string[]; // folders of SVG icon files, relative to the look file, or https:// addresses (see webassets.ts)
+  iconUrls: Map<string, string>; // name -> https:// address of one SVG file (icon name "https://...")
+  // icons builtin=hidden: the built-in icons stay drawable but are not offered (icon picker, preview, sizes, icons)
+  hideBuiltIns: boolean;
+  iconSetNames: Map<string, string[]>; // icondir address -> the icon names it has, as the look lists them (names="...")
+  // the icon names the look's web sets have, from their file listings and names=; filled in by whoever fetched them
+  listedIcons?: string[];
+  fontUrls: Map<string, string>; // family -> https:// address of its files, with {weight} and {style} (font sans "Inter" "https://...")
   images: Map<string, string>; // name -> data URI of an icon file, filled in by whoever can read the folders
+  // true once the icon folders themselves were read; until then an icon missing from images may just not have
+  // come along (a shared link, a page that cannot reach the folder) and a built-in one is drawn in its place
+  iconFolderRead: boolean;
   guidance: string[];
   dark?: string; // the look that draws the same diagrams on a dark page: a bundled look's name, or a .look path relative to this look's file
   issues: Issue[];
@@ -67,7 +77,12 @@ export function emptyLook(): Look {
     styles: new Map(),
     icons: new Map(Object.entries(ICONS)),
     iconDirs: [],
+    iconUrls: new Map(),
+    hideBuiltIns: false,
+    iconSetNames: new Map(),
+    fontUrls: new Map(),
     images: new Map(),
+    iconFolderRead: false,
     guidance: [],
     issues: [],
   };
@@ -75,12 +90,17 @@ export function emptyLook(): Look {
   return look;
 }
 
+// An address a look may fetch an icon or font file from: https only, no control characters, and nothing that
+// could break out of the quotes it is written into.
+export const isWebUrl = (s: string): boolean => /^https:\/\/[^\s\x00-\x1f\x7f"'<>\\`]+$/i.test(s) && s.length <= 500;
+const hasScheme = (s: string) => /^[a-z][a-z0-9+.-]*:/i.test(s);
+
 export function parseLook(src: string, path = 'look'): Look {
   const look = emptyLook();
   for (const st of parseStatements(src)) {
     const [head, ...rest] = st.toks;
     const err = (msg: string) => look.issues.push({ line: st.line, level: 'error', msg, file: path });
-    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icondir, guidance or dark'); continue; }
+    if (head.t !== 'word') { err('a look statement must start with canvas, color, font, fontdir, style, icon, icons, icondir, guidance or dark'); continue; }
     if (head.v === 'dark') {
       // dark night | dark "./team-night.look": the look `fastdraw render --dark` uses for the dark image
       const v = rest[0]?.v;
@@ -89,15 +109,38 @@ export function parseLook(src: string, path = 'look'): Look {
       continue;
     }
     if (head.v === 'icondir') {
-      if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"'); else look.iconDirs.push(rest[0].v);
+      if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"');
+      else if (hasScheme(rest[0].v) && !isWebUrl(rest[0].v)) err(`icondir takes a folder next to the look or an https:// address, e.g. icondir "https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{name}.svg"; "${rest[0].v}" is neither`);
+      else {
+        look.iconDirs.push(rest[0].v);
+        // names="pod deploy svc": the icons a set on the web has, for a host whose files cannot be listed
+        const names = rest.slice(1).find((t) => t.t === 'prop' && t.k === 'names')?.v;
+        if (names !== undefined) {
+          const list = names.split(/\s+/).filter(Boolean);
+          if (!isWebUrl(rest[0].v)) err(`names= lists the icons of an icondir address; a folder's icons are its files ("${rest[0].v}")`);
+          else if (!list.length || list.some((n) => !/^[a-z0-9-]{1,80}$/.test(n)) || list.length > 3000) err('icondir names= lists icon names in small letters separated by spaces, e.g. names="pod deploy svc"');
+          else look.iconSetNames.set(rest[0].v, list);
+        }
+      }
       continue;
     }
     if (head.v === 'icon') {
       // icon name "path data" ["more path data" ...]: outlines in a 24x24 box
       const name = rest[0]?.t === 'word' ? rest[0].v : undefined, paths = rest.slice(1).filter((t) => t.t === 'str').map((t) => t.v);
       if (!name || !/^[a-z][a-z0-9-]*$/.test(name)) err('icon needs a name in small letters, e.g. icon queue "M4 6h16 M4 12h16 M4 18h16"');
-      else if (!paths.length || paths.some((d) => !/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) || d.length > 4000) || paths.length > 12) err(`icon ${name} needs its outline as SVG path data in quotes, drawn in a 24x24 box, e.g. "M4 6h16 M4 12h16"`);
+      else if (paths.length === 1 && hasScheme(paths[0]!)) {
+        // icon name "https://.../file.svg": one icon file on the web
+        if (isWebUrl(paths[0]!)) look.iconUrls.set(name, paths[0]!);
+        else err(`icon ${name} takes the https:// address of an SVG file, e.g. icon ${name} "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg"`);
+      } else if (!paths.length || paths.some((d) => !/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) || d.length > 4000) || paths.length > 12) err(`icon ${name} needs its outline as SVG path data in quotes, drawn in a 24x24 box, e.g. "M4 6h16 M4 12h16"`);
       else look.icons.set(name, paths);
+      continue;
+    }
+    if (head.v === 'icons') {
+      // icons builtin=hidden: a vendor look offers only its own icons; diagrams that use a built-in one still draw
+      const v = rest.length === 1 && rest[0]!.t === 'prop' && rest[0]!.k === 'builtin' ? rest[0]!.v : undefined;
+      if (v === 'hidden' || v === 'shown') look.hideBuiltIns = v === 'hidden';
+      else err('icons takes builtin=hidden (the built-in icons are not offered in the icon picker, the preview or the icon lists; diagrams that use one still draw) or builtin=shown');
       continue;
     }
     if (head.v === 'fontdir') {
@@ -109,6 +152,12 @@ export function parseLook(src: string, path = 'look'): Look {
     } else if (head.v === 'color' || head.v === 'font') {
       if (rest.length < 2) { err(`${head.v} needs a name and a value`); continue; }
       (head.v === 'color' ? look.colors : look.fonts).set(rest[0].v, rest[1].v);
+      // font sans "Inter" "https://.../latin-{weight}-{style}.ttf": where the family's files are on the web
+      const at = head.v === 'font' ? rest[2]?.v : undefined;
+      if (at !== undefined) {
+        if (isWebUrl(at)) look.fontUrls.set(rest[1].v, at);
+        else err(`font ${rest[0].v} "${rest[1].v}" takes the https:// address of its files as the third value, with {weight} and {style} where they differ, e.g. "https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0/latin-{weight}-{style}.ttf"`);
+      }
     } else if (head.v === 'guidance') {
       for (const t of rest) if (t.t === 'str') look.guidance.push(t.v);
     } else if (head.v === 'style') {
@@ -244,11 +293,21 @@ export function isColor(look: Look, v: string): boolean {
   return base.startsWith('#') && hexToRgb(base) !== null;
 }
 
+// The font families that ship with FastDraw (fonts/), drawn the same everywhere: the editor, embedded
+// diagrams, fastdraw.dev images and the command line. A look may name any other family and bring its files
+// with `fontdir`; where those files cannot be read (a shared link, a docs page, fastdraw.dev), the text falls
+// back to the shipped family for its role, not to whatever the browser has.
+export const SHIPPED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif', 'Sketch Hand'];
+const SYSTEM_FAMILIES = ['sans-serif', 'serif', 'monospace', 'helvetica'];
+export const isShippedFamily = (fam: string) => [...SHIPPED_FAMILIES, ...SYSTEM_FAMILIES].some((f) => f.toLowerCase() === fam.toLowerCase());
+/** The shipped family that stands in for `fam` (used for `role`) when its files are not there. */
+export const fallbackFamily = (role: string, fam: string) => (role === 'mono' || /mono/i.test(fam) ? 'Geist Mono' : role === 'serif' ? 'Newsreader' : 'Geist');
+
 export function fontFamily(look: Look, v: string | undefined): string {
   const name = v ?? 'sans';
   const fam = look.fonts.get(name) ?? name;
   const generic = name === 'mono' ? 'monospace' : name === 'serif' ? 'serif' : 'sans-serif';
-  return `'${fam}', ${generic}`;
+  return isShippedFamily(fam) ? `'${fam}', ${generic}` : `'${fam}', '${fallbackFamily(name, fam)}', ${generic}`;
 }
 
 let cachedDefault: Look | undefined;

@@ -115,7 +115,9 @@ Rust change in the same pull request.
 A look line may name an absolute or UNC path (`look "//server/share/team.look"`), and the crate reads it as
 FastDraw does. Whether to allow that is the host application's decision: check `look_path(text)` before calling
 `render` on a diagram it does not trust, if it matters. Folders a look names (`icondir`, `fontdir`)
-must stay inside the look's own folder, with no `..` out of it and no links.
+must stay inside the look's own folder, with no `..` out of it and no links. Icons and fonts a look names by
+https:// address are never fetched (the crate opens no sockets): each such icon is drawn as the closest
+built-in icon, with a warning,, and such a font is left to the renderer's fallback.
 
 ## Licence
 

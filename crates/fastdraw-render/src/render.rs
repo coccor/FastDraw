@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use regex::{NoExpand, Regex};
 
 use crate::chart::draw_chart;
-use crate::iconfiles::is_icon_uri;
+use crate::iconfiles::{icon_stand_in, is_icon_uri};
 use crate::icons::{ICON_BOX, IconStyle, icon_layers, is_built_in, weight_for};
 use crate::js::{self, hypot, num_str, round, to_fixed, to_number};
 use crate::look::{Kind, Look, Props, color, font_family};
@@ -1115,7 +1115,8 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
 // A look's own icon is an outline in a 24 box, drawn with icon.color as its line, icon.fill inside its
 // closed parts, and icon.width as the line's thickness; it has no solid or duotone version.
 fn draw_icon(look: &Look, p: &Props, x: f64, y: f64, size: f64) -> String {
-    let name = g(p, "icon").unwrap_or("");
+    let stand_in = icon_stand_in(look, g(p, "icon").unwrap_or(""));
+    let name = stand_in.as_deref().or(g(p, "icon")).unwrap_or("");
     // an icon file is shown as an image, in its own colours; it is never inlined
     if let Some(img) = look.images.get(name).filter(|i| !i.is_empty()) {
         return if is_icon_uri(img) {

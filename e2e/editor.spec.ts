@@ -807,7 +807,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   // the picker offers the folder's icons by their file-derived names
   await page.mouse.click(...Object.values(await corner(page, 'st')) as [number, number]);
   await page.locator('.iconchoose').click();
-  await expect(page.getByRole('radiogroup', { name: 'Icons' })).toContainText("From the look's folder");
+  await expect(page.getByRole('radiogroup', { name: 'Icons' })).toContainText("The look's icons");
   await page.getByRole('radiogroup', { name: 'Icons' }).getByRole('radio', { name: 'sample-screen', exact: true }).click();
   await saved(page);
   expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=sample-screen');
@@ -1208,4 +1208,54 @@ test('text on the canvas is drawn as written: no ligatures, as wide as it is mea
   const widths = await page.locator('svg.canvas text').evaluateAll((ts) => ts.map((t) => (t as SVGTextElement).getComputedTextLength()));
   expect(widths).toHaveLength(2);
   expect(Math.abs(widths[0] - widths[1])).toBeLessThan(0.5);
+});
+
+test('a shared link whose look names icons and fonts by web address fetches them, and keeps them out of a copied link', async ({ page, context }) => {
+  const errors = noPageErrors(page);
+  const asked: string[] = [];
+  await page.route('https://cdn.example.com/**', (route) => {
+    const url = route.request().url();
+    asked.push(url);
+    if (url.endsWith('/set@1.0.0/lambda.svg')) return route.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="#ff9900"/></svg>' });
+    if (url.includes('/web-sans@1.0.0/')) return route.fulfill({ contentType: 'font/ttf', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(resolve('fonts/Geist-Regular.ttf')) });
+    return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' });
+  });
+  const { editorLink } = await import('../editor/src/embed/share.ts');
+  const look = 'icondir "https://cdn.example.com/set@1.0.0/{name}.svg"\nfont sans "Web Sans" "https://cdn.example.com/web-sans@1.0.0/latin-{weight}-normal.ttf"\nstyle node shape=rect size=160x60 title.font=sans';
+  const link = (await editorLink('http://x/edit/', { name: 'web.fdraw', text: 'look "./web.look"\na: node "Lambda" icon=lambda at 40,40\nb: node "Data" icon=database at 260,40\n', look: { path: './web.look', text: look } })).replace('http://x', '');
+  await page.goto(link);
+  // the icon from the address is drawn as an image; database is a built-in one, also looked for at the address
+  await expect(page.locator('svg.canvas image[href^="data:image/svg+xml"]')).toHaveCount(1);
+  await expect(page.getByText('No problems')).toBeVisible();
+  await expect(page.locator('.banner')).toHaveCount(0);
+  expect(await page.evaluate(() => [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Web Sans' && f.status === 'loaded'))).toBe(true);
+  expect(asked.some((u) => u.endsWith('/lambda.svg'))).toBe(true);
+  // the copied link carries the look, which says where the icon is, but not the icon
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Copy link' }).click();
+  await expect(page.getByText(/copied a link to this diagram \(\d+ KB\)/)).toBeVisible();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const { decodeShared } = await import('../editor/src/embed/share.ts');
+  const d = await decodeShared(copied.split('#fdraw=')[1]!);
+  expect(d?.icons ?? {}).toEqual({});
+  expect(d?.look?.text).toContain('cdn.example.com');
+  expect(errors).toEqual([]);
+});
+
+test('a look with icons builtin=hidden offers only its own icons in the picker, and its diagrams still draw built-in ones', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await page.route('https://cdn.example.com/**', (route) => route.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="#0078d4"/></svg>' }));
+  const { editorLink } = await import('../editor/src/embed/share.ts');
+  const look = 'icons builtin=hidden\nicon vault "https://cdn.example.com/set@1.0.0/vault.svg"\nicon queue "M4 6h16" "M4 12h16"\nstyle node shape=rect size=160x60';
+  const link = (await editorLink('http://x/edit/', { name: 'hidden.fdraw', text: 'look "./h.look"\na: node "Vault" icon=vault at 40,40\nb: node "DB" icon=database at 260,40\n', look: { path: './h.look', text: look } })).replace('http://x', '');
+  await page.goto(link);
+  await expect(page.getByText('No problems')).toBeVisible();
+  await page.getByRole('button', { name: 'Icon', exact: true }).click();
+  const grid = page.getByRole('radiogroup', { name: 'Icons' });
+  await expect(grid).toContainText("The look's icons");
+  await expect(grid).not.toContainText('Built in');
+  await expect(grid.getByRole('radio')).toHaveCount(2);
+  await expect(page.getByRole('tablist', { name: 'Icon set' })).toHaveCount(0);
+  expect(errors).toEqual([]);
 });

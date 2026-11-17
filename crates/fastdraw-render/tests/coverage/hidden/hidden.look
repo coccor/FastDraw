@@ -1,0 +1,6 @@
+// A look that offers only its own icons. A diagram can still use a built-in one; a missing one is an error that
+// names only the look's own.
+icondir "./icons"
+icons builtin=hidden
+icon queue "M4 6h16" "M4 12h16" "M4 18h16"
+style node shape=rect size=160x60 fill=#ffffff stroke=#333333

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { parseLook, color, isBundledLook } from '../../src/look.ts';
+import { parseLook, color, isBundledLook, fallbackFamily } from '../../src/look.ts';
 import { buildScene, lookPath, captionBox, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
@@ -17,7 +17,7 @@ import type { LookChoice, FileLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
-  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import { IconDialog, IconGlyph } from './IconPicker.tsx';
@@ -27,14 +27,15 @@ import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
-import { setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
+import { setLookFonts, setWebFonts, BUNDLED_FAMILIES } from './fonts.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, hostOf, type WebIcons } from '../../src/webassets.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
 import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
-import { decodeShared, sharedInHash } from './embed/share.ts';
+import { decodeShared, sharedInHash, editorLink, LONG_LINK } from './embed/share.ts';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -212,14 +213,40 @@ export function App() {
   const [iconFiles, setIconFiles] = useState<{ name: string; bytes: Uint8Array }[]>([]);
   const [carriedIcons, setCarriedIcons] = useState<Record<string, string>>({});
   const [iconNote, setIconNote] = useState('');
+  // Icons the look names by web address, fetched for the names the diagram uses (each address once per page).
+  const [webIcons, setWebIcons] = useState<WebIcons>({ uris: {}, done: false, unreachable: [] });
+  const usedIcons = useMemo(() => [...new Set([...(src ?? '').matchAll(/\bicon="?([\w-]+)/g)].map((m) => m[1]!))].sort().join(' '), [src]);
+  useEffect(() => {
+    if (!parsedLook || !hasWebIcons(parsedLook)) { setWebIcons({ uris: {}, done: false, unreachable: [] }); return; }
+    let stale = false;
+    fetchWebIcons(parsedLook, usedIcons.split(' ').filter(Boolean)).then((w) => { if (!stale) setWebIcons(w); });
+    return () => { stale = true; };
+  }, [parsedLook, usedIcons]);
+  // what the look's web sets have, for the icon picker (jsDelivr's file lists and the look's names=)
+  const [listedIcons, setListedIcons] = useState<string[]>([]);
+  useEffect(() => {
+    if (!parsedLook || !hasWebIcons(parsedLook)) { setListedIcons([]); return; }
+    let stale = false;
+    listWebIcons(parsedLook).then((n) => { if (!stale) setListedIcons(n); });
+    return () => { stale = true; };
+  }, [parsedLook]);
   // the active diagram as it stands now, kept current on every render
   const live = useRef<Doc | null>(null);
   live.current = docId && src !== null ? { id: docId, name, src: srcRef.current ?? src, lookSrc, carried: carriedIcons, view, io: io.current, hist: hist.current, folderFiles } : null;
-  const look = useMemo(() => (parsedLook && (iconFiles.length || Object.keys(carriedIcons).length) ? withIconImages(parsedLook, iconFiles, carriedIcons) : parsedLook), [parsedLook, iconFiles, carriedIcons]);
+  const look = useMemo(() => {
+    if (!parsedLook) return parsedLook;
+    const web = hasWebIcons(parsedLook);
+    if (!iconFiles.length && !Object.keys(carriedIcons).length && !web) return parsedLook;
+    // every icon folder and address was read, so an icon missing from them is a mistake, not one left behind
+    const read = (!localIconDirs(parsedLook).length || iconFiles.length > 0) && (!web || webIcons.done);
+    const out = withIconImages(parsedLook, iconFiles, { ...carriedIcons, ...webIcons.uris }, read);
+    return listedIcons.length ? { ...out, listedIcons } : out;
+  }, [parsedLook, iconFiles, carriedIcons, webIcons, listedIcons]);
+  const webIconNote = webIcons.unreachable.length ? `The look's icons could not be fetched from ${webIcons.unreachable.join(' and ')}, so the closest built-in icons are drawn instead.` : '';
   useEffect(() => {
     let stale = false;
     (async () => {
-      const s = io.current, dirs = parsedLook?.iconDirs ?? [];
+      const s = io.current, dirs = parsedLook ? localIconDirs(parsedLook) : [];
       const lp = srcRef.current ? lookPath(srcRef.current) : undefined;
       const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
       const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES)))).flat() : [];
@@ -242,11 +269,17 @@ export function App() {
       const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
       const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d)))).flat() : [];
       if (stale) return;
-      const have = [...BUNDLED_FAMILIES, ...setLookFonts(found)].map((f) => f.toLowerCase());
+      const fromWeb = await setWebFonts(look);
+      if (stale) return;
+      const have = [...BUNDLED_FAMILIES, ...setLookFonts(found), ...fromWeb].map((f) => f.toLowerCase());
       const missing = look ? [...new Set(look.fonts.values())].filter((f) => !have.includes(f.toLowerCase()) && !['helvetica', 'serif', 'monospace', 'sans-serif'].includes(f.toLowerCase())) : [];
-      setFontNote(!missing.length ? '' : s.folder
-        ? `No font file found for ${missing.join(', ')}; text is drawn in a fallback font.`
-        : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in a fallback font.`);
+      const instead = look ? [...new Set([...look.fonts].filter(([, f]) => missing.includes(f)).map(([role, f]) => fallbackFamily(role, f)))].join(' and ') : '';
+      const unfetched = missing.filter((f) => look?.fontUrls.has(f));
+      setFontNote(!missing.length ? '' : unfetched.length === missing.length
+        ? `The look's font ${missing.join(', ')} could not be fetched from ${[...new Set(unfetched.map((f) => hostOf(look!.fontUrls.get(f)!)))].join(' and ')}; text is drawn in ${instead} instead.`
+        : s.folder
+        ? `No font file found for ${missing.join(', ')}; text is drawn in ${instead} instead.`
+        : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in ${instead} instead.`);
     })();
     return () => { stale = true; };
   }, [look, name, docId]);
@@ -574,7 +607,7 @@ export function App() {
     decodeShared(data).then((d) => {
       if (!d) { setStatus('the link to this diagram is incomplete, so it could not be opened'); return; }
       io.current = { fileMod: 0, lookMod: 0, written: '' };
-      load(d.text, d.look?.text ?? null, d.name.replace(/\.fdraw$/i, '') || 'diagram');
+      load(d.text, d.look?.text ?? null, d.name.replace(/\.fdraw$/i, '') || 'diagram', { carried: d.icons ?? {} });
     });
   }, [ready, load]);
 
@@ -1124,6 +1157,25 @@ export function App() {
     return { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
   };
 
+  // A link that opens this diagram in the editor, with its look file and the icon files it uses inside it.
+  // Nothing is uploaded: everything is after the #, which the browser never sends anywhere. Icons the look
+  // names by web address stay out: whoever opens the link fetches them from there.
+  const copyLink = async () => {
+    try {
+      const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter((n) => n && !webIcons.uris[n]));
+      const look = fileLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
+      const link = await editorLink(location.origin + location.pathname, { name: baseName + '.fdraw', text: cur, ...(look ? { look } : {}), ...(Object.keys(icons).length ? { icons } : {}) });
+      await navigator.clipboard.writeText(link);
+      const n = Object.keys(icons).length, kb = Math.ceil(link.length / 1000);
+      const what = n ? ` with ${n} icon file${n === 1 ? '' : 's'} inside` : '';
+      setStatus(link.length > LONG_LINK
+        ? `copied a link${what}, but it is ${kb} KB long and chat or mail apps may cut it short; Export image… makes a file that opens here too`
+        : `copied a link to this diagram${what} (${kb} KB); it holds the whole diagram, so nothing is uploaded`);
+    } catch {
+      setStatus('the link could not be copied to the clipboard');
+    }
+  };
+
   // ---- render -------------------------------------------------------------
   const closePopups = () => { setMenuOpen(false); setLookPreview(undefined); setCtx(null); side.dismiss(); };
   const applyLook = (v: LookChoice) => {
@@ -1273,6 +1325,7 @@ export function App() {
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export image…<kbd>Ctrl ⇧ E</kbd></button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
+            <button role="menuitem" onClick={() => { closePopups(); copyLink(); }}><Link2 size={16} />Copy link</button>
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
             <hr />
@@ -1300,6 +1353,7 @@ export function App() {
         {armed && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
         {fontNote && <div className="banner">{fontNote}</div>}
         {iconNote && <div className="banner">{iconNote}</div>}
+        {webIconNote && <div className="banner">{webIconNote}</div>}
         {missingLook && (
           <div className="banner">
             This diagram uses the look “{lookPath(cur)}”, which is not loaded, so it is drawn with plain styles.

@@ -117,3 +117,39 @@ test('other methods are refused', async () => {
   const r = await handle(new Request('https://fastdraw.dev/gh/acme/app/main/a.fdraw', { method: 'POST' }), deps({}));
   assert.equal(r?.status, 405);
 });
+
+test('icon files carried in the address are drawn, and passed on by ?edit', async () => {
+  const icon = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>').toString('base64');
+  const shared = { name: 'x.fdraw', text: 'look "./t.look"\na: rect "A" at 20,20 160x60 icon=team-thing\nb: rect "B" at 20,120 160x60 icon=virtual-machine', look: { path: './t.look', text: 'icondir "./icons"' }, icons: { 'team-thing': icon } };
+  const data = await encodeShared(shared);
+  const svg = await text(await get(`/s/${data}`, deps({})));
+  assert.doesNotMatch(svg, /could not draw/);
+  assert.equal((svg.match(/<image /g) ?? []).length, 1); // the one carried; virtual-machine gets a built-in stand-in
+  const r = await get(`/s/${data}?edit`, deps({}));
+  const back = await decodeShared(sharedInHash(new URL(r!.headers.get('Location')!).hash)!);
+  assert.deepEqual(Object.keys(back?.icons ?? {}), ['team-thing']);
+});
+
+test('a look that names a shipped font gets it; one that names another font gets the stand-in', async () => {
+  const draw = async (font: string) => text(await get(`/s/${await encodeShared({ name: 'x.fdraw', text: 'look "./t.look"\na: rect "Hello" at 20,20 160x60', look: { path: './t.look', text: `font sans "${font}"` } })}`, deps({})));
+  const franklin = await draw('Libre Franklin');
+  assert.match(franklin, /@font-face\{font-family:'Libre Franklin'/);
+  assert.doesNotMatch(franklin, /font-family:'Geist'/);
+  const other = await draw('Acme Grotesk');
+  assert.match(other, /@font-face\{font-family:'Geist'/);
+  assert.match(other, /font-family="'Acme Grotesk', 'Geist', sans-serif"/);
+});
+
+test('a look that names icons and fonts by web address: fastdraw.dev fetches nothing and draws stand-ins', async () => {
+  const real = globalThis.fetch;
+  let asked = 0;
+  globalThis.fetch = (async (...a: Parameters<typeof fetch>) => { asked++; return real(...a); }) as typeof fetch;
+  try {
+    const look = 'icondir "https://cdn.example.com/set@1.0.0/{name}.svg"\nfont sans "Inter" "https://cdn.example.com/inter@5.3.0/latin-{weight}-{style}.ttf"';
+    const svg = await text(await get(`/s/${await encodeShared({ name: 'x.fdraw', text: 'look "./t.look"\na: rect "Fn" at 20,20 160x60 icon=lambda', look: { path: './t.look', text: look } })}`, deps({})));
+    assert.equal(asked, 0);
+    assert.doesNotMatch(svg, /cdn\.example\.com/);
+    assert.match(svg, /@font-face\{font-family:'Geist'/);
+    assert.match(svg, /font-family="'Inter', 'Geist', sans-serif"/);
+  } finally { globalThis.fetch = real; }
+});

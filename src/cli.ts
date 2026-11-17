@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
+import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
 import { buildScene, withLook, type Scene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
@@ -51,13 +51,15 @@ function usage(): never {
   check  <file.fdraw | folder> ...        report problems, with line numbers. A folder means every
                                           .fdraw file under it
   render <file.fdraw | folder> ... [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
-         [--look name|file.look] [--dark]
+         [--look name|file.look] [--dark] [--offline]
                                           draw the diagram (PNG by default) next to it. With several
                                           files or a folder, checks them all first and draws nothing
                                           if any has an error. --look draws with another look instead
                                           of the file's own. --dark also writes x-dark.png with the
                                           look's dark version (the look's dark line; Night for the
-                                          built-in look)
+                                          built-in look). Icons and fonts the look names by https://
+                                          address are fetched and kept in a cache folder; --offline
+                                          (also for check) uses only what is already there
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
@@ -112,9 +114,13 @@ function diagramFiles(paths: string[]): { files: string[]; many: boolean } {
 const VALUE_FLAGS = ['-o', '--scale', '--look', '--editor'];
 const positional = (a: string[]) => a.filter((x, i) => !x.startsWith('-') && !VALUE_FLAGS.includes(a[i - 1]));
 
+// icon and font files the looks name by web address, fetched once and kept in a cache folder
+const fetchWeb = async (files: string[]) => { for (const n of await fetchWebAssets(files, args.includes('--offline'))) console.log(`note: ${n}`); };
+
 if (cmd === 'check') {
   const { files, many } = diagramFiles(positional(args));
   if (!files.length) usage();
+  await fetchWeb(files);
   if (!many) process.exit(report(files[0]).errors ? 1 : 0);
   let errors = 0, warns = 0, hints = 0;
   for (const f of files) {
@@ -128,6 +134,7 @@ if (cmd === 'check') {
 } else if (cmd === 'render') {
   const { files, many } = diagramFiles(positional(args));
   if (!files.length) usage();
+  await fetchWeb(files);
   const oi = args.indexOf('-o'), si = args.indexOf('--scale'), li = args.indexOf('--look');
   if (oi >= 0 && many) { console.log('-o names one output file, so it works with one diagram; leave it out to write each PNG next to its diagram'); process.exit(1); }
   const scale = si >= 0 ? +args[si + 1] : 2;
@@ -187,6 +194,7 @@ if (cmd === 'check') {
     console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
   }
 } else if (cmd === 'sizes') {
+  if (args[0]) await fetchWeb([args[0]]);
   const look = !args[0] ? defaultLook() : args[0].endsWith('.look') ? loadLook(args[0]) : loadScene(args[0]).look;
   const lf = lookFonts(!args[0] ? undefined : args[0].endsWith('.look') ? args[0] : lookFileOf(args[0]), look);
   console.log(sizesReport(look, lf.missing));
@@ -199,6 +207,7 @@ if (cmd === 'check') {
   const file = args.find((a, i) => !a.startsWith('-') && args[i - 1] !== '-o');
   const oi = args.indexOf('-o');
   const out = oi >= 0 ? args[oi + 1] : (file ? file.replace(/\.look$/, '') : 'default') + '-preview.png';
+  if (file) await fetchWeb([file]);
   const look = file ? loadLook(file) : defaultLook();
   const errs = look.issues.filter((i) => i.level === 'error');
   if (errs.length) { for (const i of errs) console.log(`${file}:${i.line}  error  ${i.msg}`); process.exit(1); }
@@ -242,14 +251,27 @@ if (cmd === 'check') {
   });
   y += 60;
   heading('Icons');
-  // the named built-in icons and the look's own; the other ~1,400 Phosphor icons would fill pages (fastdraw icons <word> finds them)
-  [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n) || !isBuiltIn(look, n)).forEach((n, i) => {
+  // the look's own icons (files from its folder and the web, and its outlines); the built-in ones only when it has
+  // none, as a sheet for a vendor look should show the vendor's icons. Phosphor's ~1,500 would fill pages either way
+  // (fastdraw icons <word> finds them)
+  // in a steady order: the look's named icons, its folder's files, then its sets' icons A to Z
+  const ownIcons = [...new Set([...look.iconUrls.keys(), ...[...look.images.keys()].sort(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !isBuiltIn(look, n))])]
+    .filter((n) => look.images.has(n) || look.icons.has(n)).slice(0, PREVIEW_ICONS);
+  const sheetIcons = ownIcons.length || look.hideBuiltIns ? ownIcons : [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n));
+  sheetIcons.forEach((n, i) => {
     const cx = 40 + (i % 11) * 80;
     if (i && i % 11 === 0) y += 60;
     L.push(`icon at ${cx + 20},${y} icon=${n}`);
-    L.push(`text ${JSON.stringify(n)} at ${cx + 32},${y + 40} size=8 color=muted font=sans anchor=middle`);
+    // a long name is cut so it stays under its own icon
+    L.push(`text ${JSON.stringify(n.length > 17 ? n.slice(0, 16) + '…' : n)} at ${cx + 32},${y + 40} size=8 color=muted font=sans anchor=middle`);
   });
   y += 76;
+  if (ownIcons.length) {
+    const total = new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? [])]).size;
+    y += 8;
+    L.push(`text ${JSON.stringify(`${total > ownIcons.length ? `the first ${ownIcons.length} of the look's ${total} icons; ` : ''}${look.hideBuiltIns ? 'the look hides the built-in icons (icons builtin=hidden); a diagram that uses one still draws' : `the built-in icons work too: fastdraw icons ${basename(file ?? '')} <word> finds them all`}`)} at 40,${y - 20} size=10 color=muted font=sans`);
+    y += 12;
+  }
   heading('Text');
   for (const s of all.filter((t) => t.kind === 'text')) {
     const size = +(s.props.size ?? 12);
@@ -276,8 +298,9 @@ if (cmd === 'check') {
 } else if (cmd === 'icons') {
   // icons [file.look] [word]: every icon a look offers, optionally only those that answer to the word (by name or meaning)
   const file = args[0]?.endsWith('.look') ? args[0] : undefined, word = (file ? args[1] : args[0])?.toLowerCase();
+  if (file) await fetchWeb([file]);
   const look = file ? loadLook(file) : defaultLook();
-  const names = [...new Set([...look.images.keys(), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
+  const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !(look.hideBuiltIns && isBuiltIn(look, n)))])].filter((n) => !word || iconMatches(n, word));
   console.log(names.length ? names.join('\n') : `no icon${word ? ` for "${word}"` : ''}`);
 } else if (cmd === 'guide') {
   const topic = args[0];

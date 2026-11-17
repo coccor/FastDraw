@@ -3,6 +3,8 @@
 // which browsers and the PNG renderer load with scripts and outside requests switched off. That is what
 // makes it safe to show an icon file that came from somewhere else.
 import type { Look } from './look.ts';
+import { standInIcon } from './icons.ts';
+import { extendedIconsLoaded } from './extendedIcons.ts';
 
 export const MAX_ICON_BYTES = 300_000;
 export const MAX_ICON_FILES = 3000;
@@ -25,15 +27,16 @@ export function svgDataUri(bytes: Uint8Array): string | null {
 
 // A copy of the look with icon images added. `files` are SVG files by file name; `uris` are name -> data URI
 // pairs (from an exported image). Names already taken by the look's own outline icons are left alone only if
-// the look defined them itself; a file otherwise replaces a bundled icon of the same name.
-export function withIconImages(look: Look, files: { name: string; bytes: Uint8Array }[], uris: Record<string, unknown> = {}): Look {
+// the look defined them itself; a file otherwise replaces a bundled icon of the same name. `folderRead` says
+// the look's icon folders were read (even if empty), so an icon missing from them is a mistake, not one left behind.
+export function withIconImages(look: Look, files: { name: string; bytes: Uint8Array }[], uris: Record<string, unknown> = {}, folderRead = files.length > 0): Look {
   const images = new Map(look.images);
   for (const [k, v] of Object.entries(uris)) if (images.size < MAX_ICON_FILES && /^[a-z0-9-]{1,80}$/.test(k) && isIconUri(v)) images.set(k, v);
   for (const f of [...files].sort((a, b) => a.name.localeCompare(b.name))) {
     const name = iconName(f.name), uri = name && name.length <= 80 ? svgDataUri(f.bytes) : null;
     if (uri && images.size < MAX_ICON_FILES && !images.has(name)) images.set(name, uri);
   }
-  return { ...look, images };
+  return { ...look, images, iconFolderRead: look.iconFolderRead || folderRead };
 }
 
 // The icon images a scene actually uses, for carrying inside an exported image.
@@ -42,3 +45,16 @@ export function usedIconImages(look: Look, names: Iterable<string>): Record<stri
   for (const n of names) { const u = look.images.get(n); if (u) out[n] = u; }
   return out;
 }
+
+// The built-in icon drawn for `name` when it is an icon file that did not come along: the look has icon
+// folders or web addresses that were not read here (a shared link without that icon, a page that cannot reach
+// the folder, a renderer that does not fetch from the web, or one that could not reach the address).
+// Null when the icon is there, or when its absence is a real mistake. Until the rest of the built-in icons
+// have loaded the name may still be one of them, so there is no stand-in yet.
+export function iconStandIn(look: Look, name: string): string | null {
+  if (!name || name === 'none' || look.images.has(name) || look.icons.has(name)) return null;
+  return (look.iconDirs.length || look.iconUrls.size) && !look.iconFolderRead && extendedIconsLoaded() ? standInIcon(name) : null;
+}
+
+// Where the look keeps the icon called `name`, for messages: its own address, or the look's icon folders.
+export const iconSources = (look: Look, name: string): string => look.iconUrls.get(name) ?? look.iconDirs.join(', ');

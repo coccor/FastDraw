@@ -1,6 +1,7 @@
 // What `fastdraw sizes` prints: a look's styles, fonts, icons and guidance, as plain text.
 // Pure, so the website can put the built-in look's report into llms.txt as well.
 import type { Look } from './look.ts';
+import { isBuiltIn } from './iconStyle.ts';
 
 export function sizesReport(look: Look, missingFonts: string[] = []): string {
   const out: string[] = [];
@@ -20,9 +21,21 @@ export function sizesReport(look: Look, missingFonts: string[] = []): string {
   }
   out.push('\nfonts');
   for (const [role, fam] of look.fonts) out.push(`  ${role.padEnd(12)} ${fam}${missingFonts.includes(fam) ? '   (no font file found: will fall back)' : ''}`);
-  const own = [...look.images.keys()];
+  const own = [...look.images.keys()].filter((n) => !look.iconUrls.has(n));
+  const sets = look.iconDirs.filter((d) => /^https:/i.test(d));
+  if (sets.length || look.iconUrls.size) {
+    out.push('\nicons from the web (icon=name)');
+    if (look.iconUrls.size) out.push(`  ${[...look.iconUrls.keys()].join(', ')}`);
+    const listed = look.listedIcons ?? [];
+    if (listed.length) out.push(`  ${listed.slice(0, 60).join(', ')}${listed.length > 60 ? `, and ${listed.length - 60} more ("fastdraw icons <look> [word]" lists or searches them)` : ''}`);
+    for (const d of sets) out.push(`  from ${d.includes('{name}') ? d : d.replace(/\/+$/, '') + '/{name}.svg'}${listed.length ? '' : ', any file by its name'}`);
+  }
   if (own.length) out.push(`\nicons from the look's folders (${own.length}; "fastdraw icons <look> [word]" lists or searches them)\n  ${own.slice(0, 60).join(', ')}${own.length > 60 ? ', ...' : ''}`);
-  out.push(`\n${own.length ? 'built-in icons' : 'icons'} (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
+  const outlines = [...look.icons.keys()].filter((n) => !look.hideBuiltIns || (!isBuiltIn(look, n) && !look.images.has(n)));
+  if (look.hideBuiltIns) {
+    if (outlines.length) out.push(`\nthe look's own outline icons\n  ${outlines.join(', ')}`);
+    out.push('\nbuilt-in icons: hidden by this look (icons builtin=hidden); use the icons above');
+  } else out.push(`\n${own.length ? 'built-in icons' : 'icons'} (icon=name on any box, or a box of style "icon")\n  ${outlines.join(', ')}`);
   if (look.guidance.length) { out.push('\nguidance from this look'); for (const g of look.guidance) out.push(`  - ${g}`); }
   return out.join('\n');
 }

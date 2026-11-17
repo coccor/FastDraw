@@ -4,7 +4,7 @@ import type { Look, Props } from './look.ts';
 import { textWidth, measureText, ICON_CAPTION_GAP } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
-import { isIconUri } from './iconfiles.ts';
+import { isIconUri, iconStandIn } from './iconfiles.ts';
 import { ICON_BOX, isBuiltIn, weightFor, iconLayers } from './iconStyle.ts';
 import type { IconStyle } from './iconStyle.ts';
 import { canSketch, sketchSvg, rectD, ellipseD } from './sketch.ts';
@@ -322,7 +322,7 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
 // A look's own icon is an outline in a 24 box, drawn with icon.color as its line, icon.fill inside its
 // closed parts, and icon.width as the line's thickness; it has no solid or duotone version.
 function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
-  const name = p.icon, img = look.images.get(name);
+  const name = iconStandIn(look, p.icon) ?? p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
   if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
   const ink = col(look, p['icon.color'] ?? p['title.color'] ?? 'ink');

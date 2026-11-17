@@ -190,6 +190,8 @@ function sceneOut(sc: Scene) {
 function lookOut(look: Look) {
   const o: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(look)) {
+    // whether the icon folders were read: the crate always reads them itself, so it has no such field
+    if (k === 'iconFolderRead' || k === 'listedIcons') continue;
     if (k === 'styles') o[k] = [...(v as Look['styles']).values()].map((s) => ({ name: s.name, kind: s.kind, props: s.props }));
     else if (k === 'icons' || k === 'images') o[k] = [...(v as Map<string, unknown>).keys()];
     else if (v instanceof Map) o[k] = [...v];

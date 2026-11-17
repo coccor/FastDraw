@@ -9,6 +9,7 @@ use indexmap::IndexMap;
 use regex::Regex;
 
 use crate::data::{font_widths, width_chars};
+use crate::iconfiles::{icon_sources, icon_stand_in};
 use crate::icons::{icon_matches, is_built_in};
 use crate::js::{self, num_str, round, to_number, utf16_len};
 use crate::look::{
@@ -1829,15 +1830,36 @@ impl Builder {
         let look = self.look.clone();
         let icon = prop("icon").filter(|i| !i.is_empty() && *i != "none");
         let known = |i: &str| look.icons.get(i).is_some() || look.images.contains_key(i);
-        if let Some(icon) = icon
+        let stand_in = icon.and_then(|i| icon_stand_in(&look, i));
+        if let (Some(icon), Some(stand_in)) = (icon, &stand_in) {
+            self.warn(
+                line,
+                format!(
+                    "icon {icon} is one of the look's icon files ({}), which could not be loaded here, so the built-in icon {stand_in} is drawn in its place",
+                    icon_sources(&look, icon)
+                ),
+            );
+        } else if let Some(icon) = icon
             && !known(icon)
         {
-            let all: Vec<&str> = look
+            let every: Vec<&str> = look
                 .images
                 .keys()
                 .map(String::as_str)
                 .chain(look.icons.keys())
                 .collect();
+            // a look that hides the built-in icons suggests only its own, when it has some
+            let own: Vec<&str> = if look.hide_built_ins {
+                let mut seen = HashSet::new();
+                every
+                    .iter()
+                    .copied()
+                    .filter(|n| !is_built_in(&look, n) && seen.insert(*n))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            let all = if own.is_empty() { every } else { own };
             // name the closest ones first: a team's folder can hold hundreds
             let near = all
                 .iter()

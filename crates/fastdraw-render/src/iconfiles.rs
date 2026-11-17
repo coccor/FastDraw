@@ -3,8 +3,9 @@
 //! browsers and the PNG renderer load with scripts and outside requests switched off. That is what makes it safe to
 //! show an icon file that came from somewhere else.
 
+use crate::icons::stand_in_icon;
 use crate::js;
-use crate::look::Look;
+use crate::look::{Look, is_web_url};
 
 pub const MAX_ICON_BYTES: usize = 300_000;
 pub const MAX_ICON_FILES: usize = 3000;
@@ -126,6 +127,33 @@ pub fn with_icon_images(look: &Look, files: Vec<(String, Vec<u8>)>) -> Look {
         images,
         ..look.clone()
     }
+}
+
+/// Does the look name any icon by an https:// address? (webassets.ts `hasWebIcons`)
+pub fn has_web_icons(look: &Look) -> bool {
+    !look.icon_urls.is_empty() || look.icon_dirs.iter().any(|d| is_web_url(d))
+}
+
+/// The built-in icon drawn for `name` when it is one of the look's icon files that was not read (iconfiles.ts
+/// `iconStandIn`). The crate reads the look's icon folders itself and never fetches from the web, so that is an
+/// icon the look names by address.
+pub fn icon_stand_in(look: &Look, name: &str) -> Option<String> {
+    if name.is_empty()
+        || name == "none"
+        || look.images.contains_key(name)
+        || look.icons.get(name).is_some()
+    {
+        return None;
+    }
+    has_web_icons(look).then(|| stand_in_icon(name))
+}
+
+/// Where the look keeps the icon called `name`, for messages: its own address, or the look's icon folders.
+pub fn icon_sources(look: &Look, name: &str) -> String {
+    look.icon_urls
+        .get(name)
+        .cloned()
+        .unwrap_or_else(|| look.icon_dirs.join(", "))
 }
 
 #[cfg(test)]

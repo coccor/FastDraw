@@ -15,8 +15,9 @@ import { parseLook, isBundledLook, bundledLook, defaultLook } from '../src/look.
 import { loadExtendedIcons, extendedIconsLoaded } from '../src/extendedIcons.ts';
 import { darkCounterpart } from '../editor/src/embed/theme.ts';
 import { decodeShared, editorLink, type Shared } from '../editor/src/embed/share.ts';
-import { FACES } from '../editor/src/embed/faces.ts';
+import { FACES, familiesDrawn } from '../editor/src/embed/faces.ts';
 import { subsetFont } from '../src/subset.ts';
+import { withIconImages } from '../src/iconfiles.ts';
 
 export type Deps = {
   /** The text at a raw.githubusercontent.com address, or null when there is none (404). */
@@ -36,7 +37,8 @@ class Problem extends Error {
   // answered as an image with status 200, as GitHub's image proxy shows a broken image for anything else
 }
 
-type Source = { name: string; text: string; look: { path: string; text: string } | null; base: string | null };
+// icons: icon files carried in a /s/ address (name -> data URI); a /gh/ diagram brings none
+type Source = { name: string; text: string; look: { path: string; text: string } | null; base: string | null; icons?: Record<string, string> };
 
 /** The answer for /gh/… and /s/… addresses, or null for any other path. */
 export async function handle(req: Request, deps: Deps): Promise<Response | null> {
@@ -49,7 +51,7 @@ export async function handle(req: Request, deps: Deps): Promise<Response | null>
   try {
     const src = route === 'gh' ? await fromGitHub(url.pathname.slice(4), deps) : await fromShare(url.pathname.slice(3));
     if (q.has('edit')) {
-      const shared: Shared = { name: src.name, text: src.text, ...(src.look ? { look: src.look } : {}) };
+      const shared: Shared = { name: src.name, text: src.text, ...(src.look ? { look: src.look } : {}), ...(src.icons ? { icons: src.icons } : {}) };
       return new Response(null, { status: 302, headers: { Location: await editorLink(deps.editor, shared), 'Cache-Control': CACHE } });
     }
     return svgResponse(await draw(src, dark, deps));
@@ -112,7 +114,7 @@ async function fromShare(data: string): Promise<Source> {
   const s = await decodeShared(data.replace(/\.svg$/i, ''));
   if (!s) throw new Problem('the address does not hold a diagram (cut short, or not made by FastDraw)');
   if (s.text.length > MAX_TEXT) throw new Problem('the diagram is larger than 1 MB');
-  return { name: s.name, text: s.text, look: s.look ?? null, base: null };
+  return { name: s.name, text: s.text, look: s.look ?? null, base: null, ...(s.icons ? { icons: s.icons } : {}) };
 }
 
 async function draw(s: Source, dark: boolean, deps: Deps): Promise<string> {
@@ -129,7 +131,7 @@ async function draw(s: Source, dark: boolean, deps: Deps): Promise<string> {
       text = withLook(text, d);
     }
   }
-  const build = () => buildScene(text, lookText !== null ? parseLook(lookText) : null);
+  const build = () => buildScene(text, lookText !== null ? withIconImages(parseLook(lookText), [], s.icons ?? {}) : null);
   let sc = build();
   if (!extendedIconsLoaded() && sc.issues.some((i) => i.msg.startsWith('there is no icon called'))) {
     await loadExtendedIcons();
@@ -145,7 +147,8 @@ async function draw(s: Source, dark: boolean, deps: Deps): Promise<string> {
 export async function fontCss(svg: string, deps: Pick<Deps, 'font'>): Promise<string> {
   const want = new Set<string>();
   for (const [tag] of svg.matchAll(/<(?:text|tspan)\b[^>]*>/g)) {
-    const fam = /font-family="'([^']+)'/.exec(tag)?.[1];
+    // the first family in the list that ships with FastDraw: a look's own font is not here, its stand-in is
+    const fam = [...familiesDrawn(tag, (f) => FACES.some((x) => x[0] === f))][0];
     if (!fam) continue;
     const faces = FACES.filter((f) => f[0] === fam);
     if (!faces.length) continue;

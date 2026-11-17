@@ -54,7 +54,37 @@ On a light page a tint such as `amber/0.1` is the colour at that opacity over wh
 
 `font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`.
 
-Five families are bundled and always available: **Geist**, **Geist Mono** and **Newsreader** (the built-in look), **Libre Franklin** and **Instrument Serif**. To use any other font, put its files in a folder next to the look and name the folder:
+These families ship with FastDraw and are drawn the same everywhere, with nothing else needed: **Geist**, **Geist Mono** and **Newsreader** (the built-in look), **Libre Franklin**, **Instrument Serif** and **Sketch Hand**.
+
+**For any other font, give the address of its files on the web.** That is the way to prefer: the look then works wherever it is opened (the editor, shared links, embedded diagrams, the command line), and nothing has to be committed next to it.
+
+```
+font sans "Inter"          "https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0/latin-{weight}-{style}.ttf"
+font mono "JetBrains Mono" "https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@5.3.0/latin-{weight}-normal.ttf"
+```
+
+- `{weight}` is filled in with 400, 500, 600 and 700, and `{style}` with `normal` and `italic`; leave either out when the file name does not change with it. Only the faces the text uses are fetched.
+- Use **TTF or OTF** addresses: the command line's PNG renderer reads only those (the editor also takes WOFF2). The family name inside the files must match `font sans "..."` exactly.
+- Give an address with a fixed version (`inter@5.3.0`, not `inter@latest`), so the look does not change under you. The address must be https and must not redirect.
+- The editor and embedded diagrams fetch the files from that address in the reader's browser; `fastdraw check` and `render` fetch them once and keep a copy in a cache folder (`--offline` uses only the copy). Exported SVGs carry the faces they use. fastdraw.dev images of private READMEs and the Rust crate do not fetch, and draw the role's shipped font instead.
+
+**Recommended:** [Fontsource](https://fontsource.org), served by jsDelivr, has static TTF files for every Google font and many more, under open licences. The address is `https://cdn.jsdelivr.net/fontsource/fonts/<id>@<version>/latin-{weight}-{style}.ttf`, where `<id>` is the name on fontsource.org in small letters with `-` for spaces. Checked and known to work:
+
+| Font | Role | Address |
+| --- | --- | --- |
+| Inter | sans | `https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0/latin-{weight}-{style}.ttf` |
+| IBM Plex Sans | sans | `https://cdn.jsdelivr.net/fontsource/fonts/ibm-plex-sans@5.3.0/latin-{weight}-{style}.ttf` |
+| Source Sans 3 | sans | `https://cdn.jsdelivr.net/fontsource/fonts/source-sans-3@5.3.1/latin-{weight}-{style}.ttf` |
+| Roboto | sans | `https://cdn.jsdelivr.net/fontsource/fonts/roboto@5.3.0/latin-{weight}-{style}.ttf` |
+| Open Sans | sans | `https://cdn.jsdelivr.net/fontsource/fonts/open-sans@5.3.0/latin-{weight}-{style}.ttf` |
+| Noto Sans | sans | `https://cdn.jsdelivr.net/fontsource/fonts/noto-sans@5.3.0/latin-{weight}-{style}.ttf` |
+| JetBrains Mono | mono | `https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@5.3.0/latin-{weight}-{style}.ttf` |
+| IBM Plex Mono | mono | `https://cdn.jsdelivr.net/fontsource/fonts/ibm-plex-mono@5.3.0/latin-{weight}-{style}.ttf` |
+| Fira Code | mono | `https://cdn.jsdelivr.net/fontsource/fonts/fira-code@5.3.0/latin-{weight}-normal.ttf` |
+
+`latin` covers Western European text; Fontsource also has `latin-ext`, `cyrillic`, `greek` and others in the same place. A brand font that is not on the web (Segoe UI, a licensed corporate face) cannot be used this way: give the look the closest open font instead.
+
+**A font folder** is the other way, for fonts that must not be fetched or are not on the web: put the files next to the look and name the folder.
 
 ```
 fontdir "./fonts"            // relative to the look file
@@ -64,8 +94,11 @@ font sans "Fira Sans"
 - Files must be **TTF or OTF**, one file per weight and style you use (for example Regular and SemiBold; add Italic if a style sets `italic=1`). Box titles use weight 600 by default. Use static files, not a single variable font.
 - The family name is read from inside the files, so `font sans "..."` must match it exactly. `fastdraw sizes team.look` lists the fonts and flags any family it found no file for; `fastdraw check` warns about it too.
 - Commit the font folder with the look, and keep the font's licence file beside it. Use fonts whose licence allows redistribution (for example the SIL Open Font License).
-- Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`, `->`, `>=`, `!=` and `...` are drawn as the characters written, never as one joined glyph, so code, command-line flags and SQL read as typed.
-- In the browser editor the look's fonts load when a folder is open. A diagram opened as a single file, pasted, or restored from an exported image is drawn with fallback fonts until its folder is opened.
+- In the browser editor a folder's fonts load only when the folder is open.
+
+Wherever a font's files cannot be read or fetched (a font folder in a shared link or an embedded diagram, an address that cannot be reached), text is drawn in the shipped family for its role: Geist for sans, Geist Mono for mono, Newsreader for serif.
+
+Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`, `->`, `>=`, `!=` and `...` are drawn as the characters written, never as one joined glyph, so code, command-line flags and SQL read as typed.
 
 ### Styles
 
@@ -159,16 +192,60 @@ icon queue "M4 6h16" "M4 12h16" "M4 18h16"
 
 The quoted parts are SVG path data drawn in a 24x24 box; they are stroked, not filled, in the colour of the box's text. Keep to simple outlines with a 1.5 stroke in mind, so they sit with the built-in ones. An icon of your own (or one you replace) is an outline only: it has no solid or duotone style. A style can carry an icon (`style store extends node icon=database`), and `icon.size=`, `icon.color=`, `icon.pos=top` work in a style too.
 
-**Colour icons and vendor sets** go in a folder of SVG files next to the look:
+**Colour icons and vendor sets** (Azure, AWS, Google Cloud, Kubernetes, product logos): prefer **giving their address on the web**. The look then works wherever it is opened, a shared link stays short, and nothing has to be committed next to the look.
+
+```
+// a whole set whose file names are the icon names: {name} is replaced by the icon=... of each box
+icondir "https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee714d05a24a81cf6ccd967ef34b22cb77e65/azure-docs/{name}.svg"
+
+// one icon from a set whose file names are not (AWS, the Azure icon set as Microsoft names it)
+icon lambda "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg"
+icon s3     "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AmazonSimpleStorageService.svg"
+```
+
+- A diagram then writes `icon=key-vault`, `icon=lambda`. Only the icons a diagram uses are fetched.
+- **Seeing what a set has.** For a set on `cdn.jsdelivr.net` with a fixed version, FastDraw reads jsDelivr's list of the package's files, so `fastdraw icons team.look vault` searches the whole set, `fastdraw preview-look` draws it (the first 200), and the editor's icon picker offers it. For a set anywhere else (or a GitHub repository too big for jsDelivr to list), write its names in the look: `icondir "https://.../{name}.svg" names="pod deploy svc"`. Without either, the set still works, by name. Several `icondir` addresses are tried in order, after the icon's own `icon` line; an address without `{name}` is a folder, and `/<name>.svg` is added to it.
+- Give an address with a fixed version or commit (`aws-icons@3.3.0`, `@e33ee71...`), never `@latest` or a branch: a set that renames a file would change your diagrams. The address must be https and must not redirect.
+- The editor and embedded diagrams fetch the files in the reader's browser; `fastdraw check` and `render` fetch them once and keep a copy in a cache folder (`--offline` uses only the copy). The server sees a request for the file, nothing else. Exported images carry the icons they use.
+- Where the files cannot be fetched (no network, the Rust crate, fastdraw.dev images of private READMEs), the closest built-in icon is drawn and a warning says so. An icon found at none of the addresses is an error, as a misspelt built-in name is.
+- Check the vendor's terms for its icons; FastDraw ships none of them. Writing an address in a look does not copy the icons anywhere.
+
+**Recommended sources.** Each is served (by jsDelivr, or GitHub for Kubernetes) with the headers the browser needs, and the versions below were checked. jsDelivr does not serve files from GitHub repositories over 50 MB; use `raw.githubusercontent.com/<owner>/<repo>/<commit>/<path>` for those.
+
+| Set | What it has | `icondir` address, or the pattern for `icon` lines |
+| --- | --- | --- |
+| Azure (Ben Coleman's collection) | about 150 Azure service icons, file names in small letters (`key-vault`, `app-service`, `cosmos-db`, `virtual-machine`, `application-insights`) | `https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee714d05a24a81cf6ccd967ef34b22cb77e65/azure-docs/{name}.svg` |
+| Azure, Microsoft's names | the full Azure set as Microsoft names the files (`Virtual-Machine.svg`, `Key-Vaults.svg`): one `icon` line each | `https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee714d05a24a81cf6ccd967ef34b22cb77e65/azure-icons/<File-Name>.svg` |
+| AWS (`aws-icons`) | the AWS architecture icons (`AWSLambda.svg`, `AmazonEC2.svg`): one `icon` line each; `resource/` has the smaller resource icons | `https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/<FileName>.svg` |
+| Google Cloud (`gcp-icons`) | 45 Google Cloud product icons (`bigquery`, `alloydb`, `gke`, `cloudsql`, `vertexai`); five end in `-512-color-rgb.svg` (`cloudrun`, `computeengine`, `apigee`, `networking`, `secops`) and need an `icon` line | `https://cdn.jsdelivr.net/npm/gcp-icons@1.0.6/dist/icons/{name}-512-color.svg` |
+| Kubernetes | the 30 Kubernetes resource icons by their short names; not listed by jsDelivr, so give `names="c-role cm crb crd cronjob deploy ds ep group hpa ing job limits netpol ns pod psp pv pvc quota rb role rs sa sc secret sts svc user vol"` | `https://raw.githubusercontent.com/kubernetes/community/d0476ffb364cd9dc6b007221410db3b50989ebc3/icons/svg/resources/labeled/{name}.svg` |
+| Simple Icons | about 3,000 brand and product logos, one colour (`github`, `postgresql`, `docker`, `stripe`) | `https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{name}.svg` |
+| Devicon | logos of languages and tools in their colours (`docker`, `postgresql`, `react`, `python`); the repository is too big for jsDelivr to list, so add `names="..."` with the ones you use | `https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/{name}/{name}-original.svg` |
+| Lucide | outline icons like the built-in ones, drawn in black | `https://cdn.jsdelivr.net/npm/lucide-static@1.74.0/icons/{name}.svg` |
+| Tabler | outline icons, drawn in black | `https://cdn.jsdelivr.net/npm/@tabler/icons@3.52.0/icons/outline/{name}.svg` |
+
+`fastdraw icons team.look <word>` searches a listed set; to browse one by hand, open its package on jsdelivr.com (for example `https://www.jsdelivr.com/package/npm/aws-icons`).
+
+**A folder of SVG files** next to the look is the other way, for icons that must not be fetched or are not on the web:
 
 ```
 icondir "./icons"
 ```
 
-Every `.svg` file directly in that folder becomes an icon, drawn exactly as the file looks, in its own colours. The icon's name is the file name in small letters with everything that is not a letter or digit turned into `-`, and a leading number-and-`icon-service-` prefix dropped: `10021-icon-service-Virtual-Machine.svg` is `icon=virtual-machine`, `Load Balancer.svg` is `icon=load-balancer`. `fastdraw icons team.look` lists them and `fastdraw icons team.look storage` searches. This is how a team adds, say, the Azure or AWS architecture icons: download the set from the vendor, copy the files you use into the folder, and commit them with the look (check the vendor's terms first; FastDraw ships none of them).
+Every `.svg` file directly in that folder becomes an icon, drawn exactly as the file looks, in its own colours. The icon's name is the file name in small letters with everything that is not a letter or digit turned into `-`, and a leading number-and-`icon-service-` prefix dropped: `10021-icon-service-Virtual-Machine.svg` is `icon=virtual-machine`, `Load Balancer.svg` is `icon=load-balancer`. `fastdraw icons team.look` lists them and `fastdraw icons team.look storage` searches. Commit the folder with the look. A shared link carries the folder's icons that the diagram uses inside it.
+
+**A look that offers only its own icons.** A vendor look (Azure, AWS) usually wants its own set offered, not the built-in outlines next to it:
+
+```
+icons builtin=hidden
+```
+
+The built-in icons are then left out of the editor's icon picker, `fastdraw preview-look`, `sizes` and `icons`, and a misspelt icon name is answered with the look's own icons. A diagram that already uses a built-in icon (`icon=database`) still draws it, so a diagram can move between looks without breaking. `icons builtin=shown` is the default.
+
+Either way:
 
 - A file icon keeps its colours; `icon.color=` does not apply to it.
-- Files over 300 KB are skipped. Only the icons a diagram uses are carried inside its exported image.
+- Files over 300 KB are skipped.
 - A file with the same name as a built-in icon replaces it.
 
 ### Dark version
@@ -201,4 +278,4 @@ The built-in look's dark version is `night`, and Night names itself, since it is
 - Shapes cannot contain extra drawn details beyond the outline, one icon, the tag and the ghost number. The tag's position is fixed. Icons are outlines in one colour.
 - The background can have dots but not grid lines.
 - `path` outlines have no arcs (`A`); use curves (`C`, `Q`). Arrows attach to the outline's bounding box.
-- Exported images carry the diagram and look but not the font files, so someone reopening an image without the repo sees fallback fonts for any font that is not bundled.
+- Exported images carry the diagram and look but not the files of a font folder, so someone reopening an image without the repo sees the role's shipped font for it. Fonts given by web address are fetched again.
