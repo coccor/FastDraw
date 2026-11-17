@@ -101,8 +101,9 @@ Rust change in the same pull request.
 - **Drive-relative look paths** on Windows (`look "D:x.look"`): Node resolves them against its remembered
   current folder on drive `D:`; the crate uses the current folder when it is on `D:` and the root of `D:`
   otherwise.
-- **`font_files`** may hold the real on-disk path (its case, an 8.3 short name expanded, a `subst` or mapped
-  drive resolved) where Node keeps the path as given.
+- **`font_files`** under a font folder reached through a symbolic link or junction hold the fully resolved
+  path (its real case, 8.3 short names expanded, `subst` and mapped drives resolved); Node resolves only the
+  links. Without a link on the way both keep the path as given.
 - **A lone surrogate in a font's name record** becomes U+FFFD (a Rust string cannot hold it).
 - **Share links**: `editor_link` deflates with `miniz_oxide`, so the bytes differ from the browser's
   `CompressionStream`; the link decodes to the same diagram, which is what is tested.

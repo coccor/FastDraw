@@ -214,16 +214,21 @@ pub fn look_folder(look_file: &Path, d: &str) -> Option<PathBuf> {
 }
 
 /// `realpathSync(p)` as text, and the canonical path for comparisons. Node's realpathSync keeps the path as given
-/// (its case too) when no link is on the way; otherwise the text is where the links lead.
+/// (its case, and on Windows its 8.3 short names) when no link is on the way; otherwise the text is where the
+/// links lead.
 fn real_path(given: &str) -> Option<(String, PathBuf)> {
     let canonical = std::fs::canonicalize(given).ok()?;
-    let real = strip_verbatim(&canonical.to_string_lossy());
-    let same = if WINDOWS {
-        real.to_lowercase() == given.to_lowercase()
+    // a symbolic link or (on Windows) a junction anywhere along the given path
+    let linked = Path::new(given).ancestors().any(|p| {
+        !p.as_os_str().is_empty()
+            && std::fs::symlink_metadata(p).is_ok_and(|m| m.file_type().is_symlink())
+    });
+    let text = if linked {
+        strip_verbatim(&canonical.to_string_lossy())
     } else {
-        real == given
+        given.to_string()
     };
-    Some((if same { given.to_string() } else { real }, canonical))
+    Some((text, canonical))
 }
 
 pub fn plain_files(
@@ -697,7 +702,16 @@ mod tests {
         if WINDOWS {
             assert_eq!(resolve_all(&["c:/x/./y/../z/", "a\\\\b/"]), r"c:\x\z\a\b");
             assert_eq!(resolve_all(&[r"C:\x", "/y"]), r"C:\y");
-            assert_eq!(resolve_all(&[r"C:\x", "D:y"]), r"D:\y");
+            // a drive-relative path on another drive than the current folder's lands at that drive's root
+            let here = std::env::current_dir()
+                .unwrap()
+                .to_string_lossy()
+                .to_uppercase();
+            let other = if here.starts_with("Q:") { "R" } else { "Q" };
+            assert_eq!(
+                resolve_all(&[r"C:\x", &format!("{other}:y")]),
+                format!(r"{other}:\y")
+            );
             assert_eq!(resolve_all(&[r"C:\x", "C:y"]), r"C:\x\y");
             assert_eq!(resolve_all(&[r"\\srv\sh\a", r"..\..\b"]), r"\\srv\sh\b");
             assert_eq!(relative(r"C:\a\b", r"c:\A\c\d"), r"..\c\d");
