@@ -51,15 +51,16 @@ function usage(): never {
   check  <file.fdraw | folder> ...        report problems, with line numbers. A folder means every
                                           .fdraw file under it
   render <file.fdraw | folder> ... [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
-         [--look name|file.look] [--dark] [--offline]
+         [--look name|file.look|https://...look] [--dark] [--offline]
                                           draw the diagram (PNG by default) next to it. With several
                                           files or a folder, checks them all first and draws nothing
                                           if any has an error. --look draws with another look instead
                                           of the file's own. --dark also writes x-dark.png with the
                                           look's dark version (the look's dark line; Night for the
-                                          built-in look). Icons and fonts the look names by https://
-                                          address are fetched and kept in a cache folder; --offline
-                                          (also for check) uses only what is already there
+                                          built-in look). A look named by https:// address (one on
+                                          GitHub, say), and the icons and fonts a look names that way,
+                                          are fetched and kept in a cache folder; --offline (also for
+                                          check) uses only what is already there
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
@@ -115,7 +116,11 @@ const VALUE_FLAGS = ['-o', '--scale', '--look', '--editor'];
 const positional = (a: string[]) => a.filter((x, i) => !x.startsWith('-') && !VALUE_FLAGS.includes(a[i - 1]));
 
 // icon and font files the looks name by web address, fetched once and kept in a cache folder
-const fetchWeb = async (files: string[]) => { for (const n of await fetchWebAssets(files, args.includes('--offline'))) console.log(`note: ${n}`); };
+// (with the look --look names, when that is an address)
+const fetchWeb = async (files: string[]) => {
+  const li = args.indexOf('--look'), over = li >= 0 && args[li + 1] ? [args[li + 1]] : [];
+  for (const n of await fetchWebAssets(files, args.includes('--offline'), over)) console.log(`note: ${n}`);
+};
 
 if (cmd === 'check') {
   const { files, many } = diagramFiles(positional(args));
@@ -142,7 +147,7 @@ if (cmd === 'check') {
   const transparent = args.includes('--transparent'), embed = !args.includes('--no-embed'), dark = args.includes('--dark');
   let lookOver: LookRef | undefined;
   if (li >= 0) {
-    const r = args[li + 1] ? lookArg(args[li + 1]) : 'give --look the name of a look that ships with FastDraw, or a path to a .look file';
+    const r = args[li + 1] ? lookArg(args[li + 1]) : 'give --look the name of a look that ships with FastDraw, a path to a .look file, or the https address of one';
     if (typeof r === 'string') { console.log(r); process.exit(1); }
     lookOver = r;
   }

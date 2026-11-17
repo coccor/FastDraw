@@ -1,0 +1,3 @@
+# a look named by web address that has not been fetched
+look "https://example.com/never-fetched.look"
+a: rect "A" at 40,40

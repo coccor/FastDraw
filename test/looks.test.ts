@@ -51,10 +51,16 @@ test('look <name> uses a bundled look; an unknown name or missing file is an err
 // ---- the six style looks: each is a way of drawing, built from look properties any look can use ----
 
 const SAMPLE = 'z: zone "Zone" at 20,20 400x300\na: node "A" at 40,60\nb: focal "B" at 40,220\nc: store "C" at 240,60\na -> b "calls" style=primary\na -> c\ntext "Title" at 40,360 style=h1\n';
-const draw = (look: string, body = SAMPLE) => renderSvg(buildScene(`look ${look}\n${body}`, null));
+// The style looks that moved to coccor/fastdraw-looks are drawn from copies in test/fixtures/looks: what they
+// show off is drawing FastDraw does, whichever repository the look file lives in.
+const FIXTURE_LOOKS = ['engraved', 'headline', 'keys', 'listing', 'offset', 'transit'];
+const fixtureLook = (n: string) => parseLook(readFileSync(new URL(`fixtures/looks/${n}.look`, import.meta.url), 'utf8'), n);
+const scene = (look: string, body: string) => FIXTURE_LOOKS.includes(look) ? buildScene(`look "./${look}.look"\n${body}`, fixtureLook(look)) : buildScene(`look ${look}\n${body}`, null);
+const draw = (look: string, body = SAMPLE) => renderSvg(scene(look, body));
 
-test('the style looks ship, and each draws the thing it is named for', () => {
-  for (const n of ['shade', 'engraved', 'keys', 'transit', 'offset', 'listing']) assert.ok(BUNDLED_LOOK_NAMES.includes(n), n);
+test('the style looks draw the thing each is named for', () => {
+  assert.ok(BUNDLED_LOOK_NAMES.includes('shade'));
+  for (const n of FIXTURE_LOOKS) assert.ok(!BUNDLED_LOOK_NAMES.includes(n), n);
   // shade: a hatched shadow, the box shape again 5px down and right, filled with a pattern
   assert.match(draw('shade'), /<pattern id="fd-hatch-\d+"[^>]*rotate\(-41\)/);
   assert.match(draw('shade'), /<rect x="45" y="65" width="144" height="64" rx="2" fill="url\(#fd-hatch-\d+\)" stroke="none"\/>/);
@@ -77,12 +83,12 @@ test('the style looks ship, and each draws the thing it is named for', () => {
   assert.equal(tall(1_000_000), tall(400));
   assert.match(draw('listing'), /<path d="M 36\.5,60 H 43\.5 M 40,56\.5 V 63\.5"/);
   // none of the page dressing is drawn on a transparent export
-  for (const n of ['offset', 'listing']) assert.doesNotMatch(renderSvg(buildScene(`look ${n}\n${SAMPLE}`, null), undefined, { background: false }), /fd-page|fd-grain/);
+  for (const n of ['offset', 'listing']) assert.doesNotMatch(renderSvg(scene(n, SAMPLE), undefined, { background: false }), /fd-page|fd-grain/);
 });
 
 test('the style looks keep the built-in look\'s type sizes, so a diagram laid out for it still fits', () => {
   const body = 'a: node "Publish Dashboard" sub="merge · deploy · verify" at 40,40 144x64\nb: node "B" at 40,200 144x64\na -> b "restrict" lpos=170,171\n';
-  const warns = (look: string) => check(buildScene(look ? `look ${look}\n${body}` : body, null)).filter((i) => i.level === 'warn').map((i) => i.msg);
+  const warns = (look: string) => check(look ? scene(look, body) : buildScene(body, null)).filter((i) => i.level === 'warn').map((i) => i.msg);
   assert.deepEqual(warns(''), []);
   for (const n of ['shade', 'engraved', 'keys', 'transit', 'offset', 'listing']) assert.deepEqual(warns(n), [], n);
 });
@@ -90,7 +96,7 @@ test('the style looks keep the built-in look\'s type sizes, so a diagram laid ou
 test('text a diagram lays on a box stays readable when the look fills that box dark', () => {
   const body = 'f: focal at 40,40 200x80\ntext "Assess damage" at 60,70 size=12 weight=600\ntext "mobile app" at 60,90 size=9 color=soft\nn: node at 40,200 200x80\ntext "Plain" at 60,230\n';
   // on a dark subject the text takes the box's own light colours; on a plain box it is left alone
-  const sc = buildScene(`look engraved\n${body}`, null), svg = renderSvg(sc);
+  const sc = scene('engraved', body), svg = renderSvg(sc);
   assert.match(svg, /fill="#f3eee2" font-weight="600">Assess damage</);
   assert.doesNotMatch(svg, /fill="#f3eee2"[^>]*>Plain</);
   assert.deepEqual(check(sc).filter((i) => /cannot be read/.test(i.msg)), []);
@@ -146,7 +152,7 @@ test('a zone caption has a plate as wide as its words, in the zone\'s own colour
     // (on Night the tint is mixed to keep its hue, so it is not a plain 0.05 alpha; it is the zone's own fill)
     assert.equal(tint.fill, color(lk ? bundledLook('night')! : look, 'accent/0.05'));  }
   // a caption on the edge keeps a plain paper plate, its tint would show outside the zone
-  const edge = renderSvg(buildScene('look engraved\nz: zone "Area" at 40,40 300x120\n', null));
+  const edge = renderSvg(scene('engraved', 'z: zone "Area" at 40,40 300x120\n'));
   assert.equal([...edge.matchAll(/rx="2"/g)].length, 1);
   // a font named after an Object property is just an unknown family, measured as the bundled one for its role
   for (const name of ['constructor', '__proto__', 'toString']) {

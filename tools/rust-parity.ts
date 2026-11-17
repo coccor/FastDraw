@@ -13,7 +13,7 @@
 //                        conns: [{pts, label: {x, y, w, h} | null}] } of the scene drawn (issues: every level).
 //   drawings/<key>.json  { svg, issues: [{line, level, msg}] (hints dropped), paper, bounds, fontFiles (repo-relative),
 //                        look: {path, text} | null } — what `render` returns.
-//   colors.json          [{ look, v, over, out }]: `color(look, v, over)` for the default look and night, sketch, engraved.
+//   colors.json          [{ look, v, over, out }]: `color(look, v, over)` for the default look and night, sketch, shade.
 //   share.json           [{ name, text, look, decoded }]: share-link fixtures and decodeShared(encodeShared(…)).
 //   gen/                 cases this script writes rather than commits (a look file over 1 MB); in the manifest like any.
 //
@@ -316,7 +316,7 @@ for (const d of [
 ] as Shared[]) share.push({ name: d.name, text: d.text, look: d.look ?? null, decoded: await decodeShared(await encodeShared(d)) });
 
 // colours: color(look, v, over) for a fixed list of inputs, in the default look and three bundled ones
-const COLOR_LOOKS: [string, Look][] = [['default', defaultLook()], ...['night', 'sketch', 'engraved'].map((n): [string, Look] => [n, bundledLook(n)!])];
+const COLOR_LOOKS: [string, Look][] = [['default', defaultLook()], ...['night', 'sketch', 'shade'].map((n): [string, Look] => [n, bundledLook(n)!])];
 const COLOR_INPUTS: (string | undefined)[] = [
   undefined, '', 'none', 'transparent', 'ink', 'muted', 'paper', 'card', 'accent', 'ink/0.2', 'muted/0.5', 'paper/0.3', 'card/1', 'accent/0.25',
   '#fff', '#abc', '#aabbcc', '#AABBCC', '#12345678', '#abc/0.5', '#336699/0.1', '#336699/0.85', '#ff0000/.5', 'red', 'nosuchcolor', 'nosuchcolor/0.5',

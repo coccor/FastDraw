@@ -96,6 +96,21 @@ function cached(get: Fetch, url: string, maxBytes: number): Promise<Uint8Array |
   return p;
 }
 
+// ---- a look named by its web address --------------------------------------------------------------------
+// `look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look"`: the look file itself is on
+// the web. It is fetched with the same rules as the files a look names (public https, no cookies, no redirects).
+export const MAX_LOOK_BYTES = 1_000_000;
+
+/** The look file's text, null when the server says there is none; throws when it cannot be reached or is not a look. */
+export async function fetchWebLook(url: string, get: Fetch = webFetch): Promise<string | null> {
+  const bytes = await get(url, MAX_LOOK_BYTES);
+  if (!bytes) return null;
+  const text = new TextDecoder().decode(bytes);
+  // a site answering with its own HTML page instead of the file
+  if (/^\s*</.test(text)) throw new Error('not a look file (it starts with "<")');
+  return text;
+}
+
 export const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return 'an address in the look'; } };
 
 // ---- what a set on the web has --------------------------------------------------------------------------

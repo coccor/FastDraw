@@ -134,8 +134,8 @@ mod tests {
     fn dark_counterparts_named() {
         let night = bundled_look("night").unwrap();
         assert_eq!(dark_counterpart(Some("night"), Some(&night)), None);
-        let engraved = bundled_look("engraved").unwrap();
-        assert_eq!(dark_counterpart(Some("engraved"), Some(&engraved)), None);
+        let shade = bundled_look("shade").unwrap();
+        assert_eq!(dark_counterpart(Some("shade"), Some(&shade)), None);
     }
 
     #[test]

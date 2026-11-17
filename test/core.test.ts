@@ -356,7 +356,7 @@ test('route=curve draws a smooth line: bend bows it, via points are passed throu
   assert.ok(drawn[1] - tri[0][1] >= 10, `line ends at ${drawn}`);
   // a bold line and a thin one carry the same arrowhead, in every look
   for (const name of ['headline', 'reference', 'whiteboard']) {
-    const lk = loadLook(`looks/${name}.look`);
+    const lk = loadLook(name === 'headline' ? `test/fixtures/looks/${name}.look` : `looks/${name}.look`);
     const svg = renderSvg(buildScene(`look "${name}.look"\na: node "A" at 40,40\nb: node "B" at 400,40\nc: node "C" at 40,200\nd: node "D" at 400,200\na -> b\nc -> d style=primary\n`, lk));
     const heads = [...svg.matchAll(/<polygon points="([^"]+)" fill=/g)].map((m) => m[1].split(' ').map((p) => p.split(',').map(Number)))
       .map(([t, p, q]) => Math.hypot(t[0] - (p[0] + q[0]) / 2, t[1] - (p[1] + q[1]) / 2).toFixed(1) + 'x' + Math.hypot(p[0] - q[0], p[1] - q[1]).toFixed(1));
@@ -452,14 +452,14 @@ test('sub text can run over several lines, and a tag on a short box is reported'
   assert.doesNotMatch(msgs('r: focal "Orders API" sub="REST" tag="API" at 40,40\n'), /sits on the text/);
   // on a cylinder the tag sits under the top cap, not on its rim
   for (const name of ['headline', 'sketch']) {
-    const sc = buildScene(`look "${name}.look"\nm: store "MDX Bundle" sub="src/content/*.mdx" tag="MDX" at 788,136 160x64\n`, loadLook(`looks/${name}.look`));
+    const sc = buildScene(`look "${name}.look"\nm: store "MDX Bundle" sub="src/content/*.mdx" tag="MDX" at 788,136 160x64\n`, loadLook(name === 'headline' ? `test/fixtures/looks/${name}.look` : `looks/${name}.look`));
     const tag = /<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" rx="2" fill="none"/.exec(renderSvg(sc))!.slice(1).map(Number);
     assert.ok(tag[1] - 136 >= 64 * 0.2 + 2, `${name}: tag top ${tag[1] - 136}px into a 64px cylinder`);
     assert.ok(!check(sc).some((i) => /sits on the text/.test(i.msg)), name);
   }
   // in every look a corner tag stays clear of the outline and of the title under it, even on a short box
   for (const name of ['headline', 'reference', 'sketch', 'whiteboard']) {
-    const lk = loadLook(`looks/${name}.look`);
+    const lk = loadLook(name === 'headline' ? `test/fixtures/looks/${name}.look` : `looks/${name}.look`);
     const sc = buildScene(`look "${name}.look"\nd: external "DB Connection" sub="CDC · SQL · API" tag="EXT" at 72,316 160x56\n`, lk);
     assert.ok(!check(sc).some((i) => /sits on the text/.test(i.msg)), name);
     const svg = renderSvg(sc);

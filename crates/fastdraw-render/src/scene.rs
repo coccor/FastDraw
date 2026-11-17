@@ -13,8 +13,8 @@ use crate::iconfiles::{icon_sources, icon_stand_in};
 use crate::icons::{icon_matches, is_built_in};
 use crate::js::{self, num_str, round, to_number, utf16_len};
 use crate::look::{
-    IssueLevel, Kind, Look, LookIssue, Props, bundled_look, bundled_look_names, default_look,
-    empty_look,
+    IssueLevel, Kind, LOOKS_REPO, Look, LookIssue, Props, bundled_look, bundled_look_names,
+    default_look, empty_look, is_web_look, moved_look_url,
 };
 use crate::parse::{Stmt, TokKind, parse_statements};
 use crate::router::{Pt, Rect, crosses, route_around};
@@ -1279,7 +1279,13 @@ impl Builder {
                     || (b.len() >= 5 && b[b.len() - 5..].eq_ignore_ascii_case(b".look"));
                 self.err(
                     line,
-                    if is_path {
+                    if is_web_look(p) {
+                        format!("the look at {p} could not be fetched")
+                    } else if let Some(url) = moved_look_url(p) {
+                        format!(
+                            "the {p} look no longer ships with FastDraw; it is in {LOOKS_REPO} on GitHub: look \"{url}\""
+                        )
+                    } else if is_path {
                         format!("look file not found: {p}")
                     } else {
                         format!(
