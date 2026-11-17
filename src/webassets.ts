@@ -98,6 +98,44 @@ function cached(get: Fetch, url: string, maxBytes: number): Promise<Uint8Array |
 
 export const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return 'an address in the look'; } };
 
+// ---- what a set on the web has --------------------------------------------------------------------------
+// A web address cannot be listed, but jsDelivr publishes the file list of every package and repository it serves.
+// So for an icondir on cdn.jsdelivr.net the icon names come from that list, for the preview, search and the
+// editor's icon picker; a set elsewhere lists its names in the look (names="...").
+
+/** Where jsDelivr lists the files of an icondir on cdn.jsdelivr.net, and how a listed file's path gives an icon name. */
+export function setListing(dir: string): { url: string; nameOf: (path: string) => string | null } | null {
+  const tpl = dir.includes('{name}') ? dir : `${dir.replace(/\/+$/, '')}/{name}.svg`;
+  const m = /^https:\/\/cdn\.jsdelivr\.net\/(npm\/(?:@[^/@{}]+\/)?[^/@{}]+|gh\/[^/@{}]+\/[^/@{}]+)@([^/{}]+)(\/.*)$/i.exec(tpl);
+  if (!m) return null;
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`^${m[3]!.split('{name}').map(esc).join('([a-z0-9-]{1,80})')}$`);
+  return {
+    url: `https://data.jsdelivr.com/v1/packages/${m[1]}@${m[2]}?structure=flat`,
+    // every {name} in the path is the same name (devicon: icons/{name}/{name}-original.svg)
+    nameOf: (path) => { const r = re.exec(path); return r && r.slice(1).every((n) => n === r[1]) ? r[1]! : null; },
+  };
+}
+
+export const MAX_LISTING_BYTES = 20_000_000;
+/** Every icon name the look's web sets are known to have, sorted: from jsDelivr's lists and the look's names=. */
+export async function listWebIcons(look: Look, get: Fetch = webFetch): Promise<string[]> {
+  const out = new Set<string>();
+  for (const d of look.iconDirs) {
+    if (!isWebUrl(d)) continue;
+    for (const n of look.iconSetNames.get(d) ?? []) out.add(n);
+    const l = setListing(d);
+    if (!l) continue;
+    try {
+      const bytes = await cached(get, l.url, MAX_LISTING_BYTES);
+      const files = bytes ? (JSON.parse(new TextDecoder().decode(bytes)) as { files?: { name?: unknown }[] }).files : undefined;
+      for (const f of Array.isArray(files) ? files : []) { const n = typeof f?.name === 'string' ? l.nameOf(f.name) : null; if (n) out.add(n); }
+    } catch { /* not listed: the set still works, by name */ }
+  }
+  for (const n of look.iconUrls.keys()) out.delete(n);
+  return [...out].sort();
+}
+
 export type WebIcons = {
   uris: Record<string, string>; // name -> data URI, for withIconImages
   done: boolean; // every address was answered (found or not there), so an icon still missing is a real mistake

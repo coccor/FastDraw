@@ -28,7 +28,7 @@ import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
 import { setLookFonts, setWebFonts, BUNDLED_FAMILIES } from './fonts.ts';
-import { hasWebIcons, localIconDirs, fetchWebIcons, hostOf, type WebIcons } from '../../src/webassets.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, hostOf, type WebIcons } from '../../src/webassets.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
@@ -222,6 +222,14 @@ export function App() {
     fetchWebIcons(parsedLook, usedIcons.split(' ').filter(Boolean)).then((w) => { if (!stale) setWebIcons(w); });
     return () => { stale = true; };
   }, [parsedLook, usedIcons]);
+  // what the look's web sets have, for the icon picker (jsDelivr's file lists and the look's names=)
+  const [listedIcons, setListedIcons] = useState<string[]>([]);
+  useEffect(() => {
+    if (!parsedLook || !hasWebIcons(parsedLook)) { setListedIcons([]); return; }
+    let stale = false;
+    listWebIcons(parsedLook).then((n) => { if (!stale) setListedIcons(n); });
+    return () => { stale = true; };
+  }, [parsedLook]);
   // the active diagram as it stands now, kept current on every render
   const live = useRef<Doc | null>(null);
   live.current = docId && src !== null ? { id: docId, name, src: srcRef.current ?? src, lookSrc, carried: carriedIcons, view, io: io.current, hist: hist.current, folderFiles } : null;
@@ -231,8 +239,9 @@ export function App() {
     if (!iconFiles.length && !Object.keys(carriedIcons).length && !web) return parsedLook;
     // every icon folder and address was read, so an icon missing from them is a mistake, not one left behind
     const read = (!localIconDirs(parsedLook).length || iconFiles.length > 0) && (!web || webIcons.done);
-    return withIconImages(parsedLook, iconFiles, { ...carriedIcons, ...webIcons.uris }, read);
-  }, [parsedLook, iconFiles, carriedIcons, webIcons]);
+    const out = withIconImages(parsedLook, iconFiles, { ...carriedIcons, ...webIcons.uris }, read);
+    return listedIcons.length ? { ...out, listedIcons } : out;
+  }, [parsedLook, iconFiles, carriedIcons, webIcons, listedIcons]);
   const webIconNote = webIcons.unreachable.length ? `The look's icons could not be fetched from ${webIcons.unreachable.join(' and ')}, so the closest built-in icons are drawn instead.` : '';
   useEffect(() => {
     let stale = false;

@@ -8,7 +8,7 @@ import { parseLook, emptyLook, isBundledLook, bundledLook, defaultLook, BUNDLED_
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
-import { hasWebIcons, localIconDirs, fetchWebIcons, webFaces, webFetch, hostOf, MAX_FONT_BYTES } from './webassets.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, webFaces, webFetch, hostOf, MAX_FONT_BYTES } from './webassets.ts';
 import type { WebIcons, Fetch } from './webassets.ts';
 import { createHash } from 'node:crypto';
 import { lstatSync, realpathSync } from 'node:fs';
@@ -51,6 +51,9 @@ function iconFiles(lookFile: string, look: Look): { name: string; bytes: Uint8Ar
 // same offline once it has been drawn online. Nothing is ever sent but the request for the file itself.
 const webCache = new Map<string, WebIcons>(); // look file -> its web icons
 const webFonts = new Map<string, string[]>(); // look file -> font files fetched for it
+const webLists = new Map<string, string[]>(); // look file -> the icon names its web sets have
+// how many of a look's icons the preview sheet and its fetch go to
+export const PREVIEW_ICONS = 200;
 export function webCacheDir(): string {
   const base = process.env.XDG_CACHE_HOME || (process.platform === 'win32' ? process.env.LOCALAPPDATA : undefined) || join(homedir(), '.cache');
   return join(base, 'fastdraw', 'web');
@@ -81,7 +84,11 @@ export async function fetchWebAssets(files: string[], offline = false): Promise<
       let text: string;
       try { text = readFileSync(file, 'utf8'); } catch { continue; }
       const look = parseLook(text, file);
-      if (hasWebIcons(look) || look.fontUrls.size) wanted.set(resolve(file), { look, names: new Set(look.iconUrls.keys()) });
+      if (!hasWebIcons(look) && !look.fontUrls.size) continue;
+      // what the look's sets have, for the preview, sizes and icons; the preview draws the first ones
+      const listed = await listWebIcons(look, get);
+      webLists.set(resolve(file), listed);
+      wanted.set(resolve(file), { look, names: new Set([...look.iconUrls.keys(), ...listed].slice(0, PREVIEW_ICONS)) });
       continue;
     }
     let src: string;
@@ -114,8 +121,9 @@ export async function fetchWebAssets(files: string[], offline = false): Promise<
 // read, and the built-in icon closest to each is drawn instead.
 const withIcons = (lookFile: string, look: Look): Look => {
   if (!look.iconDirs.length && !look.iconUrls.size) return look;
-  const web = webCache.get(resolve(lookFile));
-  return withIconImages(look, iconFiles(lookFile, look), web?.uris ?? {}, web ? web.done : !hasWebIcons(look));
+  const web = webCache.get(resolve(lookFile)), listed = webLists.get(resolve(lookFile));
+  const out = withIconImages(look, iconFiles(lookFile, look), web?.uris ?? {}, web ? web.done : !hasWebIcons(look));
+  return listed ? { ...out, listedIcons: listed } : out;
 };
 
 export function loadLook(path: string): Look {

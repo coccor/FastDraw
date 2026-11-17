@@ -807,7 +807,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   // the picker offers the folder's icons by their file-derived names
   await page.mouse.click(...Object.values(await corner(page, 'st')) as [number, number]);
   await page.locator('.iconchoose').click();
-  await expect(page.getByRole('radiogroup', { name: 'Icons' })).toContainText("From the look's folder");
+  await expect(page.getByRole('radiogroup', { name: 'Icons' })).toContainText("The look's icons");
   await page.getByRole('radiogroup', { name: 'Icons' }).getByRole('radio', { name: 'sample-screen', exact: true }).click();
   await saved(page);
   expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=sample-screen');

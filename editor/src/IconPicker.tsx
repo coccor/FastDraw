@@ -3,6 +3,12 @@ import { createPortal } from 'react-dom';
 import { Search } from 'lucide-react';
 import type { Look } from '../../src/look.ts';
 import { isIconUri } from '../../src/iconfiles.ts';
+import { iconAddresses, isPublicWebUrl } from '../../src/webassets.ts';
+
+// an icon the look has on the web: named by its own address, or found in one of its sets
+const isWebIcon = (look: Look, n: string) => look.iconUrls.has(n) || !!look.listedIcons?.includes(n);
+// the look's own icon files, from its folder and the web, in that order
+const ownFiles = (look: Look) => [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? [])])];
 import { iconMatches, ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
 import { ICON_BOX, isBuiltIn, iconLayers } from '../../src/iconStyle.ts';
 import type { IconStyle } from '../../src/iconStyle.ts';
@@ -14,6 +20,10 @@ import { useExtendedIcons } from './useExtendedIcons.ts';
 export function IconGlyph({ look, name, size = 22, iconStyle = 'outline' }: { look: Look; name: string; size?: number; iconStyle?: IconStyle }) {
   const img = look.images.get(name);
   if (img) return isIconUri(img) ? <img src={img} width={size} height={size} alt="" draggable={false} /> : null;
+  // one of the look's web icons not fetched yet: shown straight from its address, as an image (no scripts run in
+  // an SVG drawn by <img>), only when it is scrolled into view
+  const web = isWebIcon(look, name) ? iconAddresses(look, name).find(isPublicWebUrl) : undefined;
+  if (web) return <img src={web} width={size} height={size} alt="" draggable={false} loading="lazy" referrerPolicy="no-referrer" />;
   if (isBuiltIn(look, name)) {
     const { tint, front } = iconLayers(name, iconStyle);
     return (
@@ -39,12 +49,12 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
   React.useEffect(() => { if (value) setTab(iconStyle); }, [value, iconStyle]);
   const match = (n: string) => iconMatches(n, q);
   const plain = tab === 'outline';
-  const folder = plain ? [...look.images.keys()].filter(match) : [];
+  const folder = plain ? ownFiles(look).filter(match) : [];
   // a name that is the search word, then one that starts with it, then one that has it inside, and last the icons
   // that only have it among their search words; alphabetical within each
   const word = q.trim().toLowerCase().replace(/\s+/g, '-');
   const rank = (n: string) => (!word || n === word ? 0 : n.startsWith(word) ? 1 : n.includes(word) ? 2 : 3);
-  const builtIn = [...look.icons.keys()].filter((n) => !look.images.has(n) && (plain || isBuiltIn(look, n))).filter(match).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
+  const builtIn = [...look.icons.keys()].filter((n) => !look.images.has(n) && !isWebIcon(look, n) && (plain || isBuiltIn(look, n))).filter(match).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
   const first = folder[0] ?? builtIn[0];
   const on = (n: string) => value === n && iconStyle === tab;
   // keep the chosen icon in sight when the panel opens on a box that has one
@@ -58,7 +68,7 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
       <IconGlyph look={look} name={n} iconStyle={tab} />
     </button>
   );
-  const count = plain ? new Set([...look.images.keys(), ...look.icons.keys()]).size : builtIn.length;
+  const count = plain ? new Set([...ownFiles(look), ...look.icons.keys()]).size : builtIn.length;
   return (
     <div className="iconpicker">
       <div className="seg icontabs" role="tablist" aria-label="Icon set">
@@ -75,7 +85,7 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
           }} />
       </div>
       <div className="icongrid" ref={grid} role="radiogroup" aria-label={tab === 'solid' ? 'Solid icons' : tab === 'duotone' ? 'Duotone icons' : 'Icons'}>
-        {folder.length > 0 && <div className="iconhead">From the look's folder</div>}
+        {folder.length > 0 && <div className="iconhead">The look's icons</div>}
         {folder.map(tile)}
         {folder.length > 0 && builtIn.length > 0 && <div className="iconhead">Built in</div>}
         {builtIn.map(tile)}
@@ -96,7 +106,7 @@ export function IconField({ look, value, iconStyle, onPick }: { look: Look; valu
   const [open, setOpen] = React.useState(false);
   const remembered = useRecentIcons();
   useExtendedIcons(remembered.some((r) => !BUILT_IN_ICONS[r.name])); // a recent icon from the rest of Phosphor needs them
-  const has = (n: string) => look.icons.has(n) || look.images.has(n);
+  const has = (n: string) => look.icons.has(n) || look.images.has(n) || isWebIcon(look, n);
   const name = value && value !== 'none' ? value : undefined;
   const choose = (n: string, s: IconStyle) => { rememberIcon({ name: n, style: s }); onPick(n, s); };
   const quick: { name: string; style: IconStyle }[] = [];

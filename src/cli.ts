@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, fetchWebAssets, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
+import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
 import { buildScene, withLook, type Scene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
@@ -251,15 +251,27 @@ if (cmd === 'check') {
   });
   y += 60;
   heading('Icons');
-  // the look's icon files (its folder's, the first 44, and those it names by address), then the named built-in icons
-  // and the look's own outlines; the other ~1,400 Phosphor icons would fill pages (fastdraw icons <word> finds them)
-  [...new Set([...[...look.images.keys()].slice(0, 44), ...look.iconUrls.keys(), ...[...look.icons.keys()].filter((n) => NAMED_ICONS.has(n) || !isBuiltIn(look, n))])].forEach((n, i) => {
+  // the look's own icons (files from its folder and the web, and its outlines); the built-in ones only when it has
+  // none, as a sheet for a vendor look should show the vendor's icons. Phosphor's ~1,500 would fill pages either way
+  // (fastdraw icons <word> finds them)
+  // in a steady order: the look's named icons, its folder's files, then its sets' icons A to Z
+  const ownIcons = [...new Set([...look.iconUrls.keys(), ...[...look.images.keys()].sort(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !isBuiltIn(look, n))])]
+    .filter((n) => look.images.has(n) || look.icons.has(n)).slice(0, PREVIEW_ICONS);
+  const sheetIcons = ownIcons.length ? ownIcons : [...look.icons.keys()].filter((n) => NAMED_ICONS.has(n));
+  sheetIcons.forEach((n, i) => {
     const cx = 40 + (i % 11) * 80;
     if (i && i % 11 === 0) y += 60;
     L.push(`icon at ${cx + 20},${y} icon=${n}`);
-    L.push(`text ${JSON.stringify(n)} at ${cx + 32},${y + 40} size=8 color=muted font=sans anchor=middle`);
+    // a long name is cut so it stays under its own icon
+    L.push(`text ${JSON.stringify(n.length > 17 ? n.slice(0, 16) + '…' : n)} at ${cx + 32},${y + 40} size=8 color=muted font=sans anchor=middle`);
   });
   y += 76;
+  if (ownIcons.length) {
+    const total = new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? [])]).size;
+    y += 8;
+    L.push(`text ${JSON.stringify(`${total > ownIcons.length ? `the first ${ownIcons.length} of the look's ${total} icons; ` : ''}the built-in icons work too: fastdraw icons ${basename(file ?? '')} <word> finds them all`)} at 40,${y - 20} size=10 color=muted font=sans`);
+    y += 12;
+  }
   heading('Text');
   for (const s of all.filter((t) => t.kind === 'text')) {
     const size = +(s.props.size ?? 12);
@@ -288,7 +300,7 @@ if (cmd === 'check') {
   const file = args[0]?.endsWith('.look') ? args[0] : undefined, word = (file ? args[1] : args[0])?.toLowerCase();
   if (file) await fetchWeb([file]);
   const look = file ? loadLook(file) : defaultLook();
-  const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
+  const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? []), ...look.icons.keys()])].filter((n) => !word || iconMatches(n, word));
   console.log(names.length ? names.join('\n') : `no icon${word ? ` for "${word}"` : ''}`);
 } else if (cmd === 'guide') {
   const topic = args[0];

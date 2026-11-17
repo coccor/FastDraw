@@ -5,6 +5,7 @@ c: node "VMs" icon=virtual-machines at 480,40
 d: node "GitHub" icon=github at 40,160
 e: node "Database" icon=database at 260,160
 f: node "Local" icon=cloud at 480,160
+g: node "Pod" icon=pod at 260,260
 t: small "port 5432" at 40,260
 a -> b
 b -> c

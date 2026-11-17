@@ -146,3 +146,36 @@ test('nothing on the machine or the local network is fetched, and nothing over t
   // a placeholder in the host is filled in before the check, so it cannot make a private address
   assert.deepEqual(webFaces(parseLook('font sans "D" "https://1{weight}.0.0.1/d.ttf"\nfont mono "E" "https://cdn.example.com/e-{weight}.ttf"')).map((f) => `${f.family} ${f.weight}`), ['E 400', 'E 500', 'E 600', 'E 700']);
 });
+
+test("a set on jsDelivr is listed from jsDelivr's file list; a set elsewhere lists its names in the look", async () => {
+  const { setListing, listWebIcons } = await import('../src/webassets.ts');
+  const az = setListing('https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee71/azure-docs/{name}.svg')!;
+  assert.equal(az.url, 'https://data.jsdelivr.com/v1/packages/gh/benc-uk/icon-collection@e33ee71?structure=flat');
+  assert.equal(az.nameOf('/azure-docs/key-vault.svg'), 'key-vault');
+  for (const p of ['/azure-docs/api_bing_search.svg', '/azure-docs/Key-Vault.svg', '/azure-icons/key-vault.svg', '/azure-docs/sub/key-vault.svg']) assert.equal(az.nameOf(p), null, p);
+  assert.equal(setListing('https://cdn.jsdelivr.net/npm/@tabler/icons@3.52.0/icons/outline/{name}.svg')!.url, 'https://data.jsdelivr.com/v1/packages/npm/@tabler/icons@3.52.0?structure=flat');
+  // a folder address, and a name used twice in the path
+  assert.equal(setListing('https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/')!.nameOf('/icons/github.svg'), 'github');
+  const dev = setListing('https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/{name}/{name}-original.svg')!;
+  assert.equal(dev.nameOf('/icons/react/react-original.svg'), 'react');
+  assert.equal(dev.nameOf('/icons/react/vue-original.svg'), null);
+  // not on jsDelivr, or no version to list
+  assert.equal(setListing('https://raw.githubusercontent.com/k/c/abc/icons/{name}.svg'), null);
+  assert.equal(setListing('https://cdn.jsdelivr.net/npm/simple-icons/icons/{name}.svg'), null);
+
+  const look = parseLook(`icondir "https://cdn.jsdelivr.net/npm/set@1.0.0/svg/{name}.svg"
+icondir "https://raw.example.com/k8s/abc/{name}.svg" names="pod deploy svc"
+icon lambda "https://c.example/aws@3.3.0/AWSLambda.svg"`);
+  assert.deepEqual(look.issues, []);
+  assert.deepEqual([...look.iconSetNames], [['https://raw.example.com/k8s/abc/{name}.svg', ['pod', 'deploy', 'svc']]]);
+  const list = JSON.stringify({ files: [{ name: '/svg/lambda.svg' }, { name: '/svg/queue.svg' }, { name: '/svg/Big.svg' }, { name: '/README.md' }, { name: 7 }] });
+  const get = server({ 'https://data.jsdelivr.com/v1/packages/npm/set@1.0.0?structure=flat': new TextEncoder().encode(list) });
+  // sorted, and a name with its own icon line is that one, not the set's
+  assert.deepEqual(await listWebIcons(look, get), ['deploy', 'pod', 'queue', 'svc']);
+  // a list that cannot be read leaves the set working by name
+  assert.deepEqual(await listWebIcons(look, server({}, ['data.jsdelivr.com'])), ['deploy', 'pod', 'svc']);
+  // names= is for addresses, in small letters
+  const bad = parseLook('icondir "./icons" names="a b"\nicondir "https://h.example/{name}.svg" names="Bad Name"');
+  assert.deepEqual(bad.issues.map((i) => i.msg.slice(0, 22)), ['names= lists the icons', 'icondir names= lists i']);
+  assert.equal(bad.iconSetNames.size, 0);
+});

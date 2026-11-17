@@ -76,6 +76,8 @@ pub struct Look {
     pub icon_dirs: Vec<String>,
     /// name -> https:// address of one SVG file (`icon name "https://..."`)
     pub icon_urls: IndexMap<String, String>,
+    /// icondir address -> the icon names it has, as the look lists them (`names="..."`)
+    pub icon_set_names: IndexMap<String, Vec<String>>,
     /// family -> https:// address of its files, with {weight} and {style} (`font sans "Inter" "https://..."`)
     pub font_urls: IndexMap<String, String>,
     /// name -> data URI of an icon file, filled in by whoever can read the folders
@@ -309,6 +311,7 @@ pub fn empty_look() -> Look {
         icons: IconMap::builtin(),
         icon_dirs: Vec::new(),
         icon_urls: IndexMap::new(),
+        icon_set_names: IndexMap::new(),
         font_urls: IndexMap::new(),
         images: IndexMap::new(),
         guidance: Vec::new(),
@@ -416,7 +419,40 @@ pub fn parse_look(src: &str, path: &str) -> Look {
                     "icondir takes a folder next to the look or an https:// address, e.g. icondir \"https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{{name}}.svg\"; \"{}\" is neither",
                     t.v
                 )),
-                Some(t) => look.icon_dirs.push(t.v.clone()),
+                Some(t) => {
+                    look.icon_dirs.push(t.v.clone());
+                    // names="pod deploy svc": the icons a set on the web has, for a host whose files cannot be listed
+                    let names = rest
+                        .iter()
+                        .skip(1)
+                        .find(|x| x.t == TokKind::Prop && x.k.as_deref() == Some("names"));
+                    if let Some(names) = names {
+                        let list: Vec<String> = names
+                            .v
+                            .split(js::is_js_space)
+                            .filter(|n| !n.is_empty())
+                            .map(str::to_string)
+                            .collect();
+                        let ok_name = |n: &String| {
+                            !n.is_empty()
+                                && n.len() <= 80
+                                && n.chars().all(|c| {
+                                    c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'
+                                })
+                        };
+                        if !is_web_url(&t.v) {
+                            err!(format!(
+                                "names= lists the icons of an icondir address; a folder's icons are its files (\"{}\")",
+                                t.v
+                            ));
+                        } else if list.is_empty() || !list.iter().all(ok_name) || list.len() > 3000
+                        {
+                            err!("icondir names= lists icon names in small letters separated by spaces, e.g. names=\"pod deploy svc\"".to_string());
+                        } else {
+                            look.icon_set_names.insert(t.v.clone(), list);
+                        }
+                    }
+                }
                 None => err!(
                     "icondir needs a folder of SVG files, e.g. icondir \"./icons\"".to_string()
                 ),

@@ -16,6 +16,9 @@ export type Look = {
   icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
   iconDirs: string[]; // folders of SVG icon files, relative to the look file, or https:// addresses (see webassets.ts)
   iconUrls: Map<string, string>; // name -> https:// address of one SVG file (icon name "https://...")
+  iconSetNames: Map<string, string[]>; // icondir address -> the icon names it has, as the look lists them (names="...")
+  // the icon names the look's web sets have, from their file listings and names=; filled in by whoever fetched them
+  listedIcons?: string[];
   fontUrls: Map<string, string>; // family -> https:// address of its files, with {weight} and {style} (font sans "Inter" "https://...")
   images: Map<string, string>; // name -> data URI of an icon file, filled in by whoever can read the folders
   // true once the icon folders themselves were read; until then an icon missing from images may just not have
@@ -73,6 +76,7 @@ export function emptyLook(): Look {
     icons: new Map(Object.entries(ICONS)),
     iconDirs: [],
     iconUrls: new Map(),
+    iconSetNames: new Map(),
     fontUrls: new Map(),
     images: new Map(),
     iconFolderRead: false,
@@ -104,7 +108,17 @@ export function parseLook(src: string, path = 'look'): Look {
     if (head.v === 'icondir') {
       if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"');
       else if (hasScheme(rest[0].v) && !isWebUrl(rest[0].v)) err(`icondir takes a folder next to the look or an https:// address, e.g. icondir "https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{name}.svg"; "${rest[0].v}" is neither`);
-      else look.iconDirs.push(rest[0].v);
+      else {
+        look.iconDirs.push(rest[0].v);
+        // names="pod deploy svc": the icons a set on the web has, for a host whose files cannot be listed
+        const names = rest.slice(1).find((t) => t.t === 'prop' && t.k === 'names')?.v;
+        if (names !== undefined) {
+          const list = names.split(/\s+/).filter(Boolean);
+          if (!isWebUrl(rest[0].v)) err(`names= lists the icons of an icondir address; a folder's icons are its files ("${rest[0].v}")`);
+          else if (!list.length || list.some((n) => !/^[a-z0-9-]{1,80}$/.test(n)) || list.length > 3000) err('icondir names= lists icon names in small letters separated by spaces, e.g. names="pod deploy svc"');
+          else look.iconSetNames.set(rest[0].v, list);
+        }
+      }
       continue;
     }
     if (head.v === 'icon') {

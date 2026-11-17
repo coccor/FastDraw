@@ -3,6 +3,7 @@
 icondir "https://cdn.example.com/brand-icons@1.0.0/icons/{name}.svg"
 icondir "https://cdn.example.com/cloud-icons@2.0.0/svg/"
 icondir "./local"
+icondir "https://raw.example.com/k8s/abc123/icons/{name}.svg" names="pod deploy  svc"
 icon lambda "https://cdn.example.com/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg"
 icon key-vaults "https://cdn.example.com/azure/Key-Vaults.svg"
 font sans "Inter" "https://cdn.example.com/fontsource/fonts/inter@5.3.0/latin-{weight}-{style}.ttf"

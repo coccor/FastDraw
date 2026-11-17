@@ -203,7 +203,8 @@ icon lambda "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-ser
 icon s3     "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AmazonSimpleStorageService.svg"
 ```
 
-- A diagram then writes `icon=key-vault`, `icon=lambda`. Only the icons a diagram uses are fetched. Several `icondir` addresses are tried in order, after the icon's own `icon` line; an address without `{name}` is a folder, and `/<name>.svg` is added to it.
+- A diagram then writes `icon=key-vault`, `icon=lambda`. Only the icons a diagram uses are fetched.
+- **Seeing what a set has.** For a set on `cdn.jsdelivr.net` with a fixed version, FastDraw reads jsDelivr's list of the package's files, so `fastdraw icons team.look vault` searches the whole set, `fastdraw preview-look` draws it (the first 200), and the editor's icon picker offers it. For a set anywhere else (or a GitHub repository too big for jsDelivr to list), write its names in the look: `icondir "https://.../{name}.svg" names="pod deploy svc"`. Without either, the set still works, by name. Several `icondir` addresses are tried in order, after the icon's own `icon` line; an address without `{name}` is a folder, and `/<name>.svg` is added to it.
 - Give an address with a fixed version or commit (`aws-icons@3.3.0`, `@e33ee71...`), never `@latest` or a branch: a set that renames a file would change your diagrams. The address must be https and must not redirect.
 - The editor and embedded diagrams fetch the files in the reader's browser; `fastdraw check` and `render` fetch them once and keep a copy in a cache folder (`--offline` uses only the copy). The server sees a request for the file, nothing else. Exported images carry the icons they use.
 - Where the files cannot be fetched (no network, the Rust crate, fastdraw.dev images of private READMEs), the closest built-in icon is drawn and a warning says so. An icon found at none of the addresses is an error, as a misspelt built-in name is.
@@ -213,17 +214,17 @@ icon s3     "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-ser
 
 | Set | What it has | `icondir` address, or the pattern for `icon` lines |
 | --- | --- | --- |
-| Azure (Ben Coleman's collection) | 172 Azure service icons, file names in small letters (`key-vault`, `app-service`, `cosmos-db`, `virtual-machine`, `application-insights`) | `https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee714d05a24a81cf6ccd967ef34b22cb77e65/azure-docs/{name}.svg` |
+| Azure (Ben Coleman's collection) | about 150 Azure service icons, file names in small letters (`key-vault`, `app-service`, `cosmos-db`, `virtual-machine`, `application-insights`) | `https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee714d05a24a81cf6ccd967ef34b22cb77e65/azure-docs/{name}.svg` |
 | Azure, Microsoft's names | the full Azure set as Microsoft names the files (`Virtual-Machine.svg`, `Key-Vaults.svg`): one `icon` line each | `https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@e33ee714d05a24a81cf6ccd967ef34b22cb77e65/azure-icons/<File-Name>.svg` |
 | AWS (`aws-icons`) | the AWS architecture icons (`AWSLambda.svg`, `AmazonEC2.svg`): one `icon` line each; `resource/` has the smaller resource icons | `https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/<FileName>.svg` |
 | Google Cloud (`gcp-icons`) | 45 Google Cloud product icons (`bigquery`, `alloydb`, `gke`, `cloudsql`, `vertexai`); five end in `-512-color-rgb.svg` (`cloudrun`, `computeengine`, `apigee`, `networking`, `secops`) and need an `icon` line | `https://cdn.jsdelivr.net/npm/gcp-icons@1.0.6/dist/icons/{name}-512-color.svg` |
-| Kubernetes | the 30 Kubernetes resource icons by their short names (`pod`, `deploy`, `svc`, `ing`, `pvc`, `cm`, `secret`, `sts`, `job`) | `https://raw.githubusercontent.com/kubernetes/community/d0476ffb364cd9dc6b007221410db3b50989ebc3/icons/svg/resources/labeled/{name}.svg` |
+| Kubernetes | the 30 Kubernetes resource icons by their short names; not listed by jsDelivr, so give `names="c-role cm crb crd cronjob deploy ds ep group hpa ing job limits netpol ns pod psp pv pvc quota rb role rs sa sc secret sts svc user vol"` | `https://raw.githubusercontent.com/kubernetes/community/d0476ffb364cd9dc6b007221410db3b50989ebc3/icons/svg/resources/labeled/{name}.svg` |
 | Simple Icons | about 3,000 brand and product logos, one colour (`github`, `postgresql`, `docker`, `stripe`) | `https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{name}.svg` |
-| Devicon | logos of languages and tools in their colours (`docker`, `postgresql`, `react`, `python`) | `https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/{name}/{name}-original.svg` |
+| Devicon | logos of languages and tools in their colours (`docker`, `postgresql`, `react`, `python`); the repository is too big for jsDelivr to list, so add `names="..."` with the ones you use | `https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/{name}/{name}-original.svg` |
 | Lucide | outline icons like the built-in ones, drawn in black | `https://cdn.jsdelivr.net/npm/lucide-static@1.74.0/icons/{name}.svg` |
 | Tabler | outline icons, drawn in black | `https://cdn.jsdelivr.net/npm/@tabler/icons@3.52.0/icons/outline/{name}.svg` |
 
-To see what a set has, open its package on jsdelivr.com (for example `https://www.jsdelivr.com/package/npm/aws-icons`) and browse the folder.
+`fastdraw icons team.look <word>` searches a listed set; to browse one by hand, open its package on jsdelivr.com (for example `https://www.jsdelivr.com/package/npm/aws-icons`).
 
 **A folder of SVG files** next to the look is the other way, for icons that must not be fetched or are not on the web:
 

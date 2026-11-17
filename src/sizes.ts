@@ -25,7 +25,9 @@ export function sizesReport(look: Look, missingFonts: string[] = []): string {
   if (sets.length || look.iconUrls.size) {
     out.push('\nicons from the web (icon=name)');
     if (look.iconUrls.size) out.push(`  ${[...look.iconUrls.keys()].join(', ')}`);
-    for (const d of sets) out.push(`  any file at ${d.includes('{name}') ? d : d.replace(/\/+$/, '') + '/{name}.svg'}, by its name`);
+    const listed = look.listedIcons ?? [];
+    if (listed.length) out.push(`  ${listed.slice(0, 60).join(', ')}${listed.length > 60 ? `, and ${listed.length - 60} more ("fastdraw icons <look> [word]" lists or searches them)` : ''}`);
+    for (const d of sets) out.push(`  from ${d.includes('{name}') ? d : d.replace(/\/+$/, '') + '/{name}.svg'}${listed.length ? '' : ', any file by its name'}`);
   }
   if (own.length) out.push(`\nicons from the look's folders (${own.length}; "fastdraw icons <look> [word]" lists or searches them)\n  ${own.slice(0, 60).join(', ')}${own.length > 60 ? ', ...' : ''}`);
   out.push(`\n${own.length ? 'built-in icons' : 'icons'} (icon=name on any box, or a box of style "icon")\n  ${[...look.icons.keys()].join(', ')}`);
