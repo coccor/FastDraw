@@ -10,3 +10,4 @@ playwright-report/
 !assets/*.png
 !assets/gallery/*.png
 dist/
+/target

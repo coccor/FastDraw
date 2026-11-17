@@ -78,3 +78,67 @@ jobs:
           npx fastdraw render example.fdraw -o example.svg
           test -s example.png && test -s example.svg
           npx fastdraw guide list > /dev/null
+
+  # The Rust renderer (crates/fastdraw-render) must draw what the TypeScript draws, character for character. A
+  # pull request that changes the renderer without the Rust fails here. Windows too, since FastPad builds there:
+  # the checkout keeps the runner's core.autocrlf=true, and that is safe because Node and Rust read the same
+  # checked-out bytes, while the generated files compared with git (data/, tests/geometry.json) are -text in
+  # .gitattributes. Steps run in bash on both, so `>` writes the bytes Node prints.
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Node 24, the release workflow's Node, so the TypeScript's answers are made here as they are at release
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal -c clippy,rustfmt
+          rustup default stable
+          rustc --version
+      - run: npm ci
+      # generated files: running the generators must change nothing
+      - run: npm run rust:data
+      - run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/rust-cases.ts > crates/fastdraw-render/tests/geometry.json
+      - run: git diff --exit-code crates/fastdraw-render
+      # the crate's copies of the licence texts (LICENSE, licenses/) equal the repository's, byte for byte
+      - name: The crate's licence files equal their sources
+        run: |
+          cmp LICENSE crates/fastdraw-render/LICENSE
+          for f in fonts/OFL-*.txt licenses/*; do cmp "$f" "crates/fastdraw-render/licenses/$(basename "$f")"; done
+          for f in crates/fastdraw-render/licenses/*; do n=$(basename "$f"); test -f "fonts/$n" || test -f "licenses/$n"; done
+      # the TypeScript's answers for every parity case, in target/parity/; fails if the coverage fixtures miss
+      # something the TypeScript reads and tests/coverage/UNCOVERED.md does not explain it
+      - run: npm run rust:parity -- --coverage
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      # release: the parity suite takes about half as long as in debug
+      - run: cargo test --release --locked
+        env:
+          FASTDRAW_PARITY_REQUIRED: '1'
+      # the share links cargo test wrote, decoded with FastDraw's decodeShared
+      - run: npm run rust:parity -- --check-links
+      - name: Package (and its size on crates.io, under 10 MB)
+        run: |
+          cargo package -p fastdraw-render --locked --list
+          cargo package -p fastdraw-render --locked
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' crates/fastdraw-render/Cargo.toml | head -n 1)
+          crate=target/package/fastdraw-render-$version.crate
+          size=$(wc -c < "$crate")
+          echo "$crate: $size bytes"
+          if [ "$size" -gt 10000000 ]; then
+            echo "::error::$crate is $size bytes, over crates.io's 10 MB limit"
+            exit 1
+          fi

@@ -1,0 +1,29 @@
+// Every error parseLook reports, one per line, between statements that still work.
+"a string first"
+key=value first
+dark
+dark night extra
+dark nosuch
+dark "./night.txt"
+icondir
+icon
+icon Queue "M4 6h16"
+icon 9lives "M4 6h16"
+icon queue
+icon queue "not path data!"
+icon queue "M1 1" "M2 2" "M3 3" "M4 4" "M5 5" "M6 6" "M7 7" "M8 8" "M9 9" "M10 10" "M11 11" "M12 12" "M13 13"
+icon ok "M4 6h16"
+fontdir
+color
+color ink
+font sans
+style
+style a extends
+style b extends nosuch
+style c shape stray
+style d line extends arrow text
+style e extends d sw=3
+canvas stray=1 paper=#fafafa word
+guidance not-a-string "a string"
+nosuch statement
+style node shape=rect size=120x48 fill=#ffffff stroke=ink

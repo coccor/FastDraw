@@ -85,14 +85,14 @@ const cx = (b: Box) => b.x + b.w / 2;
 const cy = (b: Box) => b.y + b.h / 2;
 const within = (v: number, lo: number, hi: number) => v >= lo && v <= hi;
 
-function autoSides(A: Box, B: Box): [Side, Side] {
+export function autoSides(A: Box, B: Box): [Side, Side] {
   if (within(cx(A), B.x, B.x + B.w) || within(cx(B), A.x, A.x + A.w)) return cy(A) <= cy(B) ? ['bottom', 'top'] : ['top', 'bottom'];
   if (within(cy(A), B.y, B.y + B.h) || within(cy(B), A.y, A.y + A.h)) return cx(A) <= cx(B) ? ['right', 'left'] : ['left', 'right'];
   return [cx(B) > cx(A) ? 'right' : 'left', cy(A) < cy(B) ? 'top' : 'bottom'];
 }
 
 // Point on a shape's side. v: undefined = use fraction f; <= 1 = fraction; > 1 = absolute coordinate.
-function sidePoint(s: Box & { shape?: string }, side: Side, v: number | undefined, f: number): Pt {
+export function sidePoint(s: Box & { shape?: string }, side: Side, v: number | undefined, f: number): Pt {
   const horiz = side === 'top' || side === 'bottom';
   const frac = v !== undefined && v <= 1 ? v : f;
   let along = v !== undefined && v > 1 ? v : horiz ? s.x + frac * s.w : s.y + frac * s.h;
@@ -109,11 +109,11 @@ function sidePoint(s: Box & { shape?: string }, side: Side, v: number | undefine
   return { x: s.x + s.w - inset, y: along };
 }
 
-function corner(A: Pt, B: Pt, horizFirst: boolean): Pt {
+export function corner(A: Pt, B: Pt, horizFirst: boolean): Pt {
   return horizFirst ? { x: B.x, y: A.y } : { x: A.x, y: B.y };
 }
 
-function route(c: Conn, via: Pt[]): Pt[] {
+export function route(c: Conn, via: Pt[]): Pt[] {
   const P0 = c.a.pt, P1 = c.b.pt, d0 = c.a.dir, d1 = c.b.dir;
   if (!c.ortho) return [P0, ...via, P1];
   if (via.length === 0) {
@@ -168,7 +168,7 @@ function route(c: Conn, via: Pt[]): Pt[] {
 // A smooth line from P0 to P1, returned as short straight steps so everything else can treat it as a polyline.
 // With via points it passes through each of them. With bend it bows that many px to the left of its direction
 // of travel (negative: to the right). Otherwise it leaves and arrives along the sides it is attached to.
-function curvePts(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, via: Pt[], bend: number): Pt[] {
+export function curvePts(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, via: Pt[], bend: number): Pt[] {
   const segs: [Pt, Pt, Pt, Pt][] = [];
   const dx = P1.x - P0.x, dy = P1.y - P0.y, dist = Math.hypot(dx, dy) || 1;
   if (via.length) {
@@ -204,7 +204,7 @@ function curvePts(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, via: Pt[], bend:
   return out;
 }
 
-function pointAlong(c: Conn, v: number): Pt {
+export function pointAlong(c: Conn, v: number): Pt {
   const first = c.pts[0], last = c.pts[c.pts.length - 1];
   if (v > 1) {
     if (first.x === last.x) return { x: first.x, y: v };
@@ -214,7 +214,7 @@ function pointAlong(c: Conn, v: number): Pt {
   return { x: Math.round(first.x + (last.x - first.x) * f), y: Math.round(first.y + (last.y - first.y) * f) };
 }
 
-function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
+export function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
   if (!c.text) return undefined;
   const size = num(c.p['label.size'], 8), spacing = num(c.p['label.spacing'], 0.08), font = c.p['label.font'] ?? 'mono';
   const text = c.p['label.caps'] === '0' ? c.text : c.text.toUpperCase();
@@ -263,7 +263,7 @@ function makeLabel(c: Conn, avoid: Box[] = []): Label | undefined {
 }
 
 // Lays out a table box: a header with the title, then rows of cells in columns. The height always follows the rows.
-function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => void, warn: (m: string) => void): void {
+export function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => void, warn: (m: string) => void): void {
   const p = sh.p;
   const fs = num(p['cell.size'], 10), font = p['cell.font'] ?? 'mono';
   const rowH = num(p['row.h'], 24), pad = num(p['cell.pad'], 12), gap = num(p['cell.gap'], 16);
@@ -295,7 +295,7 @@ function layoutTable(sh: Shape, rows: Row[], minW: number, err: (m: string) => v
   sh.rows = rows; sh.cols = cols; sh.headH = headH;
 }
 
-function parseEnd(raw: string): End | null {
+export function parseEnd(raw: string): End | null {
   const base = { raw, pt: { x: 0, y: 0 }, dir: null };
   // relative end: one of the numbers carries a "+" (+0,260  +40,-20  -40,+0). Two minus signs are a
   // plain point (-40,-20), since the canvas runs on past 0 in every direction

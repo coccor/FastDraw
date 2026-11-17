@@ -1,0 +1,6 @@
+﻿// a look file with a byte order mark and CRLF line ends
+color paper #fffef8
+color ink #202020
+style node shape=rect radius=4 size=160x64 fill=#ffffff stroke=ink sw=1
+  title.color=#aa3333
+style arrow line stroke=ink sw=1.2 route=ortho

@@ -1,0 +1,5 @@
+# a diagram with bytes that are not UTF-8, on a look with some too
+look "./bad-utf8.look"
+a: node "café ðŸ˜" at 40,40
+b: node "B" at 240,40
+a -> b "À€"

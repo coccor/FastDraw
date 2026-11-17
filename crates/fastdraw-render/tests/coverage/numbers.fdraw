@@ -1,0 +1,30 @@
+# Numbers as JavaScript reads them: huge, not-a-number, negative zero, hex, with units, and empty.
+a: rect "1e400" sw=1e400 radius=1e400 at 40,40 160x64
+b: rect "NaN" sw=NaN radius=NaN title.size=NaN sub="sub" sub.size=NaN at 240,40 160x64
+c: rect "-0" sw=-0 radius=-0 title.size=-0 at 440,40 160x64
+d: rect "0x10" sw=0x10 radius=0x10 title.size=0x10 at 640,40 160x64
+e: rect "12px" sw=12px radius=12px title.size=12px at 840,40 160x64
+f: rect "empty" sw= radius= title.size= fill= stroke= at 40,160 160x64
+g: rect "spaces" sw=" 3 " radius=" 8" title.size="14 " at 240,160 160x64
+h: rect "exp" sw=2e0 radius=.5e1 title.size=1.2e1 at 440,160 160x64
+i: rect "Infinity" sw=Infinity radius=-Infinity title.size=Infinity at 640,160 160x64
+j: rect "tiny" sw=1e-7 radius=5e-324 title.size=0.000001 at 840,160 160x64
+k: rect "big at" at 1e3,300 160x64
+l: rect "decimals" at 40.5,300.25 160.75x64.125 sw=0.1 radius=3.333333333333
+m: text "size 0x1A" size=0x1A spacing=0x0 weight=0b111 at 240,420
+n: text "size 1e400" size=1e400 at 440,420
+o: text "size NaN" size=NaN rotate=-0 at 640,420
+p: text "rotate 0x5A" rotate=0x5A at 840,420
+q: rect "minus zero at" at -0,-0 160x64
+a -> b loop=1e400 sw=NaN
+c -> d head.size=0x2 sw=0x3 radius=-0
+e -> f label.size=NaN "label"
+g -> h label.size=1e400 label.spacing=-0 "inf label"
+i -> j route=curve bend=0x10
+k -> l route=curve bend=NaN
+c1: chart "chart" at 40,520 200x120 x="a,b" y=0x0..0x10 step=0x5 bar.width=1e400
+  | bars 0x10 -0
+c2: chart "chart 2" at 400,520 200x120 y=-0..1 step=1e-300
+  | bars 0.5 .25
+z: rect "zero size" at 640,520 0x0
+w: rect "only width" at 840,520 0x64 radius=4

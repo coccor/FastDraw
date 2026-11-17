@@ -22,6 +22,23 @@ npm run build:embed   # embed.js alone, in dist-embed/
 
 Pull requests need the CI checks to pass before they merge. A change in behaviour comes with a test.
 
+### The Rust renderer
+
+`crates/fastdraw-render` is a Rust port of the renderer that must draw exactly what the TypeScript draws. A
+change to the renderer (`src/`, the bundled looks, icons or fonts, or `editor/src/embed/theme.ts`) needs the same
+change in the crate, in the same pull request; CI fails otherwise. With Rust (stable) installed:
+
+```
+npm run rust:data     # regenerate crates/fastdraw-render/data/ (never edit it by hand); commit what changes
+npm run rust:cases    # regenerate crates/fastdraw-render/tests/geometry.json
+npm run rust:parity   # the TypeScript's answers for every parity case, in target/parity/
+cargo test --release  # the crate's tests, and its answers compared with target/parity/
+npm run rust:parity -- --check-links  # after cargo test: the crate's share links decode to the same diagrams
+```
+
+A new language feature also needs a case in `crates/fastdraw-render/tests/coverage/`:
+`npm run rust:parity -- --coverage` lists what no case uses.
+
 ## Releases and deployment
 
 - **fastdraw.dev** deploys from `main` through Cloudflare Workers Builds (`wrangler.jsonc`). Pull
@@ -29,6 +46,8 @@ Pull requests need the CI checks to pass before they merge. A change in behaviou
 - **The npm package** is published by `.github/workflows/release.yml` when a version tag is pushed:
   `npm version patch` (or `minor`), then `git push --follow-tags`. The tag must match the version in
   `package.json`.
+- **The Rust crate** (`fastdraw-render`) is published to crates.io by the same workflow, from the same tag.
+  `npm version` writes the version into `crates/fastdraw-render/Cargo.toml` and `Cargo.lock` too.
 
 ## Repository layout
 
@@ -47,6 +66,7 @@ Pull requests need the CI checks to pass before they merge. A change in behaviou
 | `editor/` | The browser editor (Vite + React) |
 | `editor/src/embed/` | `<fastdraw-diagram>`, built as `embed.js` by `vite.embed.config.ts` |
 | `worker/` | The fastdraw.dev Worker: diagrams as SVG images at `/gh/*` and `/s/*`, for GitHub |
+| `crates/fastdraw-render/` | The renderer as a Rust crate, checked against the TypeScript by `tools/rust-parity.ts` |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
 | `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |

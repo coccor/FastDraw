@@ -42,7 +42,44 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # The Rust crate (crates/fastdraw-render), the same version as the npm package, is checked as the ci.yml rust
+      # job checks it before anything is published, so a failing check stops both the npm and the crates.io publish.
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+      - name: The tag matches Cargo.toml
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' crates/fastdraw-render/Cargo.toml | head -n 1)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match crates/fastdraw-render/Cargo.toml version $version"
+            exit 1
+          fi
+      - name: The crate's licence files equal their sources
+        run: |
+          cmp LICENSE crates/fastdraw-render/LICENSE
+          for f in fonts/OFL-*.txt licenses/*; do cmp "$f" "crates/fastdraw-render/licenses/$(basename "$f")"; done
+          for f in crates/fastdraw-render/licenses/*; do n=$(basename "$f"); test -f "fonts/$n" || test -f "licenses/$n"; done
+      - run: npm run rust:data && git diff --exit-code
+      - run: npm run rust:parity
+      - run: cargo test --release --locked
+        env:
+          FASTDRAW_PARITY_REQUIRED: '1'
+      - run: cargo package -p fastdraw-render --locked
+      # Nothing is published unless the crate can be too: the crates.io token is there and the crate passes a dry run.
+      - name: The crates.io token is set
+        run: test -n "$CARGO_REGISTRY_TOKEN" || { echo "::error::CARGO_REGISTRY_TOKEN missing"; exit 1; }
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - run: cargo publish --dry-run -p fastdraw-render --locked
       - run: npm publish --provenance --access public
+      # CARGO_REGISTRY_TOKEN must be created as a secret in the `release` environment (Settings > Environments >
+      # release) before the next tag is pushed: a crates.io API token with the publish-new and publish-update
+      # scopes for fastdraw-render.
+      - run: cargo publish -p fastdraw-render --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

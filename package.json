@@ -41,6 +41,9 @@
     "node": ">=20"
   },
   "scripts": {
+    "rust:data": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/rust-data.ts",
+    "rust:cases": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/rust-cases.ts > crates/fastdraw-render/tests/geometry.json",
+    "rust:parity": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/rust-parity.ts",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
     "dev": "vite",
     "build:editor": "vite build && vite build -c vite.embed.config.ts --outDir dist-editor --emptyOutDir false",
@@ -49,7 +52,7 @@
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node20 --external:@resvg/resvg-js --banner:js=\"#!/usr/bin/env node\" --outfile=dist/cli.js",
     "prepack": "npm run build:cli && npm run build:embed",
     "build:embed": "vite build -c vite.embed.config.ts",
-    "version": "node tools/syncPluginVersion.ts && git add plugins/fastdraw/.claude-plugin/plugin.json"
+    "version": "node tools/syncPluginVersion.ts && git add plugins/fastdraw/.claude-plugin/plugin.json crates/fastdraw-render/Cargo.toml Cargo.lock"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2"

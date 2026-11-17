@@ -1,0 +1,76 @@
+# Every shape kind and the shape properties render.ts reads (spec §8.3). Built-in style names only, so every
+# bundled look draws it too.
+canvas paper=#fbfaf7 dots=ink/0.1 dotgap=16
+
+r1: rect "Plain box" sub="second line\nthird" at 40,40 160x64 radius=8 fill=#eef3ff stroke=#3355aa sw=2 dash=4,2 cap=round
+r2: rect "Tagged" tag="TAG" tag.size=9 tag.font=sans tag.color=#663399 tag.weight=600 tag.italic=1 tag.spacing=0.1 tag.border=#663399/0.5 at 240,40 160x64 fill=#ffffff
+r3: rect "Ghost" ghost="42" ghost.size=28 ghost.font=serif ghost.color=ink/0.1 ghost.weight=700 ghost.italic=1 ghost.spacing=0.05 at 440,40 160x64
+r4: rect "Corners" corners=plus corners.color=#aa3333 corners.size=9 at 640,40 160x64
+r5: rect "Squares" corners=square at 840,40 160x64 fill=#fff
+
+d1: rect "Depth" depth=8 depth.fill=#3355aa/0.3 depth.stroke=#3355aa stroke=#3355aa at 40,160 160x64 fill=#ffffff
+d2: rect "Shade" shade=ink shade.size=6 shade.gap=3 shade.sw=0.8 at 240,160 160x64 fill=#ffffff
+d3: rect "Inner" inner=#3355aa inner.gap=4 inner.sw=0.8 radius=10 at 440,160 160x64
+d4: rect "Hatch" hatch=#aa3333 hatch.gap=5 hatch.sw=1.2 at 640,160 160x64 fill=#ffeeee
+d5: rect "Halftone" halftone=#3355aa halftone.gap=5 halftone.r=1.2 at 840,160 160x64
+
+o1: rect "Offset" offset=3,2 fill=#ffd400 at 40,280 160x64
+o2: rect "Blend" blend=multiply fill=#00aaff/0.4 hatch=#000 at 240,280 160x64
+o3: rect "Both" offset=-2,3 blend=multiply fill=#ff0066/0.3 halftone=#ff0066 at 440,280 160x64
+o4: rect "Back layer" layer=back fill=ink/0.04 at 640,280 360x64
+o5: rect "No mask" mask=0 fill=#ffffff at 660,288 100x48
+
+e1: ellipse "Ellipse" tag="E" at 40,400 160x80 fill=#ffffff
+e2: diamond "Diamond" tag="D" sub="decide" at 240,400 160x80 fill=#ffffff
+e3: polygon "Triangle" points=60,0;120,100;0,100 at 440,400 fill=#eef3ff
+e4: polygon "Stretched" points=0,0;40,0;40,40;0,40 at 600,400 120x80 smooth=1 fill=#f3fff3
+e5: polygon points=0,40;30,0;60,40;90,0 open=1 at 760,400 stroke=#aa3333 sw=2
+e6: freehand points=0,12;18,2;40,9;60,30 at 880,400
+e7: polygon points=0,0;10,10 at 960,400 smooth=1 open=1
+
+a1: arc "Quarter" from=0 to=90 at 40,520 120x120 fill=#3355aa/0.2
+a2: arc "Ring" from=90 to=300 inner=0.6 at 200,520 120x120 fill=#aa3333/0.3
+a3: arc "Full" at 360,520 120x120 fill=#ffd400/0.3
+a4: arc "Full ring" from=0 to=360 inner=0.5 at 520,520 120x120 fill=#00aa66/0.3
+a5: arc from=200 to=20 open=1 at 680,520 120x120 stroke=#3355aa sw=3
+a6: arc "Inner big" inner=2 from=0 to=180 at 840,520 120x120 fill=#ccc
+
+p1: rect "Path" shape=path path="M0,0 L1,0 L0.8,1 L0.2,1 Z" at 40,680 160x64 fill=#ffffff tag="P"
+p2: rect "Cylinder" shape=path path="M0,0.15 C0,-0.05 1,-0.05 1,0.15 L1,0.85 C1,1.05 0,1.05 0,0.85 Z" at 240,680 160x80 fill=#ffffff tag="DB"
+p3: rect "No path" shape=path at 440,680 160x64
+
+i1: icon at 40,800 icon=database "Database" sub="postgres\nv16"
+i2: icon at 140,800 48x48 icon=cloud fill=#3355aa/0.2 stroke=#3355aa sw=2 "Cloud" title.size=13 title.font=serif title.weight=700 title.caps=1 sub="sub" sub.size=10 sub.font=sans sub.color=#aa3333 sub.weight=600 sub.spacing=0.1 sub.italic=1
+i3: icon at 240,800 icon=user icon.fill=#ffd400 icon.color=#663399 icon.width=1.5
+i4: icon at 320,800 icon=none "No icon"
+
+b1: rect "Icon left" icon=database at 440,800 200x64 fill=#ffffff
+b2: rect "Icon top" icon=cloud icon.pos=top icon.size=28 at 680,800 200x96 fill=#ffffff
+b3: rect icon=user at 920,800 96x96
+b4: rect "Left aligned" sub="with sub" title.align=left icon=database icon.style=solid at 40,920 200x64
+b5: rect "Right aligned" title.align=right icon=gear icon.style=duotone icon.fill=#ffd400 at 280,920 200x64
+b6: rect "Duotone" icon=gear icon.style=duotone icon.width=3 at 520,920 200x64
+b7: rect "Thin" icon=gear icon.width=0.6 icon.color=#aa3333 at 760,920 200x64
+
+z1: rect "Zone caption" title.pos=top at 40,1040 300x120 fill=#eef3ff
+z2: rect "Caption left" title.pos=top title.align=left tag="T1" at 380,1040 300x120
+z3: rect "Caption right" title.pos=top title.align=right title.dy=-10 title.fill=#ffd400 at 720,1040 300x120
+z4: rect "No plate" title.pos=top title.fill=none title.caps=1 title.spacing=0.08 at 40,1200 300x120 fill=#fff
+z5: rect "Caption and icon" title.pos=top icon=cloud at 380,1200 300x120
+
+t1: rect "A long title over\ntwo lines" sub="and a sub" tag="WIDE TAG TEXT" at 720,1200 140x64
+t2: rect "Tight" tag="TAG" at 900,1200 120x30
+t3: ellipse "Tag on ellipse" tag="X" sketch=0 at 40,1360 120x60
+t4: diamond tag="ONLY" at 200,1340 120x100
+
+x1: text "Start anchor" at 40,1480
+x2: text "Middle anchor" anchor=middle at 300,1480 size=14 weight=700 font=serif italic=1 spacing=0.05
+x3: text "End anchor" anchor=end at 560,1480 color=#aa3333 caps=1
+x4: text "Up" rotate=-90 at 620,1560
+x5: text "Down" rotate=90 at 660,1480
+x6: text "Echo\ntwo lines" echo=#ffd400 echo.dx=2 echo.dy=-2 at 720,1480 size=20
+x7: text "Echo default" echo=#00aaff at 900,1480 blend=multiply
+x8: text "  spaced  out  " font=mono at 40,1520
+x9: text "Faint" color=ink/0.2 at 1000,1050
+x10: text "Down\nand down" rotate=90 anchor=middle at 1000,1480
+x11: text "Up\nand up" rotate=-90 anchor=end at 1060,1600

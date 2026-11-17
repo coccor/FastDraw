@@ -1,0 +1,7 @@
+# Two look statements: the first is the one used; withLook blanks both.
+a: rect "A" at 40,40
+look sketch
+b: rect "B" at 240,40
+look night
+  b -> a
+a -> b

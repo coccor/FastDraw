@@ -1,0 +1,10 @@
+﻿look "./bom.look"
+# a comment line
+a: node "BOM and CRLF" at 40,40
+  sub="continued on an indented line"
+b: node "B" at 300,40 // a trailing comment
+a -> b "crlf"
+c: text "lonecarriage return" at 40,160
+
+	
+d: rect "tabbed"	at	300,160

@@ -1,0 +1,6 @@
+# A diagram on look-errors.look: the look's errors come back on the look line.
+look "./look-errors.look"
+a: node "A" at 40,40
+b: e "B" at 240,40
+c: icon icon=ok at 440,40
+a -> b style=d

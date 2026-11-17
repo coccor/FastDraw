@@ -1,0 +1,64 @@
+# Every error and warning buildScene reports (the look statement's own are in errors-look-*.fdraw).
+canvas 800x600 paper=#ffffff tint=hue stray
+a: rect "A" at 40,40
+b: rect "B" at 300,40
+a: rect "A again" at 40,140
+-> b
+a: -> b
+a ->
+a -> ???
+a.left.right -> b
+a -> b stray "label"
+a -> b style=rect
+a -> b style=nosuch
+a -> b route=zigzag
+a -> b head=bogus tail=worse
+x:
+y: "only text"
+z: nosuch "unknown style"
+t1: table "rows" at 40,300
+  | ok "fine" stray
+  | top "a side is not a row id"
+  | 1,2,3,4
+p1: rect at 1e3,300
+p2: rect at
+p3: rect "stray word" stray at 300,300
+p4: rect style=arrow at 400,300
+p5: rect style=nosuch at 500,300
+tx: text "no position"
+tr: text "turned" rotate=45 at 40,420
+i1: rect "icons" icon=database icon.width=9 icon.style=bogus icon.pos=bottom at 40,460
+i2: rect icon=database icon.width=0 at 240,460
+i3: rect icon=database icon.width=abc icon.style=solid at 440,460
+c1: rect "words" color=red weight=700 font=serif italic=1 at 40,560
+g1: polygon points=1,2 at 40,660
+g2: polygon points=0,0;-10,20;30,30 at 140,660
+g3: polygon points=a,b;c,d at 240,660
+g4: polygon at 340,660
+r1: arc from=north to=south inner=half at 440,660 80x80
+ch1: chart "no size" at 40,800
+  | bars 1 2
+ch2: chart at 300,800 200x100 step=0 xstep=-1 x=5..1 y=10..10
+  | bars
+  | foo "kind" 1 2
+  | bars "named"
+  | line "Long" 1 2 3
+  | dots
+ch3: chart at 600,800 200x100 x="a,b,c" step=abc
+  | line "short" 1 2
+  | dots "pairs" 1,2 3,4
+  | area 1 2 3
+rw: rect "rows" at 40,1000
+  | a "x"
+loose: rect "no position"
+loose2: ellipse
+t1.nosuch -> a
+a.nosuch -> b
+l1: 40,1200 -> 300,1200
+l2: l1 -> 300,1300
+l3: l2 -> 400,1300
+l1.left -> a
+a -> nowhere
++1,+2 -> +3,+4
+a -> b via=x,y
+a -> b via=10,20;30

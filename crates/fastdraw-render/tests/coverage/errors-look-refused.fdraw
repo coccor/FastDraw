@@ -1,0 +1,3 @@
+# only files named *.look are read
+look "./rough.txt"
+a: rect "A" at 40,40

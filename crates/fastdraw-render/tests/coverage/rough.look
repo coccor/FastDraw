@@ -1,0 +1,7 @@
+// A look drawn by hand, with tints that keep their hue on a light page.
+canvas paper=paper sketch=3 tint=hue
+color paper #fffdf6
+color ink #2b2b2b
+color muted #6b6b6b
+style box shape=rect radius=6 size=144x64 fill=#ffffff stroke=ink sw=1.6
+style arrow line stroke=ink sw=1.4 route=ortho radius=8

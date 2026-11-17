@@ -1,0 +1,23 @@
+# Text outside ASCII: emoji, CJK, combining marks and right-to-left scripts in titles, tags, labels and cells.
+# Decomposed (NFD) combining marks: e + U+0301 and friends, in a tag, a connector label and a table cell.
+t: text "Grüße — 日本語の図 😀👩‍💻" at 40,40 size=20
+k: text "ﬁligature ǅ ß İstanbul" caps=1 at 40,80
+a: rect "服务器 🚀" sub="مرحبا بالعالم" tag="タグ" at 40,120 200x64
+b: rect "é ñ Å" sub="שלום עולם" tag="עב" title.caps=1 at 320,120 200x64
+c: ellipse "😀😀😀😀😀😀😀😀" at 600,120 160x64
+z: rect "Zone ✓ 中文" title.pos=top at 40,240 300x120
+a -> b "ラベル 🔗"
+b -> c "ünïcödé" label.caps=0
+c -> z "مرحبا بالعالم"
+d: rect "Café" tag="naïve" at 40,560 200x64
+z -> d "résumé ñ"
+tb: table "表 テーブル" at 400,240
+  |= "名前" "値 ✓"
+  | 一 "一" "😀"
+  | "مرحبا" "שלום"
+  | é "é" "ﬀ"
+  | é "åé" "ñö"
+ch: chart "グラフ" at 720,280 200x120 x="一,二,三"
+  | bars "売上" 1 2 3
+  | line "目標 🎯" 2 2 2
+lg: legend at 40,440 rect="四角 ✓" arrow="矢印"

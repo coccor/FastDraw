@@ -1,0 +1,30 @@
+// Every look statement: canvas, color, font, fontdir, icondir, icon, guidance, dark by name, and style with
+// extends and each kind. Fonts and icons come from the folders next to this file.
+canvas paper=paper dots=ink/0.08 dotgap=20 bars=accent/0.05 bargap=24 feed=ink/0.3 grain=0.4 tint=alpha
+color paper #fdfcf8
+color ink #1a1a2e
+color muted #555566
+color accent #c0392b
+color link #2e86de
+color soft #8e44ad
+font sans "Coverage Sans"
+font mono "Geist Mono"
+font serif "No Such Serif"
+fontdir "./fonts"
+icondir "./icons"
+icondir "../outside"
+icondir "./no-such-folder"
+icon queue "M4 6h16 M4 12h16 M4 18h16"
+icon ring "M12 2a10 10 0 1 0 0.01 0Z" "M12 7v10"
+guidance "Use node for services." "Keep it small."
+guidance
+dark night
+style node shape=rect radius=6 size=144x64 fill=#ffffff stroke=ink sw=1.2 sub.font=sans
+style focal extends node fill=accent/0.1 stroke=accent title.color=accent
+style plain shape fill=none stroke=ink sw=1
+style call line stroke=ink sw=1.2 route=ortho head=arrow tail=dot radius=6
+style rule2 extends call head=none route=straight
+style note text font=serif size=11 color=muted
+style faint extends note color=muted/0.5
+style h1 text size=20 weight=700
+style arrow line stroke=muted sw=1.2 route=ortho radius=8

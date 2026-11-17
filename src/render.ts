@@ -640,6 +640,8 @@ function cutEnd(pts: Pt[], dist: number): Pt[] {
 }
 
 function drawConn(look: Look, c: Conn): string {
+  // a line with fewer than two points (a route that simplified down to one) has nothing to draw
+  if (c.pts.length < 2) return '';
   const p = c.p, sw = num(p.sw, 1.2), stroke = col(look, p.stroke ?? 'muted');
   const n = c.pts.length, paper = col(look, look.canvas.paper ?? 'paper');
   // a curve is many short steps: aim its ends along the last stretch of it, not the last step alone
@@ -648,7 +650,7 @@ function drawConn(look: Look, c: Conn): string {
   const hk = Math.max(0.5, Math.min(num(p['head.size'], 1), 4)), ringCol = col(look, p['stop.color'] ?? p.stroke ?? 'muted');
   const head = marker(c.headM, c.pts[n - 1], hFrom, sw, stroke, paper, hk, ringCol), tail = marker(c.tailM, c.pts[0], tFrom, sw, stroke, paper, hk, ringCol);
   const d = c.curve
-    ? pathD(cutEnd(cutEnd(c.pts, head.trim).reverse(), tail.trim).reverse(), 0, 0, 0)
+    ? pathD(cutEnd([...cutEnd(c.pts, head.trim)].reverse(), tail.trim).reverse(), 0, 0, 0) // a copy: the scene's own points stay as they are
     : pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
   const cap = p.cap === 'round' ? ' stroke-linecap="round" stroke-linejoin="round"' : '';
   const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}${cap}${blendOf(p)}`;

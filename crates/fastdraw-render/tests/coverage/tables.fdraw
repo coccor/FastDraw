@@ -1,0 +1,31 @@
+# Tables: header and body rows, rules, spanning rows, row ids that lines end on, and every table property.
+users: table "users\npublic schema" at 40,40
+  |= "column" "type" "note"
+  | id "id" "uuid" "primary key" fill.1=#ffd400/0.3 color.3=#aa3333
+  | email "email" "text"
+  | ---
+  | valueOf "valueOf" "text" "a row id that is also an Object method"
+  | "a row that spans the whole table, because it has only one cell"
+  | org "org_id" "uuid" h=36 fill=#eef3ff
+orders: table "orders" title.align=left title.caps=1 title.size=14 title.font=serif title.weight=700 title.spacing=0.05 title.color=#663399 at 520,40 grid=1 rules=0 align=center cell.size=11 cell.font=sans cell.pad=10 cell.gap=20 cell.color=#333333 cell.weight=500 cell.italic=1 cell.spacing=0.02 row.h=28 head.h=40 head.fill=#3355aa/0.1 detail.color=#3355aa rule=#3355aa/0.3 radius=8 depth=4 shade=ink corners=plus inner=#3355aa/0.4
+  |= "id" "user" "total"
+  | id "1" "ann" "12.50" fill.2=#00aa66/0.2 color.2=#00aa66
+  | user "2" "bob" ""
+  | ---
+  | total "" "" "99.00"
+narrow: table "narrow" at 40,400 120x40
+  | "a cell much wider than the width given to the table"
+untitled: table at 520,400
+  | a "x"
+  | b "y" "z"
+empty: table "empty" at 800,400
+rows: table "dashed" dash=3,2 sketch=0 at 1000,400 stroke=#aa3333
+  | r1 "one"
+  | r1 "same id twice"
+
+users.org -> orders.user
+orders.id -- users.id head=many tail=one
+users.valueOf -> narrow
+users.email.left -> 0,160
+users.email.right -> orders
+orders.total.left -- users

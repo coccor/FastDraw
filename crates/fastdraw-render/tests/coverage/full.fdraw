@@ -1,0 +1,24 @@
+# full.look's own icons (in an icon= box and as an icon shape), its icon files, its fonts and styles.
+look "./full.look"
+canvas paper=#ffffff dots=none dotgap=10
+t: h1 "Every look statement" at 40,40
+a: node "Queue" icon=queue at 40,80
+b: focal "Ring" sub="own icon" icon=ring icon.style=solid at 240,80
+c: icon icon=queue at 440,80 "queue" icon.style=duotone
+d: icon icon=tiny-box at 540,80 48x48 "image"
+e: node "Image" icon=tiny-box at 640,80
+f: plain "Plain" at 40,200 120x48
+g: node "Builtin icon" icon=database at 240,200
+h: node "File over builtin" icon=cloud at 440,200
+i: node "Own over file" icon=queue icon.width=2 icon.fill=accent/0.2 at 640,200
+j: node "Missing" icon=no-such-icon at 840,200
+a -> b style=call "call"
+b -> c style=rule2
+f -> g
+n: note "a note" at 40,320
+n2: faint "a faint note" at 200,320
+k: legend at 40,360 node="node" focal="focal" call="call" note="note"
+z1: node "Caption in an unknown family" title.pos=top at 40,440 300x80
+z2: node "Mono caption" title.pos=top title.font=mono title.weight=550 at 380,440 300x80
+z3: node "Serif caption" title.pos=top title.font=serif title.weight=1000 title.spacing=0.1 at 720,440 300x80
+z4: node "Odd weight" title.pos=top title.weight=0 title.dy=6 at 40,560 300x80

@@ -1,0 +1,10 @@
+// The team's look, light, with its dark version beside it (named by path, relative to this file).
+color paper #ffffff
+color ink #1c1f2a
+color muted #5b6172
+color accent #0078d4
+font sans "Geist"
+icondir "./icons"
+dark "./team-night.look"
+style node shape=rect radius=6 size=160x64 fill=#ffffff stroke=ink/0.35 sw=1.2
+style arrow line stroke=ink sw=1.3 route=ortho radius=6

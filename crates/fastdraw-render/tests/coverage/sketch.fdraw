@@ -1,0 +1,16 @@
+# Drawn by hand (rough.look's canvas sketch=3), with one shape and one line kept clean by sketch=0.
+look "./rough.look"
+a: box "Rough" at 40,40 160x64
+b: box "Clean" sketch=0 at 300,40 160x64
+c: ellipse "Ellipse" at 40,180 160x80
+d: diamond "Diamond" at 300,180 160x80 hatch=ink
+e: polygon points=0,0;80,0;40,60 at 560,40
+f: polygon points=0,0;80,20;40,60 open=1 at 560,180
+t: table "Table" at 700,40
+  | r "row"
+g: arc "Arc" from=0 to=120 at 700,200 100x100
+a -> b
+a -> c route=curve
+c -- d head=open
+b -> d sketch=0
+k: legend at 40,320 arrow="call" box="box" line="line"

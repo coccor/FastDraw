@@ -1,0 +1,5 @@
+// A look whose dark version is not there: the dark image is drawn in this look.
+color paper #ffffff
+color ink #222222
+dark "./gone-night.look"
+style node shape=rect radius=6 size=160x64 fill=#ffffff stroke=ink sw=1

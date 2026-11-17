@@ -1,0 +1,70 @@
+# Every line marker, route and line property; relative points, lines from lines, and sides written every way.
+a: rect "A" at 40,40 120x48
+b: rect "B" at 320,40 120x48
+c: rect "C" at 40,200 120x48
+d: rect "D" at 320,200 120x48
+e: rect "E" at 600,40 120x48
+f: rect "F" at 600,200 120x48
+
+# markers, each at the head and the tail
+a.right@0.2 -> b.left@0.2 head=none tail=arrow
+a.right@0.4 -> b.left@0.4 head=open tail=triangle
+a.right@0.6 -> b.left@0.6 head=diamond tail=diamond-solid
+a.right@0.8 -> b.left@0.8 head=dot tail=circle
+c.right@0.2 -> d.left@0.2 head=stop tail=one stop.color=#aa3333
+c.right@0.4 -> d.left@0.4 head=only-one tail=many
+c.right@0.6 -> d.left@0.6 head=one-many tail=zero-one
+c.right@0.8 -> d.left@0.8 head=zero-many tail=arrow head.size=2
+a -- c
+a <-> c tail=open
+b -- d style=relation head=many tail=one
+
+# routes
+b -> e route=straight "straight"
+e.bottom -> f.top route=curve "curve" lside=left
+d -> f route=curve bend=40 "bent"
+d -> f route=curve bend=-30
+c -> f route=curve via=400,320;700,320
+a.top -> b.top loop=20 "u-shape"
+c.bottom -> d.bottom
+e.right -> f.right
+a -> d via=240,100;240,160 radius=0 "via"
+a -> f route=ortho via=500,150
+b.top@360 -> e.top@650 "absolute"
+b.bottom@2000 -> d.top@-5 "outside"
+
+# labels
+e -> 800,64 "lpos" lpos=780,30
+f -> 800,224 "Below" lside=below label.caps=0 label.size=11 label.font=serif label.spacing=0.02 label.color=#663399 label.weight=700 label.italic=1
+f -> 800,264 "Plate" label.fill=#ffd400 label.border=#aa3333 label.sw=1.5 label.radius=6 label.pad=4
+f.left -> 560,300 "Border only" label.border=ink label.fill=none
+
+# casing, double, layers and caps
+800,100 -> 1000,100 casing=#ffd400 casing.width=4 sw=3 cap=round
+800,140 -> 1000,140 double=#ffffff double.sw=1 sw=4 dash=6,3
+800,180 -> 1000,180 double=#ffffff layer=front sw=4 "front"
+800,220 -> 1000,220 casing=none double=none
+
+# relative ends and free points
+a -> +0,-60
++40,+0 -> c.left
+-40,+20 -> d.right
+1000,300 -> +0,80 "down"
+-20,-20 -> 40,-20
+1000,40 -> 1000,40
+
+# lines from lines
+l1: 40,400 -> 440,400
+l2: l1 -> 240,480
+l3: l1@0.25 -> 140,480
+l4: l1@300 -> 300,480 head=dot
+v1: 500,400 -> 500,560
+v2: v1@450 -> 600,450
+
+# the prototype-name quirk: "constructor" and "toString" are not sides, but `in` finds them on every object
+a.constructor -> b
+a.toString@0.3 -> c
+
+# a line that simplifies to one point draws nothing
+ic: icon "Caption" at 100,600 icon=database
+112,637 -> 112,637
