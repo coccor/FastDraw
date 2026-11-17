@@ -91,11 +91,12 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
   const count = plain ? folder.length + builtIn.length : builtIn.length;
   return (
     <div className="iconpicker">
-      <div className="seg icontabs" role="tablist" aria-label="Icon set">
-        {([['outline', 'Outline'], ['solid', 'Solid'], ['duotone', 'Duotone']] as const).filter(([id]) => id === 'outline' || !look.hideBuiltIns).map(([id, label]) => (
+      {/* the styles are the built-in icons' own, so a look that hides them has nothing to switch between */}
+      {!look.hideBuiltIns && <div className="seg icontabs" role="tablist" aria-label="Icon set">
+        {([['outline', 'Outline'], ['solid', 'Solid'], ['duotone', 'Duotone']] as const).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}
-      </div>
+      </div>}
       <div className="iconsearch">
         <input type="search" autoFocus={autoFocus} aria-label="Search icons" placeholder="Search icons" title={`${count} icons; search by name or meaning`} value={q}
           onChange={(e) => setQ(e.target.value)}

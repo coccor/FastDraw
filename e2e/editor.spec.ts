@@ -1256,6 +1256,6 @@ test('a look with icons builtin=hidden offers only its own icons in the picker, 
   await expect(grid).toContainText("The look's icons");
   await expect(grid).not.toContainText('Built in');
   await expect(grid.getByRole('radio')).toHaveCount(2);
-  await expect(page.getByRole('tab', { name: 'Solid' })).toHaveCount(0);
+  await expect(page.getByRole('tablist', { name: 'Icon set' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
