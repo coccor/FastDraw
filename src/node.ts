@@ -1,6 +1,6 @@
 // File-system loaders for the command-line tool. The rest of the core is browser-safe.
-import { readFileSync, readdirSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, readdirSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir, homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { fontMeta, withoutLigatures } from './fontmeta.ts';
 import { dirname, resolve, join, basename } from 'node:path';
@@ -8,6 +8,9 @@ import { parseLook, emptyLook, isBundledLook, bundledLook, defaultLook, BUNDLED_
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, webFaces, webFetch, MAX_FONT_BYTES } from './webassets.ts';
+import type { WebIcons, Fetch } from './webassets.ts';
+import { createHash } from 'node:crypto';
 import { lstatSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, sep } from 'node:path';
 import type { Scene } from './scene.ts';
@@ -36,14 +39,75 @@ function plainFiles(dir: string, ext: RegExp, maxBytes: number, maxFiles: number
 // The SVG files in the look's icon folders. Only *.svg files directly inside a folder are read.
 function iconFiles(lookFile: string, look: Look): { name: string; bytes: Uint8Array }[] {
   const out: { name: string; bytes: Uint8Array }[] = [];
-  for (const d of look.iconDirs) {
+  for (const d of localIconDirs(look)) {
     const dir = lookFolder(lookFile, d);
     if (!dir) { look.issues.push({ line: 0, level: 'warn', msg: `icon folder not used: ${d} (icondir must be a folder inside the folder that holds the look file)` }); continue; }
     for (const full of plainFiles(dir, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES - out.length)) out.push({ name: full.slice(dir.length + 1), bytes: new Uint8Array(readFileSync(full)) });
   }
   return out;
 }
-const withIcons = (lookFile: string, look: Look): Look => (look.iconDirs.length ? withIconImages(look, iconFiles(lookFile, look), {}, true) : look);
+// ---- icon and font files a look names by web address --------------------------------------------------
+// The command line fetches them before drawing (fetchWebAssets) and keeps a copy on disk, so a diagram draws the
+// same offline once it has been drawn online. Nothing is ever sent but the request for the file itself.
+const webCache = new Map<string, WebIcons>(); // look file -> its web icons
+const webFonts = new Map<string, string[]>(); // look file -> font files fetched for it
+export function webCacheDir(): string {
+  const base = process.env.XDG_CACHE_HOME || (process.platform === 'win32' ? process.env.LOCALAPPDATA : undefined) || join(homedir(), '.cache');
+  return join(base, 'fastdraw', 'web');
+}
+// a Fetch that answers from the disk copy first; offline, a file never fetched counts as unreachable
+function diskFetch(offline: boolean): Fetch {
+  return async (url, maxBytes) => {
+    const path = cachePath(url);
+    if (existsSync(path)) return new Uint8Array(readFileSync(path));
+    if (offline) throw new Error('offline');
+    const bytes = await webFetch(url, maxBytes);
+    if (bytes) { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, bytes); }
+    return bytes;
+  };
+}
+// the copy of a fetched file: named by its address, keeping the extension the PNG renderer goes by
+const cachePath = (url: string) => join(webCacheDir(), createHash('sha256').update(url).digest('hex').slice(0, 32) + (/\.(ttf|otf|svg)(?=\?|$)/i.exec(url)?.[0].toLowerCase() ?? ''));
+
+// Fetch what the diagrams' looks name by web address: the icons each diagram uses, and the TTF and OTF files of
+// the look's fonts (the PNG renderer reads only those). Returns a note per host that could not be reached.
+export async function fetchWebAssets(files: string[], offline = false): Promise<string[]> {
+  const get = diskFetch(offline), notes = new Set<string>();
+  const wanted = new Map<string, { look: Look; names: Set<string> }>();
+  for (const file of files) {
+    let src: string;
+    try { src = readFileSync(file, 'utf8'); } catch { continue; }
+    const p = lookPath(src), r = readLook(file, p);
+    if (r.text === null) continue;
+    const lookFile = resolve(dirname(file), p!), look = parseLook(r.text, p);
+    if (!hasWebIcons(look) && !look.fontUrls.size) continue;
+    const w = wanted.get(lookFile) ?? { look, names: new Set<string>() };
+    for (const m of src.matchAll(/\bicon="?([\w-]+)/g)) w.names.add(m[1]!);
+    wanted.set(lookFile, w);
+  }
+  for (const [lookFile, { look, names }] of wanted) {
+    if (hasWebIcons(look)) {
+      const got = await fetchWebIcons(look, names, get);
+      webCache.set(lookFile, got);
+      for (const h of got.unreachable) notes.add(offline ? `${h}: not fetched (--offline) and not fetched before, so the closest built-in icons are drawn instead` : `${h} could not be reached, so the closest built-in icons are drawn instead`);
+    }
+    const fonts: string[] = [];
+    for (const f of webFaces(look)) {
+      if (!/\.(ttf|otf)(\?|$)/i.test(f.url)) continue;
+      try { if (await get(f.url, MAX_FONT_BYTES)) fonts.push(cachePath(f.url)); } catch { notes.add(`${new URL(f.url).host}: the font ${f.family} could not be fetched, so text is drawn in a fallback font`); }
+    }
+    webFonts.set(lookFile, fonts);
+  }
+  return [...notes];
+}
+
+// Icons the look names by web address come from the cache `fetchLookAssets` filled; without it they are not
+// read, and the built-in icon closest to each is drawn instead.
+const withIcons = (lookFile: string, look: Look): Look => {
+  if (!look.iconDirs.length && !look.iconUrls.size) return look;
+  const web = webCache.get(resolve(lookFile));
+  return withIconImages(look, iconFiles(lookFile, look), web?.uris ?? {}, web ? web.done : !hasWebIcons(look));
+};
 
 export function loadLook(path: string): Look {
   try { return withIcons(path, parseLook(readFileSync(path, 'utf8'), path)); }
@@ -93,6 +157,7 @@ export function withoutLigatureFonts(files: string[]): string[] {
 // names that neither those folders nor the bundled fonts provide.
 export function lookFonts(lookFile: string | undefined, look: Look): { files: string[]; missing: string[] } {
   const files = lookFile ? look.fontDirs.flatMap((d) => { const dir = lookFolder(lookFile, d); return dir ? plainFiles(dir, /\.(ttf|otf)$/i, 20_000_000, 200) : []; }) : [];
+  if (lookFile) files.push(...(webFonts.get(resolve(lookFile)) ?? []).filter((f) => existsSync(f)));
   const have = new Set<string>();
   for (const f of [...bundledFonts(), ...files]) { const m = fontMeta(new Uint8Array(readFileSync(f))); if (m) have.add(m.family.toLowerCase()); }
   const generic = new Set(['sans-serif', 'serif', 'monospace', 'helvetica', 'system-ui']);
@@ -124,7 +189,10 @@ export function loadScene(file: string, srcIn?: string): Scene {
   const fonts = lookFonts(r.text === null ? undefined : resolve(dirname(file), p!), sc.look);
   sc.fontFiles = fonts.files;
   for (const fam of fonts.missing) {
-    sc.issues.push({ line: 1, level: 'warn', msg: `the look names the font "${fam}", but no TTF or OTF file for it was found, so text will be drawn in a fallback font; put its files in a folder next to the look and add  fontdir "./fonts"  to the look` });
+    const at = sc.look.fontUrls.get(fam);
+    sc.issues.push({ line: 1, level: 'warn', msg: at
+      ? `the look names the font "${fam}" at ${at}, but no TTF or OTF file of it was fetched from there, so text will be drawn in a fallback font`
+      : `the look names the font "${fam}", but no TTF or OTF file for it was found, so text will be drawn in a fallback font; put its files in a folder next to the look and add  fontdir "./fonts"  to the look` });
   }
   if (r.refused) for (const i of sc.issues) if (i.msg.startsWith('look file not found')) i.msg = `the look path must end in .look; "${p}" was not read`;
   return sc;

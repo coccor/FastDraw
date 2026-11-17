@@ -264,6 +264,8 @@ fn look_json(look: &Look) -> json::Json {
             Json::Arr(look.icons.keys().map(s).collect()),
         ),
         ("iconDirs".into(), strs(&look.icon_dirs)),
+        ("iconUrls".into(), pairs(&look.icon_urls)),
+        ("fontUrls".into(), pairs(&look.font_urls)),
         (
             "images".into(),
             Json::Arr(look.images.keys().map(|k| s(k)).collect()),

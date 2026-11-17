@@ -72,8 +72,12 @@ pub struct Look {
     pub styles: IndexMap<String, Style>,
     /// name -> SVG path data, drawn as outlines in a 24x24 box
     pub icons: IconMap,
-    /// folders of SVG icon files, relative to the look file
+    /// folders of SVG icon files, relative to the look file, or https:// addresses
     pub icon_dirs: Vec<String>,
+    /// name -> https:// address of one SVG file (`icon name "https://..."`)
+    pub icon_urls: IndexMap<String, String>,
+    /// family -> https:// address of its files, with {weight} and {style} (`font sans "Inter" "https://..."`)
+    pub font_urls: IndexMap<String, String>,
     /// name -> data URI of an icon file, filled in by whoever can read the folders
     pub images: IndexMap<String, String>,
     pub guidance: Vec<String>,
@@ -304,6 +308,8 @@ pub fn empty_look() -> Look {
         styles: IndexMap::new(),
         icons: IconMap::builtin(),
         icon_dirs: Vec::new(),
+        icon_urls: IndexMap::new(),
+        font_urls: IndexMap::new(),
         images: IndexMap::new(),
         guidance: Vec::new(),
         dark: None,
@@ -320,6 +326,35 @@ fn is_icon_name(s: &str) -> bool {
     let mut cs = s.chars();
     cs.next().is_some_and(|c| c.is_ascii_lowercase())
         && cs.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
+
+/// An address a look may fetch an icon or font file from (look.ts `isWebUrl`):
+/// `/^https:\/\/[^\s"'<>\\`]+$/i` and at most 500 UTF-16 units.
+pub fn is_web_url(s: &str) -> bool {
+    s.get(..8)
+        .is_some_and(|h| h.eq_ignore_ascii_case("https://"))
+        && s.len() > 8
+        && s[8..]
+            .chars()
+            .all(|c| !js::is_js_space(c) && !"\"'<>\\`".contains(c))
+        && js::utf16_len(s) <= 500
+}
+
+/// `/^[a-z][a-z0-9+.-]*:/i`
+fn has_scheme(s: &str) -> bool {
+    let mut cs = s.chars();
+    if !cs.next().is_some_and(|c| c.is_ascii_alphabetic()) {
+        return false;
+    }
+    for c in cs {
+        if c == ':' {
+            return true;
+        }
+        if !(c.is_ascii_alphanumeric() || "+.-".contains(c)) {
+            return false;
+        }
+    }
+    false
 }
 
 // `/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/`
@@ -377,6 +412,10 @@ pub fn parse_look(src: &str, path: &str) -> Look {
                 }
             }
             "icondir" => match rest.first() {
+                Some(t) if has_scheme(&t.v) && !is_web_url(&t.v) => err!(format!(
+                    "icondir takes a folder next to the look or an https:// address, e.g. icondir \"https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{{name}}.svg\"; \"{}\" is neither",
+                    t.v
+                )),
                 Some(t) => look.icon_dirs.push(t.v.clone()),
                 None => err!(
                     "icondir needs a folder of SVG files, e.g. icondir \"./icons\"".to_string()
@@ -395,6 +434,16 @@ pub fn parse_look(src: &str, path: &str) -> Look {
                     .map(|t| t.v.clone())
                     .collect();
                 match name {
+                    Some(name) if is_icon_name(name) && paths.len() == 1 && has_scheme(&paths[0]) => {
+                        // icon name "https://.../file.svg": one icon file on the web
+                        if is_web_url(&paths[0]) {
+                            look.icon_urls.insert(name.to_string(), paths[0].clone());
+                        } else {
+                            err!(format!(
+                                "icon {name} takes the https:// address of an SVG file, e.g. icon {name} \"https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg\""
+                            ));
+                        }
+                    }
                     Some(name) if is_icon_name(name) => {
                         if paths.is_empty()
                             || paths.iter().any(|d| !is_path_data(d) || js::utf16_len(d) > 4000)
@@ -433,6 +482,17 @@ pub fn parse_look(src: &str, path: &str) -> Look {
                     &mut look.fonts
                 };
                 map.insert(rest[0].v.clone(), rest[1].v.clone());
+                // font sans "Inter" "https://.../latin-{weight}-{style}.ttf": where the family's files are on the web
+                if let Some(at) = rest.get(2).filter(|_| h == "font") {
+                    if is_web_url(&at.v) {
+                        look.font_urls.insert(rest[1].v.clone(), at.v.clone());
+                    } else {
+                        err!(format!(
+                            "font {} \"{}\" takes the https:// address of its files as the third value, with {{weight}} and {{style}} where they differ, e.g. \"https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0/latin-{{weight}}-{{style}}.ttf\"",
+                            rest[0].v, rest[1].v
+                        ));
+                    }
+                }
             }
             "guidance" => {
                 for t in rest {

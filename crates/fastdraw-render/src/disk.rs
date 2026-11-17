@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use crate::fontmeta::font_meta;
 use crate::iconfiles::{MAX_ICON_BYTES, MAX_ICON_FILES, with_icon_images};
 use crate::js;
-use crate::look::{IssueLevel, Look, LookIssue, parse_look};
+use crate::look::{IssueLevel, Look, LookIssue, is_web_url, parse_look};
 use crate::parse::look_path;
 use crate::scene::{Scene, build_scene};
 
@@ -279,7 +279,13 @@ fn is_font(n: &str) -> bool {
 // The SVG files in the look's icon folders. Only *.svg files directly inside a folder are read.
 fn icon_files(look_file: &Path, look: &mut Look) -> Vec<(String, Vec<u8>)> {
     let mut out = Vec::new();
-    for d in look.icon_dirs.clone() {
+    // addresses on the web are not read here (see icon_stand_in)
+    for d in look
+        .icon_dirs
+        .clone()
+        .into_iter()
+        .filter(|d| !is_web_url(d))
+    {
         let Some(dir) = look_folder(look_file, &d) else {
             look.issues.push(LookIssue {
                 line: 0,
@@ -308,7 +314,7 @@ fn icon_files(look_file: &Path, look: &mut Look) -> Vec<(String, Vec<u8>)> {
 }
 
 pub fn with_icons(look_file: &Path, mut look: Look) -> Look {
-    if look.icon_dirs.is_empty() {
+    if look.icon_dirs.is_empty() && look.icon_urls.is_empty() {
         return look;
     }
     let files = icon_files(look_file, &mut look);
@@ -442,12 +448,19 @@ pub fn load_scene_read(file: &Path, src: &str, read: (Option<String>, bool)) -> 
             .collect(),
     );
     for fam in missing {
+        // a font the look names by address: the crate does not fetch from the web
+        let msg = match sc.look.font_urls.get(&fam) {
+            Some(at) => format!(
+                "the look names the font \"{fam}\" at {at}, but no TTF or OTF file of it was fetched from there, so text will be drawn in a fallback font"
+            ),
+            None => format!(
+                "the look names the font \"{fam}\", but no TTF or OTF file for it was found, so text will be drawn in a fallback font; put its files in a folder next to the look and add  fontdir \"./fonts\"  to the look"
+            ),
+        };
         sc.issues.push(LookIssue {
             line: 1,
             level: IssueLevel::Warn,
-            msg: format!(
-                "the look names the font \"{fam}\", but no TTF or OTF file for it was found, so text will be drawn in a fallback font; put its files in a folder next to the look and add  fontdir \"./fonts\"  to the look"
-            ),
+            msg,
             file: None,
         });
     }

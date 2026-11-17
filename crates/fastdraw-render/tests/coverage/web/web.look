@@ -1,0 +1,11 @@
+// A look that names its icons and fonts by web address. The renderers that do not fetch (the crate, the
+// command line before fetching) draw the closest built-in icon for each and fall back to Geist.
+icondir "https://cdn.example.com/brand-icons@1.0.0/icons/{name}.svg"
+icondir "https://cdn.example.com/cloud-icons@2.0.0/svg/"
+icondir "./local"
+icon lambda "https://cdn.example.com/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg"
+icon key-vaults "https://cdn.example.com/azure/Key-Vaults.svg"
+font sans "Inter" "https://cdn.example.com/fontsource/fonts/inter@5.3.0/latin-{weight}-{style}.ttf"
+font mono "Plex Code" "https://cdn.example.com/plex-mono.woff2"
+style node shape=rect size=160x60 fill=#ffffff stroke=#333333 title.font=sans title.size=14
+style small text font=mono size=11

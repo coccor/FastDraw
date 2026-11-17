@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
+import { loadScene, loadLook, readSources, fetchWebAssets, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
 import { buildScene, withLook, type Scene } from './scene.ts';
 import { defaultLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
@@ -51,13 +51,15 @@ function usage(): never {
   check  <file.fdraw | folder> ...        report problems, with line numbers. A folder means every
                                           .fdraw file under it
   render <file.fdraw | folder> ... [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
-         [--look name|file.look] [--dark]
+         [--look name|file.look] [--dark] [--offline]
                                           draw the diagram (PNG by default) next to it. With several
                                           files or a folder, checks them all first and draws nothing
                                           if any has an error. --look draws with another look instead
                                           of the file's own. --dark also writes x-dark.png with the
                                           look's dark version (the look's dark line; Night for the
-                                          built-in look)
+                                          built-in look). Icons and fonts the look names by https://
+                                          address are fetched and kept in a cache folder; --offline
+                                          (also for check) uses only what is already there
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
@@ -112,9 +114,13 @@ function diagramFiles(paths: string[]): { files: string[]; many: boolean } {
 const VALUE_FLAGS = ['-o', '--scale', '--look', '--editor'];
 const positional = (a: string[]) => a.filter((x, i) => !x.startsWith('-') && !VALUE_FLAGS.includes(a[i - 1]));
 
+// icon and font files the looks name by web address, fetched once and kept in a cache folder
+const fetchWeb = async (files: string[]) => { for (const n of await fetchWebAssets(files, args.includes('--offline'))) console.log(`note: ${n}`); };
+
 if (cmd === 'check') {
   const { files, many } = diagramFiles(positional(args));
   if (!files.length) usage();
+  await fetchWeb(files);
   if (!many) process.exit(report(files[0]).errors ? 1 : 0);
   let errors = 0, warns = 0, hints = 0;
   for (const f of files) {
@@ -128,6 +134,7 @@ if (cmd === 'check') {
 } else if (cmd === 'render') {
   const { files, many } = diagramFiles(positional(args));
   if (!files.length) usage();
+  await fetchWeb(files);
   const oi = args.indexOf('-o'), si = args.indexOf('--scale'), li = args.indexOf('--look');
   if (oi >= 0 && many) { console.log('-o names one output file, so it works with one diagram; leave it out to write each PNG next to its diagram'); process.exit(1); }
   const scale = si >= 0 ? +args[si + 1] : 2;

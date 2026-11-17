@@ -127,6 +127,93 @@ pub fn icon_matches(name: &str, word: &str) -> bool {
     }
 }
 
+/// The built-in icon drawn in place of an icon file that could not come along (icons.ts `standInIcon`): the
+/// closest of the first set by name and search words ("virtual-machine" -> vm), and box when nothing is close.
+pub fn stand_in_icon(name: &str) -> String {
+    const VAGUE: [&str; 8] = [
+        "app",
+        "apps",
+        "application",
+        "applications",
+        "data",
+        "web",
+        "manager",
+        "management",
+    ];
+    const VENDOR_WORDS: [&str; 15] = [
+        "icon",
+        "icons",
+        "service",
+        "services",
+        "azure",
+        "aws",
+        "amazon",
+        "gcp",
+        "google",
+        "microsoft",
+        "ms",
+        "the",
+        "and",
+        "for",
+        "of",
+    ];
+    let first = &core_icons().names;
+    if first.iter().any(|n| n == name) {
+        return name.to_string();
+    }
+    let words: Vec<&str> = name
+        .split('-')
+        .filter(|w| {
+            js::utf16_len(w) > 1
+                && !VENDOR_WORDS.contains(w)
+                && !(w.chars().all(|c| c.is_ascii_digit()))
+        })
+        .collect();
+    // a two-letter word ("db") only counts when it is one of an icon's search words; "s" is dropped from plurals
+    let hit = |n: &str, w: &str| -> f64 {
+        let len = js::utf16_len(w);
+        if len > 2 {
+            if icon_matches(n, w) {
+                1.0
+            } else if len > 3 && w.ends_with('s') && icon_matches(n, &w[..w.len() - 1]) {
+                0.75
+            } else {
+                0.0
+            }
+        } else if icon_words()
+            .get(n)
+            .is_some_and(|ws| ws.split(' ').any(|x| x == w))
+        {
+            1.0
+        } else {
+            0.0
+        }
+    };
+    let (mut best, mut score) = ("box", 0.0);
+    for n in first {
+        let mut s = if icon_matches(n, name) && js::utf16_len(name) > 2 {
+            4.0
+        } else {
+            0.0
+        };
+        for &w in &words {
+            let base = if n == w {
+                3.0
+            } else if format!("{n}s") == w {
+                2.5
+            } else {
+                hit(n, w)
+            };
+            s += base * if VAGUE.contains(&w) { 0.25 } else { 1.0 };
+        }
+        if s > score {
+            best = n;
+            score = s;
+        }
+    }
+    best.to_string()
+}
+
 /// `replace(/\s+/g, '-')`
 fn join_spaces(s: &str) -> String {
     let mut out = String::with_capacity(s.len());

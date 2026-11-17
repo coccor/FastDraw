@@ -1,0 +1,134 @@
+// Icon and font files a look names by their https:// address, so the look works wherever it is opened without
+// the files travelling with it: `icondir "https://.../{name}.svg"`, `icon vm "https://.../vm.svg"` and
+// `font sans "Inter" "https://.../latin-{weight}-{style}.ttf"`. FastDraw stores none of it; the browser (or the
+// command line) fetches each file from the address the look gives. Icon files go through the same checks as
+// files read from a folder and are drawn as images; fonts are fetched only for faces the text uses.
+// Browser-safe: fetch only.
+import { isWebUrl } from './look.ts';
+import type { Look } from './look.ts';
+import { svgDataUri, MAX_ICON_BYTES } from './iconfiles.ts';
+import { isBuiltIn } from './iconStyle.ts';
+
+export const MAX_FONT_BYTES = 5_000_000;
+// no more icons than this are fetched for one diagram
+export const MAX_WEB_ICONS = 300;
+
+/** Does the look name any icon by an https:// address? */
+export const hasWebIcons = (look: Look): boolean => look.iconUrls.size > 0 || look.iconDirs.some(isWebUrl);
+/** The look's icon folders that are folders, not addresses. */
+export const localIconDirs = (look: Look): string[] => look.iconDirs.filter((d) => !isWebUrl(d));
+
+/** Where the icon called `name` may be, in the order they are tried: its own `icon` line, then each icondir address. */
+export function iconAddresses(look: Look, name: string): string[] {
+  const out: string[] = [];
+  const own = look.iconUrls.get(name);
+  if (own) out.push(own);
+  for (const d of look.iconDirs) {
+    if (!isWebUrl(d)) continue;
+    out.push(d.includes('{name}') ? d.replaceAll('{name}', name) : `${d.replace(/\/+$/, '')}/${name}.svg`);
+  }
+  return out;
+}
+
+/** Fetches one file: its bytes, null when the server says there is no such file, or throws when it cannot be reached. */
+export type Fetch = (url: string, maxBytes: number) => Promise<Uint8Array | null>;
+
+export const webFetch: Fetch = async (url, maxBytes) => {
+  // no cookies and no referrer: the server learns only that someone opened a diagram with this look
+  const r = await fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15_000) });
+  if (r.status === 404 || r.status === 410) return null;
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`.trim());
+  if (Number(r.headers.get('content-length')) > maxBytes) throw new Error('file too large');
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (bytes.length > maxBytes) throw new Error('file too large');
+  return bytes;
+};
+
+const cache = new Map<string, Promise<Uint8Array | null>>();
+// Each address is fetched once per page (or command): a failure that could not reach the server is forgotten, so
+// the next try asks again.
+function cached(get: Fetch, url: string, maxBytes: number): Promise<Uint8Array | null> {
+  let p = cache.get(url);
+  if (!p) {
+    p = get(url, maxBytes);
+    cache.set(url, p);
+    p.catch(() => cache.delete(url));
+  }
+  return p;
+}
+
+export const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return url; } };
+
+export type WebIcons = {
+  uris: Record<string, string>; // name -> data URI, for withIconImages
+  done: boolean; // every address was answered (found or not there), so an icon still missing is a real mistake
+  unreachable: string[]; // hosts that could not be reached, for a note
+};
+
+/** The icon files for `names` from the look's web addresses. A name found nowhere is left out. */
+export async function fetchWebIcons(look: Look, names: Iterable<string>, get: Fetch = webFetch): Promise<WebIcons> {
+  // an icon the look drew itself with path data stays its own; a built-in one may be replaced by a file of the same name
+  const want = [...new Set(names)].filter((n) => /^[a-z0-9-]{1,80}$/.test(n) && !look.images.has(n) && !(look.icons.has(n) && !isBuiltIn(look, n)));
+  const uris: Record<string, string> = {};
+  const unreachable = new Set<string>();
+  await Promise.all(want.slice(0, MAX_WEB_ICONS).map(async (name) => {
+    for (const url of iconAddresses(look, name)) {
+      try {
+        const bytes = await cached(get, url, MAX_ICON_BYTES);
+        const uri = bytes && svgDataUri(bytes);
+        if (uri) { uris[name] = uri; return; }
+      } catch { unreachable.add(hostOf(url)); return; }
+    }
+  }));
+  return { uris, done: unreachable.size === 0, unreachable: [...unreachable] };
+}
+/** One face of a font the look names by address. */
+export type WebFace = { family: string; weight: number; style: 'normal' | 'italic'; url: string };
+
+const WEIGHTS = [400, 500, 600, 700];
+/**
+ * The faces of every font the look names by address. An address with {weight} gives 400 to 700, one with {style}
+ * an italic too; an address with neither is one file drawn at every weight. Family names are plain words only,
+ * as they are written into CSS.
+ */
+export function webFaces(look: Look): WebFace[] {
+  const out: WebFace[] = [];
+  for (const [family, tpl] of look.fontUrls) {
+    if (!/^[\w .-]{1,64}$/.test(family)) continue;
+    const fill = (w: number, s: string) => tpl.replaceAll('{weight}', String(w)).replaceAll('{style}', s);
+    if (!tpl.includes('{weight}')) { out.push({ family, weight: 0, style: 'normal', url: fill(400, 'normal') }); continue; }
+    for (const w of WEIGHTS) out.push({ family, weight: w, style: 'normal', url: fill(w, 'normal') });
+    if (tpl.includes('{style}')) out.push({ family, weight: 400, style: 'italic', url: fill(400, 'italic') });
+  }
+  return out;
+}
+
+const faceFormat = (url: string) => (/\.woff2(\?|$)/i.test(url) ? 'woff2' : /\.woff(\?|$)/i.test(url) ? 'woff' : /\.otf(\?|$)/i.test(url) ? 'opentype' : 'truetype');
+/** An @font-face rule for a face, loading from `src` (its address, or a data URL). Weight 0 is every weight. */
+export function faceRule(f: WebFace, src = f.url): string {
+  return `@font-face{font-family:'${f.family}';font-weight:${f.weight || '100 900'};font-style:${f.style};src:url("${src}") format('${faceFormat(f.url)}');}`;
+}
+
+/** The weights an SVG draws text at (400 when none is given). */
+export function weightsDrawn(svg: string): Set<number> {
+  const out = new Set([400]);
+  for (const [, w] of svg.matchAll(/font-weight="(\d+)"/g)) out.add(Number(w));
+  return out;
+}
+
+/** The faces an SVG needs, fetched and inlined as data URLs so an exported file stands alone. Faces that cannot be fetched are left out. */
+export async function inlineWebFaces(look: Look, families: Set<string>, svg: string, get: Fetch = webFetch): Promise<string> {
+  const weights = weightsDrawn(svg), italic = /font-style="italic"/.test(svg);
+  const faces = webFaces(look).filter((f) => families.has(f.family) && (f.weight === 0 || weights.has(f.weight)) && (f.style === 'normal' || italic));
+  const rules = await Promise.all(faces.map(async (f) => {
+    try {
+      const bytes = await cached(get, f.url, MAX_FONT_BYTES);
+      if (!bytes) return '';
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const mime = faceFormat(f.url) === 'woff2' ? 'font/woff2' : faceFormat(f.url) === 'woff' ? 'font/woff' : 'font/ttf';
+      return faceRule(f, `data:${mime};base64,${btoa(bin)}`);
+    } catch { return ''; }
+  }));
+  return rules.join('');
+}

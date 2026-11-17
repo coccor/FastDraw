@@ -14,7 +14,9 @@ export type Look = {
   canvas: Props;
   styles: Map<string, Style>;
   icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
-  iconDirs: string[]; // folders of SVG icon files, relative to the look file
+  iconDirs: string[]; // folders of SVG icon files, relative to the look file, or https:// addresses (see webassets.ts)
+  iconUrls: Map<string, string>; // name -> https:// address of one SVG file (icon name "https://...")
+  fontUrls: Map<string, string>; // family -> https:// address of its files, with {weight} and {style} (font sans "Inter" "https://...")
   images: Map<string, string>; // name -> data URI of an icon file, filled in by whoever can read the folders
   // true once the icon folders themselves were read; until then an icon missing from images may just not have
   // come along (a shared link, a page that cannot reach the folder) and a built-in one is drawn in its place
@@ -70,6 +72,8 @@ export function emptyLook(): Look {
     styles: new Map(),
     icons: new Map(Object.entries(ICONS)),
     iconDirs: [],
+    iconUrls: new Map(),
+    fontUrls: new Map(),
     images: new Map(),
     iconFolderRead: false,
     guidance: [],
@@ -78,6 +82,11 @@ export function emptyLook(): Look {
   for (const s of BUILTIN) look.styles.set(s.name, { ...s, props: { ...s.props } });
   return look;
 }
+
+// An address a look may fetch an icon or font file from: https only, and nothing that could break out of the
+// quotes it is written into.
+export const isWebUrl = (s: string): boolean => /^https:\/\/[^\s"'<>\\`]+$/i.test(s) && s.length <= 500;
+const hasScheme = (s: string) => /^[a-z][a-z0-9+.-]*:/i.test(s);
 
 export function parseLook(src: string, path = 'look'): Look {
   const look = emptyLook();
@@ -93,14 +102,20 @@ export function parseLook(src: string, path = 'look'): Look {
       continue;
     }
     if (head.v === 'icondir') {
-      if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"'); else look.iconDirs.push(rest[0].v);
+      if (!rest[0]) err('icondir needs a folder of SVG files, e.g. icondir "./icons"');
+      else if (hasScheme(rest[0].v) && !isWebUrl(rest[0].v)) err(`icondir takes a folder next to the look or an https:// address, e.g. icondir "https://cdn.jsdelivr.net/npm/simple-icons@16.38.0/icons/{name}.svg"; "${rest[0].v}" is neither`);
+      else look.iconDirs.push(rest[0].v);
       continue;
     }
     if (head.v === 'icon') {
       // icon name "path data" ["more path data" ...]: outlines in a 24x24 box
       const name = rest[0]?.t === 'word' ? rest[0].v : undefined, paths = rest.slice(1).filter((t) => t.t === 'str').map((t) => t.v);
       if (!name || !/^[a-z][a-z0-9-]*$/.test(name)) err('icon needs a name in small letters, e.g. icon queue "M4 6h16 M4 12h16 M4 18h16"');
-      else if (!paths.length || paths.some((d) => !/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) || d.length > 4000) || paths.length > 12) err(`icon ${name} needs its outline as SVG path data in quotes, drawn in a 24x24 box, e.g. "M4 6h16 M4 12h16"`);
+      else if (paths.length === 1 && hasScheme(paths[0]!)) {
+        // icon name "https://.../file.svg": one icon file on the web
+        if (isWebUrl(paths[0]!)) look.iconUrls.set(name, paths[0]!);
+        else err(`icon ${name} takes the https:// address of an SVG file, e.g. icon ${name} "https://cdn.jsdelivr.net/npm/aws-icons@3.3.0/icons/architecture-service/AWSLambda.svg"`);
+      } else if (!paths.length || paths.some((d) => !/^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/.test(d) || d.length > 4000) || paths.length > 12) err(`icon ${name} needs its outline as SVG path data in quotes, drawn in a 24x24 box, e.g. "M4 6h16 M4 12h16"`);
       else look.icons.set(name, paths);
       continue;
     }
@@ -113,6 +128,12 @@ export function parseLook(src: string, path = 'look'): Look {
     } else if (head.v === 'color' || head.v === 'font') {
       if (rest.length < 2) { err(`${head.v} needs a name and a value`); continue; }
       (head.v === 'color' ? look.colors : look.fonts).set(rest[0].v, rest[1].v);
+      // font sans "Inter" "https://.../latin-{weight}-{style}.ttf": where the family's files are on the web
+      const at = head.v === 'font' ? rest[2]?.v : undefined;
+      if (at !== undefined) {
+        if (isWebUrl(at)) look.fontUrls.set(rest[1].v, at);
+        else err(`font ${rest[0].v} "${rest[1].v}" takes the https:// address of its files as the third value, with {weight} and {style} where they differ, e.g. "https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0/latin-{weight}-{style}.ttf"`);
+      }
     } else if (head.v === 'guidance') {
       for (const t of rest) if (t.t === 'str') look.guidance.push(t.v);
     } else if (head.v === 'style') {

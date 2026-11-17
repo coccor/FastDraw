@@ -47,10 +47,14 @@ export function usedIconImages(look: Look, names: Iterable<string>): Record<stri
 }
 
 // The built-in icon drawn for `name` when it is an icon file that did not come along: the look has icon
-// folders that were not read here (a shared link without that icon, a page that cannot reach the folder).
+// folders or web addresses that were not read here (a shared link without that icon, a page that cannot reach
+// the folder, a renderer that does not fetch from the web, or one that could not reach the address).
 // Null when the icon is there, or when its absence is a real mistake. Until the rest of the built-in icons
 // have loaded the name may still be one of them, so there is no stand-in yet.
 export function iconStandIn(look: Look, name: string): string | null {
   if (!name || name === 'none' || look.images.has(name) || look.icons.has(name)) return null;
-  return look.iconDirs.length && !look.iconFolderRead && extendedIconsLoaded() ? standInIcon(name) : null;
+  return (look.iconDirs.length || look.iconUrls.size) && !look.iconFolderRead && extendedIconsLoaded() ? standInIcon(name) : null;
 }
+
+// Where the look keeps the icon called `name`, for messages: its own address, or the look's icon folders.
+export const iconSources = (look: Look, name: string): string => look.iconUrls.get(name) ?? look.iconDirs.join(', ');
