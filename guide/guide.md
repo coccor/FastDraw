@@ -69,7 +69,9 @@ One statement per line. An indented line continues the statement above it. `//` 
 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
-                            // or a look that ships with FastDraw: look headline | night | reference | sketch | whiteboard | shade | engraved | keys | transit | offset | listing
+                            // or a look that ships with FastDraw: look night | reference | shade | sketch | whiteboard
+                            // or one on GitHub, by its address: look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look"
+                            //   (coccor/fastdraw-looks also has headline, keys, listing, offset and transit)
                             // for a dark theme, keep the line and run  fastdraw render x.fdraw --dark  to get x-dark.png too
 canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
 

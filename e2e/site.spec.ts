@@ -60,12 +60,12 @@ test('a look writes one line into the file, a kind loads its example, and the fu
   await page.goto('/');
   const canvas = page.locator('.wb-canvas svg'), first = page.locator('.wb-ln').first();
   const before = await canvas.innerHTML();
-  await expect(page.getByRole('radio')).toHaveCount(12);
+  await expect(page.getByRole('radio')).toHaveCount(6);
   await expect(page.getByRole('radio', { name: 'Built-in' })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('radio', { name: 'Engraved' }).click();
-  await expect(first).toHaveText('1look engraved');
+  await page.getByRole('radio', { name: 'Shade' }).click();
+  await expect(first).toHaveText('1look shade');
   expect(await canvas.innerHTML()).not.toBe(before);
-  await expect(page.locator('.lookabout')).toContainText('Engraved.');
+  await expect(page.locator('.lookabout')).toContainText('Shade.');
   // every kind is in the index; choosing one puts its example in the editor
   await expect(page.locator('.kinds button')).toHaveCount(44);
   await page.getByRole('button', { name: 'Swimlane diagram' }).click();
@@ -73,7 +73,7 @@ test('a look writes one line into the file, a kind loads its example, and the fu
   await expect(canvas).toContainText('Hiring a new engineer');
   await expect(page.locator('.wb-status')).toHaveText('Nothing has changed yet. Drag a box on the canvas.');
   // with a look chosen, the full editor opens on the same text
-  await page.getByRole('radio', { name: 'Keys' }).click();
+  await page.getByRole('radio', { name: 'Sketch' }).click();
   await page.getByRole('link', { name: 'Open in the full editor' }).click();
   await expect(page).toHaveURL(/\/edit\/$/);
   await expect(page.locator('svg.canvas')).toContainText('Hiring a new engineer');

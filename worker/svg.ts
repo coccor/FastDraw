@@ -11,7 +11,7 @@
 // cannot load anything from outside itself.
 import { buildScene, lookPath, withLook } from '../src/scene.ts';
 import { renderSvg, esc } from '../src/render.ts';
-import { parseLook, isBundledLook, bundledLook, defaultLook } from '../src/look.ts';
+import { parseLook, isBundledLook, isWebLook, bundledLook, defaultLook } from '../src/look.ts';
 import { loadExtendedIcons, extendedIconsLoaded } from '../src/extendedIcons.ts';
 import { darkCounterpart } from '../editor/src/embed/theme.ts';
 import { decodeShared, editorLink, type Shared } from '../editor/src/embed/share.ts';
@@ -88,10 +88,19 @@ async function fromGitHub(rest: string, deps: Deps): Promise<Source> {
   const ref = lookPath(text);
   let look: Source['look'] = null;
   if (ref && !isBundledLook(ref)) {
-    const lookUrl = inRepo(ref, fileUrl, repoRoot);
-    look = { path: ref, text: await readText(lookUrl, deps, `the look file ${ref} was not found next to the diagram`) };
+    const lookUrl = isWebLook(ref) ? onGitHub(ref) : inRepo(ref, fileUrl, repoRoot);
+    look = { path: ref, text: await readText(lookUrl, deps, isWebLook(ref) ? `there is no look file at ${ref}` : `the look file ${ref} was not found next to the diagram`) };
   }
-  return { name: parts[parts.length - 1], text, look, base: look ? inRepo(ref!, fileUrl, repoRoot) : fileUrl };
+  return { name: parts[parts.length - 1], text, look, base: look ? (isWebLook(ref!) ? onGitHub(ref!) : inRepo(ref!, fileUrl, repoRoot)) : fileUrl };
+}
+
+/** A look the diagram names by web address, read only from a GitHub repository (directly or through jsDelivr). */
+function onGitHub(url: string): string {
+  const u = new URL(url);
+  if (u.host !== 'raw.githubusercontent.com' && !(u.host === 'cdn.jsdelivr.net' && u.pathname.startsWith('/gh/')) || u.search || u.hash) {
+    throw new Problem(`a look named by address is read only from GitHub (raw.githubusercontent.com or cdn.jsdelivr.net/gh/): "${url}"`);
+  }
+  return u.href;
 }
 
 /** A look path from a file at `from`, as an address in the same repository; anything else is refused. */

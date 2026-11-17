@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { parseLook, color, isBundledLook, fallbackFamily } from '../../src/look.ts';
+import { parseLook, color, isBundledLook, isWebLook, fallbackFamily } from '../../src/look.ts';
 import { buildScene, lookPath, captionBox, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
@@ -13,7 +13,7 @@ import { Panel, TextField, Swatches } from './Panel.tsx';
 import { Gallery } from './Gallery.tsx';
 import { Sidebar, useSidebar } from './Sidebar.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
-import type { LookChoice, FileLook } from './LookPicker.tsx';
+import type { LookChoice, FileLook, WebLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
@@ -28,7 +28,7 @@ import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
 import { setLookFonts, setWebFonts, BUNDLED_FAMILIES } from './fonts.ts';
-import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, hostOf, type WebIcons } from '../../src/webassets.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, fetchWebLook, hostOf, type WebIcons } from '../../src/webassets.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
@@ -144,6 +144,10 @@ export function App() {
   const [src, setSrcState] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const [lookSrc, setLookSrc] = useState<string | null>(null);
+  // looks the diagram names by web address (look "https://.../x.look"), by address: kept apart from lookSrc, the
+  // look file read from disk, so undoing from one to the other draws each with its own look
+  const [webLooks, setWebLooks] = useState<Record<string, string>>({});
+  const [webLookNote, setWebLookNote] = useState('');
   const [name, setName] = useState('');
   const [sel, setSel] = useState<string[]>([]);
   const [tool, setTool] = useState('select');
@@ -205,10 +209,27 @@ export function App() {
   // name (look sketch) or no line at all is drawn without it
   const lookLine = lookPath(src ?? '');
   const fileLookOn = !!lookLine && !isBundledLook(lookLine);
+  const webLookOn = isWebLook(lookLine);
+  // a web look's text: as fetched, or until then what an opened image or link carried
+  const lookText = webLookOn ? webLooks[lookLine!] ?? lookSrc : lookSrc;
   // The rest of Phosphor's icons are fetched when a diagram uses one (or the icon dialog opens); looks and the
   // scene are built again when they arrive.
   const iconsReady = useExtendedIcons(useMemo(() => [...(src ?? '').matchAll(/\bicon="?([\w-]+)/g)].some((m) => !BUILT_IN_ICONS[m[1]!]), [src]));
-  const parsedLook = useMemo(() => (lookSrc != null && fileLookOn ? parseLook(lookSrc) : null), [lookSrc, fileLookOn, iconsReady]);
+  const parsedLook = useMemo(() => (lookText != null && fileLookOn ? parseLook(lookText) : null), [lookText, fileLookOn, iconsReady]);
+  // a look named by web address is fetched when the diagram names it (each address once per page)
+  useEffect(() => {
+    setWebLookNote('');
+    if (!webLookOn || webLooks[lookLine!] !== undefined) return;
+    let stale = false;
+    const url = lookLine!;
+    fetchWebLook(url).then(
+      (text) => { if (stale) return; if (text === null) setWebLookNote(`There is no look file at ${url}.`); else setWebLooks((w) => ({ ...w, [url]: text })); },
+      (e) => { if (!stale) setWebLookNote(`The look could not be fetched from ${hostOf(url)} (${(e as Error).message}).`); });
+    return () => { stale = true; };
+  }, [webLookOn, lookLine, webLooks]);
+  // looks the picker fetched from GitHub, to try on and to apply
+  const pickerWeb = useRef(new Map<string, WebLook>());
+  const onWebLookLoaded = useCallback((url: string, w: WebLook) => { pickerWeb.current.set(url, w); }, []);
   // Icon files: read from the look's icon folders when a folder is open, or carried inside an opened image.
   const [iconFiles, setIconFiles] = useState<{ name: string; bytes: Uint8Array }[]>([]);
   const [carriedIcons, setCarriedIcons] = useState<Record<string, string>>({});
@@ -247,7 +268,8 @@ export function App() {
     let stale = false;
     (async () => {
       const s = io.current, dirs = parsedLook ? localIconDirs(parsedLook) : [];
-      const lp = srcRef.current ? lookPath(srcRef.current) : undefined;
+      // a look on the web has no folder here: its icondir and fontdir lines name addresses, never local folders
+      const lp = srcRef.current && !isWebLook(lookPath(srcRef.current)) ? lookPath(srcRef.current) : undefined;
       const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
       const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES)))).flat() : [];
       if (stale) return;
@@ -265,7 +287,8 @@ export function App() {
     (async () => {
       const s = io.current;
       const dirs = look?.fontDirs ?? [];
-      const lp = srcRef.current ? lookPath(srcRef.current) : undefined;
+      // a look on the web has no folder here: its icondir and fontdir lines name addresses, never local folders
+      const lp = srcRef.current && !isWebLook(lookPath(srcRef.current)) ? lookPath(srcRef.current) : undefined;
       const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
       const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d)))).flat() : [];
       if (stale) return;
@@ -290,9 +313,9 @@ export function App() {
   const shown = useMemo(() => {
     if (lookPreview === undefined) return scene;
     const p = lookPreview;
-    const fl = pickerFile.current && p === pickerFile.current.path ? pickerFile.current.look : look;
+    const fl = p !== null && isWebLook(p) && p !== lookLine ? pickerWeb.current.get(p)?.look ?? null : pickerFile.current && p === pickerFile.current.path ? pickerFile.current.look : look;
     return buildScene(ops.setLook(cur, p), p !== null && !isBundledLook(p) ? fl : null);
-  }, [scene, lookPreview, cur, look, iconsReady]);
+  }, [scene, lookPreview, cur, look, iconsReady, lookLine]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
   // the page layers are left out: the paper, dots, bars and feed fill the whole view instead (see the canvas below)
   const body = useMemo(() => renderBody(shown).split('\n').filter((l) => !/^<(rect|path) class="fd-page"/.test(l)).join('\n'), [shown]);
@@ -482,7 +505,7 @@ export function App() {
     if (!h) return;
     const { text, modified } = await files.readHandle(h);
     const lp = lookPath(text);
-    const lh = lp && lp.toLowerCase().endsWith('.look') ? await files.resolveIn(folder.root, files.dirOf(path) + lp) : null;
+    const lh = lp && !isWebLook(lp) && lp.toLowerCase().endsWith('.look') ? await files.resolveIn(folder.root, files.dirOf(path) + lp) : null;
     const lr = lh ? await files.readHandle(lh) : null;
     io.current = { file: h, look: lh ?? undefined, fileMod: modified, lookMod: lr?.modified ?? 0, written: text, folder, path };
     load(text, lr?.text ?? null, path, { replace });
@@ -1154,7 +1177,7 @@ export function App() {
   // What an exported image carries so it can be opened and edited again: the diagram, its look, the icons it uses.
   const exportPayload = () => {
     const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter(Boolean));
-    return { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
+    return { v: 1 as const, diagram: cur, look: lookText, ...(Object.keys(icons).length ? { icons } : {}) };
   };
 
   // A link that opens this diagram in the editor, with its look file and the icon files it uses inside it.
@@ -1163,7 +1186,8 @@ export function App() {
   const copyLink = async () => {
     try {
       const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter((n) => n && !webIcons.uris[n]));
-      const look = fileLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
+      // a look named by web address stays out too: the link names it, and whoever opens it fetches it
+      const look = fileLookOn && !webLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
       const link = await editorLink(location.origin + location.pathname, { name: baseName + '.fdraw', text: cur, ...(look ? { look } : {}), ...(Object.keys(icons).length ? { icons } : {}) });
       await navigator.clipboard.writeText(link);
       const n = Object.keys(icons).length, kb = Math.ceil(link.length / 1000);
@@ -1182,6 +1206,8 @@ export function App() {
     setLookPreview(undefined);
     if (src === null) return;
     const next = ops.setLook(cur, v);
+    const web = v !== null && isWebLook(v) ? pickerWeb.current.get(v) : undefined;
+    if (web) setWebLooks((w) => ({ ...w, [v!]: web.text }));
     if (next !== cur) { commit(next, sel); setStatus(`look: ${lookLabel(v, null)}`); }
   };
   const baseName = (name || 'diagram').replace(/ \(example\)$/, '').replace(/^.*\//, '').replace(/\.fdraw$/, '').replace(/\s+/g, '-');
@@ -1217,7 +1243,7 @@ export function App() {
     );
   }
 
-  const missingLook = lookPath(cur) && !isBundledLook(lookPath(cur)) && lookSrc === null;
+  const missingLook = lookPath(cur) && !isBundledLook(lookPath(cur)) && !isWebLook(lookPath(cur)) && lookSrc === null;
   const curLook = lookPath(cur) ?? null;
   const fileLook = curLook && !isBundledLook(curLook) && look ? { path: curLook, look } : null;
   // the diagram's own look file stays a choice while the picker is open, even after a click moves off it
@@ -1354,6 +1380,12 @@ export function App() {
         {fontNote && <div className="banner">{fontNote}</div>}
         {iconNote && <div className="banner">{iconNote}</div>}
         {webIconNote && <div className="banner">{webIconNote}</div>}
+        {webLookOn && lookText === null && webLookNote && (
+          <div className="banner">
+            {webLookNote} The diagram is drawn with plain styles until it can be.
+            <button onClick={() => setWebLooks((w) => ({ ...w }))}>Try again</button>
+          </div>
+        )}
         {missingLook && (
           <div className="banner">
             This diagram uses the look “{lookPath(cur)}”, which is not loaded, so it is drawn with plain styles.
@@ -1365,7 +1397,7 @@ export function App() {
       <div className="topright" onPointerDown={(e) => e.stopPropagation()}>
         <Sidebar side={side}
           components={<Gallery look={scene.look} current={tool} onPick={setTool} />}
-          look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} />} />
+          look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} onLoaded={onWebLookLoaded} />} />
       </div>
 
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>

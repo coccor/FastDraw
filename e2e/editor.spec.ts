@@ -1089,7 +1089,8 @@ test('the menu changes the background for this diagram and resets to the look', 
 });
 
 test('a look with listing paper fills the whole canvas with its bars and sprocket feed', async ({ page }) => {
-  await openFolder(page, { 'd.fdraw': 'look listing\na: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n' });
+  // Listing lives in coccor/fastdraw-looks now; the copy the renderer tests use stands in for it
+  await openFolder(page, { 'd.fdraw': 'look "./listing.look"\na: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n', 'listing.look': repoText('test/fixtures/looks/listing.look') });
   const canvas = page.locator('svg.canvas');
   const bars = canvas.locator('rect[fill="url(#fd-bars)"]');
   await expect(bars).toHaveCount(1);
@@ -1103,6 +1104,86 @@ test('a look with listing paper fills the whole canvas with its bars and sprocke
   await page.screenshot({ path: 'test-results/listing-canvas.png' });
 });
 
+// A repository on GitHub with one look in it, served from the test instead of the network: acme/brand has
+// looks/teal.look (Shade with a teal card colour, to tell it apart on the canvas) and a broken.look that is not there.
+const GH_RAW = 'https://raw.githubusercontent.com/acme/brand/main/';
+async function fakeGitHub(page: import('@playwright/test').Page): Promise<string[]> {
+  const asked: string[] = [];
+  const teal = repoText('looks/shade.look').replace(/^color card .*$/m, 'color card #ccfbf1');
+  await page.route('https://api.github.com/**', (r) => {
+    const u = r.request().url();
+    asked.push(u);
+    if (u.endsWith('/repos/acme/brand')) return r.fulfill({ json: { default_branch: 'main' } });
+    if (u.includes('/repos/acme/brand/git/trees/main')) return r.fulfill({ json: { tree: [{ path: 'README.md', type: 'blob' }, { path: 'looks/teal.look', type: 'blob' }, { path: 'looks/broken.look', type: 'blob' }] } });
+    return r.fulfill({ status: 404, json: {} });
+  });
+  await page.route(GH_RAW + '**', (r) => r.request().url().endsWith('/teal.look') ? r.fulfill({ body: teal, contentType: 'text/plain' }) : r.fulfill({ status: 404, body: '' }));
+  return asked;
+}
+
+test('looks from GitHub: a repository lists its looks, and a click names one by its address', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const RAW = GH_RAW;
+  const asked = await fakeGitHub(page);
+  const PLAIN = SMALL.replace('canvas 900x420\n', '');
+  await paste(page, PLAIN);
+  await sidebar(page, 'Look');
+  const gh = page.getByRole('region', { name: 'Looks from GitHub' });
+  await expect(gh.getByRole('button', { name: /Show FastDraw’s looks/ })).toBeVisible();
+  // something that is not a repository says what to type
+  await gh.getByRole('textbox').fill('not a repo');
+  await gh.getByRole('button', { name: 'Show looks' }).click();
+  await expect(gh).toContainText('Type owner/repo');
+  await gh.getByRole('textbox').fill('https://github.com/acme/brand');
+  await gh.getByRole('button', { name: 'Show looks' }).click();
+  const teal = gh.getByRole('button', { name: /^Teal/ });
+  await expect(teal).toBeVisible();
+  await expect(gh).toContainText('1 of 2 could not be fetched.');
+  await expect(teal.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(1);
+  // hovering tries it on the canvas; the source is untouched
+  const box = page.locator('svg.canvas').locator('[fill="#ccfbf1"]');
+  await teal.hover();
+  await expect(box.first()).toBeVisible();
+  expect(await source(page)).toBe(PLAIN);
+  // a click names it by its raw address
+  await teal.click();
+  expect(await source(page)).toBe(`look "${RAW}looks/teal.look"\n` + PLAIN);
+  await expect(teal).toContainText('in use');
+  await page.mouse.move(5, 880);
+  await expect(box.first()).toBeVisible();
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // undo goes back to the built-in look; listing again asks GitHub nothing new
+  await page.keyboard.press('Control+z');
+  expect(await source(page)).toBe(PLAIN);
+  const listed = asked.length;
+  await gh.getByRole('button', { name: 'Show looks' }).click();
+  await expect(teal).toBeVisible();
+  expect(asked.length).toBe(listed);
+  await teal.click();
+  await page.mouse.move(5, 880);
+  await page.screenshot({ path: 'test-results/github-looks.png' });
+  expect(errors).toEqual([]);
+});
+
+test('a diagram that names a look by its address fetches it when opened, and says so when it is not there', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await fakeGitHub(page);
+  const PLAIN = SMALL.replace('canvas 900x420\n', '');
+  await paste(page, `look "${GH_RAW}looks/teal.look"\n` + PLAIN);
+  await expect(page.locator('svg.canvas').locator('[fill="#ccfbf1"]').first()).toBeVisible();
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  // the look picker offers it as the diagram's look, under its own name
+  await sidebar(page, 'Look');
+  await expect(page.locator('.lookcard > span').last()).toHaveText('Teal · acme/brand · in use');
+  expect(errors).toEqual([]);
+});
+
+test('a diagram whose look address has no file says so', async ({ page }) => {
+  await fakeGitHub(page);
+  await paste(page, `look "${GH_RAW}looks/gone.look"\n` + SMALL.replace('canvas 900x420\n', ''));
+  await expect(page.locator('.banner')).toContainText(`There is no look file at ${GH_RAW}looks/gone.look.`);
+});
+
 test('the look picker: hover shows the diagram in a look, a click uses it at once, undo goes back', async ({ page }) => {
   const errors = noPageErrors(page);
   const PLAIN = SMALL.replace('canvas 900x420\n', '');
@@ -1112,8 +1193,8 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
-  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Engraved', 'Headline', 'Keys', 'Listing', 'Night', 'Offset', 'Reference', 'Shade', 'Sketch', 'Transit', 'Whiteboard']);
-  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(12); // every card shows this diagram
+  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Night', 'Reference', 'Shade', 'Sketch', 'Whiteboard']);
+  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(6); // every card shows this diagram
   await expect(page.getByRole('button', { name: 'Apply' })).toHaveCount(0);
   // hovering tries a look on the canvas without touching the source
   await card('Sketch').hover();
@@ -1136,7 +1217,7 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await page.locator('.problems').click();
   // hovering then Esc leaves the look in use as it was
   await sidebar(page, 'Look');
-  await card('Headline').hover();
+  await card('Night').hover();
   await page.keyboard.press('Escape');
   await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
   expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
@@ -1186,7 +1267,7 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
-  await expect(cards).toHaveCount(13);
+  await expect(cards).toHaveCount(7);
   await expect(page.locator('.lookcard > span').last()).toHaveText('This diagram’s look file · in use');
   await card('Sketch').click();
   await saved(page);
@@ -1196,7 +1277,7 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await expect(page.locator('.banner')).toHaveCount(0); // a bundled look needs no file, fonts or folder
   await expect(page.locator('.problems')).toHaveText('No problems');
   // the picker stayed open, and the look file is still there to go back to
-  await expect(cards).toHaveCount(13);
+  await expect(cards).toHaveCount(7);
   await card('This diagram').click();
   await expect.poll(async () => (await diskText(page, SEQ)).split('\n')[0]).toBe(repoText(SEQ).split('\n')[0]);
 });
