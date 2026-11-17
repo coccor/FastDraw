@@ -71,8 +71,9 @@ One statement per line. An indented line continues the statement above it. `//` 
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
                             // or a look that ships with FastDraw: look night | reference | shade | sketch | whiteboard
                             // or one on GitHub, by its address: look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look"
-                            //   (coccor/fastdraw-looks also has headline, keys, listing, offset and transit, and azure, aws and gcp:
-                            //   a cloud's colours, its own icons and its groups such as vpc and resource-group)
+                            //   (coccor/fastdraw-looks also has headline, keys, listing, offset and transit; azure, aws, gcp and kubernetes:
+                            //   a cloud's colours, its own icons and its groups such as vpc and resource-group; and print, blueprint,
+                            //   high-contrast and terminal)
                             // for a dark theme, keep the line and run  fastdraw render x.fdraw --dark  to get x-dark.png too
 canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
 

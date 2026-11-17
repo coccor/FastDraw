@@ -101,8 +101,11 @@ const lookFileFor = (file: string, p: string): string => (isWebLook(p) ? cachePa
 export async function fetchWebAssets(files: string[], offline = false, looks: string[] = []): Promise<string[]> {
   const get = diskFetch(offline), notes = new Set<string>();
   const webLooks = new Set(looks.filter(isWebLook));
+  // a look named in place of the diagrams' own (render --look x.look): its fonts and icons are what will be drawn
+  const over = looks.find((l) => isWebLook(l) || /\.look$/i.test(l));
+  const overPath = over && !isWebLook(over) ? resolve(over) : over;
   for (const file of files) {
-    if (/\.look$/i.test(file)) continue;
+    if (/\.look$/i.test(file) || over) continue;
     try { const p = lookPath(readFileSync(file, 'utf8')); if (p && isWebLook(p)) webLooks.add(p); } catch { /* unreadable: loadScene says so */ }
   }
   for (const url of webLooks) { const n = await fetchLookToCache(url, offline); if (n) notes.add(n); }
@@ -121,7 +124,7 @@ export async function fetchWebAssets(files: string[], offline = false, looks: st
     }
     let src: string;
     try { src = readFileSync(file, 'utf8'); } catch { continue; }
-    const p = lookPath(src), r = readLook(file, p);
+    const p = overPath ?? lookPath(src), r = readLook(file, p);
     if (r.text === null) continue;
     const lookFile = lookFileFor(file, p!), look = parseLook(r.text, p);
     if (!hasWebIcons(look) && !look.fontUrls.size) continue;
