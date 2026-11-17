@@ -88,6 +88,8 @@ async function fetchLookToCache(url: string, offline: boolean): Promise<string |
     return had ? `${hostOf(url)} could not be reached, so the copy of ${url} fetched before is used` : `the look at ${url} could not be fetched: ${(e as Error).message}`;
   }
 }
+/** The copy in the cache folder of a look named by its web address (filled by fetchWebAssets). */
+export const webLookFile = (url: string): string => cachePath(url);
 /** Where the look a diagram at `file` names by `p` is read from: the cached copy of a web look, or a path from the diagram's folder. */
 const lookFileFor = (file: string, p: string): string => (isWebLook(p) ? cachePath(p) : resolve(dirname(file), p));
 

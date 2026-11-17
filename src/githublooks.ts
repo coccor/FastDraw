@@ -88,7 +88,8 @@ const lookName = (path: string) => path.replace(/^.*\//, '').replace(/\.look$/i,
 /** A short name for a look named by its address: the file's name, and the repository when it is on GitHub. */
 export function webLookLabel(url: string): string {
   const m = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/[^/]+\/(?:.*\/)?([^/]+)\.look$/i.exec(url);
-  if (m) return `${cap(decodeURIComponent(m[3]!))} · ${decodeURIComponent(m[1]!)}/${decodeURIComponent(m[2]!)}`;
-  try { return cap(decodeURIComponent(new URL(url).pathname.replace(/^.*\//, '').replace(/\.look$/i, ''))); } catch { return url; }
+  if (m) return `${lookTitle(decodeURIComponent(m[3]!))} · ${decodeURIComponent(m[1]!)}/${decodeURIComponent(m[2]!)}`;
+  try { return lookTitle(decodeURIComponent(new URL(url).pathname.replace(/^.*\//, '').replace(/\.look$/i, ''))); } catch { return url; }
 }
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** A look's name from its file name: capitalised, and a short one (aws, gcp) in capitals, as such names are written. */
+export const lookTitle = (name: string): string => (/^[a-z]{1,3}$/i.test(name) ? name.toUpperCase() : name.charAt(0).toUpperCase() + name.slice(1));

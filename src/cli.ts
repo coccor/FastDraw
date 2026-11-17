@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, type LookRef } from './node.ts';
+import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, webLookFile, type LookRef } from './node.ts';
 import { buildScene, withLook, type Scene } from './scene.ts';
-import { defaultLook } from './look.ts';
+import { defaultLook, isWebLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
 import { isBuiltIn } from './iconStyle.ts';
 import { loadExtendedIcons } from './extendedIcons.ts';
@@ -121,6 +121,19 @@ const fetchWeb = async (files: string[]) => {
   const li = args.indexOf('--look'), over = li >= 0 && args[li + 1] ? [args[li + 1]] : [];
   for (const n of await fetchWebAssets(files, args.includes('--offline'), over)) console.log(`note: ${n}`);
 };
+
+// sizes, icons and preview-look take a look's https address too (one on GitHub, say): it is fetched, or with
+// --offline taken from the cache folder, and read from its copy there
+if (cmd === 'sizes' || cmd === 'icons' || cmd === 'preview-look') {
+  const i = args.findIndex((a, j) => isWebLook(a) && args[j - 1] !== '-o');
+  if (i >= 0) {
+    const url = args[i];
+    for (const n of await fetchWebAssets([], args.includes('--offline'), [url])) console.log(`note: ${n}`);
+    // the sheet is named after the look, not after its copy in the cache
+    if (cmd === 'preview-look' && !args.includes('-o')) args.push('-o', url.replace(/[?#].*$/, '').replace(/^.*\//, '').replace(/\.look$/i, '') + '-preview.png');
+    args[i] = webLookFile(url);
+  }
+}
 
 if (cmd === 'check') {
   const { files, many } = diagramFiles(positional(args));

@@ -8,7 +8,7 @@ import { BUNDLED_LOOK_NAMES, LOOKS_REPO, isWebLook, parseLook } from '../../src/
 import { buildScene } from '../../src/scene.ts';
 import { renderBody } from '../../src/render.ts';
 import { fetchWebLook } from '../../src/webassets.ts';
-import { parseGitHubPlace, listGitHubLooks, webLookLabel } from '../../src/githublooks.ts';
+import { parseGitHubPlace, listGitHubLooks, webLookLabel, lookTitle } from '../../src/githublooks.ts';
 import { setLook } from './ops.ts';
 
 // null is the built-in look (no look line); any other value is what the look line says.
@@ -95,10 +95,10 @@ function FromGitHub({ src, current, onPreview, onApply, onLoaded, onShown }: {
         <div className="lookgrid" onPointerLeave={() => onPreview(undefined)}>
           {ok.map((f) => (
             <button key={f.url} className={'lookcard' + (f.url === current ? ' on' : '')} aria-pressed={f.url === current}
-              aria-label={label(f.name) + (f.url === current ? ' (in use)' : '')} title={`look "${f.url}"`}
+              aria-label={lookTitle(f.name) + (f.url === current ? ' (in use)' : '')} title={`look "${f.url}"`}
               onPointerEnter={() => onPreview(f.url === current ? undefined : f.url)} onClick={() => { onPreview(undefined); if (f.url !== current) onApply(f.url); }}>
               <Thumb src={src} value={f.url} look={f.got!.look} />
-              <span>{label(f.name)}{f.url === current && <em> · in use</em>}</span>
+              <span>{lookTitle(f.name)}{f.url === current && <em> · in use</em>}</span>
             </button>
           ))}
         </div>

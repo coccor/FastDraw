@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGitHubPlace, listGitHubLooks, rawLookUrl, webLookLabel } from '../src/githublooks.ts';
+import { parseGitHubPlace, listGitHubLooks, rawLookUrl, webLookLabel, lookTitle } from '../src/githublooks.ts';
 import { isWebLook, movedLookUrl, MOVED_LOOKS, BUNDLED_LOOK_NAMES } from '../src/look.ts';
 
 test('what is typed in the editor names a place on GitHub', () => {
@@ -54,4 +54,7 @@ test('looks named by address, and the looks that moved out of FastDraw', () => {
   assert.equal(movedLookUrl('sketch'), undefined);
   assert.equal(webLookLabel('https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look'), 'Engraved · coccor/fastdraw-looks');
   assert.equal(webLookLabel('https://example.com/x/team-brand.look'), 'Team-brand');
+  assert.equal(webLookLabel('https://raw.githubusercontent.com/coccor/fastdraw-looks/main/aws.look'), 'AWS · coccor/fastdraw-looks');
+  assert.equal(lookTitle('gcp'), 'GCP');
+  assert.equal(lookTitle('azure'), 'Azure');
 });

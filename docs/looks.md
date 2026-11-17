@@ -12,8 +12,9 @@ npx fastdraw preview-look team.look
 A diagram picks its look with one line, `look "./team.look"`, or names one that ships with FastDraw:
 `look night`, `look reference`, `look shade`, `look sketch` or `look whiteboard`. A look in a public GitHub repository
 is named by its address, `look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look"`;
-[coccor/fastdraw-looks](https://github.com/coccor/fastdraw-looks) has six: Engraved, Headline, Keys, Listing, Offset and
-Transit. In the editor, the **Look** button previews the diagram in each one before you keep it, and **From GitHub**
+[coccor/fastdraw-looks](https://github.com/coccor/fastdraw-looks) has Azure, AWS and Google Cloud looks (each cloud's
+colours, icons and groups such as `vpc` and `resource-group`) and six styles of drawing: Engraved, Headline, Keys,
+Listing, Offset and Transit. In the editor, the **Look** button previews the diagram in each one before you keep it, and **From GitHub**
 lists the looks in any public repository. A look can also bring its own fonts and
 colour icons, best by their https:// address (`font sans "Inter" "https://..."`, `icondir "https://.../{name}.svg"`;
 the look guide lists recommended sources) or from folders next to it (`fontdir`, `icondir`), and name its dark version (`dark "./team-night.look"`)
