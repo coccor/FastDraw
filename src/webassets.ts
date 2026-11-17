@@ -37,19 +37,22 @@ export type Fetch = (url: string, maxBytes: number) => Promise<Uint8Array | null
 // must not be able to make the command line (or a browser) ask a router, a metadata service or a dev server for
 // anything. Only literal hosts are caught; names are trusted to be public.
 export function isPrivateHost(host: string): boolean {
-  const h = host.toLowerCase().replace(/^\[|\]$/g, '');
+  // "localhost." and "LOCALHOST" are localhost too
+  const h = host.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.+$/, '');
   if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal') || !h.includes('.') && !h.includes(':')) return true;
   const v4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(h);
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
     return a === 0 || a === 10 || a === 127 || a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168 || a === 100 && b >= 64 && b <= 127 || a >= 224;
   }
-  return h.includes(':') && (h === '::' || h === '::1' || /^f[cd]/.test(h) || /^fe[89ab]/.test(h) || h.startsWith('::ffff:'));
+  // IPv6: unspecified, loopback, unique local, link-local, and the forms that carry an IPv4 address (mapped,
+  // compatible, NAT64), which may point anywhere
+  return h.includes(':') && (h === '::' || h === '::1' || /^f[cd]/.test(h) || /^fe[89ab]/.test(h) || h.startsWith('::ffff:') || /^::[0-9a-f.:]*$/.test(h) || h.startsWith('64:ff9b:'));
 }
 
 /** An https address whose host is not on the machine or the local network. */
 export function isPublicWebUrl(url: string): boolean {
-  try { const u = new URL(url.replace(/[{}]/g, '_')); return u.protocol === 'https:' && !isPrivateHost(u.hostname); } catch { return false; }
+  try { const u = new URL(url); return u.protocol === 'https:' && !isPrivateHost(u.hostname); } catch { return false; }
 }
 
 export const webFetch: Fetch = async (url, maxBytes) => {
@@ -131,12 +134,12 @@ export function webFaces(look: Look): WebFace[] {
   const out: WebFace[] = [];
   for (const [family, tpl] of look.fontUrls) {
     if (!/^[\w .-]{1,64}$/.test(family)) continue;
-    // the browser loads these itself (@font-face, FontFace), so the address gets the same check webFetch makes
-    if (!isPublicWebUrl(tpl)) continue;
     const fill = (w: number, s: string) => tpl.replaceAll('{weight}', String(w)).replaceAll('{style}', s);
-    if (!tpl.includes('{weight}')) { out.push({ family, weight: 0, style: 'normal', url: fill(400, 'normal') }); continue; }
-    for (const w of WEIGHTS) out.push({ family, weight: w, style: 'normal', url: fill(w, 'normal') });
-    if (tpl.includes('{style}')) out.push({ family, weight: 400, style: 'italic', url: fill(400, 'italic') });
+    // the browser loads these itself (@font-face, FontFace), so each address, as filled in, gets the check webFetch makes
+    const add = (weight: number, style: 'normal' | 'italic') => { const url = fill(weight || 400, style); if (isPublicWebUrl(url)) out.push({ family, weight, style, url }); };
+    if (!tpl.includes('{weight}')) { add(0, 'normal'); continue; }
+    for (const w of WEIGHTS) add(w, 'normal');
+    if (tpl.includes('{style}')) add(400, 'italic');
   }
   return out;
 }

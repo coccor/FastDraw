@@ -122,7 +122,7 @@ test('font faces: 400 to 700 for {weight}, an italic for {style}, one file at ev
 });
 
 test('nothing on the machine or the local network is fetched, and nothing over the size limit is kept', async () => {
-  for (const h of ['localhost', 'api.localhost', 'printer.local', '127.0.0.1', '10.0.0.8', '172.16.0.1', '172.31.255.1', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '[::1]', 'fd12::1', 'fe80::1', '::ffff:127.0.0.1', 'intranet']) assert.ok(isPrivateHost(h), h);
+  for (const h of ['localhost', 'api.localhost', 'printer.local', '127.0.0.1', '10.0.0.8', '172.16.0.1', '172.31.255.1', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '[::1]', 'fd12::1', 'fe80::1', '::ffff:127.0.0.1', 'intranet', 'localhost.', 'LOCALHOST', 'printer.local.', '[::7f00:1]', '[::127.0.0.1]', '[64:ff9b::7f00:1]']) assert.ok(isPrivateHost(h), h);
   for (const h of ['cdn.jsdelivr.net', 'raw.githubusercontent.com', '8.8.8.8', '172.32.0.1', '[2606:4700::1]']) assert.ok(!isPrivateHost(h), h);
   await assert.rejects(webFetch('https://127.0.0.1/x.svg', 1000), /not a public https address/);
   await assert.rejects(webFetch('https://169.254.169.254/latest/meta-data', 1000), /not a public https address/);
@@ -143,4 +143,6 @@ test('nothing on the machine or the local network is fetched, and nothing over t
   assert.equal(hostOf('not a url'), 'an address in the look');
   // fonts are loaded by the browser itself, so a private address never becomes a face
   assert.deepEqual(webFaces(parseLook('font sans "A" "https://192.168.1.10/a-{weight}.ttf"\nfont mono "B" "https://localhost/b.ttf"\nfont serif "C" "https://f.example/c.ttf"')).map((f) => f.family), ['C']);
+  // a placeholder in the host is filled in before the check, so it cannot make a private address
+  assert.deepEqual(webFaces(parseLook('font sans "D" "https://1{weight}.0.0.1/d.ttf"\nfont mono "E" "https://cdn.example.com/e-{weight}.ttf"')).map((f) => `${f.family} ${f.weight}`), ['E 400', 'E 500', 'E 600', 'E 700']);
 });
