@@ -196,7 +196,7 @@ fn route_around_matches() {
 }
 
 #[test]
-fn sort_numbers_matches_v8() {
+fn sort_numbers_matches_ts() {
     let all = cases();
     let lists = all.get("sort").as_arr();
     assert!(lists.len() >= 100);

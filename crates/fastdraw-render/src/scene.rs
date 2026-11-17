@@ -2448,15 +2448,8 @@ impl<'s> Resolver<'s> {
                 };
                 order.push((r, idx));
             }
-            // (p, q) => p.r - q.r || p.idx - q.idx
-            js::sort_by(&mut order, |p, q| {
-                let d = p.0 - q.0;
-                if d == 0.0 || d.is_nan() {
-                    p.1 as f64 - q.1 as f64
-                } else {
-                    d
-                }
-            });
+            // (p, q) => byNumber(p.r, q.r) || p.idx - q.idx
+            order.sort_by(|p, q| js::by_number(p.0, q.0).then(p.1.cmp(&q.1)));
             for (n, &(_, idx)) in order.iter().enumerate() {
                 frac.insert(g[idx].e, (n + 1) as f64 / (g.len() + 1) as f64);
             }

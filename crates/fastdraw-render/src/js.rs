@@ -3,7 +3,21 @@
 
 use std::cmp::Ordering;
 
-pub use crate::timsort::{sort_by, sort_numbers};
+/// order.ts `byNumber`: a total order on numbers, NaN after every number and equal to another NaN. The renderer
+/// sorts with it rather than `(a, b) => a - b`, so a NaN in the list gives the same order in every Node version.
+pub fn by_number(a: f64, b: f64) -> Ordering {
+    match (a.is_nan(), b.is_nan()) {
+        (true, true) => Ordering::Equal,
+        (true, false) => Ordering::Greater,
+        (false, true) => Ordering::Less,
+        _ => a.partial_cmp(&b).unwrap_or(Ordering::Equal),
+    }
+}
+
+/// `v.sort(byNumber)`.
+pub fn sort_numbers(v: &mut [f64]) {
+    v.sort_by(|&a, &b| by_number(a, b));
+}
 
 /// `String(n)`.
 pub fn num_str(n: f64) -> String {

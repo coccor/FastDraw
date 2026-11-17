@@ -4,10 +4,11 @@
 //   sketch  canSketch, roughPath, sketchSvg, rectD, ellipseD
 //   router  segHits, crosses, simplify, routeAround
 //   scene   textWidth, measureText, parseEnd, captionBox, extent and scene.ts's private helpers (sides, routes, curves, labels, tables)
-//   sort    `(a, b) => a - b` on number lists with NaN (V8's TimSort; the Rust port reproduces it)
+//   sort    number lists with NaN, in the renderer's order (byNumber: NaN after every number)
 //   chart   niceStep
 //   render  renderSvg(buildScene(src)) for hand-written diagrams that reach what the examples do not
 // JSON has no NaN or Infinity: they are written as the strings "NaN", "Infinity" and "-Infinity".
+import { byNumber } from '../src/order.ts';
 import { canSketch, roughPath, sketchSvg, rectD, ellipseD } from '../src/sketch.ts';
 import { segHits, crosses, simplify, routeAround } from '../src/router.ts';
 import { textWidth, measureText, parseEnd, captionBox, extent, autoSides, sidePoint, route, curvePts, pointAlong, makeLabel, layoutTable } from '../src/scene.ts';
@@ -126,7 +127,7 @@ function sort() {
       lists.push(v);
     }
   }
-  return lists.map((v) => ({ v, out: [...v].sort((a, b) => a - b) }));
+  return lists.map((v) => ({ v, out: [...v].sort(byNumber) }));
 }
 
 // scene.ts, part 1: text measuring and the helpers buildScene leans on.
