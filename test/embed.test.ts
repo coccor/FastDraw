@@ -113,3 +113,18 @@ test('trimming an icon keeps every number where it was', async () => {
   assert.equal(trimSvg('<text>a</text> <text>b</text>'), '<text>a</text> <text>b</text>');
   assert.equal(trimSvg('<svg xmlns:inkscape="x" inkscape:version="1"><metadata><rdf:RDF/></metadata><path/></svg>'), '<svg><path/></svg>');
 });
+
+test('a font the look brings but nobody has falls back to the shipped font for its role', async () => {
+  const { parseLook, fontFamily } = await import('../src/look.ts');
+  const { familiesDrawn } = await import('../editor/src/embed/faces.ts');
+  const look = parseLook('font sans "Acme Grotesk"\nfont mono "Acme Code"\nfont serif "Acme Book"');
+  assert.equal(fontFamily(look, 'sans'), "'Acme Grotesk', 'Geist', sans-serif");
+  assert.equal(fontFamily(look, 'mono'), "'Acme Code', 'Geist Mono', monospace");
+  assert.equal(fontFamily(look, 'serif'), "'Acme Book', 'Newsreader', serif");
+  // a font that ships with FastDraw needs no stand-in
+  assert.equal(fontFamily(parseLook('font sans "Libre Franklin"\nfont mono "Geist Mono"'), 'sans'), "'Libre Franklin', sans-serif");
+  // what is drawn is the first family in each list that is there
+  const svg = `<text font-family="'Acme Grotesk', 'Geist', sans-serif">a</text><text font-family="'Newsreader', serif">b</text>`;
+  assert.deepEqual([...familiesDrawn(svg, (f) => ['Geist', 'Newsreader'].includes(f))], ['Geist', 'Newsreader']);
+  assert.deepEqual([...familiesDrawn(svg, (f) => ['Geist', 'Newsreader', 'Acme Grotesk'].includes(f))], ['Acme Grotesk', 'Newsreader']);
+});

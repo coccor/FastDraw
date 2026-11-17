@@ -54,7 +54,7 @@ On a light page a tint such as `amber/0.1` is the colour at that opacity over wh
 
 `font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`.
 
-Five families are bundled and always available: **Geist**, **Geist Mono** and **Newsreader** (the built-in look), **Libre Franklin** and **Instrument Serif**. To use any other font, put its files in a folder next to the look and name the folder:
+These families ship with FastDraw and are drawn the same everywhere (the editor, shared links, embedded diagrams, fastdraw.dev images and the command line), with no files of your own: **Geist**, **Geist Mono** and **Newsreader** (the built-in look), **Libre Franklin**, **Instrument Serif** and **Sketch Hand**. Prefer one of them. To use any other font, put its files in a folder next to the look and name the folder:
 
 ```
 fontdir "./fonts"            // relative to the look file
@@ -65,7 +65,7 @@ font sans "Fira Sans"
 - The family name is read from inside the files, so `font sans "..."` must match it exactly. `fastdraw sizes team.look` lists the fonts and flags any family it found no file for; `fastdraw check` warns about it too.
 - Commit the font folder with the look, and keep the font's licence file beside it. Use fonts whose licence allows redistribution (for example the SIL Open Font License).
 - Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`, `->`, `>=`, `!=` and `...` are drawn as the characters written, never as one joined glyph, so code, command-line flags and SQL read as typed.
-- In the browser editor the look's fonts load when a folder is open. A diagram opened as a single file, pasted, or restored from an exported image is drawn with fallback fonts until its folder is opened.
+- In the browser editor the look's fonts load when a folder is open. Where the files cannot be read (a diagram opened as a single file, pasted, opened from a shared link or restored from an exported image, an embedded diagram, a fastdraw.dev image), text is drawn in the shipped family for its role instead: Geist for sans, Geist Mono for mono, Newsreader for serif.
 
 ### Styles
 

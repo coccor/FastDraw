@@ -1,6 +1,8 @@
-// The fonts the built-in look and the bundled named looks use, bundled with the editor so the canvas
-// and exports match the command-line renderer.
+// The fonts that ship with FastDraw, bundled with the editor so the canvas and exports match the
+// command-line renderer. The browser fetches a file only when text on the page uses its face.
 import { fontMeta } from '../../src/fontmeta.ts';
+import { SHIPPED_FAMILIES } from '../../src/look.ts';
+import { familiesDrawn } from './embed/faces.ts';
 import franklin400 from '../../fonts/LibreFranklin-Regular.ttf?url';
 import franklin500 from '../../fonts/LibreFranklin-Medium.ttf?url';
 import franklin600 from '../../fonts/LibreFranklin-SemiBold.ttf?url';
@@ -61,13 +63,15 @@ export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
   }
   return families;
 }
-export const BUNDLED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif', 'Sketch Hand'];
+export const BUNDLED_FAMILIES = SHIPPED_FAMILIES;
 
 const bundled = new Map<string, Promise<string>>();
 // @font-face rules, as data URLs, for the families an SVG actually uses, so exports stand alone
 // without carrying every font.
 export async function fontCss(svg: string): Promise<string> {
-  const used = (family: string) => svg.includes(`'${family}'`);
+  // a shipped family that only stands in for a font the look brought itself is not needed
+  const drawn = familiesDrawn(svg, (f) => FACES.some((x) => x[0] === f) || lookFaces.some((x) => x.family === f));
+  const used = (family: string) => drawn.has(family);
   const rules = await Promise.all(FACES.filter((f) => used(f[0])).map((f) => {
     if (!bundled.has(f[3])) bundled.set(f[3], (async () => {
       const buf = new Uint8Array(await (await fetch(f[3])).arrayBuffer());

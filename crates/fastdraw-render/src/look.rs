@@ -753,6 +753,36 @@ pub fn is_color(look: &Look, v: &str) -> bool {
     base.starts_with('#') && hex_to_rgb(base).is_some()
 }
 
+/// The font families that ship with FastDraw (fonts/). A look may name any other; where its files cannot be
+/// read, text falls back to the shipped family for its role (`fallback_family`). Mirrors look.ts.
+pub const SHIPPED_FAMILIES: [&str; 6] = [
+    "Geist",
+    "Geist Mono",
+    "Newsreader",
+    "Libre Franklin",
+    "Instrument Serif",
+    "Sketch Hand",
+];
+const SYSTEM_FAMILIES: [&str; 4] = ["sans-serif", "serif", "monospace", "helvetica"];
+
+pub fn is_shipped_family(fam: &str) -> bool {
+    SHIPPED_FAMILIES
+        .iter()
+        .chain(SYSTEM_FAMILIES.iter())
+        .any(|f| f.eq_ignore_ascii_case(fam))
+}
+
+/// The shipped family that stands in for `fam` (used for `role`) when its files are not there.
+pub fn fallback_family(role: &str, fam: &str) -> &'static str {
+    if role == "mono" || fam.to_ascii_lowercase().contains("mono") {
+        "Geist Mono"
+    } else if role == "serif" {
+        "Newsreader"
+    } else {
+        "Geist"
+    }
+}
+
 pub fn font_family(look: &Look, v: Option<&str>) -> String {
     let name = v.unwrap_or("sans");
     let fam = look.fonts.get(name).map_or(name, String::as_str);
@@ -761,7 +791,11 @@ pub fn font_family(look: &Look, v: Option<&str>) -> String {
         "serif" => "serif",
         _ => "sans-serif",
     };
-    format!("'{fam}', {generic}")
+    if is_shipped_family(fam) {
+        format!("'{fam}', {generic}")
+    } else {
+        format!("'{fam}', '{}', {generic}", fallback_family(name, fam))
+    }
 }
 
 /// The looks that ship inside FastDraw, by the name a diagram gives them: `look sketch`. A name is a
@@ -897,7 +931,8 @@ mod tests {
         assert!(!is_color(&d, "#abcd") && !is_color(&d, "zzz"));
         assert_eq!(font_family(&d, Some("mono")), "'Geist Mono', monospace");
         assert_eq!(font_family(&d, None), "'Geist', sans-serif");
-        assert_eq!(font_family(&d, Some("Foo")), "'Foo', sans-serif");
+        assert_eq!(font_family(&d, Some("Foo")), "'Foo', 'Geist', sans-serif");
+        assert_eq!(font_family(&d, Some("Geist")), "'Geist', sans-serif");
     }
 
     #[test]

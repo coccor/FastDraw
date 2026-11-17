@@ -5,7 +5,7 @@ import { renderSvg } from '../../../src/render.ts';
 import { parseLook, color, isBundledLook, bundledLook, defaultLook } from '../../../src/look.ts';
 import { loadExtendedIcons, extendedIconsLoaded } from '../../../src/extendedIcons.ts';
 import { darkCounterpart } from './theme.ts';
-import { FACES } from './faces.ts';
+import { FACES, familiesDrawn } from './faces.ts';
 
 /** A diagram as fetched: its text and, when it names a look file, that file. */
 export type Source = { url: string; text: string; look: { url: string; path: string; text: string } | null };
@@ -59,7 +59,8 @@ const loaded = new Map<string, Promise<unknown>>();
 // Adds the faces of every family the SVG names to the page (document.fonts reaches into shadow roots) and
 // waits for them. A font that cannot be fetched is reported and the diagram is drawn in the fallback.
 async function loadFonts(svg: string, base: string): Promise<void> {
-  const want = FACES.filter((f) => svg.includes(`'${f[0]}'`));
+  const drawn = familiesDrawn(svg, (f) => FACES.some((x) => x[0] === f));
+  const want = FACES.filter((f) => drawn.has(f[0]));
   await Promise.all(want.map((f) => {
     const url = new URL(f[3], base).href;
     if (!loaded.has(url)) {

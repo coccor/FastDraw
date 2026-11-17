@@ -1,4 +1,4 @@
-// The fonts the bundled looks use, by the file names they have in fonts/ next to embed.js.
+// The fonts that ship with FastDraw, by the file names they have in fonts/ next to embed.js.
 export const FACES: [string, string, string, string][] = [
   ['Geist', '400', 'normal', 'Geist-Regular.ttf'], ['Geist', '500', 'normal', 'Geist-Medium.ttf'], ['Geist', '600', 'normal', 'Geist-SemiBold.ttf'], ['Geist', '700', 'normal', 'Geist-Bold.ttf'],
   ['Geist Mono', '400', 'normal', 'GeistMono-Regular.ttf'], ['Geist Mono', '500', 'normal', 'GeistMono-Medium.ttf'],
@@ -10,3 +10,13 @@ export const FACES: [string, string, string, string][] = [
   ['Sketch Hand', '400', 'normal', 'SketchHand-Regular.ttf'],
 ];
 export const FONT_FILES = FACES.map((f) => f[3]);
+
+/** The family each font-family list in an SVG is drawn in: the first one in the list that `have` says is there. */
+export function familiesDrawn(svg: string, have: (family: string) => boolean): Set<string> {
+  const out = new Set<string>();
+  for (const [, list] of svg.matchAll(/font-family="([^"]*)"/g)) {
+    const fam = list!.split(',').map((f) => f.trim().replace(/^'|'$/g, '')).find(have);
+    if (fam) out.add(fam);
+  }
+  return out;
+}

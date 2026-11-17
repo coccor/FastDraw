@@ -15,7 +15,7 @@ import { parseLook, isBundledLook, bundledLook, defaultLook } from '../src/look.
 import { loadExtendedIcons, extendedIconsLoaded } from '../src/extendedIcons.ts';
 import { darkCounterpart } from '../editor/src/embed/theme.ts';
 import { decodeShared, editorLink, type Shared } from '../editor/src/embed/share.ts';
-import { FACES } from '../editor/src/embed/faces.ts';
+import { FACES, familiesDrawn } from '../editor/src/embed/faces.ts';
 import { subsetFont } from '../src/subset.ts';
 import { withIconImages } from '../src/iconfiles.ts';
 
@@ -147,7 +147,8 @@ async function draw(s: Source, dark: boolean, deps: Deps): Promise<string> {
 export async function fontCss(svg: string, deps: Pick<Deps, 'font'>): Promise<string> {
   const want = new Set<string>();
   for (const [tag] of svg.matchAll(/<(?:text|tspan)\b[^>]*>/g)) {
-    const fam = /font-family="'([^']+)'/.exec(tag)?.[1];
+    // the first family in the list that ships with FastDraw: a look's own font is not here, its stand-in is
+    const fam = [...familiesDrawn(tag, (f) => FACES.some((x) => x[0] === f))][0];
     if (!fam) continue;
     const faces = FACES.filter((f) => f[0] === fam);
     if (!faces.length) continue;

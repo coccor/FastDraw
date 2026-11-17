@@ -91,3 +91,8 @@ icon with gradients. Past 64 KB the editor says so, because chat and mail apps m
 exported image instead (**Export image…**): it carries the same things and opens in the editor when dropped
 on it. An icon that is missing from a link (an older link, or one cut short) is drawn as the closest
 built-in icon, and the diagram's notes name it.
+
+Fonts do not travel in the link: they would make it hundreds of KB long. A look that uses a font that ships
+with FastDraw (Geist, Newsreader and the others listed in the look guide) looks the
+same wherever it is opened. Text in any other font is drawn in Geist, Geist Mono or Newsreader, by its role,
+until the folder with the font files is opened.

@@ -129,3 +129,13 @@ test('icon files carried in the address are drawn, and passed on by ?edit', asyn
   const back = await decodeShared(sharedInHash(new URL(r!.headers.get('Location')!).hash)!);
   assert.deepEqual(Object.keys(back?.icons ?? {}), ['team-thing']);
 });
+
+test('a look that names a shipped font gets it; one that names another font gets the stand-in', async () => {
+  const draw = async (font: string) => text(await get(`/s/${await encodeShared({ name: 'x.fdraw', text: 'look "./t.look"\na: rect "Hello" at 20,20 160x60', look: { path: './t.look', text: `font sans "${font}"` } })}`, deps({})));
+  const franklin = await draw('Libre Franklin');
+  assert.match(franklin, /@font-face\{font-family:'Libre Franklin'/);
+  assert.doesNotMatch(franklin, /font-family:'Geist'/);
+  const other = await draw('Acme Grotesk');
+  assert.match(other, /@font-face\{font-family:'Geist'/);
+  assert.match(other, /font-family="'Acme Grotesk', 'Geist', sans-serif"/);
+});

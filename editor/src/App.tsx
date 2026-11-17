@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { parseLook, color, isBundledLook } from '../../src/look.ts';
+import { parseLook, color, isBundledLook, fallbackFamily } from '../../src/look.ts';
 import { buildScene, lookPath, captionBox, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
@@ -244,9 +244,10 @@ export function App() {
       if (stale) return;
       const have = [...BUNDLED_FAMILIES, ...setLookFonts(found)].map((f) => f.toLowerCase());
       const missing = look ? [...new Set(look.fonts.values())].filter((f) => !have.includes(f.toLowerCase()) && !['helvetica', 'serif', 'monospace', 'sans-serif'].includes(f.toLowerCase())) : [];
+      const instead = look ? [...new Set([...look.fonts].filter(([, f]) => missing.includes(f)).map(([role, f]) => fallbackFamily(role, f)))].join(' and ') : '';
       setFontNote(!missing.length ? '' : s.folder
-        ? `No font file found for ${missing.join(', ')}; text is drawn in a fallback font.`
-        : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in a fallback font.`);
+        ? `No font file found for ${missing.join(', ')}; text is drawn in ${instead} instead.`
+        : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in ${instead} instead.`);
     })();
     return () => { stale = true; };
   }, [look, name, docId]);

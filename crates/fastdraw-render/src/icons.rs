@@ -268,7 +268,7 @@ mod tests {
         assert!(!icon_matches("mail", "kubernetes"));
         assert_eq!(
             icon_words().get("mail").map(String::as_str),
-            Some("email inbox smtp")
+            Some("email inbox smtp letter envelope")
         );
         assert!(icon_words().len() >= 1587);
     }

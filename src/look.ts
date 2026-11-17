@@ -248,11 +248,21 @@ export function isColor(look: Look, v: string): boolean {
   return base.startsWith('#') && hexToRgb(base) !== null;
 }
 
+// The font families that ship with FastDraw (fonts/), drawn the same everywhere: the editor, embedded
+// diagrams, fastdraw.dev images and the command line. A look may name any other family and bring its files
+// with `fontdir`; where those files cannot be read (a shared link, a docs page, fastdraw.dev), the text falls
+// back to the shipped family for its role, not to whatever the browser has.
+export const SHIPPED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif', 'Sketch Hand'];
+const SYSTEM_FAMILIES = ['sans-serif', 'serif', 'monospace', 'helvetica'];
+export const isShippedFamily = (fam: string) => [...SHIPPED_FAMILIES, ...SYSTEM_FAMILIES].some((f) => f.toLowerCase() === fam.toLowerCase());
+/** The shipped family that stands in for `fam` (used for `role`) when its files are not there. */
+export const fallbackFamily = (role: string, fam: string) => (role === 'mono' || /mono/i.test(fam) ? 'Geist Mono' : role === 'serif' ? 'Newsreader' : 'Geist');
+
 export function fontFamily(look: Look, v: string | undefined): string {
   const name = v ?? 'sans';
   const fam = look.fonts.get(name) ?? name;
   const generic = name === 'mono' ? 'monospace' : name === 'serif' ? 'serif' : 'sans-serif';
-  return `'${fam}', ${generic}`;
+  return isShippedFamily(fam) ? `'${fam}', ${generic}` : `'${fam}', '${fallbackFamily(name, fam)}', ${generic}`;
 }
 
 let cachedDefault: Look | undefined;
