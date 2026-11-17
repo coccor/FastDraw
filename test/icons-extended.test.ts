@@ -59,3 +59,23 @@ test('Phosphor search words find icons by meaning', () => {
   assert.ok(!iconMatches('acorn', 'zzqx'));
   for (const n of Object.keys(ICON_WORDS)) assert.ok(ICONS[n], `search words for a missing icon: ${n}`);
 });
+
+test('an icon file that did not come along is drawn as the closest built-in icon, with a warning', async () => {
+  const { parseLook } = await import('../src/look.ts');
+  const { withIconImages } = await import('../src/iconfiles.ts');
+  const src = 'a: rect "VM" at 20,20 160x60 icon=virtual-machine\nb: rect "Pic" at 20,120 160x60 icon=pic\n';
+  const pic = 'data:image/svg+xml;base64,' + Buffer.from('<svg viewBox="0 0 1 1"/>').toString('base64');
+  // a shared link that carries "pic" but not "virtual-machine"
+  const carried = withIconImages(parseLook('icondir "./icons"'), [], { pic });
+  const sc = buildScene(src, carried);
+  assert.deepEqual(sc.issues.filter((i) => i.level === 'error'), []);
+  assert.ok(sc.issues.some((i) => i.level === 'warn' && i.msg.includes('icon virtual-machine') && i.msg.includes('built-in icon vm')));
+  const svg = renderSvg(sc);
+  assert.match(svg, /<image [^>]*href="data:image\/svg\+xml/);
+  assert.equal((svg.match(/<image /g) ?? []).length, 1);
+  // where the folder itself was read, a missing icon is a mistake and stays an error
+  const read = withIconImages(parseLook('icondir "./icons"'), [], { pic }, true);
+  assert.ok(buildScene(src, read).issues.some((i) => i.level === 'error' && i.msg.includes('no icon called "virtual-machine"')));
+  // and a look with no icon folder gets no stand-ins
+  assert.ok(buildScene(src, parseLook('color ink #000000')).issues.some((i) => i.level === 'error'));
+});

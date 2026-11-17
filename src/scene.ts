@@ -3,6 +3,7 @@ import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
 import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
 import { iconMatches } from './icons.ts';
+import { iconStandIn } from './iconfiles.ts';
 import { isBuiltIn } from './iconStyle.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
@@ -489,7 +490,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       id: register('shape', 's'), line: st.line, style: styleName, p, shape: p.shape ?? 'rect', text,
       back: p.layer === 'back', x: at?.x ?? 0, y: at?.y ?? 0, w: size.w, h: size.h,
     };
-    if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon) && !look.images.has(p.icon)) {
+    const standIn = iconStandIn(look, p.icon);
+    if (standIn) warn(st.line, `icon ${p.icon} is a file in the look's icon folder (${look.iconDirs.join(', ')}), which did not come along here, so the built-in icon ${standIn} is drawn in its place`);
+    else if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon) && !look.images.has(p.icon)) {
       const all = [...look.images.keys(), ...look.icons.keys()];
       // name the closest ones first: a team's folder can hold hundreds
       const near = all.filter((n) => iconMatches(n, p.icon) || (n.length > 2 && p.icon.includes(n))), list = [...new Set([...near, ...all])].slice(0, 40);

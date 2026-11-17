@@ -43,7 +43,7 @@ function iconFiles(lookFile: string, look: Look): { name: string; bytes: Uint8Ar
   }
   return out;
 }
-const withIcons = (lookFile: string, look: Look): Look => (look.iconDirs.length ? withIconImages(look, iconFiles(lookFile, look)) : look);
+const withIcons = (lookFile: string, look: Look): Look => (look.iconDirs.length ? withIconImages(look, iconFiles(lookFile, look), {}, true) : look);
 
 export function loadLook(path: string): Look {
   try { return withIcons(path, parseLook(readFileSync(path, 'utf8'), path)); }

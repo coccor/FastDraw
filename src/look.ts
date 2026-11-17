@@ -16,6 +16,9 @@ export type Look = {
   icons: Map<string, string[]>; // name -> SVG path data, drawn as outlines in a 24x24 box
   iconDirs: string[]; // folders of SVG icon files, relative to the look file
   images: Map<string, string>; // name -> data URI of an icon file, filled in by whoever can read the folders
+  // true once the icon folders themselves were read; until then an icon missing from images may just not have
+  // come along (a shared link, a page that cannot reach the folder) and a built-in one is drawn in its place
+  iconFolderRead: boolean;
   guidance: string[];
   dark?: string; // the look that draws the same diagrams on a dark page: a bundled look's name, or a .look path relative to this look's file
   issues: Issue[];
@@ -68,6 +71,7 @@ export function emptyLook(): Look {
     icons: new Map(Object.entries(ICONS)),
     iconDirs: [],
     images: new Map(),
+    iconFolderRead: false,
     guidance: [],
     issues: [],
   };

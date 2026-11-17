@@ -17,7 +17,7 @@ import type { LookChoice, FileLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
-  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Lock, LockOpen,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import { IconDialog, IconGlyph } from './IconPicker.tsx';
@@ -34,7 +34,7 @@ import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
 import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
-import { decodeShared, sharedInHash } from './embed/share.ts';
+import { decodeShared, sharedInHash, editorLink, LONG_LINK } from './embed/share.ts';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -574,7 +574,7 @@ export function App() {
     decodeShared(data).then((d) => {
       if (!d) { setStatus('the link to this diagram is incomplete, so it could not be opened'); return; }
       io.current = { fileMod: 0, lookMod: 0, written: '' };
-      load(d.text, d.look?.text ?? null, d.name.replace(/\.fdraw$/i, '') || 'diagram');
+      load(d.text, d.look?.text ?? null, d.name.replace(/\.fdraw$/i, '') || 'diagram', { carried: d.icons ?? {} });
     });
   }, [ready, load]);
 
@@ -1124,6 +1124,24 @@ export function App() {
     return { v: 1 as const, diagram: cur, look: lookSrc, ...(Object.keys(icons).length ? { icons } : {}) };
   };
 
+  // A link that opens this diagram in the editor, with its look file and the icon files it uses inside it.
+  // Nothing is uploaded: everything is after the #, which the browser never sends anywhere.
+  const copyLink = async () => {
+    try {
+      const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter(Boolean));
+      const look = fileLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
+      const link = await editorLink(location.origin + location.pathname, { name: baseName + '.fdraw', text: cur, ...(look ? { look } : {}), ...(Object.keys(icons).length ? { icons } : {}) });
+      await navigator.clipboard.writeText(link);
+      const n = Object.keys(icons).length, kb = Math.ceil(link.length / 1000);
+      const what = n ? ` with ${n} icon file${n === 1 ? '' : 's'} inside` : '';
+      setStatus(link.length > LONG_LINK
+        ? `copied a link${what}, but it is ${kb} KB long and chat or mail apps may cut it short; Export image… makes a file that opens here too`
+        : `copied a link to this diagram${what} (${kb} KB); it holds the whole diagram, so nothing is uploaded`);
+    } catch {
+      setStatus('the link could not be copied to the clipboard');
+    }
+  };
+
   // ---- render -------------------------------------------------------------
   const closePopups = () => { setMenuOpen(false); setLookPreview(undefined); setCtx(null); side.dismiss(); };
   const applyLook = (v: LookChoice) => {
@@ -1273,6 +1291,7 @@ export function App() {
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export image…<kbd>Ctrl ⇧ E</kbd></button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
+            <button role="menuitem" onClick={() => { closePopups(); copyLink(); }}><Link2 size={16} />Copy link</button>
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
             <hr />

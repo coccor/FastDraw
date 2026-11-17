@@ -74,3 +74,42 @@ test('drawing on a dark page swaps the look line, or adds one', () => {
   const sc = buildScene(withLook(example, 'night'), null);
   assert.equal(sc.issues.filter((i) => i.level === 'error').length, 0);
 });
+
+const LOOK = { path: './team.look', text: 'icondir "./icons"' };
+const uri = (svg: string) => 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+const svgOf = (u: string) => Buffer.from(u.slice(u.indexOf(',') + 1), 'base64').toString();
+
+test('icon files the diagram uses travel in the link, trimmed, and come back as data URIs', async () => {
+  const drawn = '<?xml version="1.0"?>\n<!-- made by hand -->\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">\n  <path d="M1.23456 7.891011L12 2"/>\n</svg>\n';
+  const d = { name: 'a.fdraw', text: 'look "./team.look"\nvm: node "VM" icon=server-rack', look: LOOK, icons: { 'server-rack': uri(drawn) } };
+  const back = await decodeShared(await encodeShared(d));
+  assert.ok(back?.icons);
+  assert.deepEqual(Object.keys(back.icons), ['server-rack']);
+  assert.equal(svgOf(back.icons['server-rack']!), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1.23 7.89L12 2"/></svg>');
+});
+
+test('icons travel as SVG text, not base64, so the link stays short', async () => {
+  const icons: Record<string, string> = {};
+  for (let i = 0; i < 8; i++) icons[`i${i}`] = uri(`<svg viewBox="0 0 18 18"><defs><linearGradient id="g${i}"><stop offset="0" stop-color="#0078d4"/><stop offset="1" stop-color="#5ea0ef"/></linearGradient></defs><path fill="url(#g${i})" d="M${i} 1h16v${i + 4}H1z"/></svg>`);
+  const withIcons = await encodeShared({ name: 'a.fdraw', text: 'x', look: LOOK, icons });
+  const asB64 = Buffer.from(JSON.stringify({ name: 'a.fdraw', text: 'x', look: LOOK, icons })).toString('base64url');
+  assert.ok(withIcons.length * 4 < asB64.length, `${withIcons.length} vs ${asB64.length}`);
+});
+
+test('a link only gives back icons that are SVG, under a plain name, with a look file', async () => {
+  const good = uri('<svg viewBox="0 0 1 1"/>');
+  const d = await decodeShared(await encodeShared({ name: 'a.fdraw', text: 'x', look: LOOK, icons: { ok: good, 'Bad Name': good, notsvg: uri('hello') } }));
+  assert.deepEqual(Object.keys(d?.icons ?? {}), ['ok']);
+  const noLook = await decodeShared(await encodeShared({ name: 'a.fdraw', text: 'x', icons: { ok: good } }));
+  assert.equal(noLook?.icons, undefined);
+});
+
+test('trimming an icon keeps every number where it was', async () => {
+  const { trimSvg } = await import('../editor/src/embed/share.ts');
+  assert.equal(trimSvg('M1.23456.78912L.99999 2.5'), 'M1.23.78912L1 2.5'); // the point stays between two numbers
+  assert.equal(trimSvg('M1.999.5'), 'M2.00.5');
+  assert.equal(trimSvg('x="10.12345" y="-3.14159"'), 'x="10.12" y="-3.14"');
+  assert.equal(trimSvg('1.23456e-5'), '1.23456e-5');
+  assert.equal(trimSvg('<text>a</text> <text>b</text>'), '<text>a</text> <text>b</text>');
+  assert.equal(trimSvg('<svg xmlns:inkscape="x" inkscape:version="1"><metadata><rdf:RDF/></metadata><path/></svg>'), '<svg><path/></svg>');
+});

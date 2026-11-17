@@ -69,6 +69,25 @@ the image after a few minutes, once GitHub's and fastdraw.dev's caches expire.
 - **Editing.** The same address with `?edit` opens the diagram in the editor, so a linked image opens
   there on click: `[![How a run works](URL)](URL?edit)`.
 - **Private repositories.** fastdraw.dev cannot read them. Use `/s/<data>` instead, where `<data>` is the
-  part after `#fdraw=` in an editor share link: the diagram travels in the address itself.
+  part after `#fdraw=` in a link from the editor's **Copy link**: the diagram travels in the address itself.
+  Keep such an address under about 8 KB, which GitHub's image proxy and most hosts accept. Colour icons
+  from the look's icon folder make it longer; leave them out by copying the link where the folder is not
+  open, and built-in icons are drawn in their place.
+- **Icon folders.** fastdraw.dev cannot read a look's `icondir` folder, so an icon from it is drawn as the
+  closest built-in icon (`virtual-machine` as `vm`), unless the icon travels in a `/s/` address.
 - **When it cannot draw.** A missing file, a look outside the repository or a diagram with errors comes
   back as an image that says what is wrong.
+
+## As a link
+
+**Copy link** in the editor's menu copies a link that opens the diagram in the editor at fastdraw.dev:
+`https://fastdraw.dev/edit/#fdraw=<data>`. The diagram, its look file and the icon files it uses from the
+look's icon folder are inside the link, compressed. Everything sits after the `#`, which browsers never
+send to a server, so nothing is uploaded or kept anywhere. Whoever opens the link gets their own copy in
+their browser.
+
+Icon files make the link longer: a few hundred characters for a simple icon, a few thousand for a vendor
+icon with gradients. Past 64 KB the editor says so, because chat and mail apps may cut long links. Share an
+exported image instead (**Export image…**): it carries the same things and opens in the editor when dropped
+on it. An icon that is missing from a link (an older link, or one cut short) is drawn as the closest
+built-in icon, and the diagram's notes name it.

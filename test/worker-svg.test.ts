@@ -117,3 +117,15 @@ test('other methods are refused', async () => {
   const r = await handle(new Request('https://fastdraw.dev/gh/acme/app/main/a.fdraw', { method: 'POST' }), deps({}));
   assert.equal(r?.status, 405);
 });
+
+test('icon files carried in the address are drawn, and passed on by ?edit', async () => {
+  const icon = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>').toString('base64');
+  const shared = { name: 'x.fdraw', text: 'look "./t.look"\na: rect "A" at 20,20 160x60 icon=team-thing\nb: rect "B" at 20,120 160x60 icon=virtual-machine', look: { path: './t.look', text: 'icondir "./icons"' }, icons: { 'team-thing': icon } };
+  const data = await encodeShared(shared);
+  const svg = await text(await get(`/s/${data}`, deps({})));
+  assert.doesNotMatch(svg, /could not draw/);
+  assert.equal((svg.match(/<image /g) ?? []).length, 1); // the one carried; virtual-machine gets a built-in stand-in
+  const r = await get(`/s/${data}?edit`, deps({}));
+  const back = await decodeShared(sharedInHash(new URL(r!.headers.get('Location')!).hash)!);
+  assert.deepEqual(Object.keys(back?.icons ?? {}), ['team-thing']);
+});
