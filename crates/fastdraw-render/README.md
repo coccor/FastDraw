@@ -88,7 +88,9 @@ Rust change in the same pull request.
   decodes the crate's share links with FastDraw's own decoder, and `-- --coverage` lists what the TypeScript
   reads that no case uses (allowed only when `tests/coverage/UNCOVERED.md` explains it).
 - The crate's version is the npm package's: `npm version` updates `Cargo.toml` too, and the release workflow
-  publishes both from the same tag.
+  checks the crate before it publishes the npm package. The crate itself is not on crates.io for now; depend
+  on it from the repository at the commit of the matching release, e.g.
+  `fastdraw-render = { git = "https://github.com/coccor/fastdraw", rev = "<commit>" }`.
 
 ## Known differences
 

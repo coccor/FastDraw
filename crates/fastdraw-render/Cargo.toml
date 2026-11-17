@@ -11,6 +11,8 @@ readme = "README.md"
 keywords = ["diagram", "svg", "fastdraw", "renderer", "flowchart"]
 categories = ["visualization", "graphics", "rendering"]
 include = ["src/**", "data/**", "README.md", "LICENSE", "licenses/**"]
+# Not on crates.io for now: FastPad depends on it from the repository at a fixed commit.
+publish = false
 
 [dependencies]
 miniz_oxide = "0.9.1"

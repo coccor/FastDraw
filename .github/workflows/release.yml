@@ -43,7 +43,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       # The Rust crate (crates/fastdraw-render), the same version as the npm package, is checked as the ci.yml rust
-      # job checks it before anything is published, so a failing check stops both the npm and the crates.io publish.
+      # job checks it before npm publish, so a release never ships a TypeScript renderer the crate does not match.
+      # The crate is not published to crates.io (Cargo.toml has publish = false); FastPad uses it from this
+      # repository at a fixed commit. To publish it: remove publish = false, add a CARGO_REGISTRY_TOKEN secret to
+      # the `release` environment, and add `cargo publish -p fastdraw-render --locked` (with that secret as env)
+      # after npm publish, plus a token check and a `cargo publish --dry-run` before it.
       - name: Install Rust
         run: |
           rustup toolchain install stable --profile minimal
@@ -67,19 +71,7 @@ jobs:
         env:
           FASTDRAW_PARITY_REQUIRED: '1'
       - run: cargo package -p fastdraw-render --locked
-      # Nothing is published unless the crate can be too: the crates.io token is there and the crate passes a dry run.
-      - name: The crates.io token is set
-        run: test -n "$CARGO_REGISTRY_TOKEN" || { echo "::error::CARGO_REGISTRY_TOKEN missing"; exit 1; }
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      - run: cargo publish --dry-run -p fastdraw-render --locked
       - run: npm publish --provenance --access public
-      # CARGO_REGISTRY_TOKEN must be created as a secret in the `release` environment (Settings > Environments >
-      # release) before the next tag is pushed: a crates.io API token with the publish-new and publish-update
-      # scopes for fastdraw-render.
-      - run: cargo publish -p fastdraw-render --locked
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
