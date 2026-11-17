@@ -788,6 +788,12 @@ export function renderBody(sc: Scene, background = true): string {
   }
   // The page dressing below is drawn as pattern fills, one element each: a diagram file is untrusted and can be
   // any size, so nothing here may grow with the extent of the picture.
+  if (background && cv.grid && cv.grid !== 'none') {
+    // grid=colour: squared paper, a fine line every gridgap, lined up with the diagram's own coordinates
+    const gap = Math.max(4, num(cv.gridgap, 24));
+    out.push(`<defs><pattern id="fd-grid" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><path d="M ${gap},0 H 0 V ${gap}" fill="none" stroke="${col(look, cv.grid)}" stroke-width="1"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-grid)"/>`);
+  }
   if (background && cv.bars && cv.bars !== 'none') {
     // bars=colour: the page as listing paper, a band of colour every other bargap
     const gap = Math.max(8, num(cv.bargap, 32));

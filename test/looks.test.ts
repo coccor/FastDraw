@@ -86,6 +86,17 @@ test('the style looks draw the thing each is named for', () => {
   for (const n of ['offset', 'listing']) assert.doesNotMatch(renderSvg(scene(n, SAMPLE), undefined, { background: false }), /fd-page|fd-grain/);
 });
 
+test('canvas grid= rules the page in squares: one pattern, whatever the size, and none on a transparent export', () => {
+  const lk = parseLook('canvas paper=#1560bd grid=#ffffff/0.18 gridgap=26\nstyle node shape=rect size=144x64 fill=paper stroke=#ffffff\n');
+  const grid = (body: string, background = true) => renderSvg(buildScene(body, lk), undefined, { background });
+  assert.ok(grid('a: node "A" at 40,40\n').includes('<pattern id="fd-grid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26,0 H 0 V 26" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/></pattern>'));
+  const size = (y: number) => grid(`a: node "A" at 40,40\nb: node "B" at 40,${y}\n`).split('<').length;
+  assert.equal(size(1_000_000), size(400));
+  assert.doesNotMatch(grid('a: node "A" at 40,40\n', false), /fd-grid/);
+  // a gap too small to see is held at 4
+  assert.match(renderSvg(buildScene('a: node "A" at 40,40\n', parseLook('canvas grid=#000000 gridgap=1\n'))), /id="fd-grid" width="4"/);
+});
+
 test('the style looks keep the built-in look\'s type sizes, so a diagram laid out for it still fits', () => {
   const body = 'a: node "Publish Dashboard" sub="merge · deploy · verify" at 40,40 144x64\nb: node "B" at 40,200 144x64\na -> b "restrict" lpos=170,171\n';
   const warns = (look: string) => check(look ? scene(look, body) : buildScene(body, null)).filter((i) => i.level === 'warn').map((i) => i.msg);

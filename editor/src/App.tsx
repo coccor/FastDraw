@@ -101,7 +101,7 @@ const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
 
 // The page's colour and dot grid. Choices are written to the diagram's canvas line (paper=, dots=),
 // so they override the look for this diagram only; picking the look's own colour drops the override.
-// The page dressing a look asks for (dots, listing bars, sprocket feed), stretched over the whole visible view
+// The page dressing a look asks for (dots, a grid, listing bars, sprocket feed), stretched over the whole visible view
 // instead of the diagram's box. The patterns themselves come from renderBody's <defs>, so they match the export.
 function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: number } }) {
   const cv = sc.look.canvas, on = (v: string | undefined) => !!v && v !== 'none';
@@ -111,6 +111,7 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
   return (
     <>
       {on(cv.dots) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-dots)" pointerEvents="none" />}
+      {on(cv.grid) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-grid)" pointerEvents="none" />}
       {on(cv.bars) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-bars)" pointerEvents="none" />}
       {on(cv.feed) && <>
         <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" pointerEvents="none" />

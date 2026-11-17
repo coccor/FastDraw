@@ -2641,6 +2641,15 @@ pub fn render_body(sc: &Scene, background: bool) -> String {
     }
     // The page dressing below is drawn as pattern fills, one element each: a diagram file is untrusted and can be
     // any size, so nothing here may grow with the extent of the picture.
+    if background && set_not_none(g(cv, "grid")) {
+        // grid=colour: squared paper, a fine line every gridgap, lined up with the diagram's own coordinates
+        let gap = n(js::max(4.0, num(g(cv, "gridgap"), 24.0)));
+        out.push(format!(
+            "<defs><pattern id=\"fd-grid\" width=\"{gap}\" height=\"{gap}\" patternUnits=\"userSpaceOnUse\"><path d=\"M {gap},0 H 0 V {gap}\" fill=\"none\" stroke=\"{}\" stroke-width=\"1\"/></pattern></defs>",
+            col(look, g(cv, "grid"), None)
+        ));
+        out.push(page("fill=\"url(#fd-grid)\""));
+    }
     if background && set_not_none(g(cv, "bars")) {
         // bars=colour: the page as listing paper, a band of colour every other bargap
         let gap = js::max(8.0, num(g(cv, "bargap"), 32.0));

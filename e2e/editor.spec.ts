@@ -1088,6 +1088,19 @@ test('the menu changes the background for this diagram and resets to the look', 
   expect(lineOf(await source(page), 'canvas')).toBe('');
 });
 
+test('a look with a grid rules the whole canvas in squares, not just the diagram', async ({ page }) => {
+  const look = 'canvas paper=#1060c0 grid=#ffffff/0.16 gridgap=24\nstyle node shape=rect size=144x64 fill=none stroke=#ffffff title.color=#ffffff\n';
+  await openFolder(page, { 'd.fdraw': 'look "./plan.look"\na: node "A" at 40,40\n', 'plan.look': look });
+  const canvas = page.locator('svg.canvas');
+  const grid = canvas.locator('rect[fill="url(#fd-grid)"]');
+  await expect(grid).toHaveCount(1);
+  await expect(canvas.locator('#fd-grid')).toHaveCount(1);
+  const box = (await grid.boundingBox())!, view = (await canvas.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(view.width - 1);
+  expect(box.height).toBeGreaterThanOrEqual(view.height - 1);
+  await page.screenshot({ path: 'test-results/grid-canvas.png' });
+});
+
 test('a look with listing paper fills the whole canvas with its bars and sprocket feed', async ({ page }) => {
   // Listing lives in coccor/fastdraw-looks now; the copy the renderer tests use stands in for it
   await openFolder(page, { 'd.fdraw': 'look "./listing.look"\na: node "A" at 40,40\nb: node "B" at 240,40\na -> b\n', 'listing.look': repoText('test/fixtures/looks/listing.look') });
