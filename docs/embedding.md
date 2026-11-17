@@ -73,8 +73,10 @@ the image after a few minutes, once GitHub's and fastdraw.dev's caches expire.
   Keep such an address under about 8 KB, which GitHub's image proxy and most hosts accept. Colour icons
   from the look's icon folder make it longer; leave them out by copying the link where the folder is not
   open, and built-in icons are drawn in their place.
-- **Icon folders.** fastdraw.dev cannot read a look's `icondir` folder, so an icon from it is drawn as the
-  closest built-in icon (`virtual-machine` as `vm`), unless the icon travels in a `/s/` address.
+- **Icon folders and web addresses.** fastdraw.dev cannot read a look's `icondir` folder and does not fetch
+  icons or fonts a look names by https:// address, so such an icon is drawn as the closest built-in icon
+  (`virtual-machine` as `vm`), unless the icon travels in a `/s/` address, and such a font as Geist, Geist Mono
+  or Newsreader. `<fastdraw-diagram>` and the editor do fetch them.
 - **When it cannot draw.** A missing file, a look outside the repository or a diagram with errors comes
   back as an image that says what is wrong.
 
@@ -82,7 +84,10 @@ the image after a few minutes, once GitHub's and fastdraw.dev's caches expire.
 
 **Copy link** in the editor's menu copies a link that opens the diagram in the editor at fastdraw.dev:
 `https://fastdraw.dev/edit/#fdraw=<data>`. The diagram, its look file and the icon files it uses from the
-look's icon folder are inside the link, compressed. Everything sits after the `#`, which browsers never
+look's icon folder are inside the link, compressed. Icons and fonts the look names by https:// address are
+not: the editor fetches them from there when the link is opened, so such a link stays a few hundred
+characters long. That is the way to prefer for vendor icon sets (see "Icons" in `fastdraw guide look` for
+recommended sources). Everything sits after the `#`, which browsers never
 send to a server, so nothing is uploaded or kept anywhere. Whoever opens the link gets their own copy in
 their browser.
 
@@ -92,7 +97,8 @@ exported image instead (**Export image…**): it carries the same things and ope
 on it. An icon that is missing from a link (an older link, or one cut short) is drawn as the closest
 built-in icon, and the diagram's notes name it.
 
-Fonts do not travel in the link: they would make it hundreds of KB long. A look that uses a font that ships
-with FastDraw (Geist, Newsreader and the others listed in the look guide) looks the
-same wherever it is opened. Text in any other font is drawn in Geist, Geist Mono or Newsreader, by its role,
-until the folder with the font files is opened.
+Font files do not travel in the link: they would make it hundreds of KB long. A look that uses a font that
+ships with FastDraw (Geist, Newsreader and the others listed in the look guide), or names its font by
+https:// address (`font sans "Inter" "https://..."`), looks the same wherever it is opened. Text in a font
+from the look's font folder is drawn in Geist, Geist Mono or Newsreader, by its role, until that folder is
+opened.

@@ -3,6 +3,8 @@
 import { fontMeta } from '../../src/fontmeta.ts';
 import { SHIPPED_FAMILIES } from '../../src/look.ts';
 import { familiesDrawn } from './embed/faces.ts';
+import { webFaces, faceRule, inlineWebFaces } from '../../src/webassets.ts';
+import type { Look } from '../../src/look.ts';
 import franklin400 from '../../fonts/LibreFranklin-Regular.ttf?url';
 import franklin500 from '../../fonts/LibreFranklin-Medium.ttf?url';
 import franklin600 from '../../fonts/LibreFranklin-SemiBold.ttf?url';
@@ -65,12 +67,29 @@ export function setLookFonts(files: { bytes: Uint8Array }[]): string[] {
 }
 export const BUNDLED_FAMILIES = SHIPPED_FAMILIES;
 
+// Fonts the look names by web address (font sans "Inter" "https://..."): @font-face rules that point there, so
+// the browser fetches a face only when text uses it. Returns the families that loaded; one that cannot be fetched
+// is drawn in the shipped family for its role.
+let webLook: Look | null = null;
+let webStyle: HTMLStyleElement | null = null;
+export async function setWebFonts(look: Look | null): Promise<string[]> {
+  webLook = look;
+  const faces = look ? webFaces(look) : [];
+  webStyle ??= document.head.appendChild(document.createElement('style'));
+  const css = faces.map((f) => faceRule(f)).join('\n');
+  if (webStyle.textContent !== css) webStyle.textContent = css;
+  const families = [...new Set(faces.map((f) => f.family))];
+  const ok = await Promise.all(families.map((f) => document.fonts.load(`16px '${f}'`).then((l) => l.length > 0, () => false)));
+  return families.filter((_, i) => ok[i]);
+}
+
 const bundled = new Map<string, Promise<string>>();
 // @font-face rules, as data URLs, for the families an SVG actually uses, so exports stand alone
 // without carrying every font.
 export async function fontCss(svg: string): Promise<string> {
   // a shipped family that only stands in for a font the look brought itself is not needed
-  const drawn = familiesDrawn(svg, (f) => FACES.some((x) => x[0] === f) || lookFaces.some((x) => x.family === f));
+  const web = webLook ? new Set(webFaces(webLook).map((f) => f.family)) : new Set<string>();
+  const drawn = familiesDrawn(svg, (f) => FACES.some((x) => x[0] === f) || lookFaces.some((x) => x.family === f) || web.has(f));
   const used = (family: string) => drawn.has(family);
   const rules = await Promise.all(FACES.filter((f) => used(f[0])).map((f) => {
     if (!bundled.has(f[3])) bundled.set(f[3], (async () => {
@@ -81,5 +100,6 @@ export async function fontCss(svg: string): Promise<string> {
     })());
     return bundled.get(f[3])!;
   }));
-  return rules.join('') + lookFaces.filter((f) => used(f.family)).map((f) => f.css).join('');
+  const fromWeb = webLook ? await inlineWebFaces(webLook, new Set([...web].filter(used)), svg) : '';
+  return rules.join('') + lookFaces.filter((f) => used(f.family)).map((f) => f.css).join('') + fromWeb;
 }

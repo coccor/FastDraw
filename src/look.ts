@@ -83,9 +83,9 @@ export function emptyLook(): Look {
   return look;
 }
 
-// An address a look may fetch an icon or font file from: https only, and nothing that could break out of the
-// quotes it is written into.
-export const isWebUrl = (s: string): boolean => /^https:\/\/[^\s"'<>\\`]+$/i.test(s) && s.length <= 500;
+// An address a look may fetch an icon or font file from: https only, no control characters, and nothing that
+// could break out of the quotes it is written into.
+export const isWebUrl = (s: string): boolean => /^https:\/\/[^\s\x00-\x1f\x7f"'<>\\`]+$/i.test(s) && s.length <= 500;
 const hasScheme = (s: string) => /^[a-z][a-z0-9+.-]*:/i.test(s);
 
 export function parseLook(src: string, path = 'look'): Look {

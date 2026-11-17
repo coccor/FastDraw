@@ -1209,3 +1209,36 @@ test('text on the canvas is drawn as written: no ligatures, as wide as it is mea
   expect(widths).toHaveLength(2);
   expect(Math.abs(widths[0] - widths[1])).toBeLessThan(0.5);
 });
+
+test('a shared link whose look names icons and fonts by web address fetches them, and keeps them out of a copied link', async ({ page, context }) => {
+  const errors = noPageErrors(page);
+  const asked: string[] = [];
+  await page.route('https://cdn.example.com/**', (route) => {
+    const url = route.request().url();
+    asked.push(url);
+    if (url.endsWith('/set@1.0.0/lambda.svg')) return route.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="#ff9900"/></svg>' });
+    if (url.includes('/web-sans@1.0.0/')) return route.fulfill({ contentType: 'font/ttf', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(resolve('fonts/Geist-Regular.ttf')) });
+    return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' });
+  });
+  const { editorLink } = await import('../editor/src/embed/share.ts');
+  const look = 'icondir "https://cdn.example.com/set@1.0.0/{name}.svg"\nfont sans "Web Sans" "https://cdn.example.com/web-sans@1.0.0/latin-{weight}-normal.ttf"\nstyle node shape=rect size=160x60 title.font=sans';
+  const link = (await editorLink('http://x/edit/', { name: 'web.fdraw', text: 'look "./web.look"\na: node "Lambda" icon=lambda at 40,40\nb: node "Data" icon=database at 260,40\n', look: { path: './web.look', text: look } })).replace('http://x', '');
+  await page.goto(link);
+  // the icon from the address is drawn as an image; database is a built-in one, also looked for at the address
+  await expect(page.locator('svg.canvas image[href^="data:image/svg+xml"]')).toHaveCount(1);
+  await expect(page.getByText('No problems')).toBeVisible();
+  await expect(page.locator('.banner')).toHaveCount(0);
+  expect(await page.evaluate(() => [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Web Sans' && f.status === 'loaded'))).toBe(true);
+  expect(asked.some((u) => u.endsWith('/lambda.svg'))).toBe(true);
+  // the copied link carries the look, which says where the icon is, but not the icon
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Copy link' }).click();
+  await expect(page.getByText(/copied a link to this diagram \(\d+ KB\)/)).toBeVisible();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const { decodeShared } = await import('../editor/src/embed/share.ts');
+  const d = await decodeShared(copied.split('#fdraw=')[1]!);
+  expect(d?.icons ?? {}).toEqual({});
+  expect(d?.look?.text).toContain('cdn.example.com');
+  expect(errors).toEqual([]);
+});

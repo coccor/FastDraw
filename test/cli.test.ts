@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, existsSync, copyFi
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { parseLook, defaultLook, bundledLook } from '../src/look.ts';
 import { withLook, buildScene } from '../src/scene.ts';
 import { darkLookOf, lookArg, lookRefText } from '../src/node.ts';
@@ -125,4 +126,27 @@ test('fastdraw check and render take several files and folders', () => {
   r = fastdraw('check', join(dir, 'a.fdraw'), join(dir, 'b'));
   assert.equal(r.code, 1);
   assert.match(r.out, /3 files: 1 error/);
+});
+
+test('icons and fonts a look names by web address come from the cache folder; --offline never asks the network', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fd-web-')), cache = join(dir, 'cache');
+  const icon = 'https://cdn.example.com/set@1.0.0/{name}.svg', font = 'https://cdn.example.com/inter@5.3.0/latin-{weight}-normal.ttf';
+  writeFileSync(join(dir, 'web.look'), `icondir "${icon}"\nfont sans "Coverage Sans" "${font}"\n`);
+  writeFileSync(join(dir, 'web.fdraw'), 'look "./web.look"\na: rect "Lambda" at 20,20 160x60 icon=lambda\n');
+  const env = { ...process.env, FASTDRAW_NO_UPDATE_CHECK: '1', XDG_CACHE_HOME: cache };
+  const run = (...a: string[]) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, ...a], { encoding: 'utf8', env }).stdout;
+  // nothing fetched yet: the closest built-in icon stands in and the font falls back, each with a warning
+  const cold = run('check', join(dir, 'web.fdraw'), '--offline');
+  assert.match(cold, /note: cdn\.example\.com: not fetched \(--offline\)/);
+  assert.match(cold, /icon lambda is one of the look's icon files .* so the built-in icon function is drawn in its place/);
+  assert.match(cold, /the look names the font "Coverage Sans" at https:\/\/cdn\.example\.com\/inter@5\.3\.0\/latin-\{weight\}-normal\.ttf, but no TTF or OTF file of it was fetched/);
+  // a copy in the cache folder, as a fetch leaves it: named by its address
+  const web = join(cache, 'fastdraw', 'web');
+  mkdirSync(web, { recursive: true });
+  const key = (url: string) => createHash('sha256').update(url).digest('hex').slice(0, 32);
+  writeFileSync(join(web, key(icon.replace('{name}', 'lambda')) + '.svg'), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="orange"/></svg>');
+  for (const w of [400, 500, 600, 700]) copyFileSync(new URL('../crates/fastdraw-render/tests/coverage/fonts/CoverageSans.ttf', import.meta.url).pathname, join(web, key(font.replace('{weight}', String(w))) + '.ttf'));
+  const warm = run('check', join(dir, 'web.fdraw'), '--offline');
+  assert.doesNotMatch(warm, /note:|icon lambda|font "Coverage Sans"/, warm);
+  assert.match(warm, /ok: no problems found/);
 });

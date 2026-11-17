@@ -8,7 +8,7 @@ import { parseLook, emptyLook, isBundledLook, bundledLook, defaultLook, BUNDLED_
 import type { Look } from './look.ts';
 import { buildScene, lookPath } from './scene.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from './iconfiles.ts';
-import { hasWebIcons, localIconDirs, fetchWebIcons, webFaces, webFetch, MAX_FONT_BYTES } from './webassets.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, webFaces, webFetch, hostOf, MAX_FONT_BYTES } from './webassets.ts';
 import type { WebIcons, Fetch } from './webassets.ts';
 import { createHash } from 'node:crypto';
 import { lstatSync, realpathSync } from 'node:fs';
@@ -94,7 +94,7 @@ export async function fetchWebAssets(files: string[], offline = false): Promise<
     const fonts: string[] = [];
     for (const f of webFaces(look)) {
       if (!/\.(ttf|otf)(\?|$)/i.test(f.url)) continue;
-      try { if (await get(f.url, MAX_FONT_BYTES)) fonts.push(cachePath(f.url)); } catch { notes.add(`${new URL(f.url).host}: the font ${f.family} could not be fetched, so text is drawn in a fallback font`); }
+      try { if (await get(f.url, MAX_FONT_BYTES)) fonts.push(cachePath(f.url)); } catch { notes.add(`${hostOf(f.url)}: the font ${f.family} could not be fetched, so text is drawn in a fallback font`); }
     }
     webFonts.set(lookFile, fonts);
   }

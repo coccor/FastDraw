@@ -33,21 +33,52 @@ export function iconAddresses(look: Look, name: string): string[] {
 /** Fetches one file: its bytes, null when the server says there is no such file, or throws when it cannot be reached. */
 export type Fetch = (url: string, maxBytes: number) => Promise<Uint8Array | null>;
 
+// Addresses that point into the machine or the local network are never fetched: a look is untrusted input and
+// must not be able to make the command line (or a browser) ask a router, a metadata service or a dev server for
+// anything. Only literal hosts are caught; names are trusted to be public.
+export function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal') || !h.includes('.') && !h.includes(':')) return true;
+  const v4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(h);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    return a === 0 || a === 10 || a === 127 || a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168 || a === 100 && b >= 64 && b <= 127 || a >= 224;
+  }
+  return h.includes(':') && (h === '::' || h === '::1' || /^f[cd]/.test(h) || /^fe[89ab]/.test(h) || h.startsWith('::ffff:'));
+}
+
 export const webFetch: Fetch = async (url, maxBytes) => {
-  // no cookies and no referrer: the server learns only that someone opened a diagram with this look
-  const r = await fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15_000) });
+  const u = new URL(url);
+  if (u.protocol !== 'https:' || isPrivateHost(u.hostname)) throw new Error('not a public https address');
+  // no cookies, no referrer and no redirects: the server learns only that someone opened a diagram with this
+  // look, and cannot send the request on somewhere else
+  const r = await fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error', signal: AbortSignal.timeout(15_000) });
   if (r.status === 404 || r.status === 410) return null;
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`.trim());
   if (Number(r.headers.get('content-length')) > maxBytes) throw new Error('file too large');
-  const bytes = new Uint8Array(await r.arrayBuffer());
-  if (bytes.length > maxBytes) throw new Error('file too large');
+  // read as it arrives and stop at the limit, whatever the server said the length would be
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  const reader = r.body!.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > maxBytes) { await reader.cancel(); throw new Error('file too large'); }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) { bytes.set(c, at); at += c.length; }
   return bytes;
 };
 
-const cache = new Map<string, Promise<Uint8Array | null>>();
-// Each address is fetched once per page (or command): a failure that could not reach the server is forgotten, so
-// the next try asks again.
+const caches = new WeakMap<Fetch, Map<string, Promise<Uint8Array | null>>>();
+// Each address is fetched once per page (or command) by each way of fetching: a failure that could not reach the
+// server is forgotten, so the next try asks again.
 function cached(get: Fetch, url: string, maxBytes: number): Promise<Uint8Array | null> {
+  let cache = caches.get(get);
+  if (!cache) caches.set(get, cache = new Map());
   let p = cache.get(url);
   if (!p) {
     p = get(url, maxBytes);
@@ -57,7 +88,7 @@ function cached(get: Fetch, url: string, maxBytes: number): Promise<Uint8Array |
   return p;
 }
 
-export const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return url; } };
+export const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return 'an address in the look'; } };
 
 export type WebIcons = {
   uris: Record<string, string>; // name -> data URI, for withIconImages

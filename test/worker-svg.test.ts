@@ -139,3 +139,17 @@ test('a look that names a shipped font gets it; one that names another font gets
   assert.match(other, /@font-face\{font-family:'Geist'/);
   assert.match(other, /font-family="'Acme Grotesk', 'Geist', sans-serif"/);
 });
+
+test('a look that names icons and fonts by web address: fastdraw.dev fetches nothing and draws stand-ins', async () => {
+  const real = globalThis.fetch;
+  let asked = 0;
+  globalThis.fetch = (async (...a: Parameters<typeof fetch>) => { asked++; return real(...a); }) as typeof fetch;
+  try {
+    const look = 'icondir "https://cdn.example.com/set@1.0.0/{name}.svg"\nfont sans "Inter" "https://cdn.example.com/inter@5.3.0/latin-{weight}-{style}.ttf"';
+    const svg = await text(await get(`/s/${await encodeShared({ name: 'x.fdraw', text: 'look "./t.look"\na: rect "Fn" at 20,20 160x60 icon=lambda', look: { path: './t.look', text: look } })}`, deps({})));
+    assert.equal(asked, 0);
+    assert.doesNotMatch(svg, /cdn\.example\.com/);
+    assert.match(svg, /@font-face\{font-family:'Geist'/);
+    assert.match(svg, /font-family="'Inter', 'Geist', sans-serif"/);
+  } finally { globalThis.fetch = real; }
+});

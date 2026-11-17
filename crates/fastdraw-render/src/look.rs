@@ -329,14 +329,14 @@ fn is_icon_name(s: &str) -> bool {
 }
 
 /// An address a look may fetch an icon or font file from (look.ts `isWebUrl`):
-/// `/^https:\/\/[^\s"'<>\\`]+$/i` and at most 500 UTF-16 units.
+/// `/^https:\/\/[^\s\x00-\x1f\x7f"'<>\\`]+$/i` and at most 500 UTF-16 units.
 pub fn is_web_url(s: &str) -> bool {
     s.get(..8)
         .is_some_and(|h| h.eq_ignore_ascii_case("https://"))
         && s.len() > 8
         && s[8..]
             .chars()
-            .all(|c| !js::is_js_space(c) && !"\"'<>\\`".contains(c))
+            .all(|c| !js::is_js_space(c) && !c.is_ascii_control() && !"\"'<>\\`".contains(c))
         && js::utf16_len(s) <= 500
 }
 

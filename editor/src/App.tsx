@@ -27,7 +27,8 @@ import demoArch from '../../examples/test/architecture.fdraw?raw';
 import demoFlow from '../../examples/test/flowchart.fdraw?raw';
 import demoSeq from '../../examples/test/sequence.fdraw?raw';
 import demoLook from '../../looks/reference.look?raw';
-import { setLookFonts, BUNDLED_FAMILIES } from './fonts.ts';
+import { setLookFonts, setWebFonts, BUNDLED_FAMILIES } from './fonts.ts';
+import { hasWebIcons, localIconDirs, fetchWebIcons, hostOf, type WebIcons } from '../../src/webassets.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
@@ -212,14 +213,31 @@ export function App() {
   const [iconFiles, setIconFiles] = useState<{ name: string; bytes: Uint8Array }[]>([]);
   const [carriedIcons, setCarriedIcons] = useState<Record<string, string>>({});
   const [iconNote, setIconNote] = useState('');
+  // Icons the look names by web address, fetched for the names the diagram uses (each address once per page).
+  const [webIcons, setWebIcons] = useState<WebIcons>({ uris: {}, done: false, unreachable: [] });
+  const usedIcons = useMemo(() => [...new Set([...(src ?? '').matchAll(/\bicon="?([\w-]+)/g)].map((m) => m[1]!))].sort().join(' '), [src]);
+  useEffect(() => {
+    if (!parsedLook || !hasWebIcons(parsedLook)) { setWebIcons({ uris: {}, done: false, unreachable: [] }); return; }
+    let stale = false;
+    fetchWebIcons(parsedLook, usedIcons.split(' ').filter(Boolean)).then((w) => { if (!stale) setWebIcons(w); });
+    return () => { stale = true; };
+  }, [parsedLook, usedIcons]);
   // the active diagram as it stands now, kept current on every render
   const live = useRef<Doc | null>(null);
   live.current = docId && src !== null ? { id: docId, name, src: srcRef.current ?? src, lookSrc, carried: carriedIcons, view, io: io.current, hist: hist.current, folderFiles } : null;
-  const look = useMemo(() => (parsedLook && (iconFiles.length || Object.keys(carriedIcons).length) ? withIconImages(parsedLook, iconFiles, carriedIcons) : parsedLook), [parsedLook, iconFiles, carriedIcons]);
+  const look = useMemo(() => {
+    if (!parsedLook) return parsedLook;
+    const web = hasWebIcons(parsedLook);
+    if (!iconFiles.length && !Object.keys(carriedIcons).length && !web) return parsedLook;
+    // every icon folder and address was read, so an icon missing from them is a mistake, not one left behind
+    const read = (!localIconDirs(parsedLook).length || iconFiles.length > 0) && (!web || webIcons.done);
+    return withIconImages(parsedLook, iconFiles, { ...carriedIcons, ...webIcons.uris }, read);
+  }, [parsedLook, iconFiles, carriedIcons, webIcons]);
+  const webIconNote = webIcons.unreachable.length ? `The look's icons could not be fetched from ${webIcons.unreachable.join(' and ')}, so the closest built-in icons are drawn instead.` : '';
   useEffect(() => {
     let stale = false;
     (async () => {
-      const s = io.current, dirs = parsedLook?.iconDirs ?? [];
+      const s = io.current, dirs = parsedLook ? localIconDirs(parsedLook) : [];
       const lp = srcRef.current ? lookPath(srcRef.current) : undefined;
       const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
       const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES)))).flat() : [];
@@ -242,10 +260,15 @@ export function App() {
       const base = s.path && lp ? files.dirOf(files.dirOf(s.path) + lp) : '';
       const found = s.folder && lp ? (await Promise.all(dirs.map((d) => files.readFontDir(s.folder!.root, base + d)))).flat() : [];
       if (stale) return;
-      const have = [...BUNDLED_FAMILIES, ...setLookFonts(found)].map((f) => f.toLowerCase());
+      const fromWeb = await setWebFonts(look);
+      if (stale) return;
+      const have = [...BUNDLED_FAMILIES, ...setLookFonts(found), ...fromWeb].map((f) => f.toLowerCase());
       const missing = look ? [...new Set(look.fonts.values())].filter((f) => !have.includes(f.toLowerCase()) && !['helvetica', 'serif', 'monospace', 'sans-serif'].includes(f.toLowerCase())) : [];
       const instead = look ? [...new Set([...look.fonts].filter(([, f]) => missing.includes(f)).map(([role, f]) => fallbackFamily(role, f)))].join(' and ') : '';
-      setFontNote(!missing.length ? '' : s.folder
+      const unfetched = missing.filter((f) => look?.fontUrls.has(f));
+      setFontNote(!missing.length ? '' : unfetched.length === missing.length
+        ? `The look's font ${missing.join(', ')} could not be fetched from ${[...new Set(unfetched.map((f) => hostOf(look!.fontUrls.get(f)!)))].join(' and ')}; text is drawn in ${instead} instead.`
+        : s.folder
         ? `No font file found for ${missing.join(', ')}; text is drawn in ${instead} instead.`
         : `This look uses ${missing.join(', ')}. Open the folder that holds the diagram so its fonts can be loaded; for now text is drawn in ${instead} instead.`);
     })();
@@ -1126,10 +1149,11 @@ export function App() {
   };
 
   // A link that opens this diagram in the editor, with its look file and the icon files it uses inside it.
-  // Nothing is uploaded: everything is after the #, which the browser never sends anywhere.
+  // Nothing is uploaded: everything is after the #, which the browser never sends anywhere. Icons the look
+  // names by web address stay out: whoever opens the link fetches them from there.
   const copyLink = async () => {
     try {
-      const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter(Boolean));
+      const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter((n) => n && !webIcons.uris[n]));
       const look = fileLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
       const link = await editorLink(location.origin + location.pathname, { name: baseName + '.fdraw', text: cur, ...(look ? { look } : {}), ...(Object.keys(icons).length ? { icons } : {}) });
       await navigator.clipboard.writeText(link);
@@ -1320,6 +1344,7 @@ export function App() {
         {armed && <div className="hintbar">{tool.startsWith('conn:') ? 'Drag from one element to another to connect them' : 'Click or drag on the canvas to place it'} · Esc to cancel</div>}
         {fontNote && <div className="banner">{fontNote}</div>}
         {iconNote && <div className="banner">{iconNote}</div>}
+        {webIconNote && <div className="banner">{webIconNote}</div>}
         {missingLook && (
           <div className="banner">
             This diagram uses the look “{lookPath(cur)}”, which is not loaded, so it is drawn with plain styles.
