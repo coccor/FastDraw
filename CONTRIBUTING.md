@@ -46,8 +46,9 @@ A new language feature also needs a case in `crates/fastdraw-render/tests/covera
 - **The npm package** is published by `.github/workflows/release.yml` when a version tag is pushed:
   `npm version patch` (or `minor`), then `git push --follow-tags`. The tag must match the version in
   `package.json`.
-- **The Rust crate** (`fastdraw-render`) is published to crates.io by the same workflow, from the same tag.
-  `npm version` writes the version into `crates/fastdraw-render/Cargo.toml` and `Cargo.lock` too.
+- **The Rust crate** (`fastdraw-render`) is not published to crates.io (`publish = false`); FastPad depends
+  on it from this repository at a fixed commit. The release workflow still checks it before `npm publish`,
+  and `npm version` writes the version into `crates/fastdraw-render/Cargo.toml` and `Cargo.lock` too.
 
 ## Repository layout
 
