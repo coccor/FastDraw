@@ -33,7 +33,6 @@ pub mod scene;
 pub mod share;
 #[doc(hidden)]
 pub mod sketch;
-mod timsort;
 
 /// One diagram to draw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

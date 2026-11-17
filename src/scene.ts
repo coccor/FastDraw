@@ -1,4 +1,5 @@
 // Turns a diagram file into a resolved scene: shapes, texts and routed connectors.
+import { byNumber } from './order.ts';
 import { parseStatements } from './parse.ts';
 import type { Stmt } from './parse.ts';
 import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES } from './look.ts';
@@ -664,7 +665,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       const horiz = k.endsWith('top') || k.endsWith('bottom');
       const ref = (o: End) => { const b = boxOf(o); return b ? (horiz ? cx(b) : cy(b)) : 0; };
       if (g.length === 1) { frac.set(g[0].e, 0.5); single.add(g[0].e); continue; }
-      const order = g.map((m, idx) => ({ m, idx, r: ref(m.o) })).sort((p, q) => p.r - q.r || p.idx - q.idx);
+      const order = g.map((m, idx) => ({ m, idx, r: ref(m.o) })).sort((p, q) => byNumber(p.r, q.r) || p.idx - q.idx);
       order.forEach((o, n) => frac.set(o.m.e, (n + 1) / (g.length + 1)));
     }
     for (const c of batch) {

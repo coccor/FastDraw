@@ -1,4 +1,5 @@
 // Finds a right-angle route around boxes when the simple route would cut through one.
+import { byNumber } from './order.ts';
 import type { Pt, Box } from './scene.ts';
 
 // Liang–Barsky: does segment AB cross the inside of the box?
@@ -46,7 +47,7 @@ const LANES = [CLEAR, CLEAR + 12, CLEAR + 24]; // tracks offered around each box
 export function routeAround(P0: Pt, d0: Pt | null, P1: Pt, d1: Pt | null, obstacles: Box[], taken: [Pt, Pt][] = []): Pt[] | null {
   const S = d0 ? { x: P0.x + d0.x * STUB, y: P0.y + d0.y * STUB } : P0;
   const E = d1 ? { x: P1.x + d1.x * STUB, y: P1.y + d1.y * STUB } : P1;
-  const uniq = (v: number[]) => [...new Set(v.map((n) => Math.round(n)))].sort((a, b) => a - b);
+  const uniq = (v: number[]) => [...new Set(v.map((n) => Math.round(n)))].sort(byNumber);
   const xs = uniq([S.x, E.x, ...obstacles.flatMap((o) => LANES.flatMap((l) => [o.x - l, o.x + o.w + l]))]);
   const ys = uniq([S.y, E.y, ...obstacles.flatMap((o) => LANES.flatMap((l) => [o.y - l, o.y + o.h + l]))]);
   const W = xs.length, H = ys.length;

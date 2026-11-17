@@ -379,26 +379,25 @@ mod tests {
     }
 
     #[test]
-    fn a_nan_end_is_looked_up_as_minus_one_like_indexof() {
-        // from Node: the search starts from the wrong grid point and the route's first point stays NaN
+    fn a_nan_end_is_no_route() {
+        // from Node: NaN sorts after every grid line, so a NaN end is looked up as -1 and there is no route
         let wall = Rect {
             x: 100.0,
             y: 60.0,
             w: 40.0,
             h: 100.0,
         };
-        let got = route_around(
-            p(f64::NAN, 125.0),
-            None,
-            p(300.0, 125.0),
-            None,
-            &[wall],
-            &[],
-        )
-        .unwrap();
-        assert!(got[0].x.is_nan() && got[0].y == 125.0);
-        assert_eq!(&got[1..], &[p(300.0, 48.0), p(300.0, 125.0)]);
-        // NaN in y puts the start before the grid: no route
+        assert_eq!(
+            route_around(
+                p(f64::NAN, 125.0),
+                None,
+                p(300.0, 125.0),
+                None,
+                &[wall],
+                &[]
+            ),
+            None
+        );
         assert_eq!(
             route_around(p(0.0, f64::NAN), None, p(300.0, 125.0), None, &[wall], &[]),
             None
