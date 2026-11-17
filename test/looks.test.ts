@@ -86,6 +86,30 @@ test('the style looks draw the thing each is named for', () => {
   for (const n of ['offset', 'listing']) assert.doesNotMatch(renderSvg(scene(n, SAMPLE), undefined, { background: false }), /fd-page|fd-grain/);
 });
 
+test('canvas grid= rules the page in squares: one pattern, whatever the size, and none on a transparent export', () => {
+  const lk = parseLook('canvas paper=#1560bd grid=#ffffff/0.18 gridgap=26\nstyle node shape=rect size=144x64 fill=paper stroke=#ffffff\n');
+  const grid = (body: string, background = true) => renderSvg(buildScene(body, lk), undefined, { background });
+  assert.ok(grid('a: node "A" at 40,40\n').includes('<pattern id="fd-grid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26,0 H 0 V 26" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/></pattern>'));
+  const size = (y: number) => grid(`a: node "A" at 40,40\nb: node "B" at 40,${y}\n`).split('<').length;
+  assert.equal(size(1_000_000), size(400));
+  assert.doesNotMatch(grid('a: node "A" at 40,40\n', false), /fd-grid/);
+  // a gap too small to see is held at 4
+  assert.match(renderSvg(buildScene('a: node "A" at 40,40\n', parseLook('canvas grid=#000000 gridgap=1\n'))), /id="fd-grid" width="4"/);
+});
+
+test('icon.pos=corner puts a group\'s icon in its top-left corner as a tab, and its caption after it', () => {
+  const lk = parseLook('icon tab "M4 4h16v16H4z"\nstyle zone shape=rect fill=none stroke=#000000 title.pos=top title.align=left layer=back\n');
+  const svg = (extra: string) => renderSvg(buildScene(`z: zone "AWS Cloud" at 40,40 400x200 icon=tab ${extra}\n`, lk));
+  const corner = svg('icon.pos=corner icon.size=32');
+  // the icon's 24 box is scaled to 32 at the corner
+  assert.ok(corner.includes('<g transform="translate(40 40) scale(1.33)"'), corner);
+  const capX = (s: string) => Number(/<text x="([\d.]+)"[^>]*>AWS Cloud</.exec(s)![1]);
+  // the caption moves right by the tab's width less the 4px it had to spare
+  assert.equal(capX(corner) - capX(svg('icon.pos=left')), 28);
+  assert.equal(check(buildScene('z: zone "Z" at 0,0 100x100 icon.pos=middle\n', lk)).find((i) => /icon\.pos=middle/.test(i.msg))?.msg,
+    'icon.pos=middle: an icon sits left of the text, on top of it, or in the top-left corner as a tab (icon.pos=left, icon.pos=top or icon.pos=corner)');
+});
+
 test('the style looks keep the built-in look\'s type sizes, so a diagram laid out for it still fits', () => {
   const body = 'a: node "Publish Dashboard" sub="merge · deploy · verify" at 40,40 144x64\nb: node "B" at 40,200 144x64\na -> b "restrict" lpos=170,171\n';
   const warns = (look: string) => check(look ? scene(look, body) : buildScene(body, null)).filter((i) => i.level === 'warn').map((i) => i.msg);

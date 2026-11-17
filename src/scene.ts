@@ -508,7 +508,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     if (p['icon.width'] !== undefined && !(Number(p['icon.width']) > 0 && Number(p['icon.width']) <= 8)) err(st.line, `icon.width=${p['icon.width']}: the icon's line thickness in pixels, a number from 0.5 to 8 (e.g. icon.width=2)`);
     if (p['icon.style'] !== undefined && !['outline', 'solid', 'duotone'].includes(p['icon.style'])) err(st.line, `icon.style=${p['icon.style']}: an icon is drawn as an outline (the default), filled in one colour (icon.style=solid), or as an outline over a light tint (icon.style=duotone)`);
     else if ((p['icon.style'] === 'solid' || p['icon.style'] === 'duotone') && p.icon && p.icon !== 'none' && (look.icons.has(p.icon) || look.images.has(p.icon)) && !isBuiltIn(look, p.icon)) warn(st.line, `icon ${p.icon} is the look's own, with no ${p['icon.style']} version (only the built-in icons have one), so it is drawn as it is; drop icon.style=${p['icon.style']}`);
-    if (p['icon.pos'] && !['left', 'top'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)`);
+    if (p['icon.pos'] && !['left', 'top', 'corner'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text, on top of it, or in the top-left corner as a tab (icon.pos=left, icon.pos=top or icon.pos=corner)`);
     for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {
       // points are written relative to the element's position; a given WxH stretches them to fit

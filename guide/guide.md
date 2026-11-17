@@ -71,8 +71,9 @@ One statement per line. An indented line continues the statement above it. `//` 
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
                             // or a look that ships with FastDraw: look night | reference | shade | sketch | whiteboard
                             // or one on GitHub, by its address: look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look"
-                            //   (coccor/fastdraw-looks also has headline, keys, listing, offset and transit, and azure, aws and gcp:
-                            //   a cloud's colours, its own icons and its groups such as vpc and resource-group)
+                            //   (coccor/fastdraw-looks also has headline, keys, listing, offset and transit; azure, aws, gcp and kubernetes:
+                            //   a cloud's colours, its own icons and its groups such as vpc and resource-group; and print, blueprint,
+                            //   high-contrast and terminal)
                             // for a dark theme, keep the line and run  fastdraw render x.fdraw --dark  to get x-dark.png too
 canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
 
@@ -216,7 +217,7 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 
 `icon=name` puts a small icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, mail, function, ai and about 120 more with friendly names, plus every other Phosphor icon under its own name, about 1,500 in all). `fastdraw icons email` searches them by name or meaning: it finds `mail`, and `k8s` finds `pod`.
 
-- The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height.
+- The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height. On a zone, `icon.pos=corner` draws the icon as a tab in its top-left corner with the zone's name beside it, as cloud providers draw a group's icon (`icon.size=` sets the tab, 24 by default).
 - With no text, the icon fills the box.
 - An icon on its own, with no box, is the `icon` style: `api: icon "Orders API" at 60,220 40x40 icon=server` (24x24 unless you give `WxH`). The icon is the shape, so `fill=`, `stroke=` and `sw=` style the icon itself (`fill=accent/0.2 stroke=accent sw=2`), and its text is a caption centred underneath. Lines attach to the icon and go around other icons' captions.
 - `icon.size=20` and `icon.color=link` change it; by default it takes the colour of the box's text.

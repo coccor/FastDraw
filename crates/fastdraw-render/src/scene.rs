@@ -1924,9 +1924,9 @@ impl Builder {
             self.warn(line, format!("icon {icon} is the look's own, with no {s} version (only the built-in icons have one), so it is drawn as it is; drop icon.style={s}"));
         }
         if let Some(pos) = prop("icon.pos").filter(|s| !s.is_empty())
-            && !["left", "top"].contains(&pos)
+            && !["left", "top", "corner"].contains(&pos)
         {
-            self.err(line, format!("icon.pos={pos}: an icon sits left of the text or on top of it (icon.pos=left or icon.pos=top)"));
+            self.err(line, format!("icon.pos={pos}: an icon sits left of the text, on top of it, or in the top-left corner as a tab (icon.pos=left, icon.pos=top or icon.pos=corner)"));
         }
         for k in ["color", "weight", "font", "italic"] {
             if over.contains_key(k) {

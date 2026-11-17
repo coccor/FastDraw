@@ -1,6 +1,6 @@
 // Every look statement: canvas, color, font, fontdir, icondir, icon, guidance, dark by name, and style with
 // extends and each kind. Fonts and icons come from the folders next to this file.
-canvas paper=paper dots=ink/0.08 dotgap=20 bars=accent/0.05 bargap=24 feed=ink/0.3 grain=0.4 tint=alpha
+canvas paper=paper dots=ink/0.08 dotgap=20 grid=ink/0.06 gridgap=16 bars=accent/0.05 bargap=24 feed=ink/0.3 grain=0.4 tint=alpha
 color paper #fdfcf8
 color ink #1a1a2e
 color muted #555566

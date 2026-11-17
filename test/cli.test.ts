@@ -178,3 +178,31 @@ test('a look named by web address is read from its copy in the cache folder; --o
   writeFileSync(join(dir, 'old.fdraw'), 'look keys\na: rect "A" at 20,20\n');
   assert.match(run('check', join(dir, 'old.fdraw'), '--offline'), /the keys look no longer ships with FastDraw; it is in coccor\/fastdraw-looks on GitHub: look "https:\/\/raw\.githubusercontent\.com\/coccor\/fastdraw-looks\/main\/keys\.look"/);
 });
+
+test('render --look fetches the web fonts of the look it names, not those of the diagram\'s own look', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fd-lookover-')), cache = join(dir, 'cache');
+  const font = 'https://cdn.example.com/coverage@1.0.0/latin-{weight}-normal.ttf';
+  writeFileSync(join(dir, 'other.look'), `font sans "Coverage Sans" "${font}"\nstyle node shape=rect size=144x64 fill=paper stroke=ink\n`);
+  writeFileSync(join(dir, 'a.fdraw'), 'a: node "A" at 20,20\n');
+  const env = { ...process.env, FASTDRAW_NO_UPDATE_CHECK: '1', XDG_CACHE_HOME: cache };
+  const run = (...a: string[]) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, ...a], { encoding: 'utf8', env }).stdout;
+  const render = () => run('render', join(dir, 'a.fdraw'), '--offline', '--look', join(dir, 'other.look'), '-o', join(dir, 'a.png'));
+  // nothing in the cache: the font of the look named by --look is what was looked for
+  assert.match(render(), /note: cdn\.example\.com: the font Coverage Sans could not be fetched/);
+  const web = join(cache, 'fastdraw', 'web');
+  mkdirSync(web, { recursive: true });
+  for (const w of [400, 500, 600, 700]) copyFileSync(new URL('../crates/fastdraw-render/tests/coverage/fonts/CoverageSans.ttf', import.meta.url).pathname, join(web, createHash('sha256').update(font.replace('{weight}', String(w))).digest('hex').slice(0, 32) + '.ttf'));
+  const warm = render();
+  assert.doesNotMatch(warm, /note:/, warm);
+  assert.match(warm, /wrote/);
+});
+
+test('render fetches the icons a look\'s styles set (a group\'s corner tab), not only those the diagram names', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fd-styleicon-'));
+  writeFileSync(join(dir, 'cloud.look'), 'icon tab "https://icons.example.com/tab.svg"\nstyle zone shape=rect fill=none stroke=ink title.pos=top title.align=left layer=back icon=tab icon.pos=corner\n');
+  writeFileSync(join(dir, 'a.fdraw'), 'look "./cloud.look"\nz: zone "Cloud" at 20,20 300x200\n');
+  const env = { ...process.env, FASTDRAW_NO_UPDATE_CHECK: '1', XDG_CACHE_HOME: join(dir, 'cache') };
+  const out = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', CLI, 'render', join(dir, 'a.fdraw'), '--offline', '-o', join(dir, 'a.png')], { encoding: 'utf8', env }).stdout;
+  // the diagram never says icon=, yet the tab its zone style draws is the one looked for
+  assert.match(out, /note: icons\.example\.com: not fetched \(--offline\)/, out);
+});
