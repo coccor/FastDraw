@@ -22,9 +22,13 @@ The looks that ship with FastDraw all define the same styles (the ones above plu
 One statement per line; an indented line continues the one above; `//` starts a comment.
 
 ```
-canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional; a diagram's own canvas line can override any of the three
+canvas paper=paper dots=ink/0.06 dotgap=22      // paper= background colour; dots= dot colour and dotgap= spacing are optional; a diagram's own canvas line can override these and the patterns below
                                                  // sketch=1 draws every outline and line by hand (2 is rougher); see looks/sketch.look
                                                  // grid=colour rules the page in squares like graph or blueprint paper (gridgap= is the square, default 24)
+                                                 // lines=colour rules it like a notebook (linegap=, default 24), cross=colour puts a small + at every
+                                                 // crossgap (default 24), iso=colour lays dots on a triangle lattice for isometric drawings (isogap=)
+                                                 // diag=colour hatches the page at 45 degrees (diaggap=, default 12), graph=colour rules graph paper with a
+                                                 // heavier line every fifth square (graphgap=, default 10), hex=colour lays a honeycomb (hexgap= is a side, default 14)
                                                  // bars=colour stripes the page like listing paper (bargap= is the stripe height), feed=colour adds
                                                  // sprocket holes down both edges, grain=0.5 lays paper grain over everything (0 to 1)
                                                  // tint=hue or tint=alpha: how colour/opacity tints mix (see Colours)

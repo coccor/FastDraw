@@ -50,7 +50,7 @@ export type Scene = {
 // What can sit on the end of a line. The last six are the entity-relationship cardinalities.
 export const SERIES = ['bars', 'line', 'area', 'dots'];
 // The background keys a diagram's canvas line may set, overriding the look's canvas statement.
-export const CANVAS_KEYS = ['paper', 'dots', 'dotgap'];
+export const CANVAS_KEYS = ['paper', 'dots', 'dotgap', 'grid', 'gridgap', 'lines', 'linegap', 'cross', 'crossgap', 'iso', 'isogap', 'bars', 'bargap', 'diag', 'diaggap', 'graph', 'graphgap', 'hex', 'hexgap'];
 export const MARKERS = ['none', 'arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'stop', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many'];
 
 const DIRS: Record<Side, Pt> = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
@@ -368,7 +368,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     if (first.t === 'word' && first.v === 'canvas') {
       // the canvas has no size: the picture is as big as what is drawn. A WxH left from older files is ignored
       canvasLine = st.line;
-      // paper=, dots= and dotgap= on the diagram's canvas line override the look's background for this diagram
+      // paper= and the page patterns (dots=, grid=, lines=, cross=, iso=, bars=, diag=, graph=, hex= and their gaps) on the diagram's canvas
+      // line override the look's background for this diagram
       const bg: Props = {};
       for (const t of toks.slice(1)) {
         if (/^\d+x\d+$/.test(t.v ?? '')) canvasSize = true;

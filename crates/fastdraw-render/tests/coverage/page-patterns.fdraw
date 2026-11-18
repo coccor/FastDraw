@@ -1,0 +1,5 @@
+# Every page pattern a diagram's canvas line can pick, all at once, each with its gap.
+canvas paper=#ffffff dots=none lines=ink/0.08 linegap=18 cross=ink/0.16 crossgap=20 iso=ink/0.14 isogap=12 diag=ink/0.06 diaggap=9 graph=accent/0.2 graphgap=6 hex=ink/0.08 hexgap=10
+a: node "Page" at 40,40
+b: store "Patterns" at 260,40
+a -> b

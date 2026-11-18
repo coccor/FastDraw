@@ -851,6 +851,44 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<defs><pattern id="fd-grid" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><path d="M ${gap},0 H 0 V ${gap}" fill="none" stroke="${col(look, cv.grid)}" stroke-width="1"/></pattern></defs>`);
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-grid)"/>`);
   }
+  if (background && cv.lines && cv.lines !== 'none') {
+    // lines=colour: ruled paper, a fine line across the page every linegap
+    const gap = Math.max(4, num(cv.linegap, 24));
+    out.push(`<defs><pattern id="fd-lines" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><rect y="${gap - 1}" width="${gap}" height="1" fill="${col(look, cv.lines)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-lines)"/>`);
+  }
+  if (background && cv.cross && cv.cross !== 'none') {
+    // cross=colour: a small + every crossgap, on the diagram's own coordinates, like a design tool's canvas
+    const gap = Math.max(8, num(cv.crossgap, 24)), c = gap / 2;
+    out.push(`<defs><pattern id="fd-cross" x="${-c}" y="${-c}" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><path d="M ${c - 3},${c} H ${c + 3} M ${c},${c - 3} V ${c + 3}" fill="none" stroke="${col(look, cv.cross)}" stroke-width="1"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-cross)"/>`);
+  }
+  if (background && cv.iso && cv.iso !== 'none') {
+    // iso=colour: dots on a triangle lattice, isogap apart, for isometric sketches; every other row shifts half a gap
+    const gap = Math.max(4, num(cv.isogap, 24)), h = Math.round(gap * Math.sqrt(3) * 100) / 100;
+    out.push(`<defs><pattern id="fd-iso" width="${gap}" height="${h}" patternUnits="userSpaceOnUse"><circle cx="${gap / 4}" cy="${h / 4}" r="0.9" fill="${col(look, cv.iso)}"/><circle cx="${(gap * 3) / 4}" cy="${(h * 3) / 4}" r="0.9" fill="${col(look, cv.iso)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-iso)"/>`);
+  }
+  if (background && cv.diag && cv.diag !== 'none') {
+    // diag=colour: fine lines at 45 degrees, diaggap apart
+    const gap = Math.max(4, num(cv.diaggap, 12));
+    out.push(`<defs><pattern id="fd-diag" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1" height="${gap}" fill="${col(look, cv.diag)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-diag)"/>`);
+  }
+  if (background && cv.graph && cv.graph !== 'none') {
+    // graph=colour: engineering paper, a fine line every graphgap and a heavier one every fifth
+    const gap = Math.max(4, num(cv.graphgap, 10)), t = gap * 5, c = col(look, cv.graph);
+    const minor = [1, 2, 3, 4].map((k) => `M ${k * gap},0 V ${t} M 0,${k * gap} H ${t}`).join(' ');
+    out.push(`<defs><pattern id="fd-graph" width="${t}" height="${t}" patternUnits="userSpaceOnUse"><path d="${minor}" fill="none" stroke="${c}" stroke-width="0.5" stroke-opacity="0.6"/><path d="M 0,0.5 H ${t} M 0.5,0 V ${t}" fill="none" stroke="${c}" stroke-width="1"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-graph)"/>`);
+  }
+  if (background && cv.hex && cv.hex !== 'none') {
+    // hex=colour: a honeycomb of hexagons, hexgap the length of a side
+    const s = Math.max(4, num(cv.hexgap, 14)), w = Math.round(s * Math.sqrt(3) * 100) / 100, m = w / 2;
+    const d = `M ${m},0 V ${s / 2} L ${w},${s} V ${s * 2} L ${m},${s * 2.5} V ${s * 3} M ${m},${s * 2.5} L 0,${s * 2} V ${s} L ${m},${s / 2}`;
+    out.push(`<defs><pattern id="fd-hex" width="${w}" height="${s * 3}" patternUnits="userSpaceOnUse"><path d="${d}" fill="none" stroke="${col(look, cv.hex)}" stroke-width="1"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-hex)"/>`);
+  }
   if (background && cv.bars && cv.bars !== 'none') {
     // bars=colour: the page as listing paper, a band of colour every other bargap
     const gap = Math.max(8, num(cv.bargap, 32));

@@ -97,6 +97,34 @@ test('canvas grid= rules the page in squares: one pattern, whatever the size, an
   assert.match(renderSvg(buildScene('a: node "A" at 40,40\n', parseLook('canvas grid=#000000 gridgap=1\n'))), /id="fd-grid" width="4"/);
 });
 
+test('canvas lines=, cross= and iso= draw ruled, crossed and isometric pages; a diagram\'s canvas line can pick any pattern', () => {
+  const svg = (src: string, background = true) => renderSvg(buildScene(src, null), undefined, { background });
+  const body = 'canvas dots=none lines=#000000 linegap=20 cross=#ff0000 iso=#0000ff isogap=10\na: node "A" at 40,40\n';
+  const out = svg(body);
+  assert.doesNotMatch(out, /canvas only takes/);
+  assert.ok(out.includes('<pattern id="fd-lines" width="20" height="20" patternUnits="userSpaceOnUse"><rect y="19" width="20" height="1" fill="#000000"/></pattern>'));
+  assert.ok(out.includes('<pattern id="fd-cross" x="-12" y="-12" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 9,12 H 15 M 12,9 V 15" fill="none" stroke="#ff0000" stroke-width="1"/></pattern>'));
+  assert.ok(out.includes('<pattern id="fd-iso" width="10" height="17.32" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="4.33" r="0.9" fill="#0000ff"/><circle cx="7.5" cy="12.99" r="0.9" fill="#0000ff"/></pattern>'));
+  assert.doesNotMatch(out, /fd-dots/);
+  assert.doesNotMatch(svg(body, false), /fd-lines|fd-cross|fd-iso/);
+  // the diagram's canvas line takes grid= and bars= too, and a gap too small to see is held at a minimum
+  const small = svg('canvas grid=#000000 bars=#eeeeee cross=#000000 crossgap=1 lines=#000000 linegap=0\na: node "A" at 40,40\n');
+  assert.match(small, /id="fd-grid"/);
+  assert.match(small, /id="fd-bars"/);
+  assert.match(small, /id="fd-cross" x="-4" y="-4" width="8"/);
+  assert.match(small, /id="fd-lines" width="4"/);
+  assert.ok(buildScene('canvas stripes=1\n', null).issues.some((i) => /canvas only takes paper=, dots=, dotgap=, grid=/.test(i.msg)));
+});
+
+test('canvas diag=, graph= and hex= hatch the page, rule it as graph paper and lay a honeycomb over it', () => {
+  const out = renderSvg(buildScene('canvas dots=none diag=#000000 diaggap=8 graph=#ff0000 graphgap=4 hex=#0000ff hexgap=10\na: node "A" at 40,40\n', null));
+  assert.doesNotMatch(out, /canvas only takes/);
+  assert.ok(out.includes('<pattern id="fd-diag" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1" height="8" fill="#000000"/></pattern>'));
+  assert.ok(out.includes('<pattern id="fd-graph" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 4,0 V 20 M 0,4 H 20 M 8,0 V 20 M 0,8 H 20 M 12,0 V 20 M 0,12 H 20 M 16,0 V 20 M 0,16 H 20" fill="none" stroke="#ff0000" stroke-width="0.5" stroke-opacity="0.6"/><path d="M 0,0.5 H 20 M 0.5,0 V 20" fill="none" stroke="#ff0000" stroke-width="1"/></pattern>'));
+  assert.ok(out.includes('<pattern id="fd-hex" width="17.32" height="30" patternUnits="userSpaceOnUse"><path d="M 8.66,0 V 5 L 17.32,10 V 20 L 8.66,25 V 30 M 8.66,25 L 0,20 V 10 L 8.66,5" fill="none" stroke="#0000ff" stroke-width="1"/></pattern>'));
+  for (const id of ['diag', 'graph', 'hex']) assert.equal(out.split(`url(#fd-${id})`).length, 2); // one page rect each
+});
+
 test('icon.pos=corner puts a group\'s icon in its top-left corner as a tab, and its caption after it', () => {
   const lk = parseLook('icon tab "M4 4h16v16H4z"\nstyle zone shape=rect fill=none stroke=#000000 title.pos=top title.align=left layer=back\n');
   const svg = (extra: string) => renderSvg(buildScene(`z: zone "AWS Cloud" at 40,40 400x200 icon=tab ${extra}\n`, lk));
