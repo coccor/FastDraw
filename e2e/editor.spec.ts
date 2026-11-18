@@ -1093,10 +1093,18 @@ test('the menu changes the background for this diagram and resets to the look', 
   const [menuBox, popBox] = [await page.locator('.dropdown').boundingBox(), await pop.boundingBox()];
   expect(popBox!.x).toBeGreaterThanOrEqual(menuBox!.x + menuBox!.width); // to the side, not inside the menu
   await pop.getByRole('radio', { name: 'Isometric dots' }).click();
-  await expect(pop).toHaveCount(0); // it closes on a pick
+  await expect(pop).toBeVisible(); // it stays open while patterns are tried
+  await expect(pop.getByRole('radio', { name: 'Isometric dots' })).toHaveAttribute('aria-checked', 'true');
   await expect(patterns.getByRole('button', { name: 'More patterns' })).toHaveClass(/\bon\b/);
   expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none iso=ink/0.14');
   await expect(page.locator('svg.canvas rect[fill="url(#fd-iso)"]')).toHaveCount(1);
+  // each tile has a key, as the colours do: e is the third, the grid
+  await page.keyboard.press('e');
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none grid=ink/0.07');
+  await page.keyboard.press('a');
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none iso=ink/0.14');
+  await page.keyboard.press('Escape');
+  await expect(pop).toHaveCount(0);
   // back to the look's own dots drops the override
   await patterns.getByRole('radio', { name: 'Dots', exact: true }).click();
   expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff');

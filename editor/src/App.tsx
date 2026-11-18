@@ -138,7 +138,7 @@ const isOn = (v: string | undefined) => !!v && v !== 'none';
 
 // A small picture of a page pattern on the page's colour. The marks are drawn darker than on the page so they read
 // at this size; the gap is shrunk to fit a few repeats in the tile.
-function PatternTile({ kind, paper, ink, at = '' }: { kind: string; paper: string; ink: string; at?: string }) {
+function PatternTile({ kind, paper, ink, at = '', size = 22 }: { kind: string; paper: string; ink: string; at?: string; size?: number }) {
   const id = `fdp${at}-${kind}`, g = 6, h = 10.39;
   const tile: Record<string, React.ReactNode> = {
     dots: <pattern id={id} width={g} height={g} patternUnits="userSpaceOnUse"><circle cx={1.5} cy={1.5} r={0.8} fill={ink} /></pattern>,
@@ -149,16 +149,18 @@ function PatternTile({ kind, paper, ink, at = '' }: { kind: string; paper: strin
     bars: <pattern id={id} width={g * 2} height={g * 2} patternUnits="userSpaceOnUse"><rect width={g * 2} height={g} fill={ink} opacity={0.35} /></pattern>,
   };
   return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
       {tile[kind] && <defs>{tile[kind]}</defs>}
-      <rect width="22" height="22" fill={paper} />
-      {tile[kind] && <rect width="22" height="22" fill={`url(#${id})`} />}
+      <rect width={size} height={size} fill={paper} />
+      {tile[kind] && <rect width={size} height={size} fill={`url(#${id})`} />}
     </svg>
   );
 }
 
-// Every page pattern, each with its name, in a popover beside the menu, opened from the pattern row's last button
-// as the colour popover is from the colour row's.
+// Every page pattern in a popover beside the menu, opened from the pattern row's last button and laid out as the colour
+// popover is: a grid of tiles, each with its key (q w e r t / a s). It stays open while patterns are tried; Escape or a
+// click outside closes it.
+const PATTERN_KEYS = 'qwertasdfg';
 function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose }: {
   anchor: HTMLElement; choices: { key: string; label: string }[]; current: string; paper: string; ink: string;
   onPick: (kind: string) => void; onClose: () => void;
@@ -177,19 +179,29 @@ function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose 
     document.addEventListener('pointerdown', away, true);
     return () => document.removeEventListener('pointerdown', away, true);
   }, [anchor, onClose]);
+  const keys = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { onClose(); anchor.focus(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+    const i = PATTERN_KEYS.indexOf(e.key.toLowerCase());
+    if (i >= 0 && choices[i]) { e.preventDefault(); onPick(choices[i]!.key); }
+  };
   return createPortal(
-    <div ref={box} tabIndex={-1} className="patternpop island" role="dialog" aria-label="Background patterns" style={pos}
-      onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') { onClose(); anchor.focus(); } }}>
-      <h5>Patterns</h5>
-      <div role="radiogroup" aria-label="Background patterns">
-        {choices.map((p) => (
-          <button key={p.key} role="radio" aria-checked={current === p.key} aria-label={p.label}
-            className={'patternrow' + (current === p.key ? ' on' : '')} onClick={() => onPick(p.key)}>
-            <PatternTile kind={p.key} paper={paper} ink={ink} at="p" />
-            {p.label}
-          </button>
-        ))}
-      </div>
+    <div ref={box} tabIndex={-1} className="colorpop island" role="dialog" aria-label="Background patterns" style={pos}
+      onPointerDown={(e) => e.stopPropagation()} onKeyDown={keys}>
+      <section>
+        <h5>Patterns</h5>
+        <div className="pgrid" role="radiogroup" aria-label="Background patterns">
+          {choices.map((p, i) => (
+            <button key={p.key} type="button" role="radio" aria-checked={current === p.key} aria-label={p.label}
+              title={`${p.label} (${PATTERN_KEYS[i]!.toUpperCase()})`}
+              className={'pswatch pattern' + (current === p.key ? ' on' : '')} onClick={() => onPick(p.key)}>
+              <PatternTile kind={p.key} paper={paper} ink={ink} at="p" size={34} />
+              <kbd>{PATTERN_KEYS[i]}</kbd>
+            </button>
+          ))}
+        </div>
+      </section>
     </div>,
     document.body,
   );
@@ -235,7 +247,7 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
         </button>
       </div>
       {open && moreBtn.current && <PatternPopover anchor={moreBtn.current} choices={choices} current={current} paper={paperHex} ink={inkHex}
-        onPick={(k) => { pick(k); setOpen(false); }} onClose={() => setOpen(false)} />}
+        onPick={pick} onClose={() => setOpen(false)} />}
       {overridden && <button className="link" onClick={reset}>Use the look's background</button>}
     </div>
   );

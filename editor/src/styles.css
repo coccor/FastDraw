@@ -85,14 +85,10 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .dropdown .canvasbg button.pattern:hover { border-color: var(--mute); }
 .dropdown .canvasbg button.pattern.on { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dropdown .canvasbg button.more[aria-expanded="true"] { border-color: var(--accent); }
-/* every pattern with its name, in a popover beside the menu (placed like .colorpop) */
-.patternpop { position: fixed; z-index: 40; width: 200px; padding: 12px; display: flex; flex-direction: column; gap: 8px; outline: none; }
-.patternpop h5 { margin: 0 4px; font-size: 12px; font-weight: 500; color: var(--ink); }
-.patternpop [role="radiogroup"] { display: flex; flex-direction: column; gap: 2px; }
-.patternpop button.patternrow { display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 5px 6px; border: 0; border-radius: 7px; background: none; font-size: 13px; text-align: left; color: var(--ink); }
-.patternpop button.patternrow:hover { background: var(--hover); }
-.patternpop button.patternrow svg { display: block; flex: none; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); }
-.patternpop button.patternrow.on svg { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* the patterns popover reuses .colorpop's grid; each tile is a picture of the pattern, its key in the corner */
+.pswatch.pattern { overflow: hidden; color: rgba(15, 23, 42, .75); }
+.pswatch.pattern svg { position: absolute; inset: 0; display: block; }
+.pswatch.pattern kbd { z-index: 1; }
 .dropdown .canvasbg button.link { padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 
 /* properties */
