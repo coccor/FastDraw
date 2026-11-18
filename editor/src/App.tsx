@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { parseLook, color, isBundledLook, isWebLook, fallbackFamily } from '../../src/look.ts';
 import { buildScene, lookPath, captionBox, textWidth as measure } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
@@ -17,7 +18,7 @@ import type { LookChoice, FileLook, WebLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
-  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, Ellipsis, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import { IconDialog, IconGlyph } from './IconPicker.tsx';
@@ -137,8 +138,8 @@ const isOn = (v: string | undefined) => !!v && v !== 'none';
 
 // A small picture of a page pattern on the page's colour. The marks are drawn darker than on the page so they read
 // at this size; the gap is shrunk to fit a few repeats in the tile.
-function PatternTile({ kind, paper, ink }: { kind: string; paper: string; ink: string }) {
-  const id = `fdp-${kind}`, g = 6, h = 10.39;
+function PatternTile({ kind, paper, ink, at = '' }: { kind: string; paper: string; ink: string; at?: string }) {
+  const id = `fdp${at}-${kind}`, g = 6, h = 10.39;
   const tile: Record<string, React.ReactNode> = {
     dots: <pattern id={id} width={g} height={g} patternUnits="userSpaceOnUse"><circle cx={1.5} cy={1.5} r={0.8} fill={ink} /></pattern>,
     grid: <pattern id={id} width={g} height={g} patternUnits="userSpaceOnUse"><path d={`M ${g},0 H 0 V ${g}`} fill="none" stroke={ink} strokeWidth={1} /></pattern>,
@@ -148,11 +149,49 @@ function PatternTile({ kind, paper, ink }: { kind: string; paper: string; ink: s
     bars: <pattern id={id} width={g * 2} height={g * 2} patternUnits="userSpaceOnUse"><rect width={g * 2} height={g} fill={ink} opacity={0.35} /></pattern>,
   };
   return (
-    <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
       {tile[kind] && <defs>{tile[kind]}</defs>}
-      <rect width="26" height="20" fill={paper} />
-      {tile[kind] && <rect width="26" height="20" fill={`url(#${id})`} />}
+      <rect width="22" height="22" fill={paper} />
+      {tile[kind] && <rect width="22" height="22" fill={`url(#${id})`} />}
     </svg>
+  );
+}
+
+// Every page pattern, each with its name, in a popover beside the menu, opened from the pattern row's last button
+// as the colour popover is from the colour row's.
+function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose }: {
+  anchor: HTMLElement; choices: { key: string; label: string }[]; current: string; paper: string; ink: string;
+  onPick: (kind: string) => void; onClose: () => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left: 0, top: 0 });
+  useLayoutEffect(() => {
+    const a = anchor.getBoundingClientRect(), side = (anchor.closest('.dropdown') ?? anchor).getBoundingClientRect();
+    const w = box.current!.offsetWidth, h = box.current!.offsetHeight;
+    const left = side.right + 8 + w <= innerWidth - 8 ? side.right + 8 : Math.max(8, side.left - 8 - w);
+    setPos({ left, top: Math.min(Math.max(8, a.top - 12), innerHeight - h - 8) });
+  }, [anchor]);
+  useEffect(() => { box.current?.focus(); }, []);
+  useEffect(() => {
+    const away = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose(); };
+    document.addEventListener('pointerdown', away, true);
+    return () => document.removeEventListener('pointerdown', away, true);
+  }, [anchor, onClose]);
+  return createPortal(
+    <div ref={box} tabIndex={-1} className="patternpop island" role="dialog" aria-label="Background patterns" style={pos}
+      onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') { onClose(); anchor.focus(); } }}>
+      <h5>Patterns</h5>
+      <div role="radiogroup" aria-label="Background patterns">
+        {choices.map((p) => (
+          <button key={p.key} role="radio" aria-checked={current === p.key} aria-label={p.label}
+            className={'patternrow' + (current === p.key ? ' on' : '')} onClick={() => onPick(p.key)}>
+            <PatternTile kind={p.key} paper={paper} ink={ink} at="p" />
+            {p.label}
+          </button>
+        ))}
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -168,20 +207,35 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
   const pick = (kind: string) => set(Object.fromEntries(PAGE_PATTERNS.map((p) => [p.key,
     p.key === kind ? (isOn(base[p.key]) ? null : p.start) : isOn(base[p.key]) ? 'none' : null])));
   const reset = () => set(Object.fromEntries(['paper', ...PAGE_PATTERNS.flatMap((p) => [p.key, p.gap])].map((k) => [k, null])));
+  // laid out like the colour row above: five quick picks, a divider, then a button that opens the rest
+  const choices = [{ key: 'none', label: 'None' }, ...PAGE_PATTERNS];
+  const quick = choices.slice(0, 5), more = choices.slice(5);
+  const [open, setOpen] = useState(false);
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const moreOn = more.some((p) => p.key === current);
+  const tile = (p: { key: string; label: string }) => (
+    <button key={p.key} role="radio" aria-checked={current === p.key} aria-label={p.label} title={p.label}
+      className={'pattern' + (current === p.key ? ' on' : '')} onClick={() => pick(p.key)}>
+      <PatternTile kind={p.key} paper={paperHex} ink={inkHex} />
+    </button>
+  );
   return (
     <div className="canvasbg">
       <span>Background</span>
       <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
         onPick={(v) => set({ paper: v === basePaper ? null : v })} custom="Custom background colour" />
       <span>Pattern</span>
-      <div className="patterns" role="radiogroup" aria-label="Background pattern">
-        {[{ key: 'none', label: 'None' }, ...PAGE_PATTERNS].map((p) => (
-          <button key={p.key} role="radio" aria-checked={current === p.key} aria-label={p.label} title={p.label}
-            className={'pattern' + (current === p.key ? ' on' : '')} onClick={() => pick(p.key)}>
-            <PatternTile kind={p.key} paper={paperHex} ink={inkHex} />
-          </button>
-        ))}
+      <div className="swatches" role="radiogroup" aria-label="Background pattern">
+        {quick.map(tile)}
+        <span className="divider" />
+        {/* shows the current pattern when it is one of the hidden ones, as the colour button shows a custom colour */}
+        <button ref={moreBtn} className={'pattern more' + (moreOn ? ' on' : '')} aria-label="More patterns" aria-expanded={open}
+          title={moreOn ? `${choices.find((p) => p.key === current)!.label} (more patterns)` : 'More patterns'} onClick={() => setOpen(!open)}>
+          {moreOn ? <PatternTile kind={current} paper={paperHex} ink={inkHex} at="m" /> : <Ellipsis size={14} />}
+        </button>
       </div>
+      {open && moreBtn.current && <PatternPopover anchor={moreBtn.current} choices={choices} current={current} paper={paperHex} ink={inkHex}
+        onPick={(k) => { pick(k); setOpen(false); }} onClose={() => setOpen(false)} />}
       {overridden && <button className="link" onClick={reset}>Use the look's background</button>}
     </div>
   );
