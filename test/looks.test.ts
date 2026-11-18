@@ -302,3 +302,14 @@ test('icon.bg puts a square or circle behind the icon, and an icon on top leaves
   assert.ok(nameY > Number(m![2]) + 48, `name at ${nameY} is under the square`);
   assert.match(svg('a: node "User" at 40,40 icon=user icon.pos=top icon.bg=#000000 icon.bg.shape=circle icon.bg.size=40'), /<circle cx="112" cy="[\d.]+" r="20" fill="#000000"\/>/);
 });
+
+test('shadow= lays the shape grown in fading steps under it; icon.dx and icon.dy move the icon', () => {
+  const svg = (el: string) => renderSvg(buildScene(el + '\n', parseLook('style node shape=rect size=80x80 fill=#ffffff stroke=none\n')));
+  const s = svg('a: node "A" at 40,40 radius=6 shadow=#000000 shadow.size=12 shadow.dy=4');
+  // six steps, the widest first, each a sixth as dark, rounded to follow the box
+  const steps = [...s.matchAll(/fill="#000000" fill-opacity="0.17" stroke="none"/g)];
+  assert.equal(steps.length, 6, s);
+  assert.ok(s.includes('<rect x="28" y="32" width="104" height="104" rx="18"'), s);
+  const at = (extra: string) => /translate\(([\d.-]+) ([\d.-]+)\)/.exec(svg(`a: node "A" at 40,40 icon=user icon.pos=corner ${extra}`))!.slice(1).map(Number);
+  assert.deepEqual(at('icon.dx=-8 icon.dy=-6'), [32, 34]);
+});

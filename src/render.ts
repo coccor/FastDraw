@@ -46,12 +46,22 @@ const blendOf = (p: Props) => (p.blend === 'multiply' ? BLEND : '');
 // The same shape somewhere else: for a slab under it, a shadow beside it, a fill printed out of register.
 const shifted = (s: Shape, dx: number, dy: number): Shape => ({ ...s, x: s.x + dx, y: s.y + dy, poly: s.poly?.map((q) => ({ x: q.x + dx, y: q.y + dy })) });
 const boxy = (s: Shape) => s.shape !== 'polygon' && s.shape !== 'arc';
+const SHADOW_STEPS = 6;
 
 // What is drawn under a shape before the shape itself:
 //   shade=colour  a shadow of fine diagonal lines down its right and bottom (shade.size, shade.gap, shade.sw)
 //   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
+//   shadow=colour a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dy)
 function underlay(look: Look, s: Shape): string[] {
   const p = s.p, out: string[] = [];
+  if (p.shadow && p.shadow !== 'none' && boxy(s)) {
+    const size = num(p['shadow.size'], 12), dy = num(p['shadow.dy'], 4), c = col(look, p.shadow);
+    for (let i = SHADOW_STEPS; i >= 1; i--) {
+      const e = r2((size * i) / SHADOW_STEPS);
+      const grown: Shape = { ...s, x: s.x - e, y: s.y - e + dy, w: s.w + e * 2, h: s.h + e * 2, p: { ...p, radius: String(num(p.radius, 0) + e) } };
+      out.push(outlinePlain(grown, `fill="${c}" fill-opacity="${r2(1 / SHADOW_STEPS)}" stroke="none"`));
+    }
+  }
   if (p.shade && p.shade !== 'none') {
     const k = num(p['shade.size'], 5);
     out.push(outlinePlain(shifted(s, k, k), `fill="${pattern('hatch', col(look, p.shade), num(p['shade.gap'], 2.6), num(p['shade.sw'], 0.6))}" stroke="none"`));
@@ -452,7 +462,9 @@ function drawShape(look: Look, s: Shape): string {
   }
   const ib = iconBox(s);
   if (ib) { cxm += ib.dx; cym += ib.dy; }
-  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x, ib.y, ib.size));
+  // icon.dx and icon.dy move the icon from where it would sit (a group's badge out onto its corner)
+  const idx = num(p['icon.dx'], 0), idy = num(p['icon.dy'], 0);
+  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x + idx, ib.y + idy, ib.size));
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
     // the plate is the text as drawn in the look's font plus 6px either side
@@ -481,7 +493,7 @@ function drawShape(look: Look, s: Shape): string {
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
     // centred a little low under a corner tag, and never closer than 3px below it
     const top = tb ? tb.top : cym - block / 2;
-    if (ib && ib.dy > 0) { const room = ib.room ?? ib.size; out.push(drawIcon(look, p, ib.x, top - room - 6 + (room - ib.size) / 2, ib.size)); }
+    if (ib && ib.dy > 0) { const room = ib.room ?? ib.size; out.push(drawIcon(look, p, ib.x + idx, top - room - 6 + (room - ib.size) / 2 + idy, ib.size)); }
     const al = p['title.align'], tx = al === 'left' ? (ib?.block ? s.x + ib.block + 12 : s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0)) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
     subs.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3 + i * slh)}" text-anchor="${anchor}" ${sub.a}>${esc(l)}</text>`));

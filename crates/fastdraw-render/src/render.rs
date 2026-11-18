@@ -186,9 +186,37 @@ fn boxy(s: &Shape) -> bool {
 // What is drawn under a shape before the shape itself:
 //   shade=colour  a shadow of fine diagonal lines down its right and bottom (shade.size, shade.gap, shade.sw)
 //   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
+const SHADOW_STEPS: f64 = 6.0;
+
+// shadow=colour: a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dy)
 fn underlay(cx: &mut RenderCtx, look: &Look, s: &Shape) -> Vec<String> {
     let p = &s.p;
     let mut out = Vec::new();
+    if set_not_none(g(p, "shadow")) && boxy(s) {
+        let size = num(g(p, "shadow.size"), 12.0);
+        let dy = num(g(p, "shadow.dy"), 4.0);
+        let c = col(look, g(p, "shadow"), None);
+        let mut i = SHADOW_STEPS;
+        while i >= 1.0 {
+            let e = r2(size * i / SHADOW_STEPS);
+            let grown = Shape {
+                x: s.x - e,
+                y: s.y - e + dy,
+                w: s.w + e * 2.0,
+                h: s.h + e * 2.0,
+                p: with(p, "radius", n(num(g(p, "radius"), 0.0) + e)),
+                ..s.clone()
+            };
+            out.push(outline_plain(
+                &grown,
+                &format!(
+                    "fill=\"{c}\" fill-opacity=\"{}\" stroke=\"none\"",
+                    n(r2(1.0 / SHADOW_STEPS))
+                ),
+            ));
+            i -= 1.0;
+        }
+    }
     if set_not_none(g(p, "shade")) {
         let k = num(g(p, "shade.size"), 5.0);
         let fill = cx.pattern(
@@ -1570,13 +1598,15 @@ fn draw_shape(cx: &mut RenderCtx, look: &Look, s: &Shape) -> String {
         ));
     }
     let ib = icon_box(s);
+    // icon.dx and icon.dy move the icon from where it would sit (a group's badge out onto its corner)
+    let (idx, idy) = (num(g(p, "icon.dx"), 0.0), num(g(p, "icon.dy"), 0.0));
     if let Some(ib) = &ib {
         cxm += ib.dx;
         cym += ib.dy;
         // an icon on top waits for the text block (a NaN dy draws it here, as `!(ib.dy > 0)` does)
         let on_top = ib.dy > 0.0;
         if !on_top {
-            out.push(draw_icon(look, p, ib.x, ib.y, ib.size));
+            out.push(draw_icon(look, p, ib.x + idx, ib.y + idy, ib.size));
         }
     }
     if let Some(text) = s.text.as_deref().filter(|t| !t.is_empty())
@@ -1685,8 +1715,8 @@ fn draw_shape(cx: &mut RenderCtx, look: &Look, s: &Shape) -> String {
             out.push(draw_icon(
                 look,
                 p,
-                ib.x,
-                top - room - 6.0 + (room - ib.size) / 2.0,
+                ib.x + idx,
+                top - room - 6.0 + (room - ib.size) / 2.0 + idy,
                 ib.size,
             ));
         }
