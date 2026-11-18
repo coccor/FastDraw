@@ -76,6 +76,8 @@ look "./team.look"          // path relative to this file; leave the line out to
                             //   high-contrast and terminal)
                             // for a dark theme, keep the line and run  fastdraw render x.fdraw --dark  to get x-dark.png too
 canvas paper=#ffffff dots=none dotgap=24   // optional: changes the look's background for this diagram only
+                            // the page pattern can be dots=, grid=, lines= (ruled), cross= (small + marks), iso= (isometric dots)
+                            //   or bars= (stripes), each a colour such as ink/0.08, with a gap key: dotgap= gridgap= linegap= crossgap= isogap= bargap=
 
 // shape:   id: style "text" at x,y WxH key=value ...
 api: node "Orders API" sub="REST · :8080" tag="API" at 200,120

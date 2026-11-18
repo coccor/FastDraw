@@ -1081,9 +1081,19 @@ test('the menu changes the background for this diagram and resets to the look', 
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.locator('.canvasbg [aria-label="#ffffff"]').click();
   expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff'); // the old size went with the edit
-  await page.locator('.canvasbg').getByLabel('Dot grid').click();
+  const patterns = page.locator('.canvasbg [role="radiogroup"]');
+  await expect(patterns.getByRole('radio', { name: 'Dots', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await patterns.getByRole('radio', { name: 'None' }).click();
   expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none');
   await expect(page.locator('svg.canvas rect[fill="url(#fd-dots)"]')).toHaveCount(0);
+  // another pattern turns the look's dots off and draws itself over the whole view
+  await patterns.getByRole('radio', { name: 'Isometric dots' }).click();
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none iso=ink/0.14');
+  await expect(page.locator('svg.canvas rect[fill="url(#fd-iso)"]')).toHaveCount(1);
+  await expect(patterns.getByRole('radio', { name: 'Isometric dots' })).toHaveAttribute('aria-checked', 'true');
+  // back to the look's own dots drops the override
+  await patterns.getByRole('radio', { name: 'Dots', exact: true }).click();
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff');
   await page.getByRole('button', { name: "Use the look's background" }).click();
   expect(lineOf(await source(page), 'canvas')).toBe('');
 });

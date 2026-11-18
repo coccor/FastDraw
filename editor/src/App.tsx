@@ -99,9 +99,7 @@ const TOOLS: [string, string, string][] = [
 // Background colours offered besides the look's own: plain white and a few light, cool tints.
 const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
 
-// The page's colour and dot grid. Choices are written to the diagram's canvas line (paper=, dots=),
-// so they override the look for this diagram only; picking the look's own colour drops the override.
-// The page dressing a look asks for (dots, a grid, listing bars, sprocket feed), stretched over the whole visible view
+// The page dressing a look asks for (dots, a grid, ruled lines, crosses, isometric dots, listing bars, sprocket feed), stretched over the whole visible view
 // instead of the diagram's box. The patterns themselves come from renderBody's <defs>, so they match the export.
 function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: number } }) {
   const cv = sc.look.canvas, on = (v: string | undefined) => !!v && v !== 'none';
@@ -112,6 +110,9 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
     <>
       {on(cv.dots) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-dots)" pointerEvents="none" />}
       {on(cv.grid) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-grid)" pointerEvents="none" />}
+      {on(cv.lines) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-lines)" pointerEvents="none" />}
+      {on(cv.cross) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-cross)" pointerEvents="none" />}
+      {on(cv.iso) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-iso)" pointerEvents="none" />}
       {on(cv.bars) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-bars)" pointerEvents="none" />}
       {on(cv.feed) && <>
         <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" pointerEvents="none" />
@@ -122,21 +123,66 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
   );
 }
 
+// The page patterns the Background menu offers, each with the colour it starts in when the look has none of its own.
+// A diagram shows one at a time: picking one turns the others off.
+const PAGE_PATTERNS: { key: string; gap: string; label: string; start: string }[] = [
+  { key: 'dots', gap: 'dotgap', label: 'Dots', start: 'ink/0.1' },
+  { key: 'grid', gap: 'gridgap', label: 'Grid', start: 'ink/0.07' },
+  { key: 'lines', gap: 'linegap', label: 'Ruled lines', start: 'ink/0.08' },
+  { key: 'cross', gap: 'crossgap', label: 'Crosses', start: 'ink/0.16' },
+  { key: 'iso', gap: 'isogap', label: 'Isometric dots', start: 'ink/0.14' },
+  { key: 'bars', gap: 'bargap', label: 'Stripes', start: 'ink/0.035' },
+];
+const isOn = (v: string | undefined) => !!v && v !== 'none';
+
+// A small picture of a page pattern on the page's colour. The marks are drawn darker than on the page so they read
+// at this size; the gap is shrunk to fit a few repeats in the tile.
+function PatternTile({ kind, paper, ink }: { kind: string; paper: string; ink: string }) {
+  const id = `fdp-${kind}`, g = 6, h = 10.39;
+  const tile: Record<string, React.ReactNode> = {
+    dots: <pattern id={id} width={g} height={g} patternUnits="userSpaceOnUse"><circle cx={1.5} cy={1.5} r={0.8} fill={ink} /></pattern>,
+    grid: <pattern id={id} width={g} height={g} patternUnits="userSpaceOnUse"><path d={`M ${g},0 H 0 V ${g}`} fill="none" stroke={ink} strokeWidth={1} /></pattern>,
+    lines: <pattern id={id} width={g} height={g} patternUnits="userSpaceOnUse"><rect y={g - 1} width={g} height={1} fill={ink} /></pattern>,
+    cross: <pattern id={id} x={-4} y={-4} width={8} height={8} patternUnits="userSpaceOnUse"><path d="M 2.5,4 H 5.5 M 4,2.5 V 5.5" fill="none" stroke={ink} strokeWidth={1} /></pattern>,
+    iso: <pattern id={id} width={g} height={h} patternUnits="userSpaceOnUse"><circle cx={g / 4} cy={h / 4} r={0.9} fill={ink} /><circle cx={(g * 3) / 4} cy={(h * 3) / 4} r={0.9} fill={ink} /></pattern>,
+    bars: <pattern id={id} width={g * 2} height={g * 2} patternUnits="userSpaceOnUse"><rect width={g * 2} height={g} fill={ink} opacity={0.35} /></pattern>,
+  };
+  return (
+    <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
+      {tile[kind] && <defs>{tile[kind]}</defs>}
+      <rect width="26" height="20" fill={paper} />
+      {tile[kind] && <rect width="26" height="20" fill={`url(#${id})`} />}
+    </svg>
+  );
+}
+
+// The page's colour and pattern. Choices are written to the diagram's canvas line (paper=, dots=, grid= and so on),
+// so they override the look for this diagram only; picking what the look already has drops the override.
 function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string, string | null>) => void }) {
   const base = scene.baseCanvas ?? {}, cv = scene.look.canvas;
   const basePaper = base.paper ?? 'paper', paper = cv.paper ?? 'paper';
-  const dotsOn = !!cv.dots && cv.dots !== 'none';
-  const overridden = ['paper', 'dots', 'dotgap'].some((k) => cv[k] !== base[k]);
+  const current = PAGE_PATTERNS.find((p) => isOn(cv[p.key]))?.key ?? 'none';
+  const overridden = ['paper', ...PAGE_PATTERNS.flatMap((p) => [p.key, p.gap])].some((k) => cv[k] !== base[k]);
+  const paperHex = color(scene.look, paper), inkHex = color(scene.look, 'ink/0.55');
+  // the chosen pattern is the look's own (no override) or its starting colour; every other one is off
+  const pick = (kind: string) => set(Object.fromEntries(PAGE_PATTERNS.map((p) => [p.key,
+    p.key === kind ? (isOn(base[p.key]) ? null : p.start) : isOn(base[p.key]) ? 'none' : null])));
+  const reset = () => set(Object.fromEntries(['paper', ...PAGE_PATTERNS.flatMap((p) => [p.key, p.gap])].map((k) => [k, null])));
   return (
     <div className="canvasbg">
       <span>Background</span>
       <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
         onPick={(v) => set({ paper: v === basePaper ? null : v })} custom="Custom background colour" />
-      <label className="check">
-        <input type="checkbox" checked={dotsOn} onChange={() => set({ dots: dotsOn ? 'none' : base.dots && base.dots !== 'none' ? null : 'ink/0.1' })} />
-        Dot grid
-      </label>
-      {overridden && <button className="link" onClick={() => set({ paper: null, dots: null, dotgap: null })}>Use the look's background</button>}
+      <span>Pattern</span>
+      <div className="patterns" role="radiogroup" aria-label="Background pattern">
+        {[{ key: 'none', label: 'None' }, ...PAGE_PATTERNS].map((p) => (
+          <button key={p.key} role="radio" aria-checked={current === p.key} aria-label={p.label} title={p.label}
+            className={'pattern' + (current === p.key ? ' on' : '')} onClick={() => pick(p.key)}>
+            <PatternTile kind={p.key} paper={paperHex} ink={inkHex} />
+          </button>
+        ))}
+      </div>
+      {overridden && <button className="link" onClick={reset}>Use the look's background</button>}
     </div>
   );
 }

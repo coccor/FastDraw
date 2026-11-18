@@ -851,6 +851,24 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<defs><pattern id="fd-grid" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><path d="M ${gap},0 H 0 V ${gap}" fill="none" stroke="${col(look, cv.grid)}" stroke-width="1"/></pattern></defs>`);
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-grid)"/>`);
   }
+  if (background && cv.lines && cv.lines !== 'none') {
+    // lines=colour: ruled paper, a fine line across the page every linegap
+    const gap = Math.max(4, num(cv.linegap, 24));
+    out.push(`<defs><pattern id="fd-lines" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><rect y="${gap - 1}" width="${gap}" height="1" fill="${col(look, cv.lines)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-lines)"/>`);
+  }
+  if (background && cv.cross && cv.cross !== 'none') {
+    // cross=colour: a small + every crossgap, on the diagram's own coordinates, like a design tool's canvas
+    const gap = Math.max(8, num(cv.crossgap, 24)), c = gap / 2;
+    out.push(`<defs><pattern id="fd-cross" x="${-c}" y="${-c}" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse"><path d="M ${c - 3},${c} H ${c + 3} M ${c},${c - 3} V ${c + 3}" fill="none" stroke="${col(look, cv.cross)}" stroke-width="1"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-cross)"/>`);
+  }
+  if (background && cv.iso && cv.iso !== 'none') {
+    // iso=colour: dots on a triangle lattice, isogap apart, for isometric sketches; every other row shifts half a gap
+    const gap = Math.max(4, num(cv.isogap, 24)), h = Math.round(gap * Math.sqrt(3) * 100) / 100;
+    out.push(`<defs><pattern id="fd-iso" width="${gap}" height="${h}" patternUnits="userSpaceOnUse"><circle cx="${gap / 4}" cy="${h / 4}" r="0.9" fill="${col(look, cv.iso)}"/><circle cx="${(gap * 3) / 4}" cy="${(h * 3) / 4}" r="0.9" fill="${col(look, cv.iso)}"/></pattern></defs>`);
+    out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="url(#fd-iso)"/>`);
+  }
   if (background && cv.bars && cv.bars !== 'none') {
     // bars=colour: the page as listing paper, a band of colour every other bargap
     const gap = Math.max(8, num(cv.bargap, 32));

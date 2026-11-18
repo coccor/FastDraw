@@ -313,7 +313,9 @@ function render() {
   ];
   // a route that simplifies to one point (the caption box is an obstacle): the line draws nothing
   const onePoint = 'ic: icon "Caption" at 100,100 icon=database\n112,137 -> 112,137';
-  const sources = [...texts, conns, shapes, table, legend, ...charts, onePoint];
+  // the page patterns a diagram's canvas line can pick, gaps held at their minimum, and the triangle lattice's height
+  const pages = 'canvas paper=#ffffff dots=none grid=ink/0.07 gridgap=2 lines=ink/0.08 linegap=17 cross=accent crossgap=3 iso=ink/0.14 isogap=13 bars=ink/0.03\na: node "A" at 40,40';
+  const sources = [...texts, conns, shapes, table, legend, ...charts, onePoint, pages];
   return sources.flatMap((src) => [src, `look sketch\n${src}`].map((s) => ({ src: s, svg: renderSvg(buildScene(s, null, '')) })));
 }
 

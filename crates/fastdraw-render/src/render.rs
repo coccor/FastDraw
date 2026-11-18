@@ -2854,6 +2854,55 @@ pub fn render_body(sc: &Scene, background: bool) -> String {
         ));
         out.push(page("fill=\"url(#fd-grid)\""));
     }
+    if background && set_not_none(g(cv, "lines")) {
+        // lines=colour: ruled paper, a fine line across the page every linegap
+        let gap = js::max(4.0, num(g(cv, "linegap"), 24.0));
+        out.push(format!(
+            "<defs><pattern id=\"fd-lines\" width=\"{}\" height=\"{}\" patternUnits=\"userSpaceOnUse\"><rect y=\"{}\" width=\"{}\" height=\"1\" fill=\"{}\"/></pattern></defs>",
+            n(gap),
+            n(gap),
+            n(gap - 1.0),
+            n(gap),
+            col(look, g(cv, "lines"), None)
+        ));
+        out.push(page("fill=\"url(#fd-lines)\""));
+    }
+    if background && set_not_none(g(cv, "cross")) {
+        // cross=colour: a small + every crossgap, on the diagram's own coordinates, like a design tool's canvas
+        let gap = js::max(8.0, num(g(cv, "crossgap"), 24.0));
+        let c = gap / 2.0;
+        out.push(format!(
+            "<defs><pattern id=\"fd-cross\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" patternUnits=\"userSpaceOnUse\"><path d=\"M {},{} H {} M {},{} V {}\" fill=\"none\" stroke=\"{}\" stroke-width=\"1\"/></pattern></defs>",
+            n(-c),
+            n(-c),
+            n(gap),
+            n(gap),
+            n(c - 3.0),
+            n(c),
+            n(c + 3.0),
+            n(c),
+            n(c - 3.0),
+            n(c + 3.0),
+            col(look, g(cv, "cross"), None)
+        ));
+        out.push(page("fill=\"url(#fd-cross)\""));
+    }
+    if background && set_not_none(g(cv, "iso")) {
+        // iso=colour: dots on a triangle lattice, isogap apart, for isometric sketches; every other row shifts half a gap
+        let gap = js::max(4.0, num(g(cv, "isogap"), 24.0));
+        let h = js::round(gap * 3f64.sqrt() * 100.0) / 100.0;
+        let c = col(look, g(cv, "iso"), None);
+        out.push(format!(
+            "<defs><pattern id=\"fd-iso\" width=\"{}\" height=\"{}\" patternUnits=\"userSpaceOnUse\"><circle cx=\"{}\" cy=\"{}\" r=\"0.9\" fill=\"{c}\"/><circle cx=\"{}\" cy=\"{}\" r=\"0.9\" fill=\"{c}\"/></pattern></defs>",
+            n(gap),
+            n(h),
+            n(gap / 4.0),
+            n(h / 4.0),
+            n(gap * 3.0 / 4.0),
+            n(h * 3.0 / 4.0)
+        ));
+        out.push(page("fill=\"url(#fd-iso)\""));
+    }
     if background && set_not_none(g(cv, "bars")) {
         // bars=colour: the page as listing paper, a band of colour every other bargap
         let gap = js::max(8.0, num(g(cv, "bargap"), 32.0));
