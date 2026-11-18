@@ -1,0 +1,10 @@
+# a colour block holding the icon, square and set wide; a side bar on a box and on a rounded group; left and centred text
+a: rect "Virtual server" sub="Dedicated" at 40,40 240x48 icon=database icon.block=#198038 icon.color=#ffffff icon.size=24 title.align=left
+b: rect "Gateway" at 40,120 200x64 icon=cloud icon.block=#0f62fe icon.block.w=40 icon.color=#ffffff
+c: rect "Subnet 1" sub="10.10.10.0/24" at 320,40 240x64 side=#0f62fe side.w=6 icon=globe title.align=left
+d: zone "IBM Cloud" at 320,140 300x120 side=#0f62fe radius=8 fill=#edf5ff
+e: ellipse "No bar" at 40,220 120x60 side=#da1e28 icon=user icon.block=#da1e28
+# a small node: the icon on a coloured square on top, the name under it; an actor on a circle; a bare icon on a square
+f: rect "Internet" sub="public" at 640,40 144x104 fill=none stroke=none icon=globe icon.pos=top icon.size=24 icon.bg=#0f62fe icon.color=#ffffff
+g: rect "User" at 640,180 144x104 fill=none stroke=none icon=user icon.pos=top icon.size=24 icon.bg=#161616 icon.bg.shape=circle icon.bg.size=44 icon.color=#ffffff
+h: rect at 820,40 64x64 icon=cloud icon.bg=#198038 icon.color=#ffffff

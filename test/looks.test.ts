@@ -276,3 +276,29 @@ test('a zone\'s corner tag sits on its caption row, and a left caption starts af
     assert.ok(Math.abs(+tag[2] - 44) <= 1, 'the tag is level with the caption, 4px into the zone');
   }
 });
+
+test('icon.block fills the strip that holds the icon and starts the text after it; side= draws a bar down the left edge', () => {
+  const svg = (el: string) => renderSvg(buildScene(el + '\n', parseLook('style node shape=rect size=144x48 fill=#ffffff stroke=#000000\n')));
+  const block = svg('a: node "Server" at 40,40 240x48 icon=database icon.block=#198038 icon.size=24 title.align=left');
+  // a square strip as tall as the box, the 24px icon centred in it, the text 12px after it
+  assert.ok(block.includes('<path d="M 40,40 H 88 V 88 H 40 Z" fill="#198038"/>'), block);
+  assert.ok(block.includes('<g transform="translate(52 52)'), block);
+  assert.match(block, /<text x="100"[^>]*>Server</);
+  const side = svg('a: node "Subnet" at 40,40 200x64 side=#0f62fe radius=8');
+  // the bar keeps the box's rounding on its left corners
+  assert.ok(side.includes('<path d="M 44,40 H 44 V 104 H 44 Q 40,104 40,100 V 44 Q 40,40 44,40 Z" fill="#0f62fe"/>'), side);
+  // neither is drawn on a shape that is not a box
+  assert.doesNotMatch(svg('a: ellipse "E" at 40,40 120x60 side=#ff0000 icon=user icon.block=#ff0000'), /fill="#ff0000"/);
+});
+
+test('icon.bg puts a square or circle behind the icon, and an icon on top leaves room for it above the text', () => {
+  const svg = (el: string) => renderSvg(buildScene(el + '\n', parseLook('style node shape=rect size=144x104 fill=none stroke=none\n')));
+  const sq = svg('a: node "Internet" at 40,40 icon=globe icon.pos=top icon.size=24 icon.bg=#0f62fe');
+  // the 24px icon plus 12px each side, centred on the icon, above the name
+  const m = /<rect x="([\d.]+)" y="([\d.]+)" width="48" height="48" fill="#0f62fe"\/>/.exec(sq);
+  assert.ok(m, sq);
+  assert.equal(Number(m![1]), 88);
+  const nameY = Number(/<text x="112" y="([\d.]+)"[^>]*>Internet</.exec(sq)![1]);
+  assert.ok(nameY > Number(m![2]) + 48, `name at ${nameY} is under the square`);
+  assert.match(svg('a: node "User" at 40,40 icon=user icon.pos=top icon.bg=#000000 icon.bg.shape=circle icon.bg.size=40'), /<circle cx="112" cy="[\d.]+" r="20" fill="#000000"\/>/);
+});
