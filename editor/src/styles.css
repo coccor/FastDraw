@@ -89,6 +89,11 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .pswatch.pattern { overflow: hidden; color: rgba(15, 23, 42, .75); }
 .pswatch.pattern svg { position: absolute; inset: 0; display: block; }
 .pswatch.pattern kbd { z-index: 1; }
+/* under the grid: the pattern's name, the key it writes and what it is for; two lines kept so the box does not jump */
+.patterninfo { border-top: 1px solid var(--line); padding-top: 12px; margin-top: -4px; }
+.patterninfo h5 { display: flex; align-items: baseline; gap: 8px; }
+.patterninfo code { font: 11px 'Geist Mono', monospace; color: var(--mute); }
+.patterninfo p { margin: 0; min-height: 2.8em; font-size: 12px; line-height: 1.4; color: var(--mute); }
 .dropdown .canvasbg button.link { padding: 0; background: none; border: none; color: var(--accent); font-size: 12px; }
 
 /* properties */

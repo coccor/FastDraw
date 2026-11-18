@@ -315,7 +315,8 @@ function render() {
   const onePoint = 'ic: icon "Caption" at 100,100 icon=database\n112,137 -> 112,137';
   // the page patterns a diagram's canvas line can pick, gaps held at their minimum, and the triangle lattice's height
   const pages = 'canvas paper=#ffffff dots=none grid=ink/0.07 gridgap=2 lines=ink/0.08 linegap=17 cross=accent crossgap=3 iso=ink/0.14 isogap=13 bars=ink/0.03\na: node "A" at 40,40';
-  const sources = [...texts, conns, shapes, table, legend, ...charts, onePoint, pages];
+  const pages2 = 'canvas dots=none diag=ink/0.06 diaggap=7 graph=accent graphgap=3 hex=ink/0.08 hexgap=11\na: node "A" at 40,40';
+  const sources = [...texts, conns, shapes, table, legend, ...charts, onePoint, pages, pages2];
   return sources.flatMap((src) => [src, `look sketch\n${src}`].map((s) => ({ src: s, svg: renderSvg(buildScene(s, null, '')) })));
 }
 

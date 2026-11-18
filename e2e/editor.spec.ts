@@ -1103,6 +1103,10 @@ test('the menu changes the background for this diagram and resets to the look', 
   expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none grid=ink/0.07');
   await page.keyboard.press('a');
   expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#ffffff dots=none iso=ink/0.14');
+  // under the grid, the current pattern's name, its key and what it is for; a hovered tile shows its own
+  await expect(pop.locator('.patterninfo')).toContainText('Isometric dotsiso=Dots on a triangle lattice');
+  await pop.getByRole('radio', { name: 'Hexagons' }).hover();
+  await expect(pop.locator('.patterninfo')).toContainText('A honeycomb of hexagons');
   await page.keyboard.press('Escape');
   await expect(pop).toHaveCount(0);
   // back to the look's own dots drops the override

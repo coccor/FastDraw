@@ -253,9 +253,9 @@ pub struct Scene {
 /// What can sit on the end of a line. The last six are the entity-relationship cardinalities.
 pub const SERIES: [&str; 4] = ["bars", "line", "area", "dots"];
 /// The background keys a diagram's canvas line may set, overriding the look's canvas statement.
-pub const CANVAS_KEYS: [&str; 13] = [
+pub const CANVAS_KEYS: [&str; 19] = [
     "paper", "dots", "dotgap", "grid", "gridgap", "lines", "linegap", "cross", "crossgap", "iso",
-    "isogap", "bars", "bargap",
+    "isogap", "bars", "bargap", "diag", "diaggap", "graph", "graphgap", "hex", "hexgap",
 ];
 pub const MARKERS: [&str; 15] = [
     "none",
@@ -1339,7 +1339,7 @@ impl Builder {
     fn canvas_statement(&mut self, st: &Stmt) {
         // the canvas has no size: the picture is as big as what is drawn. A WxH left from older files is ignored
         self.canvas_line = Some(st.line);
-        // paper= and the page patterns (dots=, grid=, lines=, cross=, iso=, bars= and their gaps) on the diagram's canvas
+        // paper= and the page patterns (dots=, grid=, lines=, cross=, iso=, bars=, diag=, graph=, hex= and their gaps) on the diagram's canvas
         // line override the look's background for this diagram
         static SIZE: OnceLock<Regex> = OnceLock::new();
         let mut bg = Props::new();

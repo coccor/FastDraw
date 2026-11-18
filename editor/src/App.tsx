@@ -100,7 +100,8 @@ const TOOLS: [string, string, string][] = [
 // Background colours offered besides the look's own: plain white and a few light, cool tints.
 const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
 
-// The page dressing a look asks for (dots, a grid, ruled lines, crosses, isometric dots, listing bars, sprocket feed), stretched over the whole visible view
+// The page dressing a look asks for (dots, a grid, ruled lines, crosses, isometric dots, hatching, graph paper, hexagons,
+// listing bars, sprocket feed), stretched over the whole visible view
 // instead of the diagram's box. The patterns themselves come from renderBody's <defs>, so they match the export.
 function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: number } }) {
   const cv = sc.look.canvas, on = (v: string | undefined) => !!v && v !== 'none';
@@ -114,6 +115,9 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
       {on(cv.lines) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-lines)" pointerEvents="none" />}
       {on(cv.cross) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-cross)" pointerEvents="none" />}
       {on(cv.iso) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-iso)" pointerEvents="none" />}
+      {on(cv.diag) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-diag)" pointerEvents="none" />}
+      {on(cv.graph) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-graph)" pointerEvents="none" />}
+      {on(cv.hex) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-hex)" pointerEvents="none" />}
       {on(cv.bars) && <rect x={x} y={y} width={w} height={h} fill="url(#fd-bars)" pointerEvents="none" />}
       {on(cv.feed) && <>
         <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" pointerEvents="none" />
@@ -126,13 +130,16 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
 
 // The page patterns the Background menu offers, each with the colour it starts in when the look has none of its own.
 // A diagram shows one at a time: picking one turns the others off.
-const PAGE_PATTERNS: { key: string; gap: string; label: string; start: string }[] = [
-  { key: 'dots', gap: 'dotgap', label: 'Dots', start: 'ink/0.1' },
-  { key: 'grid', gap: 'gridgap', label: 'Grid', start: 'ink/0.07' },
-  { key: 'lines', gap: 'linegap', label: 'Ruled lines', start: 'ink/0.08' },
-  { key: 'cross', gap: 'crossgap', label: 'Crosses', start: 'ink/0.16' },
-  { key: 'iso', gap: 'isogap', label: 'Isometric dots', start: 'ink/0.14' },
-  { key: 'bars', gap: 'bargap', label: 'Stripes', start: 'ink/0.035' },
+const PAGE_PATTERNS: { key: string; gap: string; label: string; start: string; about: string }[] = [
+  { key: 'dots', gap: 'dotgap', label: 'Dots', start: 'ink/0.1', about: 'A dot at every grid point, a light guide for placing things.' },
+  { key: 'grid', gap: 'gridgap', label: 'Grid', start: 'ink/0.07', about: 'Squares, like graph or blueprint paper.' },
+  { key: 'lines', gap: 'linegap', label: 'Ruled lines', start: 'ink/0.08', about: 'Lines across the page, like a notebook.' },
+  { key: 'cross', gap: 'crossgap', label: 'Crosses', start: 'ink/0.16', about: "A small + at every grid point, like a design tool's canvas." },
+  { key: 'iso', gap: 'isogap', label: 'Isometric dots', start: 'ink/0.14', about: 'Dots on a triangle lattice, for isometric drawings.' },
+  { key: 'bars', gap: 'bargap', label: 'Stripes', start: 'ink/0.035', about: 'Wide bands, like printer listing paper.' },
+  { key: 'diag', gap: 'diaggap', label: 'Diagonal lines', start: 'ink/0.06', about: 'Fine lines at 45 degrees over the whole page.' },
+  { key: 'graph', gap: 'graphgap', label: 'Graph paper', start: 'ink/0.09', about: 'A fine grid with a heavier line every fifth square.' },
+  { key: 'hex', gap: 'hexgap', label: 'Hexagons', start: 'ink/0.08', about: 'A honeycomb of hexagons, for maps and boards.' },
 ];
 const isOn = (v: string | undefined) => !!v && v !== 'none';
 
@@ -147,6 +154,9 @@ function PatternTile({ kind, paper, ink, at = '', size = 22 }: { kind: string; p
     cross: <pattern id={id} x={-4} y={-4} width={8} height={8} patternUnits="userSpaceOnUse"><path d="M 2.5,4 H 5.5 M 4,2.5 V 5.5" fill="none" stroke={ink} strokeWidth={1} /></pattern>,
     iso: <pattern id={id} width={g} height={h} patternUnits="userSpaceOnUse"><circle cx={g / 4} cy={h / 4} r={0.9} fill={ink} /><circle cx={(g * 3) / 4} cy={(h * 3) / 4} r={0.9} fill={ink} /></pattern>,
     bars: <pattern id={id} width={g * 2} height={g * 2} patternUnits="userSpaceOnUse"><rect width={g * 2} height={g} fill={ink} opacity={0.35} /></pattern>,
+    diag: <pattern id={id} width={5} height={5} patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width={0.9} height={5} fill={ink} /></pattern>,
+    graph: <pattern id={id} width={15} height={15} patternUnits="userSpaceOnUse"><path d="M 3,0 V 15 M 6,0 V 15 M 9,0 V 15 M 12,0 V 15 M 0,3 H 15 M 0,6 H 15 M 0,9 H 15 M 0,12 H 15" fill="none" stroke={ink} strokeWidth={0.5} strokeOpacity={0.5} /><path d="M 0,0.5 H 15 M 0.5,0 V 15" fill="none" stroke={ink} strokeWidth={1} /></pattern>,
+    hex: <pattern id={id} width={8.66} height={15} patternUnits="userSpaceOnUse"><path d="M 4.33,0 V 2.5 L 8.66,5 V 10 L 4.33,12.5 V 15 M 4.33,12.5 L 0,10 V 5 L 4.33,2.5" fill="none" stroke={ink} strokeWidth={0.8} /></pattern>,
   };
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
@@ -162,10 +172,12 @@ function PatternTile({ kind, paper, ink, at = '', size = 22 }: { kind: string; p
 // click outside closes it.
 const PATTERN_KEYS = 'qwertasdfg';
 function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose }: {
-  anchor: HTMLElement; choices: { key: string; label: string }[]; current: string; paper: string; ink: string;
+  anchor: HTMLElement; choices: { key: string; label: string; about: string }[]; current: string; paper: string; ink: string;
   onPick: (kind: string) => void; onClose: () => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  const shown = choices.find((p) => p.key === (hover ?? current));
   const [pos, setPos] = useState({ left: 0, top: 0 });
   useLayoutEffect(() => {
     const a = anchor.getBoundingClientRect(), side = (anchor.closest('.dropdown') ?? anchor).getBoundingClientRect();
@@ -195,13 +207,21 @@ function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose 
           {choices.map((p, i) => (
             <button key={p.key} type="button" role="radio" aria-checked={current === p.key} aria-label={p.label}
               title={`${p.label} (${PATTERN_KEYS[i]!.toUpperCase()})`}
-              className={'pswatch pattern' + (current === p.key ? ' on' : '')} onClick={() => onPick(p.key)}>
+              className={'pswatch pattern' + (current === p.key ? ' on' : '')} onClick={() => onPick(p.key)}
+              onPointerEnter={() => setHover(p.key)} onPointerLeave={() => setHover(null)}>
               <PatternTile kind={p.key} paper={paper} ink={ink} at="p" size={34} />
               <kbd>{PATTERN_KEYS[i]}</kbd>
             </button>
           ))}
         </div>
       </section>
+      {/* the pattern under the pointer, else the current one: its name, what it is for, and the key it writes */}
+      {shown && (
+        <section className="patterninfo" aria-live="polite">
+          <h5>{shown.label}{shown.key !== 'none' && <code>{shown.key}=</code>}</h5>
+          <p>{shown.about}</p>
+        </section>
+      )}
     </div>,
     document.body,
   );
@@ -220,7 +240,7 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
     p.key === kind ? (isOn(base[p.key]) ? null : p.start) : isOn(base[p.key]) ? 'none' : null])));
   const reset = () => set(Object.fromEntries(['paper', ...PAGE_PATTERNS.flatMap((p) => [p.key, p.gap])].map((k) => [k, null])));
   // laid out like the colour row above: five quick picks, a divider, then a button that opens the rest
-  const choices = [{ key: 'none', label: 'None' }, ...PAGE_PATTERNS];
+  const choices = [{ key: 'none', label: 'None', about: 'A plain page in the background colour.' }, ...PAGE_PATTERNS];
   const quick = choices.slice(0, 5), more = choices.slice(5);
   const [open, setOpen] = useState(false);
   const moreBtn = useRef<HTMLButtonElement>(null);

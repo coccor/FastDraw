@@ -116,6 +116,15 @@ test('canvas lines=, cross= and iso= draw ruled, crossed and isometric pages; a 
   assert.ok(buildScene('canvas stripes=1\n', null).issues.some((i) => /canvas only takes paper=, dots=, dotgap=, grid=/.test(i.msg)));
 });
 
+test('canvas diag=, graph= and hex= hatch the page, rule it as graph paper and lay a honeycomb over it', () => {
+  const out = renderSvg(buildScene('canvas dots=none diag=#000000 diaggap=8 graph=#ff0000 graphgap=4 hex=#0000ff hexgap=10\na: node "A" at 40,40\n', null));
+  assert.doesNotMatch(out, /canvas only takes/);
+  assert.ok(out.includes('<pattern id="fd-diag" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1" height="8" fill="#000000"/></pattern>'));
+  assert.ok(out.includes('<pattern id="fd-graph" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 4,0 V 20 M 0,4 H 20 M 8,0 V 20 M 0,8 H 20 M 12,0 V 20 M 0,12 H 20 M 16,0 V 20 M 0,16 H 20" fill="none" stroke="#ff0000" stroke-width="0.5" stroke-opacity="0.6"/><path d="M 0,0.5 H 20 M 0.5,0 V 20" fill="none" stroke="#ff0000" stroke-width="1"/></pattern>'));
+  assert.ok(out.includes('<pattern id="fd-hex" width="17.32" height="30" patternUnits="userSpaceOnUse"><path d="M 8.66,0 V 5 L 17.32,10 V 20 L 8.66,25 V 30 M 8.66,25 L 0,20 V 10 L 8.66,5" fill="none" stroke="#0000ff" stroke-width="1"/></pattern>'));
+  for (const id of ['diag', 'graph', 'hex']) assert.equal(out.split(`url(#fd-${id})`).length, 2); // one page rect each
+});
+
 test('icon.pos=corner puts a group\'s icon in its top-left corner as a tab, and its caption after it', () => {
   const lk = parseLook('icon tab "M4 4h16v16H4z"\nstyle zone shape=rect fill=none stroke=#000000 title.pos=top title.align=left layer=back\n');
   const svg = (extra: string) => renderSvg(buildScene(`z: zone "AWS Cloud" at 40,40 400x200 icon=tab ${extra}\n`, lk));
