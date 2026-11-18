@@ -215,10 +215,10 @@ function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose 
           ))}
         </div>
       </section>
-      {/* the pattern under the pointer, else the current one: its name, what it is for, and the key it writes */}
+      {/* the pattern under the pointer, else the current one: its name and what it is for */}
       {shown && (
         <section className="patterninfo" aria-live="polite">
-          <h5>{shown.label}{shown.key !== 'none' && <code>{shown.key}=</code>}</h5>
+          <h5>{shown.label}</h5>
           <p>{shown.about}</p>
         </section>
       )}
