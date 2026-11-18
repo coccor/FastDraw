@@ -310,6 +310,16 @@ test('shadow= lays the shape grown in fading steps under it; icon.dx and icon.dy
   const steps = [...s.matchAll(/fill="#000000" fill-opacity="0.17" stroke="none"/g)];
   assert.equal(steps.length, 6, s);
   assert.ok(s.includes('<rect x="28" y="32" width="104" height="104" rx="18"'), s);
+  // shadow.dx moves it sideways: here 3px to the left
+  assert.ok(svg('a: node "A" at 40,40 radius=6 shadow=#000000 shadow.size=12 shadow.dx=-3 shadow.dy=4').includes('<rect x="25" y="32" width="104" height="104" rx="18"'));
   const at = (extra: string) => /translate\(([\d.-]+) ([\d.-]+)\)/.exec(svg(`a: node "A" at 40,40 icon=user icon.pos=corner ${extra}`))!.slice(1).map(Number);
   assert.deepEqual(at('icon.dx=-8 icon.dy=-6'), [32, 34]);
+});
+
+test('icon.bg.shadow lays a soft shadow under the icon\'s background', () => {
+  const svg = renderSvg(buildScene('a: zone "Home" at 40,40 200x120 icon=house icon.pos=corner icon.size=16 icon.bg=#eeeeff icon.bg.shape=circle icon.bg.size=32 icon.bg.shadow=#000000\n', parseLook('style zone shape=rect fill=none stroke=#000000 title.pos=top title.align=left\n')));
+  // six fading circles, the widest first and 3px low, then the badge itself
+  assert.equal([...svg.matchAll(/<circle cx="48" cy="51" r="[\d.]+" fill="#000000" fill-opacity="0.17"\/>/g)].length, 6, svg);
+  assert.ok(svg.includes('<circle cx="48" cy="51" r="24" fill="#000000" fill-opacity="0.17"/>'), svg);
+  assert.ok(svg.includes('<circle cx="48" cy="48" r="16" fill="#eeeeff"/>'), svg);
 });

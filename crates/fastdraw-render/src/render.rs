@@ -188,19 +188,20 @@ fn boxy(s: &Shape) -> bool {
 //   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
 const SHADOW_STEPS: f64 = 6.0;
 
-// shadow=colour: a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dy)
+// shadow=colour: a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dx, shadow.dy)
 fn underlay(cx: &mut RenderCtx, look: &Look, s: &Shape) -> Vec<String> {
     let p = &s.p;
     let mut out = Vec::new();
     if set_not_none(g(p, "shadow")) && boxy(s) {
         let size = num(g(p, "shadow.size"), 12.0);
+        let dx = num(g(p, "shadow.dx"), 0.0);
         let dy = num(g(p, "shadow.dy"), 4.0);
         let c = col(look, g(p, "shadow"), None);
         let mut i = SHADOW_STEPS;
         while i >= 1.0 {
             let e = r2(size * i / SHADOW_STEPS);
             let grown = Shape {
-                x: s.x - e,
+                x: s.x - e + dx,
                 y: s.y - e + dy,
                 w: s.w + e * 2.0,
                 h: s.h + e * 2.0,
@@ -1256,24 +1257,48 @@ fn draw_icon(look: &Look, p: &Props, x: f64, y: f64, size: f64) -> String {
     }
     let b = num(g(p, "icon.bg.size"), size + 24.0);
     let (cx, cy) = (x + size / 2.0, y + size / 2.0);
-    let c = col(look, g(p, "icon.bg"), None);
-    let bg = if g(p, "icon.bg.shape") == Some("circle") {
-        format!(
-            "<circle cx=\"{}\" cy=\"{}\" r=\"{}\" fill=\"{c}\"/>",
-            n(r2(cx)),
-            n(r2(cy)),
-            n(r2(b / 2.0))
-        )
-    } else {
-        format!(
-            "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"{c}\"/>",
-            n(r2(cx - b / 2.0)),
-            n(r2(cy - b / 2.0)),
-            n(r2(b)),
-            n(r2(b))
-        )
+    let circle = g(p, "icon.bg.shape") == Some("circle");
+    let disc = |e: f64, dx: f64, dy: f64, fill: &str| -> String {
+        if circle {
+            format!(
+                "<circle cx=\"{}\" cy=\"{}\" r=\"{}\" {fill}/>",
+                n(r2(cx + dx)),
+                n(r2(cy + dy)),
+                n(r2(b / 2.0 + e))
+            )
+        } else {
+            format!(
+                "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" {fill}/>",
+                n(r2(cx - b / 2.0 - e + dx)),
+                n(r2(cy - b / 2.0 - e + dy)),
+                n(r2(b + e * 2.0)),
+                n(r2(b + e * 2.0))
+            )
+        }
     };
-    bg + &draw_icon_only(look, p, x, y, size)
+    // icon.bg.shadow: a soft shadow under it, as shadow= lays under a shape (icon.bg.shadow.size, .dx, .dy)
+    let mut under = String::new();
+    if set_not_none(g(p, "icon.bg.shadow")) {
+        let ss = num(g(p, "icon.bg.shadow.size"), 8.0);
+        let sdx = num(g(p, "icon.bg.shadow.dx"), 0.0);
+        let sdy = num(g(p, "icon.bg.shadow.dy"), 3.0);
+        let sc = col(look, g(p, "icon.bg.shadow"), None);
+        let mut i = SHADOW_STEPS;
+        while i >= 1.0 {
+            under += &disc(
+                r2(ss * i / SHADOW_STEPS),
+                sdx,
+                sdy,
+                &format!(
+                    "fill=\"{sc}\" fill-opacity=\"{}\"",
+                    n(r2(1.0 / SHADOW_STEPS))
+                ),
+            );
+            i -= 1.0;
+        }
+    }
+    let fill = format!("fill=\"{}\"", col(look, g(p, "icon.bg"), None));
+    under + &disc(0.0, 0.0, 0.0, &fill) + &draw_icon_only(look, p, x, y, size)
 }
 
 fn draw_icon_only(look: &Look, p: &Props, x: f64, y: f64, size: f64) -> String {

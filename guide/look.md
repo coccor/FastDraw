@@ -124,11 +124,11 @@ Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`
 | `halftone=colour` | fill with a field of printed dots; `halftone.gap=` spaces them, `halftone.r=` sizes them |
 | `shade=colour` | a shadow of fine diagonal lines down the right and bottom of the shape; `shade.size=` is how far it reaches (default 5), `shade.gap=` and `shade.sw=` space and weigh its lines |
 | `depth=N` | a slab N pixels below the shape, so it reads as a solid with a side; `depth.fill=` and `depth.stroke=` colour it. A line that ends on the bottom edge ends on the slab |
-| `shadow=colour` | a soft shadow under the shape: the shape grown in six fading steps, `shadow.size=` far (default 12) and `shadow.dy=` lower (default 4); give a faint colour such as `#3b3f8c/0.1` |
+| `shadow=colour` | a soft shadow under the shape: the shape grown in six fading steps, `shadow.size=` far (default 12), `shadow.dx=` to the side (default 0) and `shadow.dy=` lower (default 4); give a faint colour such as `#3b3f8c/0.1` |
 | `inner=colour` | a second, finer rule just inside the outline; `inner.gap=` (default 3.5) and `inner.sw=` |
 | `side=colour` | a bar down the left edge of a box, `side.w=` wide (default 4), as IBM draws a side-bar node and a group |
 | `icon.block=colour` | with the icon at the left: the strip that holds it is filled, as tall as the box and `icon.block.w=` wide (square by default), the icon centred in it and the text 12px after it, as IBM draws a colour-block node; give the icon a light `icon.color=` |
-| `icon.bg=colour` | a filled square behind the icon, `icon.bg.size=` across (the icon plus 12px each side by default); `icon.bg.shape=circle` for a circle. With `icon.pos=top`, `fill=none stroke=none` and a white `icon.color` it draws IBM's small node: a coloured square with a white icon and the name under it |
+| `icon.bg=colour` | a filled square behind the icon, `icon.bg.size=` across (the icon plus 12px each side by default); `icon.bg.shape=circle` for a circle; `icon.bg.shadow=colour` lays a soft shadow under it (`icon.bg.shadow.size=`, `.dx=`, `.dy=`, default 8, 0, 3). With `icon.pos=top`, `fill=none stroke=none` and a white `icon.color` it draws IBM's small node: a coloured square with a white icon and the name under it |
 | `corners=plus` | a mark on each corner of a box: `plus` or `square`; `corners.color=`, `corners.size=` |
 | `offset=dx,dy` | print the fill that far out of register with the outline |
 | `blend=multiply` | let this style's ink darken what it overlaps, like overprinting (also on line and text styles) |

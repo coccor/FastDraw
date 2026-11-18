@@ -51,14 +51,14 @@ const SHADOW_STEPS = 6;
 // What is drawn under a shape before the shape itself:
 //   shade=colour  a shadow of fine diagonal lines down its right and bottom (shade.size, shade.gap, shade.sw)
 //   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
-//   shadow=colour a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dy)
+//   shadow=colour a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dx, shadow.dy)
 function underlay(look: Look, s: Shape): string[] {
   const p = s.p, out: string[] = [];
   if (p.shadow && p.shadow !== 'none' && boxy(s)) {
-    const size = num(p['shadow.size'], 12), dy = num(p['shadow.dy'], 4), c = col(look, p.shadow);
+    const size = num(p['shadow.size'], 12), dx = num(p['shadow.dx'], 0), dy = num(p['shadow.dy'], 4), c = col(look, p.shadow);
     for (let i = SHADOW_STEPS; i >= 1; i--) {
       const e = r2((size * i) / SHADOW_STEPS);
-      const grown: Shape = { ...s, x: s.x - e, y: s.y - e + dy, w: s.w + e * 2, h: s.h + e * 2, p: { ...p, radius: String(num(p.radius, 0) + e) } };
+      const grown: Shape = { ...s, x: s.x - e + dx, y: s.y - e + dy, w: s.w + e * 2, h: s.h + e * 2, p: { ...p, radius: String(num(p.radius, 0) + e) } };
       out.push(outlinePlain(grown, `fill="${c}" fill-opacity="${r2(1 / SHADOW_STEPS)}" stroke="none"`));
     }
   }
@@ -362,10 +362,16 @@ const iconBg = (p: Props) => !!p['icon.bg'] && p['icon.bg'] !== 'none';
 function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
   if (!iconBg(p)) return drawIconOnly(look, p, x, y, size);
   const b = num(p['icon.bg.size'], size + 24), cx = x + size / 2, cy = y + size / 2;
-  const bg = p['icon.bg.shape'] === 'circle'
-    ? `<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r2(b / 2)}" fill="${col(look, p['icon.bg'])}"/>`
-    : `<rect x="${r2(cx - b / 2)}" y="${r2(cy - b / 2)}" width="${r2(b)}" height="${r2(b)}" fill="${col(look, p['icon.bg'])}"/>`;
-  return bg + drawIconOnly(look, p, x, y, size);
+  const disc = (e: number, dx: number, dy: number, fill: string) => p['icon.bg.shape'] === 'circle'
+    ? `<circle cx="${r2(cx + dx)}" cy="${r2(cy + dy)}" r="${r2(b / 2 + e)}" ${fill}/>`
+    : `<rect x="${r2(cx - b / 2 - e + dx)}" y="${r2(cy - b / 2 - e + dy)}" width="${r2(b + e * 2)}" height="${r2(b + e * 2)}" ${fill}/>`;
+  // icon.bg.shadow: a soft shadow under it, as shadow= lays under a shape (icon.bg.shadow.size, .dx, .dy)
+  let under = '';
+  if (p['icon.bg.shadow'] && p['icon.bg.shadow'] !== 'none') {
+    const ss = num(p['icon.bg.shadow.size'], 8), sdx = num(p['icon.bg.shadow.dx'], 0), sdy = num(p['icon.bg.shadow.dy'], 3), sc = col(look, p['icon.bg.shadow']);
+    for (let i = SHADOW_STEPS; i >= 1; i--) under += disc(r2((ss * i) / SHADOW_STEPS), sdx, sdy, `fill="${sc}" fill-opacity="${r2(1 / SHADOW_STEPS)}"`);
+  }
+  return under + disc(0, 0, 0, `fill="${col(look, p['icon.bg'])}"`) + drawIconOnly(look, p, x, y, size);
 }
 
 function drawIconOnly(look: Look, p: Props, x: number, y: number, size: number): string {
