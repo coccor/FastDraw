@@ -9,6 +9,6 @@ f: rect "Internet" sub="public" at 640,40 144x104 fill=none stroke=none icon=glo
 g: rect "User" at 640,180 144x104 fill=none stroke=none icon=user icon.pos=top icon.size=24 icon.bg=#161616 icon.bg.shape=circle icon.bg.size=44 icon.color=#ffffff
 h: rect at 820,40 64x64 icon=cloud icon.bg=#198038 icon.color=#ffffff
 # a tile on a soft shadow; a group's badge moved out onto its corner
-i: rect "Account" at 920,40 80x80 radius=6 fill=#ffffff stroke=none shadow=#3c3c8c/0.2 shadow.size=10 shadow.dy=6 icon=user icon.pos=top icon.size=24
-j: zone "Home" at 920,160 240x160 radius=12 title.pos=top title.align=left title.dy=-20 icon=home icon.pos=corner icon.size=16 icon.bg=#e8e8fb icon.bg.shape=circle icon.bg.size=32 icon.dx=-8 icon.dy=-8 icon.bg.shadow=#3b3f8c/0.2 icon.bg.shadow.dx=-2
+i: rect "Account" at 920,40 80x80 radius=6 fill=#ffffff stroke=none shadow=#3c3c8c/0.2 shadow.size=10 shadow.dx=-3 shadow.dy=6 icon=user icon.pos=top icon.size=24
+j: zone "Home" at 920,160 240x160 radius=12 title.pos=top title.align=left title.dy=-20 icon=home icon.pos=corner icon.size=16 icon.bg=#e8e8fb icon.bg.shape=circle icon.bg.size=32 icon.dx=-8 icon.dy=-8 icon.bg.shadow=#3b3f8c/0.2 icon.bg.shadow.dx=-2 icon.bg.shadow.dy=4 icon.bg.shadow.size=6
 k: ellipse "Soft" at 1040,40 96x64 shadow=#000000/0.3 shadow.size=7
