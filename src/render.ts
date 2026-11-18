@@ -46,12 +46,22 @@ const blendOf = (p: Props) => (p.blend === 'multiply' ? BLEND : '');
 // The same shape somewhere else: for a slab under it, a shadow beside it, a fill printed out of register.
 const shifted = (s: Shape, dx: number, dy: number): Shape => ({ ...s, x: s.x + dx, y: s.y + dy, poly: s.poly?.map((q) => ({ x: q.x + dx, y: q.y + dy })) });
 const boxy = (s: Shape) => s.shape !== 'polygon' && s.shape !== 'arc';
+const SHADOW_STEPS = 6;
 
 // What is drawn under a shape before the shape itself:
 //   shade=colour  a shadow of fine diagonal lines down its right and bottom (shade.size, shade.gap, shade.sw)
 //   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
+//   shadow=colour a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dx, shadow.dy)
 function underlay(look: Look, s: Shape): string[] {
   const p = s.p, out: string[] = [];
+  if (p.shadow && p.shadow !== 'none' && boxy(s)) {
+    const size = num(p['shadow.size'], 12), dx = num(p['shadow.dx'], 0), dy = num(p['shadow.dy'], 4), c = col(look, p.shadow);
+    for (let i = SHADOW_STEPS; i >= 1; i--) {
+      const e = r2((size * i) / SHADOW_STEPS);
+      const grown: Shape = { ...s, x: s.x - e + dx, y: s.y - e + dy, w: s.w + e * 2, h: s.h + e * 2, p: { ...p, radius: String(num(p.radius, 0) + e) } };
+      out.push(outlinePlain(grown, `fill="${c}" fill-opacity="${r2(1 / SHADOW_STEPS)}" stroke="none"`));
+    }
+  }
   if (p.shade && p.shade !== 'none') {
     const k = num(p['shade.size'], 5);
     out.push(outlinePlain(shifted(s, k, k), `fill="${pattern('hatch', col(look, p.shade), num(p['shade.gap'], 2.6), num(p['shade.sw'], 0.6))}" stroke="none"`));
@@ -69,6 +79,8 @@ function underlay(look: Look, s: Shape): string[] {
 // What is drawn on a shape after its outline:
 //   inner=colour    a second, finer rule just inside the outline (inner.gap, inner.sw)
 //   corners=plus    a mark on each corner of a box: plus or square (corners.color, corners.size)
+//   side=colour     a bar down the left edge of a box (side.w)
+//   icon.block=c    the strip that holds the icon at the left of a box, filled (icon.block.w)
 function overlay(look: Look, s: Shape): string[] {
   const p = s.p, out: string[] = [];
   if (p.inner && p.inner !== 'none' && boxy(s)) {
@@ -78,6 +90,10 @@ function overlay(look: Look, s: Shape): string[] {
       out.push(outlinePlain(inset, `fill="none" stroke="${col(look, p.inner)}" stroke-width="${num(p['inner.sw'], 0.6)}"`));
     }
   }
+  // side=colour: a bar down the left edge (side.w wide, default 4), as IBM draws a side bar node and a group
+  // icon.block=colour: the strip at the left that holds the icon, filled, as IBM draws a colour block node
+  const ib = iconBox(s), strips: [string | undefined, number][] = [[p.side, num(p['side.w'], 4)], [ib?.block ? p['icon.block'] : undefined, ib?.block ?? 0]];
+  for (const [c, w] of strips) if (c && c !== 'none' && w > 0 && s.shape === 'rect') out.push(`<path d="${leftStrip(s, w)}" fill="${col(look, c)}"/>`);
   if (p.corners && p.corners !== 'none' && (s.shape === 'rect' || s.shape === 'table')) {
     const c = col(look, p['corners.color'] ?? p.stroke ?? 'ink'), k = num(p['corners.size'], p.corners === 'plus' ? 7 : 5) / 2;
     for (const [x, y] of [[s.x, s.y], [s.x + s.w, s.y], [s.x, s.y + s.h], [s.x + s.w, s.y + s.h]]) {
@@ -85,6 +101,12 @@ function overlay(look: Look, s: Shape): string[] {
     }
   }
   return out;
+}
+
+// The left w pixels of a box, with the box's own rounding on the two left corners.
+function leftStrip(s: Shape, w: number): string {
+  const r = Math.min(num(s.p.radius, 0), w, s.h / 2), x = s.x, y = s.y, b = s.y + s.h;
+  return r > 0 ? `M ${r2(x + r)},${y} H ${r2(x + w)} V ${b} H ${r2(x + r)} Q ${x},${b} ${x},${r2(b - r)} V ${r2(y + r)} Q ${x},${y} ${r2(x + r)},${y} Z` : `M ${x},${y} H ${r2(x + w)} V ${b} H ${x} Z`;
 }
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -298,7 +320,7 @@ function drawTable(look: Look, s: Shape): string {
 }
 
 // Where a shape's icon goes and how far it pushes the text. Shared with the checker.
-export function iconBox(s: Shape): { x: number; y: number; size: number; dx: number; dy: number } | null {
+export function iconBox(s: Shape): { x: number; y: number; size: number; dx: number; dy: number; block?: number; room?: number } | null {
   const p = s.p;
   if (!p.icon || p.icon === 'none') return null;
   // icon.pos=corner: a tab in the top-left corner, as a group's icon is drawn in a cloud provider's diagrams
@@ -306,7 +328,17 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
   const hasText = !!(s.text || p.sub) && p['title.pos'] !== 'top';
   const size = num(p['icon.size'], hasText ? 20 : Math.max(8, Math.min(s.w, s.h, 96) - (s.style === 'icon' ? 0 : 16)));
   if (!hasText) return { x: s.x + (s.w - size) / 2, y: s.y + (s.h - size) / 2, size, dx: 0, dy: 0 };
-  if (p['icon.pos'] === 'top') return { x: s.x + (s.w - size) / 2, y: 0, size, dx: 0, dy: (size + 6) / 2 }; // y set by the caller from the text block
+  // icon.block: the icon sits centred in a strip down the left side (icon.block.w wide, square by default) and
+  // the text starts 12px after the strip
+  if (p['icon.block'] && p['icon.block'] !== 'none' && (p['icon.pos'] ?? 'left') === 'left' && s.shape === 'rect') {
+    const bw = num(p['icon.block.w'], s.h);
+    return { x: s.x + (bw - size) / 2, y: s.y + (s.h - size) / 2, size, dx: bw / 2, dy: 0, block: bw };
+  }
+  if (p['icon.pos'] === 'top') {
+    // icon.bg: a square or circle behind the icon, which the text keeps clear of
+    const room = iconBg(p) ? num(p['icon.bg.size'], size + 24) : size;
+    return { x: s.x + (s.w - size) / 2, y: 0, size, dx: 0, dy: (room + 6) / 2, room }; // y set by the caller from the text block
+  }
   if (p['title.align'] === 'left' || p['title.align'] === 'right') return { x: s.x + 12, y: s.y + (s.h - size) / 2, size, dx: (size + 8) / 2, dy: 0 };
   // centred text: the icon sits right beside it, and the pair is centred in the box
   const widths = [
@@ -323,7 +355,26 @@ export function iconBox(s: Shape): { x: number; y: number; size: number; dx: num
 // bold) nearest that line thickness, in pixels at the size the icon is drawn.
 // A look's own icon is an outline in a 24 box, drawn with icon.color as its line, icon.fill inside its
 // closed parts, and icon.width as the line's thickness; it has no solid or duotone version.
+const iconBg = (p: Props) => !!p['icon.bg'] && p['icon.bg'] !== 'none';
+
+// icon.bg=colour: a filled square (or circle, icon.bg.shape=circle) behind the icon, icon.bg.size across (the icon
+// plus 12px each side by default), as IBM draws a small node: a coloured square with a white icon, its name under it
 function drawIcon(look: Look, p: Props, x: number, y: number, size: number): string {
+  if (!iconBg(p)) return drawIconOnly(look, p, x, y, size);
+  const b = num(p['icon.bg.size'], size + 24), cx = x + size / 2, cy = y + size / 2;
+  const disc = (e: number, dx: number, dy: number, fill: string) => p['icon.bg.shape'] === 'circle'
+    ? `<circle cx="${r2(cx + dx)}" cy="${r2(cy + dy)}" r="${r2(b / 2 + e)}" ${fill}/>`
+    : `<rect x="${r2(cx - b / 2 - e + dx)}" y="${r2(cy - b / 2 - e + dy)}" width="${r2(b + e * 2)}" height="${r2(b + e * 2)}" ${fill}/>`;
+  // icon.bg.shadow: a soft shadow under it, as shadow= lays under a shape (icon.bg.shadow.size, .dx, .dy)
+  let under = '';
+  if (p['icon.bg.shadow'] && p['icon.bg.shadow'] !== 'none') {
+    const ss = num(p['icon.bg.shadow.size'], 8), sdx = num(p['icon.bg.shadow.dx'], 0), sdy = num(p['icon.bg.shadow.dy'], 3), sc = col(look, p['icon.bg.shadow']);
+    for (let i = SHADOW_STEPS; i >= 1; i--) under += disc(r2((ss * i) / SHADOW_STEPS), sdx, sdy, `fill="${sc}" fill-opacity="${r2(1 / SHADOW_STEPS)}"`);
+  }
+  return under + disc(0, 0, 0, `fill="${col(look, p['icon.bg'])}"`) + drawIconOnly(look, p, x, y, size);
+}
+
+function drawIconOnly(look: Look, p: Props, x: number, y: number, size: number): string {
   const name = iconStandIn(look, p.icon) ?? p.icon, img = look.images.get(name);
   // an icon file is shown as an image, in its own colours; it is never inlined
   if (img) return isIconUri(img) ? `<image x="${r2(x)}" y="${r2(y)}" width="${r2(size)}" height="${r2(size)}" href="${esc(img)}"/>` : '';
@@ -417,7 +468,9 @@ function drawShape(look: Look, s: Shape): string {
   }
   const ib = iconBox(s);
   if (ib) { cxm += ib.dx; cym += ib.dy; }
-  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x, ib.y, ib.size));
+  // icon.dx and icon.dy move the icon from where it would sit (a group's badge out onto its corner)
+  const idx = num(p['icon.dx'], 0), idy = num(p['icon.dy'], 0);
+  if (ib && !(ib.dy > 0)) out.push(drawIcon(look, p, ib.x + idx, ib.y + idy, ib.size));
   if (s.text && p['title.pos'] === 'top') {
     const txt = p['title.caps'] === '1' ? s.text.toUpperCase() : s.text;
     // the plate is the text as drawn in the look's font plus 6px either side
@@ -446,8 +499,8 @@ function drawShape(look: Look, s: Shape): string {
     const block = lines.length * lh + (subs.length ? sub.size + 7 + (subs.length - 1) * slh : 0);
     // centred a little low under a corner tag, and never closer than 3px below it
     const top = tb ? tb.top : cym - block / 2;
-    if (ib && ib.dy > 0) out.push(drawIcon(look, p, ib.x, top - ib.size - 6, ib.size));
-    const al = p['title.align'], tx = al === 'left' ? s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
+    if (ib && ib.dy > 0) { const room = ib.room ?? ib.size; out.push(drawIcon(look, p, ib.x + idx, top - room - 6 + (room - ib.size) / 2 + idy, ib.size)); }
+    const al = p['title.align'], tx = al === 'left' ? (ib?.block ? s.x + ib.block + 12 : s.x + 12 + (ib && ib.dx ? ib.size + 8 : 0)) : al === 'right' ? s.x + s.w - 12 : cxm, anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
     lines.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + title.size * 0.86 + i * lh)}" text-anchor="${anchor}" ${title.a}>${esc(l)}</text>`));
     subs.forEach((l, i) => out.push(`<text x="${tx}" y="${r2(top + lines.length * lh + sub.size + 3 + i * slh)}" text-anchor="${anchor}" ${sub.a}>${esc(l)}</text>`));
   }

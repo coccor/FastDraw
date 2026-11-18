@@ -276,3 +276,50 @@ test('a zone\'s corner tag sits on its caption row, and a left caption starts af
     assert.ok(Math.abs(+tag[2] - 44) <= 1, 'the tag is level with the caption, 4px into the zone');
   }
 });
+
+test('icon.block fills the strip that holds the icon and starts the text after it; side= draws a bar down the left edge', () => {
+  const svg = (el: string) => renderSvg(buildScene(el + '\n', parseLook('style node shape=rect size=144x48 fill=#ffffff stroke=#000000\n')));
+  const block = svg('a: node "Server" at 40,40 240x48 icon=database icon.block=#198038 icon.size=24 title.align=left');
+  // a square strip as tall as the box, the 24px icon centred in it, the text 12px after it
+  assert.ok(block.includes('<path d="M 40,40 H 88 V 88 H 40 Z" fill="#198038"/>'), block);
+  assert.ok(block.includes('<g transform="translate(52 52)'), block);
+  assert.match(block, /<text x="100"[^>]*>Server</);
+  const side = svg('a: node "Subnet" at 40,40 200x64 side=#0f62fe radius=8');
+  // the bar keeps the box's rounding on its left corners
+  assert.ok(side.includes('<path d="M 44,40 H 44 V 104 H 44 Q 40,104 40,100 V 44 Q 40,40 44,40 Z" fill="#0f62fe"/>'), side);
+  // neither is drawn on a shape that is not a box
+  assert.doesNotMatch(svg('a: ellipse "E" at 40,40 120x60 side=#ff0000 icon=user icon.block=#ff0000'), /fill="#ff0000"/);
+});
+
+test('icon.bg puts a square or circle behind the icon, and an icon on top leaves room for it above the text', () => {
+  const svg = (el: string) => renderSvg(buildScene(el + '\n', parseLook('style node shape=rect size=144x104 fill=none stroke=none\n')));
+  const sq = svg('a: node "Internet" at 40,40 icon=globe icon.pos=top icon.size=24 icon.bg=#0f62fe');
+  // the 24px icon plus 12px each side, centred on the icon, above the name
+  const m = /<rect x="([\d.]+)" y="([\d.]+)" width="48" height="48" fill="#0f62fe"\/>/.exec(sq);
+  assert.ok(m, sq);
+  assert.equal(Number(m![1]), 88);
+  const nameY = Number(/<text x="112" y="([\d.]+)"[^>]*>Internet</.exec(sq)![1]);
+  assert.ok(nameY > Number(m![2]) + 48, `name at ${nameY} is under the square`);
+  assert.match(svg('a: node "User" at 40,40 icon=user icon.pos=top icon.bg=#000000 icon.bg.shape=circle icon.bg.size=40'), /<circle cx="112" cy="[\d.]+" r="20" fill="#000000"\/>/);
+});
+
+test('shadow= lays the shape grown in fading steps under it; icon.dx and icon.dy move the icon', () => {
+  const svg = (el: string) => renderSvg(buildScene(el + '\n', parseLook('style node shape=rect size=80x80 fill=#ffffff stroke=none\n')));
+  const s = svg('a: node "A" at 40,40 radius=6 shadow=#000000 shadow.size=12 shadow.dy=4');
+  // six steps, the widest first, each a sixth as dark, rounded to follow the box
+  const steps = [...s.matchAll(/fill="#000000" fill-opacity="0.17" stroke="none"/g)];
+  assert.equal(steps.length, 6, s);
+  assert.ok(s.includes('<rect x="28" y="32" width="104" height="104" rx="18"'), s);
+  // shadow.dx moves it sideways: here 3px to the left
+  assert.ok(svg('a: node "A" at 40,40 radius=6 shadow=#000000 shadow.size=12 shadow.dx=-3 shadow.dy=4').includes('<rect x="25" y="32" width="104" height="104" rx="18"'));
+  const at = (extra: string) => /translate\(([\d.-]+) ([\d.-]+)\)/.exec(svg(`a: node "A" at 40,40 icon=user icon.pos=corner ${extra}`))!.slice(1).map(Number);
+  assert.deepEqual(at('icon.dx=-8 icon.dy=-6'), [32, 34]);
+});
+
+test('icon.bg.shadow lays a soft shadow under the icon\'s background', () => {
+  const svg = renderSvg(buildScene('a: zone "Home" at 40,40 200x120 icon=house icon.pos=corner icon.size=16 icon.bg=#eeeeff icon.bg.shape=circle icon.bg.size=32 icon.bg.shadow=#000000\n', parseLook('style zone shape=rect fill=none stroke=#000000 title.pos=top title.align=left\n')));
+  // six fading circles, the widest first and 3px low, then the badge itself
+  assert.equal([...svg.matchAll(/<circle cx="48" cy="51" r="[\d.]+" fill="#000000" fill-opacity="0.17"\/>/g)].length, 6, svg);
+  assert.ok(svg.includes('<circle cx="48" cy="51" r="24" fill="#000000" fill-opacity="0.17"/>'), svg);
+  assert.ok(svg.includes('<circle cx="48" cy="48" r="16" fill="#eeeeff"/>'), svg);
+});

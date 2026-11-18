@@ -186,9 +186,38 @@ fn boxy(s: &Shape) -> bool {
 // What is drawn under a shape before the shape itself:
 //   shade=colour  a shadow of fine diagonal lines down its right and bottom (shade.size, shade.gap, shade.sw)
 //   depth=N       a slab N pixels below it, so it reads as a solid with a side (depth.fill, depth.stroke)
+const SHADOW_STEPS: f64 = 6.0;
+
+// shadow=colour: a soft shadow, the shape grown in steps that fade out (shadow.size, shadow.dx, shadow.dy)
 fn underlay(cx: &mut RenderCtx, look: &Look, s: &Shape) -> Vec<String> {
     let p = &s.p;
     let mut out = Vec::new();
+    if set_not_none(g(p, "shadow")) && boxy(s) {
+        let size = num(g(p, "shadow.size"), 12.0);
+        let dx = num(g(p, "shadow.dx"), 0.0);
+        let dy = num(g(p, "shadow.dy"), 4.0);
+        let c = col(look, g(p, "shadow"), None);
+        let mut i = SHADOW_STEPS;
+        while i >= 1.0 {
+            let e = r2(size * i / SHADOW_STEPS);
+            let grown = Shape {
+                x: s.x - e + dx,
+                y: s.y - e + dy,
+                w: s.w + e * 2.0,
+                h: s.h + e * 2.0,
+                p: with(p, "radius", n(num(g(p, "radius"), 0.0) + e)),
+                ..s.clone()
+            };
+            out.push(outline_plain(
+                &grown,
+                &format!(
+                    "fill=\"{c}\" fill-opacity=\"{}\" stroke=\"none\"",
+                    n(r2(1.0 / SHADOW_STEPS))
+                ),
+            ));
+            i -= 1.0;
+        }
+    }
     if set_not_none(g(p, "shade")) {
         let k = num(g(p, "shade.size"), 5.0);
         let fill = cx.pattern(
@@ -225,9 +254,45 @@ fn paper_of(look: &Look) -> &str {
     g(&look.canvas, "paper").unwrap_or("paper")
 }
 
+// The left w pixels of a box, with the box's own rounding on the two left corners.
+fn left_strip(s: &Shape, w: f64) -> String {
+    let r = mins(&[num(g(&s.p, "radius"), 0.0), w, s.h / 2.0]);
+    let (x, y, b) = (s.x, s.y, s.y + s.h);
+    if r > 0.0 {
+        format!(
+            "M {},{} H {} V {} H {} Q {},{} {},{} V {} Q {},{} {},{} Z",
+            n(r2(x + r)),
+            n(y),
+            n(r2(x + w)),
+            n(b),
+            n(r2(x + r)),
+            n(x),
+            n(b),
+            n(x),
+            n(r2(b - r)),
+            n(r2(y + r)),
+            n(x),
+            n(y),
+            n(r2(x + r)),
+            n(y)
+        )
+    } else {
+        format!(
+            "M {},{} H {} V {} H {} Z",
+            n(x),
+            n(y),
+            n(r2(x + w)),
+            n(b),
+            n(x)
+        )
+    }
+}
+
 // What is drawn on a shape after its outline:
 //   inner=colour    a second, finer rule just inside the outline (inner.gap, inner.sw)
 //   corners=plus    a mark on each corner of a box: plus or square (corners.color, corners.size)
+//   side=colour     a bar down the left edge of a box (side.w)
+//   icon.block=c    the strip that holds the icon at the left of a box, filled (icon.block.w)
 fn overlay(look: &Look, s: &Shape) -> Vec<String> {
     let p = &s.p;
     let mut out = Vec::new();
@@ -249,6 +314,25 @@ fn overlay(look: &Look, s: &Shape) -> Vec<String> {
                     col(look, g(p, "inner"), None),
                     n(num(g(p, "inner.sw"), 0.6))
                 ),
+            ));
+        }
+    }
+    // side=colour: a bar down the left edge (side.w wide, default 4), as IBM draws a side bar node and a group
+    // icon.block=colour: the strip at the left that holds the icon, filled, as IBM draws a colour block node
+    let ib = icon_box(s);
+    let strips = [
+        (g(p, "side"), num(g(p, "side.w"), 4.0)),
+        (
+            ib.as_ref().and_then(|b| b.block).and(g(p, "icon.block")),
+            ib.as_ref().and_then(|b| b.block).unwrap_or(0.0),
+        ),
+    ];
+    for (c, w) in strips {
+        if set_not_none(c) && w > 0.0 && s.shape == "rect" {
+            out.push(format!(
+                "<path d=\"{}\" fill=\"{}\"/>",
+                left_strip(s, w),
+                col(look, c, None)
             ));
         }
     }
@@ -1018,6 +1102,10 @@ pub struct IconBox {
     pub size: f64,
     pub dx: f64,
     pub dy: f64,
+    // icon.block: the width of the filled strip at the left that holds the icon
+    pub block: Option<f64>,
+    // icon.bg with icon.pos=top: the height the icon and its background take, which the text keeps clear of
+    pub room: Option<f64>,
 }
 
 // Where a shape's icon goes and how far it pushes the text. Shared with the checker.
@@ -1034,6 +1122,8 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
             size: num(g(p, "icon.size"), 24.0),
             dx: 0.0,
             dy: 0.0,
+            block: None,
+            room: None,
         });
     }
     let has_text =
@@ -1056,16 +1146,43 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
             size,
             dx: 0.0,
             dy: 0.0,
+            block: None,
+            room: None,
+        });
+    }
+    // icon.block: the icon sits centred in a strip down the left side (icon.block.w wide, square by default) and
+    // the text starts 12px after the strip
+    if set_not_none(g(p, "icon.block"))
+        && g(p, "icon.pos").unwrap_or("left") == "left"
+        && s.shape == "rect"
+    {
+        let bw = num(g(p, "icon.block.w"), s.h);
+        return Some(IconBox {
+            x: s.x + (bw - size) / 2.0,
+            y: s.y + (s.h - size) / 2.0,
+            size,
+            dx: bw / 2.0,
+            dy: 0.0,
+            block: Some(bw),
+            room: None,
         });
     }
     if g(p, "icon.pos") == Some("top") {
         // y set by the caller from the text block
+        // icon.bg: a square or circle behind the icon, which the text keeps clear of
+        let room = if icon_bg(p) {
+            num(g(p, "icon.bg.size"), size + 24.0)
+        } else {
+            size
+        };
         return Some(IconBox {
             x: s.x + (s.w - size) / 2.0,
             y: 0.0,
             size,
             dx: 0.0,
-            dy: (size + 6.0) / 2.0,
+            dy: (room + 6.0) / 2.0,
+            block: None,
+            room: Some(room),
         });
     }
     let align = g(p, "title.align");
@@ -1076,6 +1193,8 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
             size,
             dx: (size + 8.0) / 2.0,
             dy: 0.0,
+            block: None,
+            room: None,
         });
     }
     // centred text: the icon sits right beside it, and the pair is centred in the box
@@ -1115,6 +1234,8 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
         size,
         dx: (size + 8.0) / 2.0,
         dy: 0.0,
+        block: None,
+        room: None,
     })
 }
 
@@ -1124,7 +1245,63 @@ pub fn icon_box(s: &Shape) -> Option<IconBox> {
 // bold) nearest that line thickness, in pixels at the size the icon is drawn.
 // A look's own icon is an outline in a 24 box, drawn with icon.color as its line, icon.fill inside its
 // closed parts, and icon.width as the line's thickness; it has no solid or duotone version.
+fn icon_bg(p: &Props) -> bool {
+    set_not_none(g(p, "icon.bg"))
+}
+
+// icon.bg=colour: a filled square (or circle, icon.bg.shape=circle) behind the icon, icon.bg.size across (the icon
+// plus 12px each side by default), as IBM draws a small node: a coloured square with a white icon, its name under it
 fn draw_icon(look: &Look, p: &Props, x: f64, y: f64, size: f64) -> String {
+    if !icon_bg(p) {
+        return draw_icon_only(look, p, x, y, size);
+    }
+    let b = num(g(p, "icon.bg.size"), size + 24.0);
+    let (cx, cy) = (x + size / 2.0, y + size / 2.0);
+    let circle = g(p, "icon.bg.shape") == Some("circle");
+    let disc = |e: f64, dx: f64, dy: f64, fill: &str| -> String {
+        if circle {
+            format!(
+                "<circle cx=\"{}\" cy=\"{}\" r=\"{}\" {fill}/>",
+                n(r2(cx + dx)),
+                n(r2(cy + dy)),
+                n(r2(b / 2.0 + e))
+            )
+        } else {
+            format!(
+                "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" {fill}/>",
+                n(r2(cx - b / 2.0 - e + dx)),
+                n(r2(cy - b / 2.0 - e + dy)),
+                n(r2(b + e * 2.0)),
+                n(r2(b + e * 2.0))
+            )
+        }
+    };
+    // icon.bg.shadow: a soft shadow under it, as shadow= lays under a shape (icon.bg.shadow.size, .dx, .dy)
+    let mut under = String::new();
+    if set_not_none(g(p, "icon.bg.shadow")) {
+        let ss = num(g(p, "icon.bg.shadow.size"), 8.0);
+        let sdx = num(g(p, "icon.bg.shadow.dx"), 0.0);
+        let sdy = num(g(p, "icon.bg.shadow.dy"), 3.0);
+        let sc = col(look, g(p, "icon.bg.shadow"), None);
+        let mut i = SHADOW_STEPS;
+        while i >= 1.0 {
+            under += &disc(
+                r2(ss * i / SHADOW_STEPS),
+                sdx,
+                sdy,
+                &format!(
+                    "fill=\"{sc}\" fill-opacity=\"{}\"",
+                    n(r2(1.0 / SHADOW_STEPS))
+                ),
+            );
+            i -= 1.0;
+        }
+    }
+    let fill = format!("fill=\"{}\"", col(look, g(p, "icon.bg"), None));
+    under + &disc(0.0, 0.0, 0.0, &fill) + &draw_icon_only(look, p, x, y, size)
+}
+
+fn draw_icon_only(look: &Look, p: &Props, x: f64, y: f64, size: f64) -> String {
     let stand_in = icon_stand_in(look, g(p, "icon").unwrap_or(""));
     let name = stand_in.as_deref().or(g(p, "icon")).unwrap_or("");
     // an icon file is shown as an image, in its own colours; it is never inlined
@@ -1446,13 +1623,15 @@ fn draw_shape(cx: &mut RenderCtx, look: &Look, s: &Shape) -> String {
         ));
     }
     let ib = icon_box(s);
+    // icon.dx and icon.dy move the icon from where it would sit (a group's badge out onto its corner)
+    let (idx, idy) = (num(g(p, "icon.dx"), 0.0), num(g(p, "icon.dy"), 0.0));
     if let Some(ib) = &ib {
         cxm += ib.dx;
         cym += ib.dy;
         // an icon on top waits for the text block (a NaN dy draws it here, as `!(ib.dy > 0)` does)
         let on_top = ib.dy > 0.0;
         if !on_top {
-            out.push(draw_icon(look, p, ib.x, ib.y, ib.size));
+            out.push(draw_icon(look, p, ib.x + idx, ib.y + idy, ib.size));
         }
     }
     if let Some(text) = s.text.as_deref().filter(|t| !t.is_empty())
@@ -1557,15 +1736,24 @@ fn draw_shape(cx: &mut RenderCtx, look: &Look, s: &Shape) -> String {
         if let Some(ib) = &ib
             && ib.dy > 0.0
         {
-            out.push(draw_icon(look, p, ib.x, top - ib.size - 6.0, ib.size));
+            let room = ib.room.unwrap_or(ib.size);
+            out.push(draw_icon(
+                look,
+                p,
+                ib.x + idx,
+                top - room - 6.0 + (room - ib.size) / 2.0 + idy,
+                ib.size,
+            ));
         }
         let al = g(p, "title.align");
         let tx = if al == Some("left") {
-            s.x + 12.0
-                + match &ib {
-                    Some(ib) if nz(ib.dx) => ib.size + 8.0,
-                    _ => 0.0,
-                }
+            match &ib {
+                Some(IconBox {
+                    block: Some(bw), ..
+                }) => s.x + bw + 12.0,
+                Some(ib) if nz(ib.dx) => s.x + 12.0 + ib.size + 8.0,
+                _ => s.x + 12.0,
+            }
         } else if al == Some("right") {
             s.x + s.w - 12.0
         } else {
