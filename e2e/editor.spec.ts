@@ -197,6 +197,37 @@ test('panel: a zone\'s title and a box\'s text are typed in the sidebar', async 
   expect(lineOf(await source(page), 'api')).toMatch(/"Orders\\nAPI"/);
 });
 
+test('a click inside a zone picks it, the inner zone first; a drag there still selects what it covers', async ({ page }) => {
+  const text = 'canvas 900x420\nedge: zone "Edge" at 40,40 500x320\ninner: zone "Inner" at 300,180 200x140\napi: node "Orders API" at 80,80\n';
+  await paste(page, text);
+  // which element is selected: delete it, read which line went, and put it back
+  const picked = async () => {
+    await page.keyboard.press('Delete');
+    const now = await source(page);
+    const gone = text.split('\n').filter((l) => l.includes(':') && !now.includes(l)).map((l) => l.split(':')[0]);
+    if (gone.length) await page.keyboard.press('Control+z');
+    return gone;
+  };
+  const click = async (x: number, y: number) => { const p = await at(page, x, y); await page.mouse.click(p.x, p.y); };
+  await click(150, 280);
+  expect(await picked()).toEqual(['edge']);
+  await click(400, 250);
+  expect(await picked()).toEqual(['inner']);
+  await click(152, 112);
+  expect(await picked()).toEqual(['api']);
+  // a drag that starts inside the zone draws a selection box instead of moving the zone
+  const from = await at(page, 60, 60), to = await at(page, 260, 170);
+  await drag(page, from, to.x - from.x, to.y - from.y);
+  expect(await picked()).toEqual(['api']);
+  expect(await source(page)).toBe(text);
+  // a second click there edits the zone's title, as on any other shape
+  await doubleClick(page, await at(page, 150, 280));
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type('Public edge');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'edge')).toContain('"Public edge"');
+});
+
 test('panel: restyle, switch style, and the components gallery places shapes and lines', async ({ page }) => {
   await pinSidebar(page);
   await paste(page, SMALL);
