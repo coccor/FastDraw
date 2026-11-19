@@ -1,0 +1,10 @@
+# opacity= on every kind of element: a back zone, a box, a line and its label, a front line, free text.
+# Out-of-range values are clamped, and 1 draws the element as usual.
+z: zone "Faded zone" at 20,20 400x160 opacity=0.4
+a: node "Half" at 40,60 opacity=0.5
+b: store "Solid" at 260,60 opacity=1
+c: node "Clamped" at 40,220 opacity=-2
+d: node "Over" at 260,220 opacity=7
+a -> b "faded label" opacity=0.3
+c -> d layer=front opacity=0.6
+text "See-through note" at 40,340 opacity=0.25

@@ -169,6 +169,27 @@ pub struct TextEl {
     pub text: String,
     pub ax: f64,
     pub ay: f64,
+    /// a text box's lines (width=), each written line broken to fit; a plain text draws its own lines
+    pub lines: Option<Vec<String>>,
+}
+
+/// The lines of `text` no wider than `w`: each written line broken at its spaces; a word wider than w keeps a line to itself.
+pub fn wrap_lines(text: &str, w: f64, measure: impl Fn(&str) -> f64) -> Vec<String> {
+    let mut out = Vec::new();
+    for line in text.split('\n') {
+        let mut words = line.split(' ');
+        let mut cur = words.next().unwrap_or("").to_string();
+        for word in words {
+            let next = format!("{cur} {word}");
+            if measure(&next) <= w {
+                cur = next;
+            } else {
+                out.push(std::mem::replace(&mut cur, word.to_string()));
+            }
+        }
+        out.push(cur);
+    }
+    out
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1685,7 +1706,7 @@ impl Builder {
         let prop = |k: &str| p.get(k).map(String::as_str);
         let fs = num(prop("size"), 12.0);
         let src = text.as_deref().unwrap_or("");
-        let lines: Vec<&str> = src.split('\n').collect();
+        let mut n_lines = src.split('\n').count();
         let t2 = if prop("caps") == Some("1") {
             src.to_uppercase()
         } else {
@@ -1693,12 +1714,51 @@ impl Builder {
         };
         let font = prop("font").unwrap_or("sans");
         let (weight, spacing) = (num(prop("weight"), 400.0), num(prop("spacing"), 0.0));
-        let w = max_of(
-            lines
-                .iter()
-                .map(|l| text_width(l, fs, font, weight, spacing)),
-        );
-        let anchor = prop("anchor").unwrap_or("start");
+        let measure = |l: &str| text_width(l, fs, font, weight, spacing);
+        let mut w = max_of(src.split('\n').map(measure));
+        // width=W makes a text box: "at" is its left end, its lines wrap to W and align= places them in it
+        let bw = num(prop("width"), 0.0);
+        let bw = if bw > 0.0 { bw } else { 0.0 };
+        if let Some(v) = prop("width")
+            && bw == 0.0
+        {
+            self.err(
+                line,
+                format!("width={v}: a text box's width is a number of pixels, e.g. width=240"),
+            );
+        }
+        if let Some(v) = prop("align")
+            && !["left", "center", "right"].contains(&v)
+        {
+            self.err(
+                line,
+                format!("align={v}: a text lines up left, center or right"),
+            );
+        }
+        let mut wrapped = None;
+        if bw > 0.0 {
+            let l = wrap_lines(&t2, bw, measure);
+            n_lines = l.len();
+            wrapped = Some(l);
+            w = bw;
+        } else if let Some(v) = prop("align")
+            && v != "left"
+        {
+            let a = if v == "center" { "middle" } else { "end" };
+            self.warn(line, format!("align= lines a text up inside its box; give it a width (width=240), or move its at point with anchor={a}"));
+        }
+        if bw > 0.0
+            && let Some(v) = prop("anchor")
+            && v != "start"
+        {
+            let a = if v == "middle" { "center" } else { "right" };
+            self.warn(line, format!("anchor= does nothing on a text box (width=): its at point is the left end; use align={a}"));
+        }
+        let anchor = if bw > 0.0 {
+            "start"
+        } else {
+            prop("anchor").unwrap_or("start")
+        };
         let x = if anchor == "middle" {
             at.x - w / 2.0
         } else if anchor == "end" {
@@ -1706,7 +1766,7 @@ impl Builder {
         } else {
             at.x
         };
-        let th = fs * 1.3 * lines.len() as f64;
+        let th = fs * 1.3 * n_lines as f64;
         // rotate=-90 reads upwards, rotate=90 downwards; the text turns about its "at" point
         let rot = num(prop("rotate"), 0.0);
         if let Some(r) = prop("rotate")
@@ -1752,6 +1812,7 @@ impl Builder {
             text: t2,
             ax: at.x,
             ay: at.y,
+            lines: wrapped,
         });
     }
 

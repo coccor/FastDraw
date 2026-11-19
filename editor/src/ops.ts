@@ -323,9 +323,10 @@ export function addFreehand(src: string, path: Pt[], k = 1): { src: string; id: 
   return { src: appendStatements(src, [line]), id };
 }
 
-export function addText(src: string, x: number, y: number, style?: string): { src: string; id: string } {
+// width: a text box the text wraps in, when the text tool was dragged across rather than clicked
+export function addText(src: string, x: number, y: number, style?: string, width?: number): { src: string; id: string } {
   const id = freshId(src, 'note');
-  const line = `${id}: text "Text" at ${Math.round(x)},${Math.round(y)}${style && style !== 'text' ? ` style=${style}` : ''}`;
+  const line = `${id}: text "Text" at ${Math.round(x)},${Math.round(y)}${width ? ` width=${Math.round(width)}` : ''}${style && style !== 'text' ? ` style=${style}` : ''}`;
   return { src: appendStatements(src, [line]), id };
 }
 
@@ -552,3 +553,49 @@ export function resetRoute(src: string, sc: Scene, ids: string[]): string {
   for (const id of ids) { const e = find(sc, id); if (e?.kind === 'conn') patches.set(e.el.line, (t) => setProp(setProp(setProp(t, 'via', null), 'lpos', null), 'lside', null)); }
   return patchSource(src, patches);
 }
+
+// A free text's box: where its "at" point goes and how wide it is, from the text as it is drawn now. A plain text
+// becomes a box just as wide as its words, starting where they start, so it does not move; a turned text measures
+// along its own baseline.
+function textBox(t: TextEl): { x: number; y: number; w: number } {
+  const rot = Number(t.p.rotate ?? 0), len = rot ? t.h : t.w;
+  if (t.lines) return { x: t.ax, y: t.ay, w: len };
+  const a = t.p.anchor, back = a === 'middle' ? len / 2 : a === 'end' ? len : 0;
+  return { x: t.ax - (rot ? 0 : back), y: t.ay + (rot === 90 ? -back : rot === -90 ? back : 0), w: len };
+}
+
+// Line up free texts inside their boxes (align=left|center|right). A text without a box gets one as wide as it is,
+// so it stays where it is; its lines then line up with each other inside it. Left is left off.
+export function setTextAlign(src: string, sc: Scene, ids: string[], align: 'left' | 'center' | 'right'): string {
+  const patches = new Map<number, Patch>();
+  for (const id of ids) {
+    const e = find(sc, id);
+    if (e?.kind !== 'text') continue;
+    const t = e.el, b = textBox(t), own = sc.look.styles.get(t.style)?.props.align;
+    const v = align === (own ?? 'left') ? null : align;
+    patches.set(t.line, (k) => {
+      const out = setProp(k, 'align', v);
+      if (t.lines) return out;
+      return setProp(setProp(setAt(out, Math.round(b.x), Math.round(b.y)), 'anchor', null), 'width', String(Math.ceil(b.w)));
+    });
+  }
+  return patchSource(src, patches);
+}
+
+// A free text scaled by one of its handles dragged to `q`: the text grows or shrinks with its box, its size= and
+// (for a text box) its width= scaled alike, so it wraps the same way. The opposite corner or side
+// stays put; a side handle also holds the top (left and right handles) or the left (top and bottom).
+export function scaleText(src: string, t: TextEl, handle: string, q: Pt): string {
+  const fs = Number(t.p.size) || 12, west = handle.includes('w'), north = handle.includes('n');
+  const fx = west ? t.x + t.w : t.x, fy = north ? t.y + t.h : t.y;
+  const want = Math.max(/[we]/.test(handle) ? Math.abs(q.x - fx) / (t.w || 1) : 0, /[ns]/.test(handle) ? Math.abs(q.y - fy) / (t.h || 1) : 0);
+  const size = Math.max(4, Math.round(fs * want * 2) / 2), k = size / fs; // half-point steps
+  const w = t.w * k, h = t.h * k, x1 = west ? fx - w : fx, y1 = north ? fy - h : fy;
+  const a = t.p.anchor, ax = t.lines ? x1 : x1 + (a === 'middle' ? w / 2 : a === 'end' ? w : 0);
+  return patchSource(src, new Map([[t.line, (tk: Tok[]) => {
+    let out = setProp(setAt(tk, Math.round(ax), Math.round(y1 + size)), 'size', String(size));
+    if (t.lines) out = setProp(out, 'width', String(Math.round(Number(t.p.width) * k)));
+    return out;
+  }]]));
+}
+

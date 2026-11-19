@@ -25,7 +25,24 @@ export type Shape = Box & {
   rows?: Row[]; cols?: Col[]; headH?: number;
   poly?: Pt[]; // shape=polygon: its corners on the canvas
 };
-export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number };
+// lines: a text box's lines (width=), each written line broken to fit; a plain text draws its own lines
+export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number; lines?: string[] };
+
+// The lines of `text` no wider than `w`: each written line broken at its spaces; a word wider than w keeps a line to itself.
+export function wrapLines(text: string, w: number, measure: (s: string) => number): string[] {
+  const out: string[] = [];
+  for (const line of text.split('\n')) {
+    const words = line.split(' ');
+    let cur = words[0]!;
+    for (const word of words.slice(1)) {
+      const next = cur + ' ' + word;
+      if (measure(next) <= w) cur = next;
+      else { out.push(cur); cur = word; }
+    }
+    out.push(cur);
+  }
+  return out;
+}
 export type End = {
   raw: string; kind: 'point' | 'rel' | 'shape' | 'conn';
   id?: string; row?: string; side?: Side; v?: number; rel?: Pt;
@@ -473,18 +490,27 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     if (style.kind === 'text') {
       if (!at) { err(st.line, 'text needs a position: at x,y'); continue; }
       const fs = num(p.size, 12);
-      const lines = (text ?? '').split('\n');
+      let lines = (text ?? '').split('\n');
       const t2 = p.caps === '1' ? (text ?? '').toUpperCase() : text ?? '';
-      const w = Math.max(...lines.map((l) => textWidth(l, fs, p.font ?? 'sans', num(p.weight, 400), num(p.spacing, 0))));
-      const anchor = p.anchor ?? 'start';
+      const measure = (l: string) => textWidth(l, fs, p.font ?? 'sans', num(p.weight, 400), num(p.spacing, 0));
+      let w = Math.max(...lines.map(measure));
+      // width=W makes a text box: "at" is its left end, its lines wrap to W and align= places them in it
+      const box = num(p.width, 0) > 0 ? num(p.width, 0) : 0;
+      let wrapped: string[] | undefined;
+      if (p.width !== undefined && !box) err(st.line, `width=${p.width}: a text box's width is a number of pixels, e.g. width=240`);
+      if (p.align !== undefined && !['left', 'center', 'right'].includes(p.align)) err(st.line, `align=${p.align}: a text lines up left, center or right`);
+      if (box) { wrapped = wrapLines(t2, box, measure); lines = wrapped; w = box; }
+      else if (p.align !== undefined && p.align !== 'left') warn(st.line, `align= lines a text up inside its box; give it a width (width=240), or move its at point with anchor=${p.align === 'center' ? 'middle' : 'end'}`);
+      if (box && p.anchor !== undefined && p.anchor !== 'start') warn(st.line, `anchor= does nothing on a text box (width=): its at point is the left end; use align=${p.anchor === 'middle' ? 'center' : 'right'}`);
+      const anchor = box ? 'start' : p.anchor ?? 'start';
       const x = anchor === 'middle' ? at.x - w / 2 : anchor === 'end' ? at.x - w : at.x;
       const th = fs * 1.3 * lines.length;
       // rotate=-90 reads upwards, rotate=90 downwards; the text turns about its "at" point
       const rot = num(p.rotate, 0);
       if (p.rotate !== undefined && ![0, 90, -90].includes(rot)) err(st.line, `rotate=${p.rotate}: text can be turned by 90 (reading down) or -90 (reading up)`);
       const dx = x - at.x; // where the text starts, measured along its own baseline
-      const box = rot === -90 ? { x: at.x - fs, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs, y: at.y + dx, w: th, h: w } : { x, y: at.y - fs, w, h: th };
-      texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, ...box });
+      const bx = rot === -90 ? { x: at.x - fs, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs, y: at.y + dx, w: th, h: w } : { x, y: at.y - fs, w, h: th };
+      texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, ...bx, ...(wrapped ? { lines: wrapped } : {}) });
       continue;
     }
     if (!size && p.size) { const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(p.size); if (m) size = { w: +m[1], h: +m[2] }; }

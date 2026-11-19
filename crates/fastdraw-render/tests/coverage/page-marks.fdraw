@@ -1,0 +1,6 @@
+# A light look on a dark page: the ink patterns would vanish, so they are drawn in white at the same strength.
+# A solid colour (grid=ink) is the author's choice and kept, as is a faint one that already shows (the accent graph).
+canvas paper=#0d0f14 dots=ink/0.07 grid=ink lines=ink/0.08 graph=accent/0.2 feed=ink/0.3
+a: node "Dark page" at 40,40
+b: store "Light look" at 260,40
+a -> b

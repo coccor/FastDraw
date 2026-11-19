@@ -163,6 +163,15 @@ fn blend_of(p: &Props) -> &'static str {
         ""
     }
 }
+// opacity=0..1: the whole element (fill, outline, text, arrowheads) drawn see-through, as one layer
+fn faded(p: &Props, svg: String) -> String {
+    let o = num(g(p, "opacity"), 1.0).clamp(0.0, 1.0);
+    if o < 1.0 {
+        format!("<g opacity=\"{}\">{svg}</g>", n(r2(o)))
+    } else {
+        svg
+    }
+}
 // The same shape somewhere else: for a slab under it, a shadow beside it, a fill printed out of register.
 fn shifted(s: &Shape, dx: f64, dy: f64) -> Shape {
     Shape {
@@ -2528,12 +2537,35 @@ fn draw_label(look: &Look, c: &Conn) -> String {
 
 fn draw_text(look: &Look, t: &TextEl) -> String {
     let a = text_attrs(look, &t.p, "", &td("sans", 12.0, 400.0, "ink"));
-    let anchor = match g(&t.p, "anchor") {
+    // a text box (width=) draws its wrapped lines at its left edge, middle or right edge (align=)
+    let (al, bw) = (g(&t.p, "align"), num(g(&t.p, "width"), 0.0));
+    let ta = if t.lines.is_some() {
+        Some(match al {
+            Some("center") => "middle",
+            Some("right") => "end",
+            _ => "start",
+        })
+    } else {
+        g(&t.p, "anchor")
+    };
+    let anchor = match ta {
         Some(v) if !v.is_empty() && v != "start" => format!(" text-anchor=\"{}\"", esc(v)),
         _ => String::new(),
     };
+    let x0 = if t.lines.is_some() {
+        t.ax + match al {
+            Some("center") => bw / 2.0,
+            Some("right") => bw,
+            _ => 0.0,
+        }
+    } else {
+        t.ax
+    };
     let rot = num(g(&t.p, "rotate"), 0.0);
-    let lines: Vec<&str> = t.text.split('\n').collect();
+    let lines: Vec<&str> = match &t.lines {
+        Some(l) => l.iter().map(String::as_str).collect(),
+        None => t.text.split('\n').collect(),
+    };
     let blend = blend_of(&t.p);
     let mut body = lines
         .iter()
@@ -2541,7 +2573,7 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
         .map(|(i, l)| {
             format!(
                 "<text x=\"{}\" y=\"{}\"{anchor} {}{blend}>{}</text>",
-                n(t.ax),
+                n(x0),
                 n(r2(t.ay + i as f64 * a.size * 1.3)),
                 a.a,
                 esc(l)
@@ -2564,7 +2596,7 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
             .map(|(i, l)| {
                 format!(
                     "<text x=\"{}\" y=\"{}\"{anchor} {ea}>{}</text>",
-                    n(t.ax + dx),
+                    n(x0 + dx),
                     n(r2(t.ay + dy + i as f64 * a.size * 1.3)),
                     esc(l)
                 )
@@ -2811,10 +2843,47 @@ fn footed(c: &Conn, shapes: &[Shape]) -> Conn {
 const TEXT_STYLE: &str = "font-variant-ligatures:none;text-rendering:geometricPrecision";
 
 // background: false leaves the page out (no paper, no dots), for an image laid over something else
+// The page patterns (dots, grid, lines and the rest), each drawn in a colour that shows on the page. A pattern is a
+// faint mark in the look's ink, so a page much darker than the look was made for (a light look's ink on a dark page)
+// would hide it: then it is drawn in white instead, or black on a page much lighter, at the same strength. Only a
+// faint mark (a colour with /opacity) is changed; a solid colour is the look's own choice, like listing paper's pale bars.
+pub const PAGE_MARKS: [&str; 10] = [
+    "dots", "grid", "lines", "cross", "iso", "diag", "graph", "hex", "bars", "feed",
+];
+pub fn page_marks(look: &Look) -> Props {
+    let mut cv = look.canvas.clone();
+    let Some(paper) = rgb_of(look, Some(paper_of(look)), None) else {
+        return cv;
+    };
+    for k in PAGE_MARKS {
+        let Some(v) = g(&cv, k) else { continue };
+        if v.is_empty() || v == "none" {
+            continue;
+        }
+        let Some(i) = v.rfind('/').filter(|&i| i > 0) else {
+            continue;
+        };
+        let Some(rgb) = rgb_of(look, Some(&v[..i]), None) else {
+            continue;
+        };
+        if contrast(rgb, paper) >= 3.0 {
+            continue;
+        }
+        let flip = if contrast([255.0; 3], paper) >= contrast([0.0; 3], paper) {
+            "#ffffff"
+        } else {
+            "#000000"
+        };
+        let out = format!("{flip}{}", &v[i..]);
+        cv.insert(k.to_string(), out);
+    }
+    cv
+}
+
 pub fn render_body(sc: &Scene, background: bool) -> String {
     let sc = legible(sc.clone());
     let look = &*sc.look;
-    let cv = &look.canvas;
+    let cv = &page_marks(look);
     let mut out: Vec<String> = Vec::new();
     let mut cx = RenderCtx {
         amt: js::max(0.0, js::min(num(g(cv, "sketch"), 0.0), 4.0)),
@@ -3021,7 +3090,7 @@ pub fn render_body(sc: &Scene, background: bool) -> String {
     }
     for s in &sc.shapes {
         if s.back {
-            out.push(draw_shape(&mut cx, look, s));
+            out.push(faded(&s.p, draw_shape(&mut cx, look, s)));
         }
     }
     // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
@@ -3036,28 +3105,28 @@ pub fn render_body(sc: &Scene, background: bool) -> String {
     let under: Vec<&Conn> = conns.iter().filter(|c| !front(c)).collect();
     let over: Vec<&Conn> = conns.iter().filter(front).collect();
     for c in &under {
-        out.push(draw_conn(&cx, look, c));
+        out.push(faded(&c.p, draw_conn(&cx, look, c)));
     }
     for c in &under {
         if c.label.is_some() {
-            out.push(draw_label(look, c));
+            out.push(faded(&c.p, draw_label(look, c)));
         }
     }
     for s in &sc.shapes {
         if !s.back {
-            out.push(draw_shape(&mut cx, look, s));
+            out.push(faded(&s.p, draw_shape(&mut cx, look, s)));
         }
     }
     for c in &over {
-        out.push(draw_conn(&cx, look, c));
+        out.push(faded(&c.p, draw_conn(&cx, look, c)));
     }
     for c in &over {
         if c.label.is_some() {
-            out.push(draw_label(look, c));
+            out.push(faded(&c.p, draw_label(look, c)));
         }
     }
     for t in &sc.texts {
-        out.push(draw_text(look, t));
+        out.push(faded(&t.p, draw_text(look, t)));
     }
     if background && num(g(cv, "grain"), 0.0) > 0.0 {
         // grain=0..1: the tooth of printed paper, laid over everything

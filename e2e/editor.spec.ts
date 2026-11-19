@@ -1116,6 +1116,22 @@ test('the menu changes the background for this diagram and resets to the look', 
   expect(lineOf(await source(page), 'canvas')).toBe('');
 });
 
+test('a dark look offers dark page colours first, and the light ones in the popover', async ({ page }) => {
+  await paste(page, 'look night\n' + SMALL);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  const quick = page.locator('.canvasbg .swatch');
+  await expect(quick).toHaveCount(5);
+  await expect(quick.nth(0)).toHaveAttribute('aria-label', 'paper'); // the look's own page
+  await expect(quick.nth(1)).toHaveAttribute('aria-label', '#0d0f14');
+  await expect(page.locator('.canvasbg [aria-label="#ffffff"]')).toHaveCount(0);
+  await quick.nth(2).click();
+  expect(lineOf(await source(page), 'canvas')).toBe('canvas paper=#16181d');
+  await expect(page.locator('svg.canvas')).toHaveCSS('background-color', 'rgb(22, 24, 29)');
+  // white is still there, past the dark ones
+  await page.getByRole('button', { name: 'Custom background colour' }).click();
+  await expect(page.getByRole('dialog', { name: 'Custom background colour' }).locator('[aria-label="#ffffff"]')).toHaveCount(1);
+});
+
 test('a look with a grid rules the whole canvas in squares, not just the diagram', async ({ page }) => {
   const look = 'canvas paper=#1060c0 grid=#ffffff/0.16 gridgap=24\nstyle node shape=rect size=144x64 fill=none stroke=#ffffff title.color=#ffffff\n';
   await openFolder(page, { 'd.fdraw': 'look "./plan.look"\na: node "A" at 40,40\n', 'plan.look': look });
@@ -1380,4 +1396,144 @@ test('a look with icons builtin=hidden offers only its own icons in the picker, 
   await expect(grid.getByRole('radio')).toHaveCount(2);
   await expect(page.getByRole('tablist', { name: 'Icon set' })).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('the panel sets a text font; aligning a text makes it a box, which moves like any box', async ({ page }) => {
+  await paste(page, 'canvas 900x420\na: node "Box" at 40,40\nn: text "A short note" at 300,200\n');
+  await page.mouse.click(...Object.values(await corner(page, 'n')) as [number, number]);
+  const panel = page.locator('.panel');
+  await panel.getByRole('radio', { name: 'mono' }).click();
+  expect(lineOf(await source(page), 'n')).toBe('n: text "A short note" at 300,200 font=mono');
+  await expect(panel.getByRole('radio', { name: 'mono' })).toHaveAttribute('aria-checked', 'true');
+  // no box yet: no alignment is shown, and there is nothing to place a line in vertically
+  await expect(panel.getByRole('radio', { name: 'Align left' })).toHaveAttribute('aria-checked', 'false');
+  // centring makes a box just as wide as the words, so nothing moves
+  const before = (await page.locator('rect[data-id="n"]').boundingBox())!;
+  await panel.getByRole('radio', { name: 'Align centre' }).click();
+  expect(lineOf(await source(page), 'n')).toMatch(/^n: text "A short note" at 300,200 font=mono align=center width=\d+$/);
+  const after = (await page.locator('rect[data-id="n"]').boundingBox())!;
+  expect(Math.abs(after.x - before.x)).toBeLessThan(2);
+  // a text box made by dragging with the text tool, wider than its words: the line sits in its middle
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('t');
+  await drag(page, await at(page, 300, 300), 240, 120);
+  await page.waitForSelector('.textedit');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.textedit')).toHaveCount(0);
+  await page.keyboard.press('v');
+  const made = (await source(page)).trim().split('\n').pop()!.split(':')[0]!;
+  await page.mouse.click(...Object.values(await corner(page, made)) as [number, number]);
+  await panel.getByRole('radio', { name: 'Align centre' }).click();
+  expect(lineOf(await source(page), made)).toMatch(/ width=1\d\d align=center$/);
+  const box = (await page.locator(`rect[data-id="${made}"]`).boundingBox())!, word = (await page.locator('svg.canvas text', { hasText: /^Text$/ }).boundingBox())!;
+  expect(Math.abs((word.x + word.width / 2) - (box.x + box.width / 2))).toBeLessThan(3);
+  // grabbed anywhere in the box, even where there are no words, it moves like a box
+  const b2 = (await page.locator(`rect[data-id="${made}"]`).boundingBox())!;
+  await page.waitForTimeout(500); // not the second click of a double-click, which edits the text
+  await drag(page, { x: b2.x + b2.width - 10, y: b2.y + b2.height / 2 }, 0, 48);
+  expect(lineOf(await source(page), made)).toMatch(/ at 300,3[3-9]\d /);
+  // a box's title lines up with title.align; centre is the default and is left off
+  await page.mouse.click(...Object.values(await corner(page, 'a')) as [number, number]);
+  await panel.getByRole('radio', { name: 'Align left' }).click();
+  expect(lineOf(await source(page), 'a')).toBe('a: node "Box" at 40,40 title.align=left');
+  await panel.getByRole('radio', { name: 'Align centre' }).click();
+  expect(lineOf(await source(page), 'a')).toBe('a: node "Box" at 40,40');
+  await panel.getByRole('radio', { name: 'serif' }).click();
+  expect(lineOf(await source(page), 'a')).toBe('a: node "Box" at 40,40 title.font=serif');
+});
+
+test('every handle scales a text: its size grows with the box and the opposite corner or side stays put', async ({ page }) => {
+  await paste(page, 'canvas 900x420\na: node "Box" at 40,40\nn: text "Scale me" at 300,200\nb: text "Boxed words that wrap" at 300,300 width=100\n');
+  await page.mouse.click(...Object.values(await corner(page, 'n')) as [number, number]);
+  const before = (await page.locator('rect[data-id="n"]').boundingBox())!;
+  const se = (await page.locator('[data-handle="se"]').boundingBox())!;
+  await drag(page, { x: se.x + se.width / 2, y: se.y + se.height / 2 }, before.width - 4, before.height - 4); // about twice as big
+  const line = lineOf(await source(page), 'n'), size = +/ size=([\d.]+)/.exec(line)![1]!;
+  expect(size).toBeGreaterThan(20);
+  expect(size).toBeLessThan(28);
+  expect(line).toMatch(/^n: text "Scale me" at 300,\d+ size=[\d.]+$/); // the top-left corner held
+  const after = (await page.locator('rect[data-id="n"]').boundingBox())!;
+  expect(Math.abs(after.x - before.x)).toBeLessThan(2);
+  expect(Math.abs(after.y - before.y)).toBeLessThan(3);
+  // a side scales it too, from the opposite side: the right edge holds the left edge and the top
+  const sized = lineOf(await source(page), 'n');
+  const e = (await page.locator('[data-handle="e"]:not([data-strip])').boundingBox())!, now = (await page.locator('rect[data-id="n"]').boundingBox())!;
+  await drag(page, { x: e.x + e.width / 2, y: e.y + e.height / 2 }, -now.width / 2, 0);
+  const smaller = lineOf(await source(page), 'n');
+  expect(+/ size=([\d.]+)/.exec(smaller)![1]!).toBeLessThan(+/ size=([\d.]+)/.exec(sized)![1]!);
+  expect(smaller).toMatch(/^n: text "Scale me" at 300,/);
+  const top = (await page.locator('rect[data-id="n"]').boundingBox())!;
+  expect(Math.abs(top.y - before.y)).toBeLessThan(3);
+  // and the bottom edge, holding the top
+  const s1 = (await page.locator('[data-handle="s"]:not([data-strip])').boundingBox())!;
+  await drag(page, { x: s1.x + s1.width / 2, y: s1.y + s1.height / 2 }, 0, top.height);
+  expect(+/ size=([\d.]+)/.exec(lineOf(await source(page), 'n'))![1]!).toBeGreaterThan(+/ size=([\d.]+)/.exec(smaller)![1]!);
+  // a text box scales its width and height with its text, so it wraps the same way
+  await page.mouse.click(...Object.values(await corner(page, 'b')) as [number, number]);
+  const nw = (await page.locator('[data-handle="nw"]').boundingBox())!, bb = (await page.locator('rect[data-id="b"]').boundingBox())!;
+  await drag(page, { x: nw.x + nw.width / 2, y: nw.y + nw.height / 2 }, -bb.width / 2, -bb.height / 2);
+  expect(lineOf(await source(page), 'b')).toMatch(/^b: text "Boxed words that wrap" at \d+,\d+ width=1\d\d size=1[6-9](\.5)?$/); // half as big again: 12 to about 18
+});
+
+test('a free text is typed in paragraphs: Enter starts a line, Escape keeps it; a box label still ends on Enter', async ({ page }) => {
+  await paste(page, 'canvas 900x420\na: node "Box" at 40,40\nn: text "Note" at 300,200\n');
+  await doubleClick(page, await corner(page, 'n'));
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type('First paragraph');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Second one');
+  await expect(page.locator('.textedit')).toHaveCount(1); // still typing
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.textedit')).toHaveCount(0);
+  expect(lineOf(await source(page), 'n')).toBe('n: text "First paragraph\\nSecond one" at 300,200');
+  // Ctrl+Enter keeps it too
+  await doubleClick(page, await corner(page, 'n'));
+  await page.keyboard.press('End');
+  await page.keyboard.press('Control+End');
+  await page.keyboard.type('!');
+  await page.keyboard.press('Control+Enter');
+  await expect(page.locator('.textedit')).toHaveCount(0);
+  expect(lineOf(await source(page), 'n')).toBe('n: text "First paragraph\\nSecond one!" at 300,200');
+  // a box's label: Enter finishes, Escape drops the edit
+  await doubleClick(page, await corner(page, 'a'));
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type('Renamed');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.textedit')).toHaveCount(0);
+  expect(lineOf(await source(page), 'a')).toBe('a: node "Renamed" at 40,40');
+});
+
+test('dragging with the text tool draws a text box', async ({ page }) => {
+  await paste(page, 'canvas 900x420\na: node "Box" at 40,40\n');
+  await page.keyboard.press('t');
+  const from = await at(page, 300, 200);
+  await drag(page, from, 240, 120);
+  await page.keyboard.press('Escape');
+  expect((await source(page)).trim().split('\n').pop()).toMatch(/^note\w*: text "Text" at 300,212 width=1\d\d$/);
+});
+
+test('the opacity slider fades the selection as it moves and writes one undo step', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  const slider = page.locator('.panel').getByRole('slider', { name: 'Opacity' });
+  await expect(slider).toHaveValue('100');
+  // the keyboard steps 5% at a time; each step shows on the canvas, letting go writes it
+  await slider.focus();
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('.panel .opacity .value')).toHaveText('80%');
+  await expect(page.locator('svg.canvas g[opacity="0.8"]')).not.toHaveCount(0);
+  await expect.poll(async () => lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 opacity=0.8');
+  await slider.fill('30');
+  await slider.blur();
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 opacity=0.3');
+  await page.keyboard.press('Control+z');
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 opacity=0.8');
+  // everything at once, boxes and lines; back to 100% drops it
+  await page.keyboard.press('Control+a');
+  await slider.fill('50');
+  await slider.blur();
+  expect((await source(page)).match(/opacity=0.5/g)?.length).toBe(5);
+  await slider.fill('100');
+  await slider.blur();
+  expect(await source(page)).not.toContain('opacity=');
 });
