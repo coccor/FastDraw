@@ -104,7 +104,7 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .panel { gap: 0; }
 .panel > .stylebtn { margin-bottom: 12px; }
 .panel > .stylebtn + .pgroup { border-top: 0; padding-top: 0; }
-/* the style: drawn as it is, with its name and what it is for; the popover lays every style out as cards */
+/* the style: drawn as it is, with its name; the popover lays every style out as cards */
 .stylebtn { display: flex; align-items: center; gap: 10px; width: 100%; height: auto; padding: 6px 8px 6px 6px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); text-align: left; }
 .stylebtn:hover { border-color: var(--mute); background: var(--surface); }
 .stylebtn[aria-expanded="true"] { border-color: var(--accent); }
@@ -113,11 +113,7 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .sthumb .thumb { width: 100%; height: 100%; }
 .stylebtn .sname { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .stylebtn .sname b { font-weight: 500; font-size: 12.5px; }
-.stylebtn .sname span { font-size: 11px; line-height: 1.3; color: var(--mute); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .colorpop.cards { width: 312px; max-height: calc(100vh - 16px); overflow-y: auto; }
-/* with many cards the name and use of the one under the pointer stay in view, at the top */
-.colorpop.cards .patterninfo { order: -1; position: sticky; top: -16px; z-index: 1; margin: -16px -16px 0; padding: 14px 16px 10px; border-top: 0; border-bottom: 1px solid var(--line); background: var(--surface); }
-.colorpop.cards .patterninfo p { min-height: 2.8em; }
 .colorpop.cards .pgrid { grid-template-columns: 1fr 1fr; gap: 8px; }
 .pswatch.stylecard { width: auto; height: auto; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 5px 5px 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); text-align: left; }
 .pswatch.stylecard .sthumb { width: 100%; height: 52px; }

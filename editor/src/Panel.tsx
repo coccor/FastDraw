@@ -182,8 +182,8 @@ function EndButton({ start, current, onPick }: { start: boolean; current: string
   );
 }
 
-// The selection's style, drawn as the look draws it, with what the look says it is for; it opens every style of the
-// kind, drawn the same way, in a popover beside the panel. The drawings sit on the diagram's page colour.
+// The selection's style, drawn as the look draws it, with its name; it opens every style of the kind, drawn the same
+// way, in a popover beside the panel. The drawings sit on the diagram's page colour.
 function StylePicker({ sc, styles, current, onPick }: { sc: Scene; styles: Style[]; current: string; onPick: (v: string) => void }) {
   const [open, setOpen] = React.useState(false);
   const btn = React.useRef<HTMLButtonElement>(null);
@@ -193,18 +193,18 @@ function StylePicker({ sc, styles, current, onPick }: { sc: Scene; styles: Style
   const drawn = (s: Style | undefined) => <span className="sthumb" style={{ background: paper }}>{s && <Thumb look={sc.look} style={s} />}</span>;
   return (
     <>
-      <button ref={btn} type="button" className="stylebtn" aria-label={`Style: ${current}`} title={cur?.props.use ?? current}
+      <button ref={btn} type="button" className="stylebtn" aria-label={`Style: ${current}`} title={`Style: ${current}`}
         aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
         {drawn(cur)}
-        <span className="sname"><b>{current}</b>{cur?.props.use && <span>{cur.props.use}</span>}</span>
+        <span className="sname"><b>{current}</b></span>
         <ChevronDown size={13} aria-hidden="true" />
       </button>
-      {open && btn.current && <TilePopover anchor={btn.current} label="Styles" cards className="stylecard" current={current}
+      {open && btn.current && <TilePopover anchor={btn.current} label="Styles" cards info={false} className="stylecard" current={current}
         groups={[
           // the look's own styles first, then the plain ones every look has
           { title: 'This look', choices: styles.filter((s) => !BUILTIN.has(s.name)) },
           { title: 'Built in', choices: styles.filter((s) => BUILTIN.has(s.name)) },
-        ].filter((g) => g.choices.length).map((g) => ({ title: g.title, choices: g.choices.map((s) => ({ key: s.name, label: s.name, about: s.props.use ?? '' })) }))}
+        ].filter((g) => g.choices.length).map((g) => ({ title: g.title, choices: g.choices.map((s) => ({ key: s.name, label: s.name, about: '' })) }))}
         tile={(k) => <>{drawn(byName.get(k))}<span className="tname">{k}</span></>} onPick={onPick} onClose={() => setOpen(false)} />}
     </>
   );
