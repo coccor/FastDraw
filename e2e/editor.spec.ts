@@ -382,6 +382,18 @@ test('legend from the menu, editable entries, grouping selects together', async 
   await field.fill('');
   await field.press('Enter');
   expect(lineOf(await source(page), 'legend')).not.toContain('focal=');
+  // asked again, the menu adds what the legend lacks to the same legend instead of stacking a second one on it
+  const before = lineOf(await source(page), 'legend');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Add a legend' }).click();
+  expect(await source(page)).not.toContain('legend2');
+  const after = lineOf(await source(page), 'legend');
+  expect(after.startsWith(`${before} focal="`)).toBe(true);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Add a legend' }).click();
+  await expect(page.locator('.status')).toHaveText('the legend already lists every component');
+  expect(lineOf(await source(page), 'legend')).toBe(after);
   await page.keyboard.press('Escape');
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
   await page.keyboard.down('Shift');

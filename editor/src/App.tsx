@@ -1298,7 +1298,7 @@ export function App() {
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
     setRoute: (r: string) => src !== null && commit(ops.setRoute(src, scene, sel, r)),
     setRows: (rows: RowSpec[]) => { const e = ops.find(scene, sel[0]); if (src !== null && e?.kind === 'shape') commit(ops.setRows(src, scene, e.el, rows)); },
-    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no components yet'); },
+    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r?.added) commit(r.src, [r.id]); else if (r) { setSel([r.id]); setStatus('the legend already lists every component'); } else setStatus('nothing to list: the diagram uses no components yet'); },
   };
   const actRef = useRef(act); actRef.current = act;
   const stateRef = useRef({ sel, scene, src, editing }); stateRef.current = { sel, scene, src, editing };
