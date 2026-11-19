@@ -1231,7 +1231,6 @@ export function App() {
     setText: (text: string) => { const e = ops.find(scene, sel[0]); if (src !== null && e) commit(ops.editText(src, e, text)); },
     setProps: (kv: Record<string, string | null>) => src !== null && commit(ops.setManyProps(src, scene, sel, kv)),
     setStyle: (n: string) => src !== null && commit(ops.setStyle(src, scene, sel, n)),
-    setOp: (o: string) => src !== null && commit(ops.setOperator(src, scene, sel, o)),
     reorder: (w: ops.Layering) => src !== null && commit(w === 'front' || w === 'back' ? ops.reorder(src, scene, sel, w) : ops.reorderStep(src, scene, sel, w)),
     align: (m: ops.AlignMode) => src !== null && commit(ops.align(src, scene, sel, m)),
     remove: () => src !== null && sel.length > 0 && commit(ops.deleteElements(src, scene, sel), []),

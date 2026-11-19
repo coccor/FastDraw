@@ -1,6 +1,7 @@
 :root {
   --ink: #1b1d26; --mute: #6c7080; --line: #e2e4ea; --surface: #ffffff; --bg: #eef0f4;
   --accent: #dc2f2f; --accent-soft: #fde3e1; --accent-ink: #b91f1f; --hover: #f3f4f8;
+  --tile: #f3f4f8; --tile-hover: #e8eaf1; --tile-on: #fde3e1;
   --warn-bg: #fff6e0; --warn-line: #ecd08a; --warn-ink: #8a5300; --bad: #b3261e; --good: #2b7a4b;
   --shadow: 0 1px 2px rgba(22, 24, 40, .06), 0 4px 14px rgba(22, 24, 40, .07);
 }
@@ -80,11 +81,11 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .colorpop .hexrow input { border: 0; background: none; padding: 0; flex: 1; min-width: 0; font: 14px 'Geist Mono', monospace; text-transform: uppercase; outline: none; }
 .colorpop .dropper { flex: none; width: 32px; height: 32px; padding: 0; border-left: 1px solid var(--line); border-radius: 0; background: none; color: var(--ink); }
 /* the page patterns, each a small picture of itself, sized and laid out like the colour swatches above them */
-:is(.dropdown .canvasbg, .endpick) button.pattern { padding: 0; width: 24px; height: 24px; flex: none; justify-content: center; border-radius: 6px; overflow: hidden; border: 1px solid rgba(22, 24, 40, .14); background: none; color: var(--mute); }
-:is(.dropdown .canvasbg, .endpick) button.pattern svg { display: block; }
-:is(.dropdown .canvasbg, .endpick) button.pattern:hover { border-color: var(--mute); }
-:is(.dropdown .canvasbg, .endpick) button.pattern.on { outline: 2px solid var(--accent); outline-offset: 2px; }
-:is(.dropdown .canvasbg, .endpick) button.more[aria-expanded="true"] { border-color: var(--accent); }
+.dropdown .canvasbg button.pattern { padding: 0; width: 24px; height: 24px; flex: none; justify-content: center; border-radius: 6px; overflow: hidden; border: 1px solid rgba(22, 24, 40, .14); background: none; color: var(--mute); }
+.dropdown .canvasbg button.pattern svg { display: block; }
+.dropdown .canvasbg button.pattern:hover { border-color: var(--mute); }
+.dropdown .canvasbg button.pattern.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dropdown .canvasbg button.more[aria-expanded="true"] { border-color: var(--accent); }
 /* the patterns popover reuses .colorpop's grid; each tile is a picture of the pattern, its key in the corner */
 .pswatch.pattern { overflow: hidden; color: rgba(15, 23, 42, .75); }
 .pswatch.pattern svg { position: absolute; inset: 0; display: block; }
@@ -98,11 +99,23 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 250px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .panel h4, .gallery h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--mute); }
 .panel select { width: 100%; }
-/* a line's start and end: tiles drawn as the ends, wider than tall, laid out as the Background menu's patterns */
+/* a line's start and end: quick picks, a divider and a button for the rest, as the Background menu's patterns, each
+   tile drawn as the end in the panel's colours like the other line buttons. The tile colours are solid (--tile...) so a
+   hollow end, filled with the tile's colour, hides the line under it */
 .endpick { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .endpick:last-child { margin-bottom: 0; }
 .endpick > span { font-size: 11px; color: var(--mute); }
-.endpick button.pattern { width: 30px; display: flex; align-items: center; }
+.endpick .swatches { gap: 4px; }
+.endpick button.pattern { flex: 1; min-width: 0; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: var(--tile); color: var(--ink); }
+.endpick button.pattern svg, .pswatch.marker svg { display: block; fill: var(--tile); }
+.endpick button.pattern:hover, .pswatch.marker:hover { background: var(--tile-hover); filter: none; }
+.endpick button.pattern:hover svg, .pswatch.marker:hover svg { fill: var(--tile-hover); }
+.endpick button.pattern.on, .pswatch.marker.on { background: var(--tile-on); color: var(--accent-ink); outline: none; }
+.endpick button.pattern.on svg, .pswatch.marker.on svg { fill: var(--tile-on); }
+.endpick button.more { color: var(--mute); }
+.endpick button.more[aria-expanded="true"] { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.pswatch.marker { overflow: hidden; border: 0; background: var(--tile); color: var(--ink); }
+.pswatch.marker svg { position: absolute; inset: 0; }
 .swatches { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; }
 .swatches .divider { width: 1px; height: 20px; margin: 0 2px; background: var(--line); flex: none; }
 .swatch { width: 24px; height: 24px; padding: 0; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); }
@@ -311,6 +324,7 @@ html[data-theme="dark"] {
   color-scheme: dark;
   --ink: #e2e8f0; --mute: #94a3b8; --line: #263253; --surface: #131c38; --bg: #0b1226;
   --accent: #ff6b5f; --accent-soft: rgba(255, 107, 95, .16); --accent-ink: #ffb4ab; --hover: rgba(226, 232, 240, .07);
+  --tile: #222a45; --tile-hover: #28304a; --tile-on: #39283e;
   --warn-bg: #3a2e12; --warn-line: #7a5d1c; --warn-ink: #fcd58a; --bad: #f87171; --good: #4ade80;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .35);
 }

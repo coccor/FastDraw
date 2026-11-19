@@ -25,7 +25,6 @@ export type PanelActions = {
   setText: (text: string) => void;
   setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
-  setOp: (op: string) => void;
   reorder: (where: Layering) => void;
   align: (mode: AlignMode) => void;
   remove: () => void;
@@ -147,23 +146,23 @@ const ALL_ENDS = UNLISTED.length ? [...END_GROUPS, { title: 'Other', choices: UN
 const END_NAME = Object.fromEntries(ALL_ENDS.flatMap((g) => g.choices.map((c) => [c.key, c.label])));
 const QUICK_ENDS = ['none', 'arrow', 'open', 'stealth', 'triangle'];
 
-// A line end on the page's colour, drawn by the renderer as the diagram draws it: on the left for the start of a line.
-function MarkerTile({ kind, start, w, h, paper, ink }: { kind: string; start: boolean; w: number; h: number; paper: string; ink: string }) {
+// A line end drawn by the renderer as the diagram draws it, on the left for the start of a line, in the panel's own
+// colours: the marks in the text colour, a hollow end filled with the tile's background (the svg's fill, set in CSS).
+function MarkerTile({ kind, start, w, h }: { kind: string; start: boolean; w: number; h: number }) {
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
-      <rect width={w} height={h} fill={paper} />
-      <g dangerouslySetInnerHTML={{ __html: markerPreview(kind, w, h, ink, paper, start) }} />
+      <g dangerouslySetInnerHTML={{ __html: markerPreview(kind, w, h, 'currentColor', 'inherit', start) }} />
     </svg>
   );
 }
 
 // One end of the selected lines, laid out as the Background menu's patterns: five quick picks, a divider, then a
 // button that opens every end in a popover beside the panel (and shows the current end when it is one of those).
-function EndPicker({ sc, label, start, current, onPick }: { sc: Scene; label: string; start: boolean; current: string; onPick: (v: string) => void }) {
+// Choosing Nothing at both ends makes a plain line; an arrowhead at either end, an arrow.
+function EndPicker({ label, start, current, onPick }: { label: string; start: boolean; current: string; onPick: (v: string) => void }) {
   const [open, setOpen] = React.useState(false);
   const more = React.useRef<HTMLButtonElement>(null);
-  const paper = color(sc.look, sc.look.canvas.paper ?? 'paper'), ink = color(sc.look, 'ink');
-  const tile = (k: string, w: number, h: number) => <MarkerTile kind={k} start={start} w={w} h={h} paper={paper} ink={ink} />;
+  const tile = (k: string, w: number, h: number) => <MarkerTile kind={k} start={start} w={w} h={h} />;
   const moreOn = !QUICK_ENDS.includes(current);
   const plural = start ? 'line starts' : 'line ends';
   return (
@@ -181,7 +180,7 @@ function EndPicker({ sc, label, start, current, onPick }: { sc: Scene; label: st
         </button>
       </div>
       {open && more.current && <TilePopover anchor={more.current} label={start ? 'Line starts' : 'Line ends'} groups={ALL_ENDS} current={current}
-        className="pattern marker" tile={(k) => tile(k, 34, 34)} onPick={onPick} onClose={() => setOpen(false)} />}
+        className="marker" tile={(k) => tile(k, 36, 36)} onPick={onPick} onClose={() => setOpen(false)} />}
     </div>
   );
 }
@@ -229,13 +228,6 @@ function RowInput({ value, label, onCommit }: { value: string; label: string; on
 // Small drawn glyphs for the line options, where a picture says more than a word.
 const Stroke = ({ dash, w = 1.6 }: { dash?: string; w?: number }) => (
   <svg width="26" height="14" viewBox="0 0 26 14"><line x1="3" y1="7" x2="23" y2="7" stroke="currentColor" strokeWidth={w} strokeDasharray={dash} strokeLinecap="round" /></svg>
-);
-const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
-  <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="7" x2="22" y2="7" />
-    {b && <path d="M18 3 L22 7 L18 11" />}
-    {a && <path d="M8 3 L4 7 L8 11" />}
-  </svg>
 );
 
 // An icon's stroke width in pixels; Regular leaves it to the icon's size.
@@ -345,7 +337,6 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const size = p[sizeKey] ?? baseSize;
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
   // the ends as drawn, not as written: `a -> b head=none` has no arrowhead, whatever its operator says
-  const ends = first.kind === 'conn' ? (first.el.head ? (first.el.tail ? '<->' : '->') : first.el.tail ? '<-' : '--') : undefined;
   const boxes = els.filter((e) => e!.kind !== 'conn').length;
   const aligns: [AlignMode, string, React.ReactNode][] = [
     ['left', 'Align left edges', <AlignStartVertical size={16} />], ['hcenter', 'Centre horizontally', <AlignCenterVertical size={16} />], ['right', 'Align right edges', <AlignEndVertical size={16} />],
@@ -406,14 +397,6 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
       {same && kind === 'conn' && (
         <>
           <section>
-            <h4>Arrowheads</h4>
-            <div className="seg">
-              <button title="No arrowhead" className={ends === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
-              <button title="Arrowhead at the end" className={ends === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
-              <button title="Arrowheads at both ends" className={ends === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
-            </div>
-          </section>
-          <section>
             <h4>Line shape</h4>
             <div className="seg">
               {[['ortho', 'Right angles', 'M3 11 H12 Q14 11 14 9 V5 Q14 3 16 3 H23'], ['straight', 'Straight', 'M3 11 L23 3'], ['curve', 'Curved', 'M3 11 C12 11 14 3 23 3']].map(([v, l, d]) => (
@@ -426,7 +409,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <section>
             <h4>Line ends</h4>
             {([['tail', 'Start', first.kind === 'conn' ? first.el.tailM : 'none'], ['head', 'End', first.kind === 'conn' ? first.el.headM : 'none']] as const).map(([k, label, cur]) => (
-              <EndPicker key={k} sc={sc} label={label} start={k === 'tail'} current={cur} onPick={(v) => act.setProp(k, v)} />
+              <EndPicker key={k} label={label} start={k === 'tail'} current={cur} onPick={(v) => act.setProp(k, v)} />
             ))}
           </section>
           {(p.via || p.lpos) && (

@@ -567,13 +567,13 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   await page.getByRole('dialog', { name: 'Line ends' }).getByRole('radio', { name: 'Zero or one' }).click();
   expect(lineOf(await source(page), 'fk')).toContain('head=zero-one');
   await page.keyboard.press('Escape');
-  await page.locator('.panel button[title="Arrowhead at the end"]').click();
-  expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -> users.r1 style=relation');
+  await page.getByRole('radiogroup', { name: 'End of the line' }).getByRole('radio', { name: 'Arrow', exact: true }).click();
+  expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -- users.r1 style=relation tail=many head=arrow');
   void k;
   expect(errors).toEqual([]);
 });
 
-test('the panel names every line end, its arrowheads follow the ends as drawn, and the text size shows the default', async ({ page }) => {
+test('the panel names every line end, its end pickers follow the ends as drawn, and the text size shows the default', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);
   const sizeOn = page.locator('.panel section:has(h4:text-is("Text size")) button.on');
@@ -590,14 +590,18 @@ test('the panel names every line end, its arrowheads follow the ends as drawn, a
   await page.getByRole('button', { name: 'More line ends' }).click();
   await expect(page.getByRole('dialog', { name: 'Line ends' }).getByRole('radio', { name: 'Ring (stop)' })).toHaveCount(1);
   await page.keyboard.press('Escape');
-  const on = page.locator('.panel button.on[title^="Arrowhead"], .panel button.on[title="No arrowhead"]');
-  await expect(on).toHaveAttribute('title', 'Arrowhead at the end');
+  const on = (g: typeof startEnds) => g.locator('[role="radio"][aria-checked="true"]');
+  await expect(on(startEnds)).toHaveAttribute('title', 'Nothing');
+  await expect(on(endEnds)).toHaveAttribute('title', 'Arrow');
   await endEnds.getByRole('radio', { name: 'Nothing' }).click();
   expect(lineOf(await source(page), 'r')).toContain('head=none');
-  await expect(on).toHaveAttribute('title', 'No arrowhead');
+  await expect(on(endEnds)).toHaveAttribute('title', 'Nothing');
   await startEnds.getByRole('radio', { name: 'Arrow', exact: true }).click();
   await endEnds.getByRole('radio', { name: 'Arrow', exact: true }).click();
-  await expect(on).toHaveAttribute('title', 'Arrowheads at both ends');
+  await expect(on(startEnds)).toHaveAttribute('title', 'Arrow');
+  await expect(on(endEnds)).toHaveAttribute('title', 'Arrow');
+  // the old none / one / both row is gone: the two rows say all of it
+  await expect(page.locator('.panel h4', { hasText: 'Arrowheads' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
