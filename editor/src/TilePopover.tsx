@@ -7,9 +7,9 @@ export type TileChoice = { key: string; label: string; about: string };
 // as the colour popover is: a grid of tiles under a heading per group, each with its key when `keys` gives one
 // (q w e r t / a s ...). Below them, the name of the tile under the pointer, else the chosen one, and what it is for.
 // It stays open while choices are tried; Escape or a click outside closes it.
-export function TilePopover({ anchor, label, groups, current, tile, keys = '', className = 'pattern', onPick, onClose }: {
+export function TilePopover({ anchor, label, groups, current, tile, keys = '', className = 'pattern', cards = false, onPick, onClose }: {
   anchor: HTMLElement; label: string; groups: { title: string; choices: TileChoice[] }[]; current: string;
-  tile: (key: string) => React.ReactNode; keys?: string; className?: string;
+  tile: (key: string) => React.ReactNode; keys?: string; className?: string; cards?: boolean; // cards: two wide tiles a row
   onPick: (key: string) => void; onClose: () => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -38,7 +38,7 @@ export function TilePopover({ anchor, label, groups, current, tile, keys = '', c
   };
   let n = 0; // the tile's place among all the groups', for its key
   return createPortal(
-    <div ref={box} tabIndex={-1} className="colorpop island" role="dialog" aria-label={label} style={pos}
+    <div ref={box} tabIndex={-1} className={'colorpop island' + (cards ? ' cards' : '')} role="dialog" aria-label={label} style={pos}
       onPointerDown={(e) => e.stopPropagation()} onKeyDown={press}>
       {groups.map((g) => (
         <section key={g.title}>

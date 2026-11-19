@@ -334,7 +334,9 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await expect(pop.getByRole('group', { name: 'Shades' }).locator('button')).toHaveCount(5);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Custom stroke colour' })).toHaveCount(0);
-  await page.locator('.panel select').first().selectOption('cloud');
+  await page.locator('.panel').getByRole('button', { name: /^Style:/ }).click();
+  await page.getByRole('dialog', { name: 'Styles' }).getByRole('radio', { name: 'cloud', exact: true }).click();
+  await page.keyboard.press('Escape');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');
   await sidebar(page, 'Components');

@@ -15,6 +15,8 @@ import { ColorPicker } from './ColorPicker.tsx';
 import { TilePopover } from './TilePopover.tsx';
 import type { TileChoice } from './TilePopover.tsx';
 import { markerPreview } from '../../src/render.ts';
+import { Thumb, BUILTIN } from './Gallery.tsx';
+import type { Style } from '../../src/look.ts';
 import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
@@ -176,6 +178,34 @@ function EndButton({ start, current, onPick }: { start: boolean; current: string
       </button>
       {open && btn.current && <TilePopover anchor={btn.current} label={start ? 'Line starts' : 'Line ends'} groups={ALL_ENDS} current={current}
         className="marker" tile={(k) => <MarkerTile kind={k} start={start} w={36} h={36} />} onPick={onPick} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// The selection's style, drawn as the look draws it, with what the look says it is for; it opens every style of the
+// kind, drawn the same way, in a popover beside the panel. The drawings sit on the diagram's page colour.
+function StylePicker({ sc, styles, current, onPick }: { sc: Scene; styles: Style[]; current: string; onPick: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const btn = React.useRef<HTMLButtonElement>(null);
+  const paper = color(sc.look, sc.look.canvas.paper ?? 'paper');
+  const byName = new Map(styles.map((s) => [s.name, s]));
+  const cur = byName.get(current);
+  const drawn = (s: Style | undefined) => <span className="sthumb" style={{ background: paper }}>{s && <Thumb look={sc.look} style={s} />}</span>;
+  return (
+    <>
+      <button ref={btn} type="button" className="stylebtn" aria-label={`Style: ${current}`} title={cur?.props.use ?? current}
+        aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {drawn(cur)}
+        <span className="sname"><b>{current}</b>{cur?.props.use && <span>{cur.props.use}</span>}</span>
+        <ChevronDown size={13} aria-hidden="true" />
+      </button>
+      {open && btn.current && <TilePopover anchor={btn.current} label="Styles" cards className="stylecard" current={current}
+        groups={[
+          // the look's own styles first, then the plain ones every look has
+          { title: 'This look', choices: styles.filter((s) => !BUILTIN.has(s.name)) },
+          { title: 'Built in', choices: styles.filter((s) => BUILTIN.has(s.name)) },
+        ].filter((g) => g.choices.length).map((g) => ({ title: g.title, choices: g.choices.map((s) => ({ key: s.name, label: s.name, about: s.props.use ?? '' })) }))}
+        tile={(k) => <>{drawn(byName.get(k))}<span className="tname">{k}</span></>} onPick={onPick} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -428,11 +458,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
 
   return (
     <aside className="panel" onPointerDown={(e) => e.stopPropagation()}>
-      {same && (
-        <select aria-label="Style" title="Style" value={first.el.style} onChange={(e) => act.setStyle(e.target.value)}>
-          {styles.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
-        </select>
-      )}
+      {same && <StylePicker sc={sc} styles={styles} current={first.el.style} onPick={act.setStyle} />}
 
       {(boxText || hasIcon || legend || rows) && (
         <Group title="Content">

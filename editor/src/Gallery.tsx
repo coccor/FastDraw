@@ -6,9 +6,9 @@ import { buildScene } from '../../src/scene.ts';
 import { renderBody } from '../../src/render.ts';
 
 // styles that have a tool in the top bar (the icon among them), so the sidebar does not list them
-const BUILTIN = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'freehand', 'arc', 'text', 'arrow', 'line', 'legend', 'icon']);
+export const BUILTIN = new Set(['rect', 'ellipse', 'diamond', 'polygon', 'freehand', 'arc', 'text', 'arrow', 'line', 'legend', 'icon']);
 
-function Thumb({ look, style }: { look: Look; style: Style }) {
+export function Thumb({ look, style }: { look: Look; style: Style }) {
   const view = useMemo(() => {
     const p = style.props;
     let src: string, w = 176, h = 84;
