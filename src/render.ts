@@ -43,6 +43,11 @@ function hatchDefs(): string {
 }
 const BLEND = ' style="mix-blend-mode:multiply"';
 const blendOf = (p: Props) => (p.blend === 'multiply' ? BLEND : '');
+// opacity=0..1: the whole element (fill, outline, text, arrowheads) drawn see-through, as one layer
+function faded(p: Props, svg: string): string {
+  const o = Math.min(1, Math.max(0, num(p.opacity, 1)));
+  return o < 1 ? `<g opacity="${r2(o)}">${svg}</g>` : svg;
+}
 // The same shape somewhere else: for a slab under it, a shadow beside it, a fill printed out of register.
 const shifted = (s: Shape, dx: number, dy: number): Shape => ({ ...s, x: s.x + dx, y: s.y + dy, poly: s.poly?.map((q) => ({ x: q.x + dx, y: q.y + dy })) });
 const boxy = (s: Shape) => s.shape !== 'polygon' && s.shape !== 'arc';
@@ -735,14 +740,18 @@ function drawLabel(look: Look, c: Conn): string {
 
 function drawText(look: Look, t: TextEl): string {
   const a = textAttrs(look, t.p, '', { font: 'sans', size: 12, weight: 400, color: 'ink' });
-  const anchor = t.p.anchor && t.p.anchor !== 'start' ? ` text-anchor="${esc(t.p.anchor)}"` : '';
+  // a text box (width=) draws its wrapped lines at its left edge, middle or right edge (align=)
+  const boxed = !!t.lines, al = t.p.align, bw = num(t.p.width, 0);
+  const ta = boxed ? (al === 'center' ? 'middle' : al === 'right' ? 'end' : 'start') : t.p.anchor;
+  const anchor = ta && ta !== 'start' ? ` text-anchor="${esc(ta)}"` : '';
+  const x0 = boxed ? t.ax + (al === 'center' ? bw / 2 : al === 'right' ? bw : 0) : t.ax;
   const rot = num(t.p.rotate, 0);
-  const lines = t.text.split('\n'), blend = blendOf(t.p);
-  let body = lines.map((l, i) => `<text x="${t.ax}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}${blend}>${esc(l)}</text>`).join('\n');
+  const lines = t.lines ?? t.text.split('\n'), blend = blendOf(t.p);
+  let body = lines.map((l, i) => `<text x="${x0}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}${blend}>${esc(l)}</text>`).join('\n');
   if (t.p.echo && t.p.echo !== 'none') {
     // echo=colour prints the text a second time underneath, a little off (echo.dx, echo.dy)
     const dx = num(t.p['echo.dx'], 3), dy = num(t.p['echo.dy'], 3), ea = a.a.replace(/fill="[^"]*"/, () => `fill="${col(look, t.p.echo)}"`);
-    body = lines.map((l, i) => `<text x="${t.ax + dx}" y="${r2(t.ay + dy + i * a.size * 1.3)}"${anchor} ${ea}>${esc(l)}</text>`).join('\n') + '\n' + body;
+    body = lines.map((l, i) => `<text x="${x0 + dx}" y="${r2(t.ay + dy + i * a.size * 1.3)}"${anchor} ${ea}>${esc(l)}</text>`).join('\n') + '\n' + body;
   }
   return rot === 90 || rot === -90 ? `<g transform="rotate(${rot} ${t.ax} ${t.ay})">${body}</g>` : body;
 }
@@ -832,9 +841,29 @@ function footed(c: Conn, shapes: Shape[]): Conn {
 const TEXT_STYLE = 'font-variant-ligatures:none;text-rendering:geometricPrecision';
 
 // background: false leaves the page out (no paper, no dots), for an image laid over something else
+// The page patterns (dots, grid, lines and the rest), each drawn in a colour that shows on the page. A pattern is a
+// faint mark in the look's ink, so a page much darker than the look was made for (a light look's ink on a dark page)
+// would hide it: then it is drawn in white instead, or black on a page much lighter, at the same strength. Only a
+// faint mark (a colour with /opacity) is changed; a solid colour is the look's own choice, like listing paper's pale bars.
+export const PAGE_MARKS = ['dots', 'grid', 'lines', 'cross', 'iso', 'diag', 'graph', 'hex', 'bars', 'feed'];
+export function pageMarks(look: Look): Record<string, string | undefined> {
+  const cv = { ...look.canvas }, paper = rgbOf(look, cv.paper ?? 'paper');
+  if (!paper) return cv;
+  for (const k of PAGE_MARKS) {
+    const v = cv[k];
+    if (!v || v === 'none') continue;
+    const i = v.lastIndexOf('/');
+    if (i <= 0) continue;
+    const rgb = rgbOf(look, v.slice(0, i));
+    if (!rgb || contrast(rgb, paper) >= 3) continue;
+    cv[k] = (contrast([255, 255, 255], paper) >= contrast([0, 0, 0], paper) ? '#ffffff' : '#000000') + v.slice(i);
+  }
+  return cv;
+}
+
 export function renderBody(sc: Scene, background = true): string {
   sc = legible(sc);
-  const look = sc.look, cv = look.canvas;
+  const look = sc.look, cv = pageMarks(look);
   const out: string[] = [];
   R = { amt: Math.max(0, Math.min(num(cv.sketch, 0), 4)), defs: new Map() };
   if (background) out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="${sc.w}" height="${sc.h}" fill="${col(look, cv.paper ?? 'paper')}"/>`);
@@ -903,16 +932,16 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-l)"/><rect class="fd-page" x="${sc.x + sc.w - 26}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-r)"/>`);
     out.push(`<path class="fd-page" d="M ${sc.x + 26},${sc.y} v ${sc.h} M ${sc.x + sc.w - 26},${sc.y} v ${sc.h}" stroke="${c}" stroke-width="1" stroke-dasharray="2 3" fill="none"/>`);
   }
-  for (const s of sc.shapes) if (s.back) out.push(drawShape(look, s));
+  for (const s of sc.shapes) if (s.back) out.push(faded(s.p, drawShape(look, s)));
   // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
   const conns = sc.shapes.some((s) => num(s.p.depth, 0) > 0) ? sc.conns.map((c) => footed(c, sc.shapes)) : sc.conns;
   const under = conns.filter((c) => c.p.layer !== 'front'), over = conns.filter((c) => c.p.layer === 'front');
-  for (const c of under) out.push(drawConn(look, c));
-  for (const c of under) if (c.label) out.push(drawLabel(look, c));
-  for (const s of sc.shapes) if (!s.back) out.push(drawShape(look, s));
-  for (const c of over) out.push(drawConn(look, c));
-  for (const c of over) if (c.label) out.push(drawLabel(look, c));
-  for (const t of sc.texts) out.push(drawText(look, t));
+  for (const c of under) out.push(faded(c.p, drawConn(look, c)));
+  for (const c of under) if (c.label) out.push(faded(c.p, drawLabel(look, c)));
+  for (const s of sc.shapes) if (!s.back) out.push(faded(s.p, drawShape(look, s)));
+  for (const c of over) out.push(faded(c.p, drawConn(look, c)));
+  for (const c of over) if (c.label) out.push(faded(c.p, drawLabel(look, c)));
+  for (const t of sc.texts) out.push(faded(t.p, drawText(look, t)));
   if (background && num(cv.grain, 0) > 0) {
     // grain=0..1: the tooth of printed paper, laid over everything
     out.push(`<defs><filter id="fd-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .25  0 0 0 0 .22  0 0 0 0 .2  0 0 0 .5 -.2"/></filter></defs>`);

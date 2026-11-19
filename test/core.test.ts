@@ -785,3 +785,31 @@ test('spaces in a text are drawn as written: indentation and runs of spaces, in 
   // and the write-back keeps them
   assert.equal(fmtStmt(setText(parseStatements('a: text "x" at 0,0')[0].toks, '    y')), 'a: text "    y" at 0,0');
 });
+
+test('opacity= draws a box, a line with its label, or a text see-through, clamped to 0..1', () => {
+  const svg = (src: string) => renderSvg(buildScene(src, defaultLook(), ''));
+  const out = svg('a: node "A" at 40,40 opacity=0.5\nb: node "B" at 260,40\na -> b "go" opacity=0.25\ntext "Note" at 40,160 opacity=2\n');
+  assert.equal(out.match(/<g opacity="0.5">/g)?.length, 1); // the box, as one layer
+  assert.equal(out.match(/<g opacity="0.25">/g)?.length, 2); // the line, and its label
+  assert.doesNotMatch(out, /<g opacity="(1|2)"/); // over 1 is drawn as usual
+  assert.match(svg('a: node "A" at 40,40 opacity=-1\n'), /<g opacity="0">/);
+});
+
+test('page patterns that would vanish into the page are drawn in white (or black) at the same strength', () => {
+  const svg = (src: string) => renderSvg(buildScene(src, defaultLook(), ''));
+  const dark = svg('canvas paper=#0d0f14 dots=ink/0.07 grid=#2a6df4/0.3\na: node "A" at 40,40\n');
+  assert.match(dark, /<pattern id="fd-dots"[^>]*><circle [^>]*fill="rgba\(255,255,255,0.07\)"/);
+  assert.doesNotMatch(dark, /id="fd-grid"[^>]*><path [^>]*stroke="rgba\(255,255,255/); // a colour that shows is left alone
+  assert.doesNotMatch(svg('canvas paper=#ffffff dots=ink/0.07\na: node "A" at 40,40\n'), /rgba\(255,255,255,0.07\)/); // a light page: as before
+});
+
+test('a text box wraps its words to its width and lines them up with align=', () => {
+  const sc = buildScene('t: text "one two three four five six" at 40,40 width=90 align=right\n', defaultLook(), '');
+  const t = sc.texts[0]!;
+  assert.deepEqual(sc.issues, []);
+  assert.ok(t.lines!.length > 1 && t.lines!.join(' ') === 'one two three four five six');
+  assert.deepEqual([t.x, t.y, t.w], [40, 28, 90]); // the box, not the words
+  assert.equal(t.h, 12 * 1.3 * t.lines!.length); // as tall as its lines
+  const svg = renderSvg(sc), ys = [...svg.matchAll(/<text x="130" y="([\d.]+)" text-anchor="end"/g)].map((m) => +m[1]);
+  assert.equal(ys.length, t.lines!.length); // every line at the right edge
+});

@@ -1,0 +1,4 @@
+# A dark look on a white page: its light ink patterns would vanish, so they are drawn in black.
+look night
+canvas paper=#ffffff dots=ink/0.08 hex=ink/0.1 cross=none
+a: node "White page" at 40,40

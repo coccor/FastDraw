@@ -1,9 +1,9 @@
 import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
-  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2, TextAlignStart, TextAlignCenter, TextAlignEnd,
 } from 'lucide-react';
-import { color } from '../../src/look.ts';
+import { color, fontFamily } from '../../src/look.ts';
 import { MARKERS } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
@@ -15,6 +15,9 @@ import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
   setProp: (k: string, v: string | null) => void;
+  // shows a value on the canvas without writing it (an opacity slider being dragged); setProp writes it
+  previewProp: (k: string, v: string | null) => void;
+  setTextAlign: (align: 'left' | 'center' | 'right') => void;
   setText: (text: string) => void;
   setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
@@ -167,6 +170,25 @@ function IconWidths({ value, onPick }: { value: string | undefined; onPick: (v: 
   );
 }
 
+// How see-through the selection is, 0 to 100%: the canvas follows the slider, and letting go writes opacity= once
+// (one undo step). Fully opaque is left off unless the style makes the element see-through.
+function Opacity({ value, own, act }: { value: number; own: boolean; act: PanelActions }) {
+  const [v, setV] = React.useState(value);
+  React.useEffect(() => setV(value), [value]);
+  // the preview redraws the selection at the new value, so whether it still needs writing is kept apart
+  const pending = React.useRef(false);
+  const out = (pc: number) => (pc >= 100 && !own ? null : String(pc / 100));
+  const done = () => { if (pending.current) { pending.current = false; act.setProp('opacity', out(v)); } };
+  return (
+    <div className="opacity">
+      <input type="range" min={0} max={100} step={5} value={v} aria-label="Opacity"
+        onChange={(e) => { const n = +e.target.value; setV(n); pending.current = true; act.previewProp('opacity', out(n)); }}
+        onPointerUp={done} onKeyUp={done} onBlur={done} />
+      <span className="value">{v}%</span>
+    </div>
+  );
+}
+
 export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: string[]; act: PanelActions }) {
   const els = sel.map((id) => find(sc, id)).filter((e) => !!e);
   if (!els.length) return null;
@@ -204,6 +226,10 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const dashOf = (v: string | undefined) => (!v || v === 'none' ? 'solid' : v.startsWith('1') || v.startsWith('2') ? 'dotted' : 'dashed');
   const colorKey = kind === 'conn' ? 'label.color' : 'title.color';
   const sizeKey = kind === 'shape' ? 'title.size' : kind === 'text' ? 'size' : 'label.size';
+  // what the element's style says for a key: picking that again drops the override
+  const styleProp = (k: string): string | undefined => sc.look.styles.get(first.el.style)?.props[k];
+  const fontKey = kind === 'shape' ? 'title.font' : kind === 'text' ? 'font' : 'label.font';
+  const font = p[fontKey] ?? 'sans';
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
   const op = kind === 'conn' ? stmtToks(src, first.el.line)?.find((t) => t.t === 'word' && ['->', '--', '<->'].includes(t.v))?.v : undefined;
   const boxes = els.filter((e) => e!.kind !== 'conn').length;
@@ -318,6 +344,32 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           </div>
         </section>
       )}
+      {same && !stroke && !iconShape && (
+        <section>
+          <h4>Font</h4>
+          <div className="seg wrap" role="radiogroup" aria-label="Font">
+            {[...sc.look.fonts.keys()].map((f) => (
+              <button key={f} role="radio" aria-checked={font === f} aria-label={f} title={`${f}: ${fontFamily(sc.look, f).split(',')[0]!.replace(/"/g, '')}`}
+                className={'font' + (font === f ? ' on' : '')} style={{ fontFamily: fontFamily(sc.look, f) }}
+                onClick={() => act.setProp(fontKey, f === styleProp(fontKey) ? null : f)}>{f[0]!.toUpperCase() + f.slice(1)}</button>
+            ))}
+          </div>
+        </section>
+      )}
+      {same && (kind === 'text' || (kind === 'shape' && !stroke && !iconShape)) && (
+        <section>
+          <h4>Text align</h4>
+          <div className="seg" role="radiogroup" aria-label="Text align">
+            {([['start', 'left', 'Left', <TextAlignStart size={16} />], ['middle', 'center', 'Centre', <TextAlignCenter size={16} />], ['end', 'right', 'Right', <TextAlignEnd size={16} />]] as const).map(([a, al, l, icon]) => {
+              // a free text lines up inside its box (width=); one without a box shows no alignment until it has one
+              const boxed = first.kind === 'text' && !!first.el.lines;
+              const on = kind === 'text' ? boxed && (p.align ?? 'left') === al : (p['title.align'] ?? 'center') === al;
+              const pick = () => kind === 'text' ? act.setTextAlign(al) : act.setProp('title.align', al === (styleProp('title.align') ?? 'center') ? null : al);
+              return <button key={a} role="radio" aria-checked={on} aria-label={`Align ${l.toLowerCase()}`} title={l} className={on ? 'on' : ''} onClick={pick}>{icon}</button>;
+            })}
+          </div>
+        </section>
+      )}
       {same && kind !== 'text' && !stroke && !iconShape && (
         <section>
           <h4>Text colour</h4>
@@ -380,6 +432,10 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           </div>
         </section>
       )}
+      <section>
+        <h4>Opacity</h4>
+        <Opacity value={Math.round(Math.min(1, Math.max(0, Number(p.opacity ?? 1) || 0)) * 100)} own={els.some((e) => sc.look.styles.get(e!.el.style)?.props.opacity !== undefined)} act={act} />
+      </section>
       <section>
         <h4>Layers</h4>
         <div className="seg">

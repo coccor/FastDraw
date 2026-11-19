@@ -5,7 +5,7 @@ import { buildScene, lookPath, captionBox, textWidth as measure } from '../../sr
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
-import { renderBody, col } from '../../src/render.ts';
+import { renderBody, col, pageMarks } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
@@ -97,8 +97,18 @@ const TOOLS: [string, string, string][] = [
   ['arrow', 'Arrow', 'A'], ['line', 'Line', 'L'], ['freehand', 'Draw', 'P'], ['text', 'Text', 'T'],
 ];
 
-// Background colours offered besides the look's own: plain white and a few light, cool tints.
-const PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
+// Background colours offered besides the look's own: plain white and a few light, cool tints, and for a look
+// drawn on a dark page (Night), near-black and a few deep tints, all darker than Night's cards so they still lift.
+const LIGHT_PAPERS = ['#ffffff', '#f4f5f7', '#eef2f7', '#edf6f0', '#f3effa'];
+const DARK_PAPERS = ['#0d0f14', '#16181d', '#0b1622', '#0c1a15', '#15102a'];
+
+// Whether a page colour is dark: its text and lines are light, so it wants dark pages offered first.
+function isDarkPage(hex: string): boolean {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(hex);
+  if (!m) return false;
+  const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b! < 0.18;
+}
 
 // The page dressing a look asks for (dots, a grid, ruled lines, crosses, isometric dots, hatching, graph paper, hexagons,
 // listing bars, sprocket feed), stretched over the whole visible view
@@ -122,7 +132,7 @@ function PageLayers({ sc, view }: { sc: Scene; view: { x: number; y: number; k: 
       {on(cv.feed) && <>
         <rect x={sc.x} y={y} width={26} height={h} fill="url(#fd-feed-l)" pointerEvents="none" />
         <rect x={r} y={y} width={26} height={h} fill="url(#fd-feed-r)" pointerEvents="none" />
-        <path d={`M ${sc.x + 26},${y} v ${h} M ${r},${y} v ${h}`} stroke={col(sc.look, cv.feed!)} strokeWidth={1} strokeDasharray="2 3" fill="none" pointerEvents="none" />
+        <path d={`M ${sc.x + 26},${y} v ${h} M ${r},${y} v ${h}`} stroke={col(sc.look, pageMarks(sc.look).feed)} strokeWidth={1} strokeDasharray="2 3" fill="none" pointerEvents="none" />
       </>}
     </>
   );
@@ -234,7 +244,12 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
   const basePaper = base.paper ?? 'paper', paper = cv.paper ?? 'paper';
   const current = PAGE_PATTERNS.find((p) => isOn(cv[p.key]))?.key ?? 'none';
   const overridden = ['paper', ...PAGE_PATTERNS.flatMap((p) => [p.key, p.gap])].some((k) => cv[k] !== base[k]);
-  const paperHex = color(scene.look, paper), inkHex = color(scene.look, 'ink/0.55');
+  // the tiles draw their marks as the page will: in white when the look's ink would not show on this page
+  const paperHex = color(scene.look, paper), inkHex = color(scene.look, pageMarks({ ...scene.look, canvas: { ...cv, dots: 'ink/0.55' } }).dots);
+  // the quick picks match the look's own page (light tints on a light look, dark ones on a dark look, where the
+  // look's text is light); the other set is still in the colour popover
+  const baseHex = color(scene.look, basePaper).toLowerCase();
+  const papers = [basePaper, ...(isDarkPage(baseHex) ? [...DARK_PAPERS, ...LIGHT_PAPERS] : [...LIGHT_PAPERS, ...DARK_PAPERS]).filter((p) => p !== baseHex)];
   // the chosen pattern is the look's own (no override) or its starting colour; every other one is off
   const pick = (kind: string) => set(Object.fromEntries(PAGE_PATTERNS.map((p) => [p.key,
     p.key === kind ? (isOn(base[p.key]) ? null : p.start) : isOn(base[p.key]) ? 'none' : null])));
@@ -254,7 +269,7 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
   return (
     <div className="canvasbg">
       <span>Background</span>
-      <Swatches sc={scene} values={[basePaper, ...PAPERS.filter((p) => p !== color(scene.look, basePaper))]} current={paper}
+      <Swatches sc={scene} values={papers} current={paper}
         onPick={(v) => set({ paper: v === basePaper ? null : v })} custom="Custom background colour" />
       <span>Pattern</span>
       <div className="swatches" role="radiogroup" aria-label="Background pattern">
@@ -966,7 +981,7 @@ export function App() {
     if (handle && sel.length === 1) {
       // remember where on the handle the press landed, so the corner does not jump to the pointer
       const s0 = ops.find(scene, sel[0]);
-      const cx = s0 && s0.kind === 'shape' ? s0.el.x + (handle.includes('w') ? 0 : s0.el.w) : p.x, cy = s0 && s0.kind === 'shape' ? s0.el.y + (handle.includes('n') ? 0 : s0.el.h) : p.y;
+      const cx = s0 && s0.kind !== 'conn' ? s0.el.x + (handle.includes('w') ? 0 : s0.el.w) : p.x, cy = s0 && s0.kind !== 'conn' ? s0.el.y + (handle.includes('n') ? 0 : s0.el.h) : p.y;
       drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene, dx: cx - p.x, dy: cy - p.y }; return;
     }
     const vertex = t.getAttribute('data-vertex');
@@ -1075,6 +1090,11 @@ export function App() {
     }
     if (d.type === 'resize') {
       const e0 = ops.find(d.scene, d.id);
+      if (e0?.kind === 'text') {
+        // any handle scales a text, following the pointer freely: its size moves in half-point steps, not grid steps
+        setDraft(ops.scaleText(d.base, e0.el, d.corner, { x: p.x + d.dx, y: p.y + d.dy }));
+        return;
+      }
       if (!e0 || e0.kind !== 'shape') return;
       const s = e0.el;
       let x1 = s.x, y1 = s.y, x2 = s.x + s.w, y2 = s.y + s.h;
@@ -1159,9 +1179,13 @@ export function App() {
       const style = scene.look.styles.get(d.style);
       if (!style) return;
       if (style.kind === 'text') {
-        const r = ops.addText(src, snap(d.start.x), snap(d.start.y), d.style);
+        // a click places a text; a drag across draws the box its lines wrap in, its first line along the top
+        const x1 = snap(Math.min(d.start.x, p.x)), x2 = snap(Math.max(d.start.x, p.x)), boxed = x2 - x1 >= 24;
+        const fs = Number(style.props.size) || 12;
+        const x = boxed ? x1 : snap(d.start.x), y = boxed ? snap(Math.min(d.start.y, p.y)) + Math.round(fs) : snap(d.start.y);
+        const r = ops.addText(src, x, y, d.style, boxed ? x2 - x1 : undefined);
         commit(r.src, [r.id]); doneDrawing();
-        window.setTimeout(() => setEditing({ id: r.id, value: 'Text', box: { x: snap(d.start.x) - 4, y: snap(d.start.y) - 18, w: 200, h: 26 } }), 0);
+        window.setTimeout(() => setEditing({ id: r.id, value: 'Text', box: { x: x - 4, y: y - 18, w: boxed ? x2 - x1 + 8 : 200, h: 26 } }), 0);
         return;
       }
       const r = placeShape(src, d.style, d.start, p);
@@ -1201,6 +1225,8 @@ export function App() {
   // ---- actions ------------------------------------------------------------
   const act = {
     setProp: (k: string, v: string | null) => src !== null && commit(ops.setProps(src, scene, sel, k, v)),
+    previewProp: (k: string, v: string | null) => src !== null && setDraft(ops.setProps(src, scene, sel, k, v)),
+    setTextAlign: (a: 'left' | 'center' | 'right') => src !== null && commit(ops.setTextAlign(src, scene, sel, a)),
     // the main text of the one selected element, typed in the sidebar
     setText: (text: string) => { const e = ops.find(scene, sel[0]); if (src !== null && e) commit(ops.editText(src, e, text)); },
     setProps: (kv: Record<string, string | null>) => src !== null && commit(ops.setManyProps(src, scene, sel, kv)),
@@ -1251,10 +1277,12 @@ export function App() {
     const anchor = (hits[0].getAttribute('text-anchor') ?? cs.textAnchor ?? 'start') as string;
     const ax = parseFloat(hits[0].getAttribute('x') ?? '0');
     const top = boxes[0].y - (pitch - boxes[0].height) / 2;
-    const isShape = ed.entry === undefined && ops.find(stateRef.current.scene, ed.id)?.kind === 'shape';
+    const edEl = ed.entry === undefined ? ops.find(stateRef.current.scene, ed.id) : undefined, isShape = edEl?.kind === 'shape';
+    // a text box (width=) wraps at its width while typing, as it will be drawn
+    const boxWidth = edEl?.kind === 'text' && edEl.el.lines ? Number(edEl.el.p.width) || 0 : 0;
     setEdLook({
       family: cs.fontFamily, size, weight: cs.fontWeight, style: cs.fontStyle, color: cs.fill, spacing: cs.letterSpacing,
-      transform: hits.every((t) => { const s = t.textContent ?? ''; return s === s.toUpperCase() && s !== s.toLowerCase(); }) && ed.value !== ed.value.toUpperCase() ? 'uppercase' : cs.textTransform, anchor, ax, top, pitch, wrap: isShape ? b.w - 12 : 0,
+      transform: hits.every((t) => { const s = t.textContent ?? ''; return s === s.toUpperCase() && s !== s.toLowerCase(); }) && ed.value !== ed.value.toUpperCase() ? 'uppercase' : cs.textTransform, anchor, ax, top, pitch, wrap: isShape ? b.w - 12 : boxWidth,
     });
     for (const t of hits) t.style.visibility = 'hidden';
     return () => { for (const t of hits) t.style.visibility = ''; };
@@ -1431,17 +1459,19 @@ export function App() {
             const p = scene.look.styles.get('freehand')?.props ?? {};
             return <polyline className="ink" points={polyPoints(ink)} fill="none" stroke={col(scene.look, p.stroke ?? 'ink')} strokeWidth={+p.sw || 2} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />;
           })()}
-          {single?.kind === 'shape' && tool === 'select' && !editing && (
+          {/* a text has a box's handles; dragging any of them scales the text (ops.scaleText) */}
+          {(single?.kind === 'shape' || (single?.kind === 'text' && !Number(single.el.p.rotate ?? 0))) && tool === 'select' && !editing && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
               {(() => {
                 const { x, y, w, h } = single.el, l = x - 4, r = x + w + 4, t = y - 4, b = y + h + 4, mx = (l + r) / 2, my = (t + b) / 2;
                 const cursor = (c: string) => c.length === 2 ? (c === 'nw' || c === 'se' ? 'nwse-resize' : 'nesw-resize') : (c === 'n' || c === 's' ? 'ns-resize' : 'ew-resize');
-                const tip = 'Drag to resize · Shift keeps proportions · Alt turns off snapping';
+                const isText = single.kind === 'text';
+                const tips = (_c: string) => isText ? 'Drag to make the text bigger or smaller' : 'Drag to resize · Shift keeps proportions · Alt turns off snapping';
                 // invisible strips along each side, so a whole edge can be grabbed, not only its middle handle
                 const strips = ([['n', l, t, r - l, 0], ['s', l, b, r - l, 0], ['w', l, t, 0, b - t], ['e', r, t, 0, b - t]] as [string, number, number, number, number][])
-                  .map(([c, sx, sy, sw, sh]) => <rect key={'strip-' + c} data-handle={c} data-strip="" x={sx - hs / 2} y={sy - hs / 2} width={sw + hs} height={sh + hs} fill="transparent" stroke="none" style={{ cursor: cursor(c) }}><title>{tip}</title></rect>);
+                  .map(([c, sx, sy, sw, sh]) => <rect key={'strip-' + c} data-handle={c} data-strip="" x={sx - hs / 2} y={sy - hs / 2} width={sw + hs} height={sh + hs} fill="transparent" stroke="none" style={{ cursor: cursor(c) }}><title>{tips(c)}</title></rect>);
                 const knobs = ([['nw', l, t], ['n', mx, t], ['ne', r, t], ['e', r, my], ['se', r, b], ['s', mx, b], ['sw', l, b], ['w', l, my]] as [string, number, number][])
-                  .map(([c, hx, hy]) => <rect key={c} data-handle={c} x={hx - hs / 2} y={hy - hs / 2} width={hs} height={hs} rx={1.5 / view.k} style={{ cursor: cursor(c) }}><title>{tip}</title></rect>);
+                  .map(([c, hx, hy]) => <rect key={c} data-handle={c} x={hx - hs / 2} y={hy - hs / 2} width={hs} height={hs} rx={1.5 / view.k} style={{ cursor: cursor(c) }}><title>{tips(c)}</title></rect>);
                 return [...strips, ...knobs];
               })()}
             </g>
@@ -1473,7 +1503,14 @@ export function App() {
           onFocus={(e) => e.target.select()}
           onBlur={() => finishEdit(true)}
           onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finishEdit(true); } else if (e.key === 'Escape') finishEdit(false); e.stopPropagation(); }} />
+          onKeyDown={(e) => {
+            // a free text is written in paragraphs: Enter starts a new line, and Escape or Ctrl+Enter keeps what was
+            // typed (clicking away does too). A box's label is one short line: Enter keeps it and Escape drops the edit.
+            const prose = editing.entry === undefined && ops.find(scene, editing.id)?.kind === 'text';
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || (!prose && !e.shiftKey))) { e.preventDefault(); finishEdit(true); }
+            else if (e.key === 'Escape') finishEdit(prose);
+            e.stopPropagation();
+          }} />
       )}
 
       <div className="topleft" onPointerDown={(e) => e.stopPropagation()}>
