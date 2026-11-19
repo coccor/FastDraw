@@ -32,6 +32,7 @@ import { setLookFonts, setWebFonts, BUNDLED_FAMILIES } from './fonts.ts';
 import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, fetchWebLook, hostOf, type WebIcons } from '../../src/webassets.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
+import { useEscape } from './useEscape.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
@@ -1763,9 +1764,10 @@ export function App() {
 
 function PasteDialog({ onClose, onLoad }: { onClose: () => void; onLoad: (text: string) => void }) {
   const [v, setV] = useState('');
+  useEscape(onClose);
   return (
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="card">
+      <div className="card" role="dialog" aria-label="Paste diagram text">
         <h3>Paste diagram text</h3>
         <p className="muted">Paste what an assistant wrote. It opens in memory, drawn with the built-in look unless it names its own. Use Download to keep it.</p>
         <textarea autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder={'a: node "Orders API" at 80,80\nb: store "Orders DB" at 320,80\na -> b "writes"'} />

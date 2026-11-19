@@ -232,7 +232,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.primary:hover { background: var(--accent-ink); }
 
 /* export dialog */
-.exportcard { display: flex; flex-direction: column; gap: 12px; }
+.exportcard { display: flex; flex-direction: column; gap: 12px; outline: none; }
 .exportcard h3 { margin: 0; }
 .exportpreview { height: 200px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--hover); }
 .exportpreview.checker { background: repeating-conic-gradient(#e9eaf0 0 25%, #fff 0 50%) 0 0 / 16px 16px; }

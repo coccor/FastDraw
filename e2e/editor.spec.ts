@@ -1011,6 +1011,28 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   expect(errors).toEqual([]);
 });
 
+test('Escape closes the export and paste dialogs, from the shortcut and from the menu', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const exp = page.getByRole('dialog', { name: 'Export image' }), pst = page.getByRole('dialog', { name: 'Paste diagram text' });
+  await page.keyboard.press('Control+Shift+E');
+  await expect(exp).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(exp).toBeHidden();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  await expect(exp).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(exp).toBeHidden();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Paste diagram text' }).click();
+  await expect(pst.locator('textarea')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(pst).toBeHidden();
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
 test('each tab keeps its own diagram and history; closing one asks first and stays closed after a reload', async ({ page }) => {
   await paste(page, SMALL);
   await page.getByRole('button', { name: 'Menu' }).click();
