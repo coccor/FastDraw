@@ -134,8 +134,17 @@ mod tests {
     fn dark_counterparts_named() {
         let night = bundled_look("night").unwrap();
         assert_eq!(dark_counterpart(Some("night"), Some(&night)), None);
+        // a look that ships names its dark version, which is already dark
         let shade = bundled_look("shade").unwrap();
-        assert_eq!(dark_counterpart(Some("shade"), Some(&shade)), None);
+        assert_eq!(
+            dark_counterpart(Some("shade"), Some(&shade)).as_deref(),
+            Some("shade-dark")
+        );
+        let shade_dark = bundled_look("shade-dark").unwrap();
+        assert_eq!(
+            dark_counterpart(Some("shade-dark"), Some(&shade_dark)),
+            None
+        );
     }
 
     #[test]

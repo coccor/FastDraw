@@ -334,6 +334,59 @@ export function bundledLook(name: string): Look | null {
 }
 export const bundledLookSource = (name: string): string | null => (isBundledLook(name) ? BUNDLED_LOOKS[name]! : null);
 
+// ---- light and dark ---------------------------------------------------------
+// Every look that ships comes in a light and a dark version: the light one names the dark one in its `dark`
+// line (the built-in look names night, shade names shade-dark). A diagram names the light version; the
+// editor and an embedded diagram draw it in the version for their theme, and the look menu offers only
+// the light names. A dark version names itself, so `fastdraw render --dark` keeps it.
+export type Theme = 'light' | 'dark';
+/** A look as a diagram's look line names it: a bundled name, a path or an address; null is the built-in look. */
+export type LookName = string | null;
+
+let lightOfCache: Map<string, LookName> | undefined;
+// dark version -> the light look whose dark line names it, for the looks that ship
+function lightOf(): Map<string, LookName> {
+  if (!lightOfCache) {
+    lightOfCache = new Map();
+    const d = defaultLook().dark;
+    if (d && isBundledLook(d)) lightOfCache.set(d, null);
+    for (const n of BUNDLED_LOOK_NAMES) {
+      const dn = bundledLook(n)!.dark;
+      if (dn && dn !== n && isBundledLook(dn) && !lightOfCache.has(dn)) lightOfCache.set(dn, n);
+    }
+  }
+  return lightOfCache;
+}
+
+/** Whether a bundled look is the dark version of another (night, shade-dark), so the look menu leaves it out. */
+export const isDarkVersion = (name: LookName): boolean => !!name && lightOf().has(name);
+
+/** The light look a diagram's look belongs to: the built-in look for night, shade for shade-dark, else itself. */
+export function lightLookName(name: LookName): LookName {
+  return name && lightOf().has(name) ? lightOf().get(name)! : name;
+}
+
+/**
+ * The look to draw a diagram in for `theme`, as a look line would name it (null: the built-in look).
+ * Dark: what the light look's `dark` line names, a bundled name or a path relative to that look's file.
+ * Light: the light look a shipped dark version belongs to. Otherwise the diagram's own look.
+ * own: the diagram's look when it is a file or an address (its `dark` line is read from it).
+ */
+export function lookForTheme(name: LookName, theme: Theme, own: Pick<Look, 'dark'> | null = null): LookName {
+  const light = lightLookName(name);
+  if (theme === 'light') return light;
+  const base = light === null ? defaultLook() : isBundledLook(light) ? bundledLook(light) : light === name ? own : null;
+  return base?.dark ?? name;
+}
+
+/** Where a look named by path inside a look at `from` (an address) is: dark "./x-dark.look" next to it. */
+export function lookNear(ref: string, from: string): string {
+  try { return new URL(ref, from).href; } catch { return ref; }
+}
+
+/** The looks the menu offers, light names only: the built-in look and every bundled look that is not a dark version. */
+export const menuLookNames = (): LookName[] => [null, ...BUNDLED_LOOK_NAMES.filter((n) => !isDarkVersion(n))];
+
 export function defaultLook(): Look {
   cachedDefault ??= parseLook(DEFAULT_LOOK, 'default look');
   return cachedDefault;

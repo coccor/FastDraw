@@ -61,7 +61,8 @@ A new language feature also needs a case in `crates/fastdraw-render/tests/covera
 | `agents/` | Thin instruction files that point coding agents at `fastdraw guide` |
 | `looks/reference.look` | Test look that mirrors diagram-design's default palette, for quality comparison |
 | `looks/whiteboard.look` | Whiteboard: an online-whiteboard look with pastel sticky notes, white rounded shapes, curved connectors and one blue accent. Samples in `examples/whiteboard/` |
-| `looks/night.look` | Night: the built-in look after dark, on a deep navy page with the same styles, so a diagram can switch with one line |
+| `looks/night.look` | Night: the built-in look's dark version, on a deep navy page with the same styles; the dark theme draws a diagram with no look line in it |
+| `looks/*-dark.look` | The dark version of each look that ships, named by its light look's `dark` line, with the same styles, shapes, sizes and fonts |
 | `looks/shade.look` | Shade: hairline boxes that cast a hatched shadow. Written by `tools/gen-style-looks.py` |
 | `test/fixtures/looks/` | Copies of the six looks that moved to [coccor/fastdraw-looks](https://github.com/coccor/fastdraw-looks) (engraved, headline, keys, listing, offset, transit). The renderer tests draw with them; the repository is where they are changed |
 | `src/githublooks.ts` | What the editor's **From GitHub** finds: reads `owner/repo` or a link, lists the repository's `.look` files, and names each by its raw.githubusercontent.com address |

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { parseLook, color, isBundledLook, isWebLook, fallbackFamily } from '../../src/look.ts';
+import { parseLook, color, isBundledLook, isWebLook, fallbackFamily, bundledLook, defaultLook, lookForTheme, lookNear, type Look, type Theme as LookTheme } from '../../src/look.ts';
 import { buildScene, lookPath, captionBox, textWidth as measure, turnOf, turnPt } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
@@ -35,6 +35,7 @@ import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
 import { useEscape } from './useEscape.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
+import { useTheme } from './theme.ts';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
 import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
@@ -371,6 +372,35 @@ export function App() {
     const out = withIconImages(parsedLook, iconFiles, { ...carriedIcons, ...webIcons.uris }, read);
     return listedIcons.length ? { ...out, listedIcons } : out;
   }, [parsedLook, iconFiles, carriedIcons, webIcons, listedIcons]);
+  // The diagram names the light version of its look; the canvas draws the version for the app's theme (the
+  // built-in look in Night when it is dark, shade in shade-dark). Only the picture changes: the file keeps its
+  // look line, and editing works on the diagram as it is.
+  const theme = useTheme();
+  const themedName = lookForTheme(lookLine ?? null, theme, look);
+  const themedOwn = themedName === (lookLine ?? null);
+  // a dark version a look file names by path (dark "./team-night.look") is read next to that look: from the web
+  // for a look named by address, from the open folder for a look file; each place is read once
+  const darkRef = !themedOwn && themedName !== null && !isBundledLook(themedName) ? themedName : null;
+  const darkKey = darkRef === null ? null : webLookOn ? lookNear(darkRef, lookLine!)
+    : io.current.folder && io.current.path && lookLine ? files.dirOf(files.dirOf(io.current.path) + lookLine) + darkRef : null;
+  const [darkTexts, setDarkTexts] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    if (darkKey === null || darkTexts[darkKey] !== undefined) return;
+    let stale = false;
+    const key = darkKey, folder = io.current.folder;
+    const read = webLookOn ? fetchWebLook(key)
+      : folder ? files.resolveIn(folder.root, key).then(async (h) => (h ? (await files.readHandle(h)).text : null)) : Promise.resolve(null);
+    read.then((t) => { if (!stale) setDarkTexts((d) => ({ ...d, [key]: t })); }, () => { if (!stale) setDarkTexts((d) => ({ ...d, [key]: null })); });
+    return () => { stale = true; };
+  }, [darkKey, darkTexts, webLookOn]);
+  // the look the canvas draws in, when it is not the diagram's own (undefined: draw the diagram's own look)
+  const themedLook = useMemo((): Look | undefined => {
+    if (themedOwn) return undefined;
+    if (themedName === null) return defaultLook();
+    if (isBundledLook(themedName)) return bundledLook(themedName)!;
+    const t = darkKey === null ? null : darkTexts[darkKey];
+    return t ? withIconImages(parseLook(t), iconFiles, { ...carriedIcons, ...webIcons.uris }, false) : undefined;
+  }, [themedOwn, themedName, darkKey, darkTexts, iconFiles, carriedIcons, webIcons, iconsReady]);
   const webIconNote = webIcons.unreachable.length ? `The look's icons could not be fetched from ${webIcons.unreachable.join(' and ')}, so the closest built-in icons are drawn instead.` : '';
   useEffect(() => {
     let stale = false;
@@ -416,14 +446,32 @@ export function App() {
   }, [look, name, docId]);
   const cur = draft ?? src ?? '';
   const scene = useMemo(() => buildScene(cur, look), [cur, look, iconsReady]);
-  // what the canvas draws: the diagram, or while a look is being tried, the diagram in that look.
-  // Editing always works on the real diagram; only the picture changes.
+  // the diagram in its look's version for the theme: what the canvas, the panel and the components show
+  const viewScene = useMemo(() => (themedLook ? buildScene(cur, look, '', themedLook) : scene), [scene, themedLook, cur, look]);
+  // the diagram in both versions of its look, for the export (the same scene twice when the look has one version)
+  const exportScenes = useMemo((): Record<LookTheme, Scene> | null => {
+    if (!exportOpen) return null;
+    const other: LookTheme = theme === 'dark' ? 'light' : 'dark';
+    const want = lookForTheme(lookLine ?? null, other, look);
+    const d = want === (lookLine ?? null) ? undefined : want === null ? defaultLook() : isBundledLook(want) ? bundledLook(want)! : undefined;
+    const otherScene = d ? buildScene(cur, look, '', d) : scene;
+    return theme === 'dark' ? { light: otherScene, dark: viewScene } : { light: viewScene, dark: otherScene };
+  }, [exportOpen, theme, lookLine, look, cur, scene, viewScene]);
+  // what the canvas draws: the diagram, or while a look is being tried, the diagram in that look (in its version
+  // for the theme). Editing always works on the real diagram; only the picture changes.
   const shown = useMemo(() => {
-    if (lookPreview === undefined) return scene;
+    if (lookPreview === undefined) return viewScene;
     const p = lookPreview;
     const fl = p !== null && isWebLook(p) && p !== lookLine ? pickerWeb.current.get(p)?.look ?? null : pickerFile.current && p === pickerFile.current.path ? pickerFile.current.look : look;
-    return buildScene(ops.setLook(cur, p), p !== null && !isBundledLook(p) ? fl : null);
-  }, [scene, lookPreview, cur, look, iconsReady, lookLine]);
+    const own = p !== null && !isBundledLook(p) ? fl : null;
+    const want = lookForTheme(p, theme, own);
+    const drawIn = want === null ? defaultLook()
+      : isBundledLook(want) ? bundledLook(want)
+      : want === p ? own
+      : p === lookLine && themedLook ? themedLook
+      : (p !== null && isWebLook(p) && pickerWeb.current.get(lookNear(want, p))?.look) || own;
+    return drawIn ? buildScene(cur, look, '', drawIn) : buildScene(ops.setLook(cur, p), own);
+  }, [viewScene, lookPreview, cur, look, iconsReady, lookLine, theme, themedLook]);
   const issues = useMemo(() => check(scene).filter((i) => i.level !== 'hint'), [scene]);
   // the page layers are left out: the paper, dots, bars and feed fill the whole view instead (see the canvas below)
   const body = useMemo(() => renderBody(shown).split('\n').filter((l) => !/^<(rect|path) class="fd-page"/.test(l)).join('\n'), [shown]);
@@ -1284,7 +1332,7 @@ export function App() {
         typed = 'x';
         probe = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         probe.style.visibility = 'hidden';
-        probe.innerHTML = renderBody(buildScene(withProbe, look));
+        probe.innerHTML = renderBody(buildScene(withProbe, look, '', themedLook));
         g.after(probe);
         hits = labelIn(probe, typed);
       }
@@ -1489,8 +1537,8 @@ export function App() {
             {ghost?.kind === 'line' && <line x1={ghost.a.x} y1={ghost.a.y} x2={ghost.b.x} y2={ghost.b.y} />}
           </g>
           {ink && (() => {
-            const p = scene.look.styles.get('freehand')?.props ?? {};
-            return <polyline className="ink" points={polyPoints(ink)} fill="none" stroke={col(scene.look, p.stroke ?? 'ink')} strokeWidth={+p.sw || 2} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />;
+            const p = viewScene.look.styles.get('freehand')?.props ?? {};
+            return <polyline className="ink" points={polyPoints(ink)} fill="none" stroke={col(viewScene.look, p.stroke ?? 'ink')} strokeWidth={+p.sw || 2} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />;
           })()}
           {/* a text has a box's handles; dragging any of them scales the text (ops.scaleText) */}
           {(single?.kind === 'shape' || (single?.kind === 'text' && !turnOf(single.el.p))) && tool === 'select' && !editing && (
@@ -1575,10 +1623,10 @@ export function App() {
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
             <hr />
-            <BackgroundMenu scene={scene} set={(bg) => act.setCanvas(bg)} />
+            <BackgroundMenu scene={viewScene} set={(bg) => act.setCanvas(bg)} />
           </div>
         )}
-        <Panel sc={scene} src={cur} sel={sel} act={act} />
+        <Panel sc={viewScene} src={cur} sel={sel} act={act} />
       </div>
 
       <div className="topcenter" onPointerDown={(e) => e.stopPropagation()}>
@@ -1592,7 +1640,7 @@ export function App() {
           ))}
           <button className={'tool' + (tool === 'style:icon' ? ' on' : '')} title={scene.look.styles.has('icon') ? 'Icon — I' : 'This look has no icon style'} aria-label="Icon" aria-pressed={tool === 'style:icon'} aria-haspopup="dialog"
             disabled={!scene.look.styles.has('icon')} onClick={() => setIconToolOpen(true)}>
-            {pickedIcon && (scene.look.icons.has(pickedIcon.name) || scene.look.images.has(pickedIcon.name)) ? <IconGlyph look={scene.look} name={pickedIcon.name} iconStyle={pickedIcon.style} size={17} /> : <Smile size={17} />}<kbd>I</kbd>
+            {pickedIcon && (viewScene.look.icons.has(pickedIcon.name) || viewScene.look.images.has(pickedIcon.name)) ? <IconGlyph look={viewScene.look} name={pickedIcon.name} iconStyle={pickedIcon.style} size={17} /> : <Smile size={17} />}<kbd>I</kbd>
           </button>
         </div>
         {tool === 'freehand' && <div className="hintbar">Drag on the canvas to draw · Esc when done</div>}
@@ -1616,8 +1664,8 @@ export function App() {
 
       <div className="topright" onPointerDown={(e) => e.stopPropagation()}>
         <Sidebar side={side}
-          components={<Gallery look={scene.look} current={tool} onPick={setTool} />}
-          look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} onPreview={setLookPreview} onApply={applyLook} onLoaded={onWebLookLoaded} />} />
+          components={<Gallery look={viewScene.look} current={tool} onPick={setTool} />}
+          look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} theme={theme} fileDark={fileLookOn ? themedLook : undefined} onPreview={setLookPreview} onApply={applyLook} onLoaded={onWebLookLoaded} />} />
       </div>
 
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
@@ -1704,10 +1752,10 @@ export function App() {
 
       {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
       {iconToolOpen && (
-        <IconDialog look={scene.look} value={undefined} iconStyle={iconToPlace.current.style} onClose={() => setIconToolOpen(false)}
+        <IconDialog look={viewScene.look} value={undefined} iconStyle={iconToPlace.current.style} onClose={() => setIconToolOpen(false)}
           onPick={(n, style) => { setIconToolOpen(false); setPickedIcon({ name: n, style }); rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
       )}
-      {exportOpen && <ExportDialog scene={scene} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
+      {exportScenes && <ExportDialog scenes={exportScenes} theme={theme} payload={exportPayload()} base={baseName} onClose={() => setExportOpen(false)} onDone={setStatus} />}
       {templateDialog}
     </div>
   );

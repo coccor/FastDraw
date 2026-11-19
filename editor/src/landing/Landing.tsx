@@ -107,7 +107,6 @@ const LOOKS: { id: string; name: string; about: string }[] = [
   { id: '', name: 'Built-in', about: 'Rounded cards, tinted zones and one tomato red. Used when the file names no look.' },
   { id: 'whiteboard', name: 'Whiteboard', about: 'Sticky-note colours, rounded boxes and curved lines.' },
   { id: 'sketch', name: 'Sketch', about: 'Outlines and lettering drawn by hand, for early ideas.' },
-  { id: 'night', name: 'Night', about: 'The built-in look on a dark page.' },
   { id: 'shade', name: 'Shade', about: 'Hairline boxes that cast a hatched shadow.' },
   { id: 'reference', name: 'Reference', about: 'The palette of diagram-design, the project FastDraw follows.' },
 ];

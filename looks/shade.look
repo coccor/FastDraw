@@ -4,6 +4,9 @@
 
 canvas paper=paper
 
+// the look the dark theme and "fastdraw render --dark" draw this look with
+dark shade-dark
+
 color paper    #f5f5f5
 color card     #ffffff
 color ink      #2d3142

@@ -383,7 +383,9 @@ export function withLook(src: string, look: string): string {
 }
 
 // lookIn: the already-parsed look the diagram points to, or null if it could not be found.
-export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
+// drawIn: a look to draw the diagram in instead of the one it names (the version of its look for the
+// editor's theme); the source is left as it is, so line numbers and ids stay those of the diagram.
+export function buildScene(src: string, lookIn: Look | null, file = '', drawIn?: Look): Scene {
   const issues: Issue[] = [];
   const err = (line: number, msg: string) => issues.push({ line, level: 'error', msg });
   const warn = (line: number, msg: string) => issues.push({ line, level: 'warn', msg });
@@ -392,9 +394,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   const lookStmt = stmts.find((s) => s.toks[0]?.v === 'look' && s.toks[0].t === 'word');
   // a bare name is one of the looks that ship with FastDraw, whatever file a caller may have read
   const named = bundledLook(lookStmt?.toks[1]?.v ?? '');
-  let look: Look = named ?? lookIn ?? (lookStmt ? emptyLook() : defaultLook());
+  let look: Look = drawIn ?? named ?? lookIn ?? (lookStmt ? emptyLook() : defaultLook());
   const baseCanvas = look.canvas;
-  if (lookStmt) {
+  if (lookStmt && !drawIn) {
     const p = lookStmt.toks[1]?.v;
     if (!p) err(lookStmt.line, `look needs a name or a path, e.g. look sketch or look "./team.look" (named looks: ${BUNDLED_LOOK_NAMES.join(', ')})`);
     else if (!named && !lookIn) err(lookStmt.line, isWebLook(p) ? `the look at ${p} could not be fetched`
