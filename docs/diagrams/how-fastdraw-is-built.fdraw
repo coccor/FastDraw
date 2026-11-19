@@ -1,0 +1,54 @@
+text "How FastDraw is built" at 40,40 style=h1
+text "One TypeScript core in src/, imported by every tool that draws; a Rust port checked against it in CI" at 40,76 style=dek
+
+// zones first: they are drawn behind everything
+inputs:   zone "Inputs" at 28,116 200x444
+core:     zone "Core · src/" at 260,116 628x268
+surfaces: zone "Tools · import src/" at 960,116 216x444
+ship:     zone "Shipped as" at 1248,116 200x444
+
+// inputs: x=40, rows y=160 / 280 / 400
+fdraw:  node "diagram.fdraw" sub="one element per line" icon=file at 40,160 176x64
+lookf:  node "team.look" sub="styles, colours, fonts" icon=settings at 40,280 176x64
+assets: store "Fonts & icons" sub="bundled · jsDelivr" at 40,400 176x64
+
+// core: two rows of three
+parse:  node "Parser" sub="parse.ts" tag="TS" at 284,160 144x64
+scene:  node "Scene" sub="scene.ts · places, measures" tag="TS" at 508,160 160x64
+render: focal "SVG renderer" sub="render.ts" tag="TS" at 720,160 144x64
+look:   node "Look loader" sub="look.ts" tag="TS" at 284,280 144x64
+router: node "Arrow router" sub="router.ts" tag="TS" at 508,280 160x64
+check:  node "Checker" sub="check.ts" tag="TS" at 720,280 144x64
+
+// surfaces
+cli:    node "fastdraw CLI" sub="check · render · guide · open" icon=terminal at 972,148 192x64
+embed:  node "<fastdraw-diagram>" sub="embed.js · Vite" icon=code at 972,236 192x64
+editor: node "Browser editor" sub="React + Vite · edit.ts" icon=browser at 972,324 192x64
+worker: node "fastdraw.dev Worker" sub="SVG at /gh/* and /s/*" icon=function at 972,412 192x64
+
+// Rust port, under the core
+rust:    node "fastdraw-render" sub="Rust crate · same SVG" tag="RS" at 508,472 160x64
+fastpad: external "FastPad" sub="pins a commit" at 720,472 144x64
+
+// where it ships
+npm:   cloud "npm: fastdraw" sub="release.yml on a tag" icon=package at 1260,192 176x64
+site:  cloud "fastdraw.dev" sub="Cloudflare, from main" icon=globe at 1260,368 176x64
+skill: external "Agent skill" sub="plugins/ · agents/" icon=robot at 1260,484 176x64
+
+fdraw -> parse
+lookf -> look
+assets.right -> look.bottom "fonts, icons"
+parse -> scene "statements"
+look.right -> scene.bottom@0.2
+scene -> router "arrow paths"
+scene -> render style=primary
+render -> check "measures"
+core -> surfaces "imports" style=primary
+core.bottom@0.5 -> rust "ported, parity in CI" style=return
+rust -> fastpad
+cli -> npm "esbuild" lpos=1212,168
+embed -> npm
+editor -> site "vite build" lpos=1212,344
+worker -> site
+
+legend at 40,600 focal="The renderer every tool shares" node="A module or tool" store="Bundled assets" cloud="Where it is published" external="Outside this repo" primary="Main path" return="Ported, checked for parity"
