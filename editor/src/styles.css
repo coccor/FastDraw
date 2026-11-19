@@ -247,10 +247,17 @@ button.primary:hover { background: var(--accent-ink); }
 .exporterr { color: #c0392b; margin: 0; font-size: 13px; }
 .exportcard .startbtns { margin-top: 0; }
 .exportcard .startbtns button { gap: 6px; }
-@media (max-width: 480px) { .exportopts { grid-template-columns: 1fr; gap: 4px; } }
+@media (max-width: 480px) {
+  .exportopts { grid-template-columns: 1fr; gap: 4px; }
+  .toolbar .tool { width: 34px; height: 34px; }
+  .problems .pword { display: none; }
+}
 
 @media (max-width: 900px) {
-  .topcenter { max-width: calc(100% - 120px); }
+  /* clear of the menu button on the left, and as wide as that leaves (centred by translate it could only get half) */
+  .topcenter { left: 60px; right: 60px; transform: none; max-width: none; }
+  /* on a phone the tools wrap onto a second row rather than run under the menu button and off the screen */
+  .toolbar { flex-wrap: wrap; justify-content: center; max-width: 100%; }
   .tool.wide span { display: none; }
   .topright { top: auto; bottom: 116px; max-height: 50vh; }
   .bottomright { bottom: 12px; }

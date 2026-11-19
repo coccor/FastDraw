@@ -1023,6 +1023,30 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   expect(errors).toEqual([]);
 });
 
+test('at phone width every tool and the menu button can be reached, and the page does not scroll sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await paste(page, SMALL);
+  const menu = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
+  // what is under the middle of the menu button is the menu button
+  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('button')?.getAttribute('aria-label'), [menu.x + menu.width / 2, menu.y + menu.height / 2])).toBe('Menu');
+  for (const b of await page.getByRole('toolbar', { name: 'Tools' }).getByRole('button').all()) {
+    const r = (await b.boundingBox())!;
+    expect(r.x).toBeGreaterThanOrEqual(0);
+    expect(r.x + r.width).toBeLessThanOrEqual(390);
+    expect(r.x >= menu.x + menu.width || r.y >= menu.y + menu.height).toBe(true);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  // the problems badge leaves the zoom, undo and theme buttons beside it uncovered
+  const badge = (await page.locator('.problems').boundingBox())!;
+  for (const b of await page.locator('.bottomleft button').all()) {
+    const r = (await b.boundingBox())!;
+    expect(r.x + r.width <= badge.x || r.y + r.height <= badge.y).toBe(true);
+  }
+  await expect(page.getByRole('button', { name: 'No problems' })).toBeVisible();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await expect(page.getByRole('menuitem', { name: /Export image/ })).toBeVisible();
+});
+
 test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does not zoom the page', async ({ page }) => {
   await paste(page, SMALL);
   const pct = page.locator('button.pct');

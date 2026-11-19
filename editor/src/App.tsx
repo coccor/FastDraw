@@ -1701,9 +1701,10 @@ export function App() {
           </ul>
         )}
         <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
-          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
+          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'} aria-label={issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}>
           {issues.length ? <TriangleAlert size={15} /> : <Check size={15} />}
-          {issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}
+          {/* on a phone only the count shows, so the badge leaves room for the buttons beside it */}
+          {issues.length ? <span>{issues.length}<span className="pword">{` problem${issues.length > 1 ? 's' : ''}`}</span></span> : <span className="pword">No problems</span>}
         </button>
       </div>
 
