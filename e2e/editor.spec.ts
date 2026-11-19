@@ -66,6 +66,64 @@ test('text is edited in place: the field takes the label\'s type and position, a
   await expect(label).toHaveCSS('visibility', 'visible');
 });
 
+test('the field sits over the label, not over a corner tag that is one of its words', async ({ page }) => {
+  await paste(page, 'mdx: store "MDX Bundle" sub="src/content" tag="MDX" at 200,120 160x64\n');
+  const label = page.locator('svg.canvas text', { hasText: /^MDX Bundle$/ });
+  const before = (await label.boundingBox())!;
+  const type = (t: Element) => { const cs = getComputedStyle(t); return cs.fontFamily + '|' + cs.fontWeight; };
+  const drawn = await label.evaluate(type);
+  await doubleClick(page, { x: before.x + before.width / 2, y: before.y + before.height / 2 });
+  const field = page.locator('.textedit.inplace');
+  await expect(field).toHaveValue('MDX Bundle');
+  await expect(label).toHaveCSS('visibility', 'hidden');
+  await expect(page.locator('svg.canvas text', { hasText: /^MDX$/ })).toHaveCSS('visibility', 'visible');
+  expect(await field.evaluate(type)).toBe(drawn);
+  const box = (await field.boundingBox())!;
+  expect(Math.abs(box.y + box.height / 2 - (before.y + before.height / 2))).toBeLessThan(3);
+  expect(Math.abs(box.x + box.width / 2 - (before.x + before.width / 2))).toBeLessThan(3);
+});
+
+test('the text of a turned shape is edited turned with it, and its corner tag is found under the pointer', async ({ page }) => {
+  await paste(page, 'look reference\na: node "Orders API" tag="API" at 200,120 160x80 rotate=30\n');
+  const label = page.locator('svg.canvas text', { hasText: /^Orders API$/ });
+  const before = (await label.boundingBox())!;
+  await doubleClick(page, { x: before.x + before.width / 2, y: before.y + before.height / 2 });
+  const field = page.locator('.textedit.inplace');
+  await expect(field).toHaveValue('Orders API');
+  await expect(field).toHaveCSS('transform', /^matrix\(0\.866/); // rotate(30deg)
+  const box = (await field.boundingBox())!;
+  expect(Math.abs(box.y + box.height / 2 - (before.y + before.height / 2))).toBeLessThan(3);
+  expect(Math.abs(box.x + box.width / 2 - (before.x + before.width / 2))).toBeLessThan(3);
+  await page.keyboard.press('Escape');
+  const tag = (await page.locator('svg.canvas text', { hasText: /^API$/ }).boundingBox())!;
+  await doubleClick(page, { x: tag.x + tag.width / 2, y: tag.y + tag.height / 2 });
+  await expect(field).toHaveValue('API');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('GRPC');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'a')).toContain('tag="GRPC"');
+});
+
+test('a shape with no text yet is edited where its first letter will be drawn', async ({ page }) => {
+  for (const kind of ['rect', 'store']) {
+    if (kind !== 'rect') await fresh(page);
+    await paste(page, `a: ${kind} at 200,120 160x80\n`);
+    const shape = (await page.locator('svg.canvas [data-id="a"]').first().boundingBox())!;
+    await doubleClick(page, { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 });
+    const field = page.locator('.textedit');
+    await expect(field).toHaveClass(/inplace/);
+    const empty = (await field.boundingBox())!;
+    await page.keyboard.type('Q');
+    const letter = (await page.locator('svg.canvas text', { hasText: /^Q$/ }).boundingBox())!;
+    const typed = (await field.boundingBox())!;
+    expect(Math.abs(typed.y - empty.y)).toBeLessThan(1);
+    expect(Math.abs(typed.x - empty.x)).toBeLessThan(1);
+    expect(Math.abs(empty.y + empty.height / 2 - (letter.y + letter.height / 2))).toBeLessThan(3);
+    expect(Math.abs(empty.x + empty.width / 2 - (letter.x + letter.width / 2))).toBeLessThan(3);
+    await page.keyboard.press('Escape');
+  }
+});
+
 test('a line label grows around its text while typing, and Escape puts the old one back', async ({ page }) => {
   await paste(page, SMALL);
   const hit = page.locator('rect[data-label]').last();

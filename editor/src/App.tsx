@@ -62,7 +62,8 @@ function resizeCursor(handle: string, turn: number): string {
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 // entry: on a legend, the key of the one entry being edited (a style name, swatch.colour, ...) or 'title'
 type Editing = { id: string; value: string; box: Box; entry?: string } | null;
-type EdLook = { family: string; size: number; weight: string; style: string; color: string; spacing: string; transform: string; anchor: string; ax: number; top: number; pitch: number; wrap: number };
+// turn: the label is drawn turned by a degrees about cx,cy (a turned shape or text), and so is the field
+type EdLook = { family: string; size: number; weight: string; style: string; color: string; spacing: string; transform: string; anchor: string; ax: number; top: number; pitch: number; wrap: number; turn?: { a: number; cx: number; cy: number } };
 // pending: handles kept from before a reload, used once the browser lets the page write them again
 type Io = { file?: files.Handle; look?: files.Handle; fileMod: number; lookMod: number; written: string; folder?: files.Folder; path?: string; pending?: { file: files.Handle; look?: files.Handle } };
 type History = { past: string[]; future: string[] };
@@ -93,6 +94,7 @@ function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k:
     left: view.x + left, top: view.y + l.top * k, width: w,
     font, lineHeight: `${l.pitch * k}px`, color: l.color, letterSpacing: l.spacing, textTransform: l.transform as React.CSSProperties['textTransform'],
     textAlign: l.anchor === 'middle' ? 'center' : l.anchor === 'end' ? 'right' : 'left',
+    ...(l.turn && { transform: `rotate(${l.turn.a}deg)`, transformOrigin: `${l.turn.cx * k - left}px ${(l.turn.cy - l.top) * k}px` }),
   };
 }
 const BLANK = '\n';
@@ -929,6 +931,9 @@ export function App() {
     const norm = (v: string) => v.replace(/\s+/g, ' ').trim().toLowerCase();
     const tag = s.p.tag ? norm(s.p.tag) : '', subs = s.p.sub ? s.p.sub.split('\n').map(norm).filter(Boolean) : [];
     if (!tag && !subs.length) return null;
+    // a turned shape draws its texts in its own unturned frame: turn the point back into it
+    const turn = turnOf(s.p);
+    if (turn) at = turnPt(at, { x: s.x + s.w / 2, y: s.y + s.h / 2 }, -turn);
     for (const t of Array.from(g.querySelectorAll('text'))) {
       const bb = t.getBBox();
       if (at.x < bb.x - 3 || at.x > bb.x + bb.width + 3 || at.y < bb.y - 3 || at.y > bb.y + bb.height + 3) continue;
@@ -1304,18 +1309,39 @@ export function App() {
     const g = bodyRef.current, ed = stateRef.current.editing;
     if (!g || !ed) return;
     const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
-    const want = norm(ed.value), b = editBox(stateRef.current.scene, ed.id, ed.entry) ?? ed.box;
-    const hits: SVGTextElement[] = [];
-    if (want) for (const t of Array.from(g.querySelectorAll('text'))) {
-      const s = norm(t.textContent ?? '');
-      if (!s || !want.includes(s)) continue;
-      const bb = t.getBBox(), cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
-      if (cx < b.x - 4 || cx > b.x + b.w + 4 || cy < b.y - 4 || cy > b.y + b.h + 4) continue;
-      const cs = getComputedStyle(t), first = hits[0] && getComputedStyle(hits[0]);
-      if (first && (cs.fontSize !== first.fontSize || cs.fontWeight !== first.fontWeight || cs.fontFamily !== first.fontFamily)) continue;
-      hits.push(t);
+    const b = editBox(stateRef.current.scene, ed.id, ed.entry) ?? ed.box;
+    // the label's lines are the texts in one type that spell out most of it: a tag or caption that
+    // happens to be one of its words (tag "MDX" on "MDX Bundle") is in another type and covers less
+    const labelIn = (root: Element, text: string) => {
+      const want = norm(text), groups = new Map<string, { lines: SVGTextElement[]; chars: number }>();
+      if (want) for (const t of Array.from(root.querySelectorAll('text'))) {
+        const s = norm(t.textContent ?? '');
+        if (!s || !want.includes(s)) continue;
+        const bb = t.getBBox(), cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
+        if (cx < b.x - 4 || cx > b.x + b.w + 4 || cy < b.y - 4 || cy > b.y + b.h + 4) continue;
+        const cs = getComputedStyle(t), type = `${cs.fontSize}|${cs.fontWeight}|${cs.fontFamily}`;
+        const gr = groups.get(type) ?? { lines: [], chars: 0 };
+        gr.lines.push(t); gr.chars += s.length; groups.set(type, gr);
+      }
+      let best: SVGTextElement[] = [], most = 0;
+      for (const gr of groups.values()) if (gr.chars > most) { best = gr.lines; most = gr.chars; }
+      return best;
+    };
+    let hits = labelIn(g, ed.value), typed = ed.value, probe: SVGGElement | null = null;
+    // nothing written yet, so nothing drawn to sit over: draw the element with a one-letter label out of
+    // sight and take that letter's place, so the field opens where the first letter typed will appear
+    if (!hits.length && !norm(ed.value)) {
+      const withProbe = withEdit(ed, 'x', false);
+      if (withProbe !== null) {
+        typed = 'x';
+        probe = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        probe.style.visibility = 'hidden';
+        probe.innerHTML = renderBody(buildScene(withProbe, look));
+        g.after(probe);
+        hits = labelIn(probe, typed);
+      }
     }
-    if (!hits.length) return;
+    if (!hits.length) { probe?.remove(); return; }
     const cs = getComputedStyle(hits[0]), size = parseFloat(cs.fontSize) || 12;
     const boxes = hits.map((t) => t.getBBox());
     const ys = hits.map((t) => parseFloat(t.getAttribute('y') ?? '0'));
@@ -1326,10 +1352,17 @@ export function App() {
     const edEl = ed.entry === undefined ? ops.find(stateRef.current.scene, ed.id) : undefined, isShape = edEl?.kind === 'shape';
     // a text box (width=) wraps at its width while typing, as it will be drawn
     const boxWidth = edEl?.kind === 'text' && edEl.el.lines ? Number(edEl.el.p.width) || 0 : 0;
+    // a turned shape or text draws its label in a turned group: the field turns the same way about the same point
+    let turn: EdLook['turn'];
+    for (let n = hits[0].parentElement; n && n !== g && n !== probe && !turn; n = n.parentElement) {
+      const m = /rotate\(\s*(-?[\d.]+)[\s,]+(-?[\d.]+)[\s,]+(-?[\d.]+)\s*\)/.exec(n.getAttribute('transform') ?? '');
+      if (m) turn = { a: +m[1]!, cx: +m[2]!, cy: +m[3]! };
+    }
     setEdLook({
       family: cs.fontFamily, size, weight: cs.fontWeight, style: cs.fontStyle, color: cs.fill, spacing: cs.letterSpacing,
-      transform: hits.every((t) => { const s = t.textContent ?? ''; return s === s.toUpperCase() && s !== s.toLowerCase(); }) && ed.value !== ed.value.toUpperCase() ? 'uppercase' : cs.textTransform, anchor, ax, top, pitch, wrap: isShape ? b.w - 12 : boxWidth,
+      transform: hits.every((t) => { const s = t.textContent ?? ''; return s === s.toUpperCase() && s !== s.toLowerCase(); }) && typed !== typed.toUpperCase() ? 'uppercase' : cs.textTransform, anchor, ax, top, pitch, wrap: isShape ? b.w - 12 : boxWidth, turn,
     });
+    if (probe) { probe.remove(); return; }
     for (const t of hits) t.style.visibility = 'hidden';
     return () => { for (const t of hits) t.style.visibility = ''; };
   }, [editKey, body]);
