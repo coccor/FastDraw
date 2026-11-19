@@ -1815,6 +1815,27 @@ test('every handle scales a text: its size grows with the box and the opposite c
   expect(lineOf(await source(page), 'b')).toMatch(/^b: text "Boxed words that wrap" at \d+,\d+ width=1\d\d size=1[6-9](\.5)?$/); // half as big again: 12 to about 18
 });
 
+test('a text box\'s left and right handles set where its lines wrap, keeping its size', async ({ page }) => {
+  await paste(page, 'canvas 900x420\na: node "Box" at 40,40\nb: text "Boxed words that wrap" at 300,300 width=60\n');
+  const lines = () => page.locator('svg.canvas text').filter({ hasText: /Boxed|words|wrap/ }).count();
+  expect(await lines()).toBeGreaterThan(1);
+  await page.mouse.click(...Object.values(await corner(page, 'b')) as [number, number]);
+  await expect(page.locator('[data-handle="e"]:not([data-strip]) title')).toHaveText('Drag to set where the lines wrap');
+  // the right edge, dragged well out: one line, the left end and the size as they were
+  const e = (await page.locator('[data-handle="e"]:not([data-strip])').boundingBox())!;
+  await drag(page, { x: e.x + e.width / 2, y: e.y + e.height / 2 }, 300, 0);
+  expect(lineOf(await source(page), 'b')).toMatch(/^b: text "Boxed words that wrap" at 300,300 width=\d{3}$/);
+  await expect.poll(lines).toBe(1);
+  // the left edge, dragged in: the right end holds and the words wrap again
+  const before = (await page.locator('rect[data-id="b"]').boundingBox())!;
+  const w = (await page.locator('[data-handle="w"]:not([data-strip])').boundingBox())!;
+  await drag(page, { x: w.x + w.width / 2, y: w.y + w.height / 2 }, before.width - 70, 0);
+  expect(lineOf(await source(page), 'b')).toMatch(/^b: text "Boxed words that wrap" at \d+,300 width=\d\d$/);
+  await expect.poll(lines).toBeGreaterThan(1);
+  const after = (await page.locator('rect[data-id="b"]').boundingBox())!;
+  expect(Math.abs(after.x + after.width - (before.x + before.width))).toBeLessThan(3);
+});
+
 test('a free text is typed in paragraphs: Enter starts a line, Escape keeps it; a box label still ends on Enter', async ({ page }) => {
   await paste(page, 'canvas 900x420\na: node "Box" at 40,40\nn: text "Note" at 300,200\n');
   await doubleClick(page, await corner(page, 'n'));

@@ -622,6 +622,16 @@ export function setTextAlign(src: string, sc: Scene, ids: string[], align: 'left
   return patchSource(src, patches);
 }
 
+// A text box (width=) widened or narrowed by its left or right handle dragged to `q`: its width= follows, so
+// its lines wrap again, and its size stays. The opposite side holds, and so does the top. The handle sits 4px
+// outside the box, so `q` is taken back to the edge. A word wider than the box keeps a line to itself.
+export function widenText(src: string, t: TextEl, handle: 'e' | 'w', q: Pt): string {
+  const fs = Number(t.p.size) || 12;
+  const w = Math.max(fs, Math.round(handle === 'e' ? q.x - 4 - t.x : t.x + t.w - (q.x + 4)));
+  const x = handle === 'e' ? t.x : t.x + t.w - w;
+  return patchSource(src, new Map([[t.line, (tk: Tok[]) => setProp(setAt(tk, Math.round(x), Math.round(t.ay)), 'width', String(w))]]));
+}
+
 // A free text scaled by one of its handles dragged to `q`: the text grows or shrinks with its box, its size= and
 // (for a text box) its width= scaled alike, so it wraps the same way. The opposite corner or side
 // stays put; a side handle also holds the top (left and right handles) or the left (top and bottom).

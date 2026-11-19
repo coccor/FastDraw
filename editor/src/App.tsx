@@ -1117,8 +1117,10 @@ export function App() {
     if (d.type === 'resize') {
       const e0 = ops.find(d.scene, d.id);
       if (e0?.kind === 'text') {
-        // any handle scales a text, following the pointer freely: its size moves in half-point steps, not grid steps
-        setDraft(ops.scaleText(d.base, e0.el, d.corner, { x: p.x + d.dx, y: p.y + d.dy }));
+        // a text box's left and right handles set where its lines wrap; any other handle scales a text, following
+        // the pointer freely: its size moves in half-point steps, not grid steps
+        const q = { x: p.x + d.dx, y: p.y + d.dy };
+        setDraft(e0.el.lines && (d.corner === 'e' || d.corner === 'w') ? ops.widenText(d.base, e0.el, d.corner, q) : ops.scaleText(d.base, e0.el, d.corner, q));
         return;
       }
       if (!e0 || e0.kind !== 'shape') return;
@@ -1540,7 +1542,7 @@ export function App() {
             const p = viewScene.look.styles.get('freehand')?.props ?? {};
             return <polyline className="ink" points={polyPoints(ink)} fill="none" stroke={col(viewScene.look, p.stroke ?? 'ink')} strokeWidth={+p.sw || 2} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />;
           })()}
-          {/* a text has a box's handles; dragging any of them scales the text (ops.scaleText) */}
+          {/* a text has a box's handles; dragging one scales the text (ops.scaleText), except a text box's left and right, which set its width (ops.widenText) */}
           {(single?.kind === 'shape' || (single?.kind === 'text' && !turnOf(single.el.p))) && tool === 'select' && !editing && (
             <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k} transform={single.kind === 'shape' ? ops.turnAttr(single.el, turnOf(single.el.p)) : undefined}>
               {(() => {
@@ -1548,7 +1550,7 @@ export function App() {
                 // the resize arrow points the way the handle moves, turned with the shape
                 const cursor = (c: string) => resizeCursor(c, single.kind === 'shape' ? turnOf(single.el.p) : 0);
                 const isText = single.kind === 'text';
-                const tips = (_c: string) => isText ? 'Drag to make the text bigger or smaller' : 'Drag to resize · Shift keeps proportions · Alt turns off snapping';
+                const tips = (c: string) => isText ? (single.el.lines && (c === 'e' || c === 'w') ? 'Drag to set where the lines wrap' : 'Drag to make the text bigger or smaller') :'Drag to resize · Shift keeps proportions · Alt turns off snapping';
                 // invisible strips along each side, so a whole edge can be grabbed, not only its middle handle
                 const strips = ([['n', l, t, r - l, 0], ['s', l, b, r - l, 0], ['w', l, t, 0, b - t], ['e', r, t, 0, b - t]] as [string, number, number, number, number][])
                   .map(([c, sx, sy, sw, sh]) => <rect key={'strip-' + c} data-handle={c} data-strip="" x={sx - hs / 2} y={sy - hs / 2} width={sw + hs} height={sh + hs} fill="transparent" stroke="none" style={{ cursor: cursor(c) }}><title>{tips(c)}</title></rect>);

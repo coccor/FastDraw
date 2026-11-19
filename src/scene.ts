@@ -534,7 +534,9 @@ export function buildScene(src: string, lookIn: Look | null, file = '', drawIn?:
       let wrapped: string[] | undefined;
       if (p.width !== undefined && !box) err(st.line, `width=${p.width}: a text box's width is a number of pixels, e.g. width=240`);
       if (p.align !== undefined && !['left', 'center', 'right'].includes(p.align)) err(st.line, `align=${p.align}: a text lines up left, center or right`);
-      if (box) { wrapped = wrapLines(t2, box, measure); lines = wrapped; w = box; }
+      // the lines break where the drawn words reach the box's edge, measured in the look's own font
+      const drawn = (l: string) => measureText(look, l, fs, p.font ?? 'sans', num(p.weight, 400), num(p.spacing, 0));
+      if (box) { wrapped = wrapLines(t2, box, drawn); lines = wrapped; w = box; }
       else if (p.align !== undefined && p.align !== 'left') warn(st.line, `align= lines a text up inside its box; give it a width (width=240), or move its at point with anchor=${p.align === 'center' ? 'middle' : 'end'}`);
       if (box && p.anchor !== undefined && p.anchor !== 'start') warn(st.line, `anchor= does nothing on a text box (width=): its at point is the left end; use align=${p.anchor === 'middle' ? 'center' : 'right'}`);
       const anchor = box ? 'start' : p.anchor ?? 'start';
