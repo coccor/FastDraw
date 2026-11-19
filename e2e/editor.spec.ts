@@ -49,6 +49,24 @@ test('double-click edits the text of a box and of an arrow label', async ({ page
   expect(await diskText(page, SEQ)).toContain('"fetch page"');
 });
 
+test('an arrow label just dragged is edited by a double-click', async ({ page }) => {
+  await paste(page, SMALL);
+  const label = page.locator('rect[data-label="r"]');
+  let at = (await label.boundingBox())!;
+  await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2); // the arrow is selected
+  await page.waitForTimeout(500);
+  await drag(page, { x: at.x + at.width / 2, y: at.y + at.height / 2 }, 30, 60);
+  expect(lineOf(await source(page), 'r')).toMatch(/lpos=/);
+  await page.waitForTimeout(500);
+  at = (await label.boundingBox())!;
+  await doubleClick(page, { x: at.x + at.width / 2, y: at.y + at.height / 2 });
+  await expect(page.locator('.textedit')).toHaveValue('writes');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('stores');
+  await page.keyboard.press('Enter');
+  expect(lineOf(await source(page), 'r')).toMatch(/"stores" .*lpos=/);
+});
+
 test('text is edited in place: the field takes the label\'s type and position, and the drawn label hides', async ({ page }) => {
   await paste(page, SMALL);
   const label = page.locator('svg.canvas text', { hasText: 'Orders API' }).first();
