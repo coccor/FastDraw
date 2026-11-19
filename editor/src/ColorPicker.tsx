@@ -49,21 +49,22 @@ type PickerProps = {
   palette: string[]; recent: string[];
   resolve: (v: string) => string; // a value as a CSS colour, or 'none'
   onPick: (v: string) => void; label: string; className?: string; style?: React.CSSProperties; title?: string;
+  children?: React.ReactNode; // what the button shows, if anything (a swatch shows only its colour)
 };
 
-export function ColorPicker({ label, className, style, title, ...rest }: PickerProps) {
+export function ColorPicker({ label, className, style, title, children, ...rest }: PickerProps) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   return (
     <>
       <button ref={btn} type="button" className={className} style={style} aria-label={label} title={title}
-        aria-expanded={open} onClick={() => setOpen((o) => !o)} />
+        aria-expanded={open} onClick={() => setOpen((o) => !o)}>{children}</button>
       {open && <Popover anchor={btn.current!} label={label} onClose={() => setOpen(false)} {...rest} />}
     </>
   );
 }
 
-function Popover({ anchor, label, value, palette, recent, resolve, onPick, onClose }: Omit<PickerProps, 'className' | 'style' | 'title'> & { anchor: HTMLElement; onClose: () => void }) {
+function Popover({ anchor, label, value, palette, recent, resolve, onPick, onClose }: Omit<PickerProps, 'className' | 'style' | 'title' | 'children'> & { anchor: HTMLElement; onClose: () => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: 0, top: 0 });
   const cur = value ? resolve(value) : null;
