@@ -1870,16 +1870,25 @@ impl Builder {
         let rot = num(prop("rotate"), 0.0);
         let turn = turn_of(&p);
         let dx = x - at.x; // where the text starts, measured along its own baseline
+        // dy= draws the text lower than its "at" point (higher when negative), along its own up and down; "at"
+        // stays what the file says
+        if let Some(d) = prop("dy")
+            && !to_number(d).is_finite()
+        {
+            let msg = format!("dy={d}: how many pixels lower the text is drawn, e.g. dy=6");
+            self.err(line, msg);
+        }
+        let drop = num(prop("dy"), 0.0);
         let bx = if rot == -90.0 {
             Rect {
-                x: at.x - fs,
+                x: at.x - fs + drop,
                 y: at.y - dx - w,
                 w: th,
                 h: w,
             }
         } else if rot == 90.0 {
             Rect {
-                x: at.x - th + fs,
+                x: at.x - th + fs - drop,
                 y: at.y + dx,
                 w: th,
                 h: w,
@@ -1887,7 +1896,7 @@ impl Builder {
         } else if turn != 0.0 {
             let flat = Rect {
                 x,
-                y: at.y - fs,
+                y: at.y - fs + drop,
                 w,
                 h: th,
             };
@@ -1895,7 +1904,7 @@ impl Builder {
         } else {
             Rect {
                 x,
-                y: at.y - fs,
+                y: at.y - fs + drop,
                 w,
                 h: th,
             }

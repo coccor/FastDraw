@@ -777,9 +777,9 @@ test('chart: place one from the gallery, change its numbers and add a series', a
   await paste(page, 'canvas 900x500\nt: h1 "Numbers" at 40,52\n');
   await sidebar(page, 'Components');
   await page.locator('.thumbcard', { hasText: 'chart' }).first().click();
-  const spot = await at(page, 400, 260);
+  const spot = await at(page, 300, 200); // left of the pinned sidebar, whatever the title's width
   await page.mouse.click(spot.x, spot.y);
-  expect(await source(page)).toMatch(/chart: chart "Title" at 240,172 320x180 x="A,B,C,D"\n  \| bars "Series" 30 50 40 70\n$/);
+  expect(await source(page)).toMatch(/chart: chart "Title" at 140,112 320x180 x="A,B,C,D"\n  \| bars "Series" 30 50 40 70\n$/);
   const row = page.getByLabel('Row 1', { exact: true });
   await expect(row).toHaveValue('Series | 30 | 50 | 40 | 70');
   await row.fill('Sales | 10 | 20 | 30 | 45');

@@ -2,7 +2,7 @@
 // writes out for a team to change. Its style names match the guides.
 export const DEFAULT_LOOK = `// FastDraw default look. Copy it with "fastdraw init-look" and change anything.
 // A light neutral page, white cards with rounded corners and a two-tone icon, softly tinted zones,
-// neutral greys for everything else and one tomato red for the subject and the main path. Geist for names and details, Geist Mono for small technical labels.
+// neutral greys for everything else and one tomato red for the subject and the main path. Libre Caslon Display for the title, Geist for names and details, Geist Mono for small technical labels.
 
 canvas paper=paper dots=ink/0.07 dotgap=24
 
@@ -24,7 +24,7 @@ color violet #7c3aed
 
 font sans  "Geist"
 font mono  "Geist Mono"
-font serif "Newsreader"
+font serif "Libre Caslon Display"
 
 // ---- boxes ----------------------------------------------------------------
 style node shape=rect radius=10 size=144x64 fill=#ffffff stroke=ink/0.14 sw=1 sub.font=sans sub.color=muted
@@ -83,7 +83,7 @@ style lifeline line head=none stroke=ink/0.20 sw=1 dash=4,4 route=straight use="
 style rule line head=none stroke=ink/0.10 sw=1 route=straight use="thin separator, e.g. above a legend"
 
 // ---- text -----------------------------------------------------------------
-style h1 text font=sans size=26 weight=700 spacing=-0.03 color=ink use="diagram title"
+style h1 text font=serif size=30 weight=400 spacing=-0.01 dy=4 color=ink use="diagram title"
 style kicker text font=mono size=10 weight=500 color=accent spacing=0.12 caps=1 use="optional: a short category above the title, e.g. PROCESS"
 style dek text font=sans size=14 color=muted use="optional: one line under the title saying what the diagram shows"
 style eyebrow text font=mono size=8 color=muted spacing=0.14 caps=1 use="small caps label, e.g. LEGEND"

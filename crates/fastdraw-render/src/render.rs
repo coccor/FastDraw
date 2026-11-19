@@ -2672,6 +2672,7 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
         None => t.text.split('\n').collect(),
     };
     let blend = blend_of(&t.p);
+    let y0 = t.ay + num(g(&t.p, "dy"), 0.0);
     let mut body = lines
         .iter()
         .enumerate()
@@ -2679,7 +2680,7 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
             format!(
                 "<text x=\"{}\" y=\"{}\"{anchor} {}{blend}>{}</text>",
                 n(x0),
-                n(r2(t.ay + i as f64 * a.size * 1.3)),
+                n(r2(y0 + i as f64 * a.size * 1.3)),
                 a.a,
                 esc(l)
             )
@@ -2702,7 +2703,7 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
                 format!(
                     "<text x=\"{}\" y=\"{}\"{anchor} {ea}>{}</text>",
                     n(x0 + dx),
-                    n(r2(t.ay + dy + i as f64 * a.size * 1.3)),
+                    n(r2(y0 + dy + i as f64 * a.size * 1.3)),
                     esc(l)
                 )
             })

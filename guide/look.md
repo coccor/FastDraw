@@ -61,7 +61,7 @@ On a light page a tint such as `amber/0.1` is the colour at that opacity over wh
 
 `font sans|mono|serif "Family"` sets the family for each role; styles then say `font=sans`.
 
-These families ship with FastDraw and are drawn the same everywhere, with nothing else needed: **Geist**, **Geist Mono** and **Newsreader** (the built-in look), **Libre Franklin**, **Instrument Serif** and **Sketch Hand**.
+These families ship with FastDraw and are drawn the same everywhere, with nothing else needed: **Geist**, **Geist Mono** and **Libre Caslon Display** (the built-in look), **Newsreader**, **Libre Franklin**, **Instrument Serif** and **Sketch Hand**.
 
 **For any other font, give the address of its files on the web.** That is the way to prefer: the look then works wherever it is opened (the editor, shared links, embedded diagrams, the command line), and nothing has to be committed next to it.
 
@@ -189,7 +189,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 | `double=colour` | a finer line of that colour on top, which turns a wide line into two rails; `double.sw=` |
 | `label.*` | the text on the line: `label.font`, `label.size`, `label.color`, `label.spacing`, `label.caps=0` to keep the label's own case (default is capitals), `label.weight`, `label.italic=1`. `label.fill=` and `label.border=` make the label a plate instead of a patch of paper (`label.radius=`, `label.pad=`, `label.sw=`) |
 
-**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`. `echo=colour` prints the text a second time underneath, a little off (`echo.dx=`, `echo.dy=`, default 3).
+**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`. `dy=6` draws the text 6px lower than its `at` point (negative: higher), for a font that sits high or low on its baseline; the file's positions stay as they are. `echo=colour` prints the text a second time underneath, a little off (`echo.dx=`, `echo.dy=`, default 3).
 
 ### Built-in styles you can restyle
 

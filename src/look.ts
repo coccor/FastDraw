@@ -297,7 +297,7 @@ export function isColor(look: Look, v: string): boolean {
 // diagrams, fastdraw.dev images and the command line. A look may name any other family and bring its files
 // with `fontdir`; where those files cannot be read (a shared link, a docs page, fastdraw.dev), the text falls
 // back to the shipped family for its role, not to whatever the browser has.
-export const SHIPPED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif', 'Sketch Hand'];
+export const SHIPPED_FAMILIES = ['Geist', 'Geist Mono', 'Newsreader', 'Libre Franklin', 'Instrument Serif', 'Libre Caslon Display', 'Sketch Hand'];
 const SYSTEM_FAMILIES = ['sans-serif', 'serif', 'monospace', 'helvetica'];
 export const isShippedFamily = (fam: string) => [...SHIPPED_FAMILIES, ...SYSTEM_FAMILIES].some((f) => f.toLowerCase() === fam.toLowerCase());
 /** The shipped family that stands in for `fam` (used for `role`) when its files are not there. */

@@ -11,6 +11,7 @@ const FILES = {
   'libre franklin': { 400: 'LibreFranklin-Regular', 500: 'LibreFranklin-Medium', 600: 'LibreFranklin-SemiBold', 700: 'LibreFranklin-Bold' },
   'newsreader': { 400: 'Newsreader-Regular', 500: 'Newsreader-Medium', 600: 'Newsreader-SemiBold' },
   'instrument serif': { 400: 'InstrumentSerif-Regular' },
+  'libre caslon display': { 400: 'LibreCaslonDisplay-Regular' },
   'sketch hand': { 400: 'SketchHand-Regular' },
 };
 

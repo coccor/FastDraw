@@ -867,12 +867,13 @@ pub fn is_color(look: &Look, v: &str) -> bool {
 
 /// The font families that ship with FastDraw (fonts/). A look may name any other; where its files cannot be
 /// read, text falls back to the shipped family for its role (`fallback_family`). Mirrors look.ts.
-pub const SHIPPED_FAMILIES: [&str; 6] = [
+pub const SHIPPED_FAMILIES: [&str; 7] = [
     "Geist",
     "Geist Mono",
     "Newsreader",
     "Libre Franklin",
     "Instrument Serif",
+    "Libre Caslon Display",
     "Sketch Hand",
 ];
 const SYSTEM_FAMILIES: [&str; 4] = ["sans-serif", "serif", "monospace", "helvetica"];
