@@ -132,6 +132,15 @@ test('checker: overlap, arrow through a box, label on a zone border, clean diagr
   assert.deepEqual(warns('a: node "A" at 40,40\nb: node "B" at 240,40\na -> b "go"'), []);
 });
 
+test('checker: a box under a chart and text on its bars are reported; a label in clear plot space is not', () => {
+  const chart = 'c: chart at 80,60 300x200 x="A,B,C" y=0..100\n  | bars "Revenue" 42 61 75\n';
+  const w = warns(`a: node "Orders API" at 100,100\n${chart}t: text "Hello there" at 120,220`).join('|');
+  assert.match(w, /c overlaps a/);
+  assert.match(w, /text t sits on the bars or dots of chart c/);
+  assert.deepEqual(warns(`${chart}t: text "peak" at 300,70 size=10`), []);
+  assert.deepEqual(warns(`a: node "Orders API" at 100,100 overlap=ok\n${chart}t: text "Hello there" at 120,220 overlap=ok`), []);
+});
+
 test('missing look file is an error, not a crash', () => {
   const sc = buildScene('look "nope.look"\na: rect at 0,0 40x40', null);
   assert.match(sc.issues[0].msg, /look file not found/);

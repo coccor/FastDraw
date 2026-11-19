@@ -4,6 +4,7 @@ import { color } from './look.ts';
 import { textWidth, turnOf, turnPt } from './scene.ts';
 import { segHits } from './router.ts';
 import { iconBox, tagLayout, textBlock, legible } from './render.ts';
+import { chartMarks } from './chart.ts';
 import type { Scene, Box, Pt, Conn, Shape, TextEl } from './scene.ts';
 
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
@@ -78,7 +79,8 @@ export function check(sc: Scene): Issue[] {
       if (meets(a, turnOf(a.p), b, 0.5) && !corners(b, turnOf(b.p)).every((p) => hasPtIn(a, p)) && !corners(a, turnOf(a.p)).every((p) => hasPtIn(b, p))) warn(b.line, `${b.id} overlaps ${a.id}; move one of them`);
       continue;
     }
-    if (!inter(a, b, 0.5) || contains(a, b) || contains(b, a)) continue;
+    // a box inside another is nested in it, but a chart holds no boxes: its bars cover whatever is under them
+    if (!inter(a, b, 0.5) || (contains(a, b) && a.shape !== 'chart') || (contains(b, a) && b.shape !== 'chart')) continue;
     const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
     warn(b.line, `${b.id} overlaps ${a.id} by ${Math.round(Math.min(ox, oy))}px; move one of them`);
   }
@@ -211,6 +213,8 @@ export function check(sc: Scene): Issue[] {
   for (const t of sc.texts) {
     const [tb, tt] = textFrame(t), tc = corners(tb, tt);
     for (const s of front) if (!tiny(s) && s.shape !== 'chart' && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && meets(tb, tt, s, 1) && !tc.every((p) => hasPtIn(s, p))) warn(t.line, `text ${t.id} overlaps ${s.id}`);
+    // a text in the empty part of a chart names a line or a point; one on a bar or a dot is in the way of the data
+    for (const s of front) if (s.shape === 'chart' && !turned(s) && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && chartMarks(s).some((m) => meets(tb, tt, { ...s, ...m, p: {} }, 1))) warn(t.line, `text ${t.id} sits on the bars or dots of chart ${s.id}; move it to a clear part of the chart or outside it`);
     for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1) && t.p.overlap !== 'ok' && o.p.overlap !== 'ok') warn(o.line, `text ${o.id} overlaps text ${t.id}`);
   }
 
