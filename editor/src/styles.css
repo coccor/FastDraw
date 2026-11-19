@@ -1,6 +1,7 @@
 :root {
   --ink: #1b1d26; --mute: #6c7080; --line: #e2e4ea; --surface: #ffffff; --bg: #eef0f4;
   --accent: #dc2f2f; --accent-soft: #fde3e1; --accent-ink: #b91f1f; --hover: #f3f4f8;
+  --tile: #f3f4f8; --tile-hover: #e8eaf1; --tile-on: #fde3e1;
   --warn-bg: #fff6e0; --warn-line: #ecd08a; --warn-ink: #8a5300; --bad: #b3261e; --good: #2b7a4b;
   --shadow: 0 1px 2px rgba(22, 24, 40, .06), 0 4px 14px rgba(22, 24, 40, .07);
 }
@@ -98,6 +99,72 @@ button.island:hover { background: linear-gradient(var(--hover), var(--hover)) va
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); width: 250px; padding: 12px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .panel h4, .gallery h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--mute); }
 .panel select { width: 100%; }
+/* the panel in groups: a small capital heading over rows that name an option on the left and hold its controls on
+   the right; Arrange folds shut; Duplicate and Delete sit at the foot */
+.panel { gap: 0; }
+.panel > .stylebtn { margin-bottom: 12px; }
+.panel > .stylebtn + .pgroup { border-top: 0; padding-top: 0; }
+/* the style: drawn as it is, with its name; the popover lays every style out as cards */
+.stylebtn { display: flex; align-items: center; gap: 10px; width: 100%; height: auto; padding: 6px 8px 6px 6px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); text-align: left; }
+.stylebtn:hover { border-color: var(--mute); background: var(--surface); }
+.stylebtn[aria-expanded="true"] { border-color: var(--accent); }
+.stylebtn > .lucide { color: var(--mute); flex: none; }
+.sthumb { display: block; width: 72px; height: 40px; flex: none; border-radius: 6px; overflow: hidden; border: 1px solid rgba(22, 24, 40, .1); }
+.sthumb .thumb { width: 100%; height: 100%; }
+.stylebtn .sname { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.stylebtn .sname b { font-weight: 500; font-size: 12.5px; }
+.colorpop.cards { width: 312px; max-height: calc(100vh - 16px); overflow-y: auto; }
+.colorpop.cards .pgrid { grid-template-columns: 1fr 1fr; gap: 8px; }
+.pswatch.stylecard { width: auto; height: auto; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 5px 5px 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); text-align: left; }
+.pswatch.stylecard .sthumb { width: 100%; height: 52px; }
+.pswatch.stylecard .tname { font-size: 11.5px; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pswatch.stylecard.on { outline: none; border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+html[data-theme="dark"] .sthumb { border-color: rgba(226, 232, 240, .14); }
+.panel .pgroup { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.panel > select + .pgroup, .panel > .pgroup:first-child { border-top: 0; padding-top: 0; }
+.panel .pgroup > h4, .panel .ghead { margin: 0; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+.panel .ghead { display: flex; align-items: center; gap: 6px; width: 100%; height: auto; padding: 0; background: none; border: 0; cursor: pointer; text-align: left; }
+.panel .ghead:hover { color: var(--ink); background: none; }
+.panel .ghead > span:first-child { flex: 1; }
+.panel .ghead .gsum { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.panel .pfoot { padding-top: 12px; border-top: 1px solid var(--line); }
+.prow { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 26px; }
+.prow.top { align-items: start; }
+.prow.top > .plabel { padding-top: 6px; }
+.prow > .plabel { font-size: 11.5px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow > .pctl { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.prow .pctl > input, .prow .pctl > textarea { width: 100%; }
+.prow .seg button { height: 26px; min-width: 0; }
+.prow .swatches { gap: 5px; }
+.prow .swatch, .prow .swatches .custom, .prow .swatches .custom:hover { width: 20px; height: 20px; border-radius: 5px; }
+.prow .swatches .divider { height: 16px; }
+.segs { display: flex; gap: 6px; }
+.segs > .seg { flex: 1; gap: 2px; }
+.segs > .seg button { padding: 0; }
+/* a colour set less often: its swatch and name on one button that opens the palette */
+.chips { display: flex; gap: 4px; }
+.chips > .chip { flex: 1; }
+button.chip { display: inline-flex; align-items: center; gap: 7px; height: 26px; max-width: 100%; padding: 0 8px 0 4px; border: 0; border-radius: 6px; background: var(--tile); color: var(--ink); font-size: 12px; justify-content: flex-start; }
+button.chip:hover { background: var(--tile-hover); }
+button.chip[aria-expanded="true"] { box-shadow: inset 0 0 0 1.5px var(--accent); }
+button.chip .dot { width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1px solid rgba(22, 24, 40, .14); }
+button.chip .dot.none { background: linear-gradient(to top right, #fff calc(50% - 1px), var(--bad) 50%, #fff calc(50% + 1px)); }
+button.chip .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow .pctl > button.chip { align-self: flex-start; }
+html[data-theme="dark"] button.chip .dot { border-color: rgba(226, 232, 240, .2); }
+/* a line's two ends side by side, as the line runs; each opens every end. The tile colours are solid (--tile...) so a
+   hollow end, filled with the tile's colour, hides the line under it */
+.endpair { display: flex; gap: 3px; }
+.endbtn { flex: 1; min-width: 0; height: 28px; padding: 0 6px; display: flex; align-items: center; justify-content: center; gap: 2px; border: 0; border-radius: 6px; background: var(--tile); color: var(--ink); }
+.endbtn > .lucide { color: var(--mute); flex: none; }
+.endbtn svg:not(.lucide), .pswatch.marker svg { display: block; fill: var(--tile); }
+.endbtn:hover, .pswatch.marker:hover { background: var(--tile-hover); filter: none; }
+.endbtn:hover svg:not(.lucide), .pswatch.marker:hover svg { fill: var(--tile-hover); }
+.endbtn[aria-expanded="true"] { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.pswatch.marker.on { background: var(--tile-on); color: var(--accent-ink); outline: none; }
+.pswatch.marker.on svg { fill: var(--tile-on); }
+.pswatch.marker { overflow: hidden; border: 0; background: var(--tile); color: var(--ink); }
+.pswatch.marker svg { position: absolute; inset: 0; }
 .swatches { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; }
 .swatches .divider { width: 1px; height: 20px; margin: 0 2px; background: var(--line); flex: none; }
 .swatch { width: 24px; height: 24px; padding: 0; border-radius: 6px; border: 1px solid rgba(22, 24, 40, .14); }
@@ -306,6 +373,7 @@ html[data-theme="dark"] {
   color-scheme: dark;
   --ink: #e2e8f0; --mute: #94a3b8; --line: #263253; --surface: #131c38; --bg: #0b1226;
   --accent: #ff6b5f; --accent-soft: rgba(255, 107, 95, .16); --accent-ink: #ffb4ab; --hover: rgba(226, 232, 240, .07);
+  --tile: #222a45; --tile-hover: #28304a; --tile-on: #39283e;
   --warn-bg: #3a2e12; --warn-line: #7a5d1c; --warn-ink: #fcd58a; --bad: #f87171; --good: #4ade80;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .35);
 }

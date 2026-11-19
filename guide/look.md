@@ -181,7 +181,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 | `stroke=`, `sw=`, `dash=` | colour, width, dash pattern |
 | `route=` | `ortho` (right-angle turns), `straight`, or `curve` (a smooth line) |
 | `radius=` | corner radius of the turns |
-| `head=` | the marker `->` draws: `arrow` (default), `open`, `triangle`, `diamond`, `diamond-solid`, `dot`, `circle`, or one of the relationship ends (`one`, `only-one`, `many`, `one-many`, `zero-one`, `zero-many`). `head=none` marks a style meant for plain lines, never arrows |
+| `head=` | the marker `->` draws: `arrow` (default), `open`, `stealth`, `double`, `half`, `triangle`, `diamond`, `diamond-solid`, `square`, `square-solid`, `dot`, `circle`, `bar`, `cross`, or one of the relationship ends (`one`, `only-one`, `many`, `one-many`, `zero-one`, `zero-many`). `head=none` marks a style meant for plain lines, never arrows |
 | `tail=` | a marker for the start of the line, if the style always has one. `stop` is a ring, like a station on a route map (`stop.color=`) |
 | `head.size=` | scale the arrowhead, for a wide line (1 is the default; 0.5 to 4) |
 | `cap=round` | round the ends and corners of the line |

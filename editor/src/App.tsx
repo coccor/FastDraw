@@ -11,6 +11,7 @@ import * as files from './files.ts';
 import * as ws from './workspace.ts';
 import * as served from './served.ts';
 import { Panel, TextField, Swatches } from './Panel.tsx';
+import { TilePopover } from './TilePopover.tsx';
 import { Gallery } from './Gallery.tsx';
 import { Sidebar, useSidebar } from './Sidebar.tsx';
 import { LookPicker, lookLabel } from './LookPicker.tsx';
@@ -189,65 +190,7 @@ function PatternTile({ kind, paper, ink, at = '', size = 22 }: { kind: string; p
   );
 }
 
-// Every page pattern in a popover beside the menu, opened from the pattern row's last button and laid out as the colour
-// popover is: a grid of tiles, each with its key (q w e r t / a s). It stays open while patterns are tried; Escape or a
-// click outside closes it.
 const PATTERN_KEYS = 'qwertasdfg';
-function PatternPopover({ anchor, choices, current, paper, ink, onPick, onClose }: {
-  anchor: HTMLElement; choices: { key: string; label: string; about: string }[]; current: string; paper: string; ink: string;
-  onPick: (kind: string) => void; onClose: () => void;
-}) {
-  const box = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState<string | null>(null);
-  const shown = choices.find((p) => p.key === (hover ?? current));
-  const [pos, setPos] = useState({ left: 0, top: 0 });
-  useLayoutEffect(() => {
-    const a = anchor.getBoundingClientRect(), side = (anchor.closest('.dropdown') ?? anchor).getBoundingClientRect();
-    const w = box.current!.offsetWidth, h = box.current!.offsetHeight;
-    const left = side.right + 8 + w <= innerWidth - 8 ? side.right + 8 : Math.max(8, side.left - 8 - w);
-    setPos({ left, top: Math.min(Math.max(8, a.top - 12), innerHeight - h - 8) });
-  }, [anchor]);
-  useEffect(() => { box.current?.focus(); }, []);
-  useEffect(() => {
-    const away = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose(); };
-    document.addEventListener('pointerdown', away, true);
-    return () => document.removeEventListener('pointerdown', away, true);
-  }, [anchor, onClose]);
-  const keys = (e: React.KeyboardEvent) => {
-    e.stopPropagation();
-    if (e.key === 'Escape') { onClose(); anchor.focus(); return; }
-    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-    const i = PATTERN_KEYS.indexOf(e.key.toLowerCase());
-    if (i >= 0 && choices[i]) { e.preventDefault(); onPick(choices[i]!.key); }
-  };
-  return createPortal(
-    <div ref={box} tabIndex={-1} className="colorpop island" role="dialog" aria-label="Background patterns" style={pos}
-      onPointerDown={(e) => e.stopPropagation()} onKeyDown={keys}>
-      <section>
-        <h5>Patterns</h5>
-        <div className="pgrid" role="radiogroup" aria-label="Background patterns">
-          {choices.map((p, i) => (
-            <button key={p.key} type="button" role="radio" aria-checked={current === p.key} aria-label={p.label}
-              title={`${p.label} (${PATTERN_KEYS[i]!.toUpperCase()})`}
-              className={'pswatch pattern' + (current === p.key ? ' on' : '')} onClick={() => onPick(p.key)}
-              onPointerEnter={() => setHover(p.key)} onPointerLeave={() => setHover(null)}>
-              <PatternTile kind={p.key} paper={paper} ink={ink} at="p" size={34} />
-              <kbd>{PATTERN_KEYS[i]}</kbd>
-            </button>
-          ))}
-        </div>
-      </section>
-      {/* the pattern under the pointer, else the current one: its name and what it is for */}
-      {shown && (
-        <section className="patterninfo" aria-live="polite">
-          <h5>{shown.label}</h5>
-          <p>{shown.about}</p>
-        </section>
-      )}
-    </div>,
-    document.body,
-  );
-}
 
 // The page's colour and pattern. Choices are written to the diagram's canvas line (paper=, dots=, grid= and so on),
 // so they override the look for this diagram only; picking what the look already has drops the override.
@@ -293,7 +236,8 @@ function BackgroundMenu({ scene, set }: { scene: Scene; set: (bg: Record<string,
           {moreOn ? <PatternTile kind={current} paper={paperHex} ink={inkHex} at="m" /> : <Ellipsis size={14} />}
         </button>
       </div>
-      {open && moreBtn.current && <PatternPopover anchor={moreBtn.current} choices={choices} current={current} paper={paperHex} ink={inkHex}
+      {open && moreBtn.current && <TilePopover anchor={moreBtn.current} label="Background patterns" groups={[{ title: 'Patterns', choices }]}
+        current={current} keys={PATTERN_KEYS} tile={(k) => <PatternTile kind={k} paper={paperHex} ink={inkHex} at="p" size={34} />}
         onPick={pick} onClose={() => setOpen(false)} />}
       {overridden && <button className="link" onClick={reset}>Use the look's background</button>}
     </div>
@@ -1287,7 +1231,6 @@ export function App() {
     setText: (text: string) => { const e = ops.find(scene, sel[0]); if (src !== null && e) commit(ops.editText(src, e, text)); },
     setProps: (kv: Record<string, string | null>) => src !== null && commit(ops.setManyProps(src, scene, sel, kv)),
     setStyle: (n: string) => src !== null && commit(ops.setStyle(src, scene, sel, n)),
-    setOp: (o: string) => src !== null && commit(ops.setOperator(src, scene, sel, o)),
     reorder: (w: ops.Layering) => src !== null && commit(w === 'front' || w === 'back' ? ops.reorder(src, scene, sel, w) : ops.reorderStep(src, scene, sel, w)),
     align: (m: ops.AlignMode) => src !== null && commit(ops.align(src, scene, sel, m)),
     remove: () => src !== null && sel.length > 0 && commit(ops.deleteElements(src, scene, sel), []),

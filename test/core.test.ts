@@ -330,6 +330,31 @@ test('tables and markers report mistakes in words an agent can act on', () => {
   assert.match(msgs('x: node "X" at 40,300\nx -> x.middle\n'), /only a table has rows/);
 });
 
+test('markers: the newer heads parse and draw, and scale with head.size', () => {
+  const two = 'a: node "A" at 40,40\nb: node "B" at 300,40\n';
+  const svg = (m: string, extra = '') => renderSvg(scene(two + `a -> b head=${m} tail=${m}${extra}\n`));
+  const polys = (s: string) => (s.match(/<polygon/g) ?? []).length;
+  for (const m of ['stealth', 'double', 'half', 'square', 'square-solid', 'bar', 'cross']) {
+    const c = scene(two + `a -> b head=${m} tail=${m}\n`).conns[0];
+    assert.deepEqual([c.headM, c.tailM], [m, m]);
+    assert.notEqual(svg(m), svg('none'), m);
+  }
+  assert.equal(polys(svg('double')) - polys(svg('none')), 4); // two heads at each end
+  assert.notEqual(svg('cross'), svg('cross', ' head.size=2'));
+});
+
+test('a see-through line and its heads are drawn solid and faded as one layer, so their overlaps are not darker', () => {
+  const two = 'a: node "A" at 40,40\nb: node "B" at 300,40\n';
+  const svg = renderSvg(scene(two + 'a -> b head=double tail=cross stroke=#ff0000/0.5 blend=multiply casing=#ffd400\n'));
+  const g = /<g opacity="0.5" style="mix-blend-mode:multiply">([\s\S]*?)<\/g>/.exec(svg);
+  assert.ok(g, 'one faded group, blending as the line would');
+  assert.ok(!g[1].includes('rgba('), 'nothing inside it is see-through on its own');
+  assert.ok(g[1].includes('stroke="rgb(255,0,0)"') && g[1].includes('fill="rgb(255,0,0)"'));
+  assert.ok(svg.indexOf('stroke="#ffd400"') < svg.indexOf('<g opacity="0.5"'), 'the casing stays underneath, at full strength');
+  // a solid line is drawn as before, without a group
+  assert.ok(!renderSvg(scene(two + 'a -> b stroke=#ff0000\n')).includes('<g opacity'));
+});
+
 test('markers: -> keeps the style head, head= and tail= override, <-> mirrors', () => {
   const c = (line: string) => scene(`a: node "A" at 40,40\nb: node "B" at 300,40\n${line}\n`).conns[0];
   assert.deepEqual([c('a -> b').tailM, c('a -> b').headM], ['none', 'arrow']);

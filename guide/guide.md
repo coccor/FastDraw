@@ -251,9 +251,16 @@ Any appearance property can be overridden on one element: `fill=`, `stroke=`, `s
 |---|---|---|
 | `arrow` | filled arrowhead | the default head |
 | `open` | two strokes, not filled | a dependency, an asynchronous message |
+| `stealth` | filled arrowhead swept back to a notch | a sharper default head |
+| `double` | two filled arrowheads in a row | a fast or repeated flow |
+| `half` | one stroke on the left side, a harpoon | an asynchronous message, one half of a two-way pair |
 | `triangle` | hollow triangle | inherits from / implements (points at the parent) |
 | `diamond`, `diamond-solid` | hollow or filled diamond | aggregation, composition (sits on the owner) |
 | `dot`, `circle` | filled or hollow circle | a start point, a provided interface |
+| `square`, `square-solid` | hollow or filled square | a port, a stub end |
+| `bar` | a short bar across the end | blocks, inhibits, a hard stop |
+| `cross` | an X on the end | rejected, cancelled, destroyed |
+| `stop` | a ring the line runs into | a station on a route (`stop.color=` colours the ring) |
 | `one`, `only-one` | one bar, two bars | exactly one |
 | `many`, `one-many` | crow's foot, crow's foot and bar | many, one or more |
 | `zero-one`, `zero-many` | circle and bar, circle and crow's foot | optional one, optional many |

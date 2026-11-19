@@ -15,6 +15,10 @@ c.right@0.2 -> d.left@0.2 head=stop tail=one stop.color=#aa3333
 c.right@0.4 -> d.left@0.4 head=only-one tail=many
 c.right@0.6 -> d.left@0.6 head=one-many tail=zero-one
 c.right@0.8 -> d.left@0.8 head=zero-many tail=arrow head.size=2
+e.right@0.2 -> 900,48 head=stealth tail=double head.size=1.5
+e.right@0.5 -> 900,64 head=half tail=square
+e.right@0.8 -> 900,80 head=square-solid tail=bar sw=3
+f.top -> 760,140 head=cross tail=half route=curve
 a -- c
 a <-> c tail=open
 b -- d style=relation head=many tail=one
@@ -68,3 +72,7 @@ a.toString@0.3 -> c
 # a line that simplifies to one point draws nothing
 ic: icon "Caption" at 100,600 icon=database
 112,637 -> 112,637
+
+# a see-through line and its heads are faded as one layer
+800,300 -> 1000,300 stroke=#aa3333/0.5 head=double tail=cross blend=multiply casing=#ffd400
+800,340 -> 1000,340 stroke=rgba(10,20,30,0.4) head=square-solid tail=stop stop.color=#3366aa double=#ffffff

@@ -3,7 +3,7 @@ import { parseStatements } from '../../src/parse.ts';
 import type { Tok } from '../../src/parse.ts';
 import type { Scene, Shape, TextEl, Conn, End, Box, Pt } from '../../src/scene.ts';
 import { turnOf, turnPt } from '../../src/scene.ts';
-import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement, moveStatementsPast, setRows as editRows } from '../../src/edit.ts';
+import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, fmtStmt, freshId, moveStatement, moveStatementsPast, setRows as editRows } from '../../src/edit.ts';
 import type { Patch, RowSpec } from '../../src/edit.ts';
 
 export type El = { kind: 'shape'; el: Shape } | { kind: 'text'; el: TextEl } | { kind: 'conn'; el: Conn };
@@ -171,13 +171,6 @@ export function setStyle(src: string, sc: Scene, ids: string[], name: string): s
     else if (e.kind === 'text') patches.set(e.el.line, (t) => setProp(t, 'style', name === 'text' ? null : name));
     else patches.set(e.el.line, (t) => setProp(setKind(t, name), 'style', null));
   }
-  return patchSource(src, patches);
-}
-
-// Choosing plain / one arrowhead / two arrowheads also forgets any hand-picked end markers.
-export function setOperator(src: string, sc: Scene, ids: string[], op: string): string {
-  const patches = new Map<number, Patch>();
-  for (const id of ids) { const e = find(sc, id); if (e?.kind === 'conn') patches.set(e.el.line, (t) => setProp(setProp(setOp(t, op), 'head', null), 'tail', null)); }
   return patchSource(src, patches);
 }
 

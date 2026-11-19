@@ -278,15 +278,22 @@ pub const CANVAS_KEYS: [&str; 19] = [
     "paper", "dots", "dotgap", "grid", "gridgap", "lines", "linegap", "cross", "crossgap", "iso",
     "isogap", "bars", "bargap", "diag", "diaggap", "graph", "graphgap", "hex", "hexgap",
 ];
-pub const MARKERS: [&str; 15] = [
+pub const MARKERS: [&str; 22] = [
     "none",
     "arrow",
     "open",
+    "stealth",
+    "double",
+    "half",
     "triangle",
     "diamond",
     "diamond-solid",
+    "square",
+    "square-solid",
     "dot",
     "circle",
+    "bar",
+    "cross",
     "stop",
     "one",
     "only-one",

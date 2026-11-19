@@ -334,7 +334,9 @@ test('panel: restyle, switch style, and the components gallery places shapes and
   await expect(pop.getByRole('group', { name: 'Shades' }).locator('button')).toHaveCount(5);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Custom stroke colour' })).toHaveCount(0);
-  await page.locator('.panel select').first().selectOption('cloud');
+  await page.locator('.panel').getByRole('button', { name: /^Style:/ }).click();
+  await page.getByRole('dialog', { name: 'Styles' }).getByRole('radio', { name: 'cloud', exact: true }).click();
+  await page.keyboard.press('Escape');
   expect(lineOf(await source(page), 'user')).toMatch(/^user: cloud /);
   await page.keyboard.press('Escape');
   await sidebar(page, 'Components');
@@ -375,7 +377,7 @@ test('legend from the menu, editable entries, grouping selects together', async 
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('menuitem', { name: 'Add a legend' }).click();
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^legend: legend at 40,\d+ external=.* focal=.* store=.* link=.* primary=/);
-  const field = page.locator('.panel .field', { hasText: 'focal' }).locator('input');
+  const field = page.locator('.panel').getByRole('textbox', { name: 'focal', exact: true });
   await field.fill('The service this is about');
   await field.press('Enter');
   expect(await source(page)).toContain('focal="The service this is about"');
@@ -563,18 +565,20 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   const target = await at(page, 120, 84 + 32 + 24 + 12); // second row of users: r1
   await drag(page, { x: end.x + end.width / 2, y: end.y + end.height / 2 }, target.x - end.x - end.width / 2, target.y - end.y - end.height / 2);
   expect(lineOf(await source(page), 'fk')).toMatch(/^fk: orders\.user_id -- users\.r1 /);
-  await page.getByLabel('End of the line').selectOption('zero-one');
+  await page.getByRole('button', { name: /^End of the line/ }).click();
+  await page.getByRole('dialog', { name: 'Line ends' }).getByRole('radio', { name: 'Zero or one' }).click();
   expect(lineOf(await source(page), 'fk')).toContain('head=zero-one');
-  await page.locator('.panel button[title="Arrowhead at the end"]').click();
-  expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -> users.r1 style=relation');
+  await page.getByRole('dialog', { name: 'Line ends' }).getByRole('radio', { name: 'Arrow', exact: true }).click();
+  expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -- users.r1 style=relation tail=many head=arrow');
+  await page.keyboard.press('Escape');
   void k;
   expect(errors).toEqual([]);
 });
 
-test('the panel names every line end, its arrowheads follow the ends as drawn, and the text size shows the default', async ({ page }) => {
+test('the panel names every line end, its end pickers follow the ends as drawn, and the text size shows the default', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);
-  const sizeOn = page.locator('.panel section:has(h4:text-is("Text size")) button.on');
+  const sizeOn = page.locator('.panel [role="radiogroup"][aria-label="Text size"] button.on');
   // a box with no size of its own is drawn at 12: M
   await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
   await expect(sizeOn).toHaveText('M');
@@ -584,15 +588,57 @@ test('the panel names every line end, its arrowheads follow the ends as drawn, a
   await page.keyboard.press('Escape');
   const mid = (await page.locator('polyline[data-id="r"]').boundingBox())!;
   await page.mouse.click(mid.x + mid.width / 2, mid.y + mid.height / 2);
-  await expect(page.getByLabel('End of the line').locator('option[value="stop"]')).toHaveText('Ring (stop)');
-  const on = page.locator('.panel button.on[title^="Arrowhead"], .panel button.on[title="No arrowhead"]');
-  await expect(on).toHaveAttribute('title', 'Arrowhead at the end');
-  await page.getByLabel('End of the line').selectOption('none');
+  // each end is a button that shows it and names it
+  const startBtn = page.getByRole('button', { name: /^Start of the line/ }), endBtn = page.getByRole('button', { name: /^End of the line/ });
+  await expect(startBtn).toHaveAccessibleName('Start of the line: Nothing');
+  await expect(endBtn).toHaveAccessibleName('End of the line: Arrow');
+  await endBtn.click();
+  const ends = page.getByRole('dialog', { name: 'Line ends' });
+  await expect(ends.getByRole('radio', { name: 'Ring (stop)' })).toHaveCount(1);
+  await ends.getByRole('radio', { name: 'Nothing' }).click();
   expect(lineOf(await source(page), 'r')).toContain('head=none');
-  await expect(on).toHaveAttribute('title', 'No arrowhead');
-  await page.getByLabel('Start of the line').selectOption('arrow');
-  await page.getByLabel('End of the line').selectOption('arrow');
-  await expect(on).toHaveAttribute('title', 'Arrowheads at both ends');
+  await expect(endBtn).toHaveAccessibleName('End of the line: Nothing');
+  await page.keyboard.press('Escape');
+  await startBtn.click();
+  await page.getByRole('dialog', { name: 'Line starts' }).getByRole('radio', { name: 'Arrow', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(startBtn).toHaveAccessibleName('Start of the line: Arrow');
+  // the old none / one / both row is gone: the Ends row says all of it
+  await expect(page.locator('.panel h4', { hasText: 'Arrowheads' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('a line\'s ends are one row, start then end as the line runs, each opening every end beside the panel', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const mid = (await page.locator('polyline[data-id="r"]').boundingBox())!;
+  await page.mouse.click(mid.x + mid.width / 2, mid.y + mid.height / 2);
+  const startBtn = page.getByRole('button', { name: /^Start of the line/ }), endBtn = page.getByRole('button', { name: /^End of the line/ });
+  const [sb, eb] = [(await startBtn.boundingBox())!, (await endBtn.boundingBox())!];
+  expect(Math.abs(sb.y - eb.y)).toBeLessThan(2); // one row
+  expect(sb.x + sb.width).toBeLessThanOrEqual(eb.x); // the start on the left
+  await expect(endBtn.locator('svg path')).not.toHaveCount(0); // drawn as it is
+  // every end, in groups, beside the panel
+  await endBtn.click();
+  const pop = page.getByRole('dialog', { name: 'Line ends' });
+  await expect(pop.getByRole('radio')).toHaveCount(22);
+  for (const g of ['Arrows', 'Shapes', 'Marks', 'Relationships']) await expect(pop.getByRole('radiogroup', { name: g })).toBeVisible();
+  const [panelBox, popBox] = [await page.locator('.panel').boundingBox(), await pop.boundingBox()];
+  expect(popBox!.x >= panelBox!.x + panelBox!.width || popBox!.x + popBox!.width <= panelBox!.x).toBe(true);
+  // the end under the pointer is named and explained
+  await pop.getByRole('radio', { name: 'Swept arrow' }).hover();
+  await expect(pop.locator('.patterninfo')).toContainText('swept back to a notch');
+  await pop.getByRole('radio', { name: 'Cross' }).click();
+  await expect(pop).toBeVisible(); // it stays open while ends are tried
+  expect(lineOf(await source(page), 'r')).toContain('head=cross');
+  await expect(pop.getByRole('radio', { name: 'Cross' })).toHaveAttribute('aria-checked', 'true');
+  await expect(endBtn).toHaveAccessibleName('End of the line: Cross');
+  await page.keyboard.press('Escape');
+  await expect(pop).toHaveCount(0);
+  // the start's popover draws the ends on the left
+  await startBtn.click();
+  await page.getByRole('dialog', { name: 'Line starts' }).getByRole('radio', { name: 'Swept arrow' }).click();
+  expect(lineOf(await source(page), 'r')).toContain('tail=stealth');
   expect(errors).toEqual([]);
 });
 
@@ -607,7 +653,7 @@ test('stroke width shows the nearest width for a look\'s own widths, and picking
     const b = (await page.locator(`polyline[data-id="${id}"]`).boundingBox())!;
     await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
   };
-  const widthOn = page.locator('.panel section:has(h4:text-is("Stroke width")) button.on');
+  const widthOn = page.locator('.panel [role="radiogroup"][aria-label="Stroke width"] button.on');
   const line = async () => (await source(page)).split('\n').find((l) => l.startsWith('cf -> astro'))!;
   await pick('_c19'); // cf -> astro style=primary: sw=1.4 in the look
   await expect(widthOn).toHaveAttribute('title', 'Medium');
@@ -625,7 +671,7 @@ test('stroke width shows the nearest width for a look\'s own widths, and picking
 
 test('a stroke width an agent wrote by hand shows as the nearest of the panel\'s widths', async ({ page }) => {
   const errors = noPageErrors(page);
-  const widthOn = page.locator('.panel section:has(h4:text-is("Stroke width")) button.on');
+  const widthOn = page.locator('.panel [role="radiogroup"][aria-label="Stroke width"] button.on');
   await paste(page, 'a: node "A" at 40,40 sw=1.8\nb: node "B" at 240,40 sw=3\n');
   await page.mouse.click(...Object.values(await corner(page, 'a')) as [number, number]);
   await expect(widthOn).toHaveAttribute('title', 'Medium');
@@ -662,13 +708,13 @@ test('line shape: switch an arrow to curved and bend it by dragging its middle',
   await paste(page, 'canvas 880x420\na: node "Client" at 40,160\nb: focal "Target" at 560,160\nr1: a -> b style=primary\n');
   const line = (await page.locator('polyline[data-id="r1"]').boundingBox())!;
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2);
-  await page.getByRole('button', { name: 'Curved' }).click();
+  await page.getByRole('radio', { name: 'Curved' }).click();
   expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=curve');
   const k = await zoom(page);
   const h = (await page.locator('[data-seg="-1"]').boundingBox())!;
   await drag(page, { x: h.x + h.width / 2, y: h.y + h.height / 2 }, 0, -60 * k);
   expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=curve bend=60');
-  await page.getByRole('button', { name: 'Right angles' }).click();
+  await page.getByRole('radio', { name: 'Right angles' }).click();
   expect(lineOf(await source(page), 'r1')).toBe('r1: a -> b style=primary route=ortho');
 });
 
@@ -917,27 +963,25 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   expect(lineOf(await source(page), 'db')).toContain('icon.size=32');
   await page.getByRole('group', { name: 'Icon size' }).getByRole('button', { name: 'Auto' }).click();
   expect(lineOf(await source(page), 'db')).not.toContain('icon.size');
-  const strokes = page.getByRole('group', { name: 'Icon colours' });
-  const ink = await strokes.locator('.swatch').last().getAttribute('aria-label');
-  await strokes.locator('.swatch').last().click();
-  expect(lineOf(await source(page), 'db')).toContain(`icon.color=${ink}`);
-  // any colour, from the system colour picker
-  await pickHex(page, 'Custom icon colour', '#e0457b');
+  // the icon's colour and tint: each a chip showing it, which opens the palette
+  await page.getByRole('button', { name: 'Icon colour' }).click();
+  await page.getByRole('dialog', { name: 'Icon colour' }).getByRole('button', { name: 'violet', exact: true }).click();
+  expect(lineOf(await source(page), 'db')).toContain('icon.color=violet');
+  await page.keyboard.press('Escape');
+  // any colour, from the hex field
+  await pickHex(page, 'Icon colour', '#e0457b');
   expect(lineOf(await source(page), 'db')).toContain('icon.color=#e0457b');
   await expect(page.locator('svg.canvas g[fill="#e0457b"]')).toHaveCount(1);
-  await expect(strokes.locator('.custom.on')).toHaveCount(1);
-  // a fill inside the icon's closed parts: a tint, any colour, or none
-  const fills = page.getByRole('group', { name: 'Icon fill colours' });
-  const tint = await fills.locator('.swatch').nth(1).getAttribute('aria-label');
-  await fills.locator('.swatch').nth(1).click();
-  expect(lineOf(await source(page), 'db')).toContain(`icon.fill=${tint}`);
-  await pickHex(page, 'Custom icon fill', '#ffd400');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Icon colour' }).locator('.dot')).toHaveCSS('background-color', 'rgb(224, 69, 123)');
+  // a fill inside the icon's closed parts: any colour, or none
+  await pickHex(page, 'Icon tint', '#ffd400');
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=#ffd400');
   await expect(page.locator('svg.canvas path[fill="#ffd400"]')).toHaveCount(1); // the tint under the icon
   // the store style tints its icon, so "none" is written out; leaving it off would bring the style's tint back
-  await fills.getByRole('button', { name: 'none', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Icon tint' }).getByRole('button', { name: 'none', exact: true }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.fill=none');
-  await expect(fills.getByRole('button', { name: 'none', exact: true })).toHaveClass(/\bon\b/);
+  await page.keyboard.press('Escape');
   // the weight: a line thickness in pixels on screen, the nearest of the icon's weights
   await page.getByRole('group', { name: 'Icon weight' }).getByRole('button', { name: 'Bold' }).click();
   expect(lineOf(await source(page), 'db')).toContain('icon.width=2');
@@ -955,8 +999,8 @@ test('icons: choose one for a box in the panel, move it above the text, and plac
   // an icon on its own is the shape: no box to style, its fill, stroke and stroke width are the icon's
   await page.keyboard.press('Escape');
   await page.mouse.click(...Object.values(await corner(page, 'icon')) as [number, number]);
-  await expect(page.locator('.panel h4', { hasText: 'Background' })).toHaveCount(0);
-  await expect(page.locator('.panel h4', { hasText: 'Stroke style' })).toHaveCount(0);
+  await expect(page.locator('.panel .plabel', { hasText: 'Fill' })).toHaveCount(0);
+  await expect(page.locator('.panel [aria-label="Stroke style"]')).toHaveCount(0);
   const ifills = page.getByRole('group', { name: 'Icon fill colours' });
   const itint = await ifills.locator('.swatch').nth(1).getAttribute('aria-label');
   await ifills.locator('.swatch').nth(1).click();
@@ -1761,6 +1805,7 @@ test('dragging with the text tool draws a text box', async ({ page }) => {
 test('the opacity slider fades the selection as it moves and writes one undo step', async ({ page }) => {
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  await page.locator('.panel').getByRole('button', { name: 'Arrange' }).click();
   const slider = page.locator('.panel').getByRole('slider', { name: 'Opacity' });
   await expect(slider).toHaveValue('100');
   // the keyboard steps 5% at a time; each step shows on the canvas, letting go writes it
@@ -1818,6 +1863,7 @@ test('the turning knob turns a box about its middle in 15 degree steps, and line
 test('the rotation field and quarter-turn buttons turn the selection; 0 drops rotate=', async ({ page }) => {
   await paste(page, SMALL);
   await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  if (await page.locator('.panel .ghead[aria-expanded="false"]').count()) await page.locator('.panel').getByRole('button', { name: 'Arrange' }).click();
   const field = page.locator('.panel').getByLabel('Rotation in degrees');
   await expect(field).toHaveValue('0');
   await field.fill('30');
@@ -1849,6 +1895,7 @@ test('turning a free text keeps it where it is', async ({ page }) => {
   await paste(page, 'canvas 900x420\nnote: text "A turned note" at 300,200\n');
   const before = (await page.locator('rect[data-id="note"]').boundingBox())!;
   await page.mouse.click(before.x + before.width / 2, before.y + before.height / 2);
+  if (await page.locator('.panel .ghead[aria-expanded="false"]').count()) await page.locator('.panel').getByRole('button', { name: 'Arrange' }).click();
   const field = page.locator('.panel').getByLabel('Rotation in degrees');
   await field.fill('90');
   await field.press('Enter');

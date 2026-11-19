@@ -2,7 +2,7 @@ import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2, TextAlignStart, TextAlignCenter, TextAlignEnd,
-  RotateCcw, RotateCw,
+  ChevronDown, ChevronRight, RotateCcw, RotateCw,
 } from 'lucide-react';
 import { color, fontFamily } from '../../src/look.ts';
 import { MARKERS, turnOf } from '../../src/scene.ts';
@@ -12,6 +12,11 @@ import { splitCells } from '../../src/edit.ts';
 import { find } from './ops.ts';
 import { IconField } from './IconPicker.tsx';
 import { ColorPicker } from './ColorPicker.tsx';
+import { TilePopover } from './TilePopover.tsx';
+import type { TileChoice } from './TilePopover.tsx';
+import { markerPreview } from '../../src/render.ts';
+import { Thumb, BUILTIN } from './Gallery.tsx';
+import type { Style } from '../../src/look.ts';
 import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
@@ -22,7 +27,6 @@ export type PanelActions = {
   setText: (text: string) => void;
   setProps: (kv: Record<string, string | null>) => void;
   setStyle: (name: string) => void;
-  setOp: (op: string) => void;
   reorder: (where: Layering) => void;
   align: (mode: AlignMode) => void;
   remove: () => void;
@@ -90,24 +94,167 @@ function vivid(sc: Scene, names: string[]): string[] {
 
 // A text input that commits when it loses focus or Enter is pressed. `multiline` gives a box that grows to
 // its lines, where Shift+Enter starts a new line.
-export function TextField({ label, value, onCommit, multiline }: { label: string; value: string; onCommit: (v: string) => void; multiline?: boolean }) {
+// `bare` leaves out its label (the row names it), keeping the name for screen readers.
+export function TextField({ label, value, onCommit, multiline, bare, placeholder }: { label: string; value: string; onCommit: (v: string) => void; multiline?: boolean; bare?: boolean; placeholder?: string }) {
   const [v, setV] = React.useState(value);
   React.useEffect(() => setV(value), [value]);
   const done = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !(multiline && e.shiftKey)) { e.preventDefault(); (e.target as HTMLElement).blur(); } };
+  const named = bare ? { 'aria-label': label, placeholder } : { placeholder };
+  const input = multiline
+    ? <textarea value={v} rows={Math.min(4, v.split('\n').length)} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} {...named} />
+    : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} {...named} />;
+  if (bare) return input;
   return (
     <label className="field">
       <span>{label}</span>
-      {multiline
-        ? <textarea value={v} rows={Math.min(4, v.split('\n').length)} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} />
-        : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)} onKeyDown={done} />}
+      {input}
     </label>
   );
 }
 
-const MARKER_NAMES: Record<string, string> = {
-  none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond',
-  dot: 'Dot', circle: 'Circle', stop: 'Ring (stop)', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
-};
+// Every line end, in groups for the popover, each with what it usually means.
+const END_GROUPS: { title: string; choices: TileChoice[] }[] = [
+  { title: 'Arrows', choices: [
+    { key: 'none', label: 'Nothing', about: 'No mark: the line just stops.' },
+    { key: 'arrow', label: 'Arrow', about: 'A filled arrowhead, the usual head.' },
+    { key: 'open', label: 'Open arrow', about: 'Two strokes, not filled: a dependency, an asynchronous message.' },
+    { key: 'stealth', label: 'Swept arrow', about: 'A filled head swept back to a notch: a sharper arrow.' },
+    { key: 'double', label: 'Double arrow', about: 'Two heads in a row: a fast or repeated flow.' },
+    { key: 'half', label: 'Half arrow', about: 'One barb, a harpoon: an asynchronous message, one half of a two-way pair.' },
+  ] },
+  { title: 'Shapes', choices: [
+    { key: 'triangle', label: 'Hollow triangle', about: 'Inherits from or implements; it points at the parent.' },
+    { key: 'diamond', label: 'Hollow diamond', about: 'Aggregation; it sits on the owner.' },
+    { key: 'diamond-solid', label: 'Filled diamond', about: 'Composition; it sits on the owner.' },
+    { key: 'square', label: 'Hollow square', about: 'A port, or a stub end.' },
+    { key: 'square-solid', label: 'Filled square', about: 'A port, or a stub end, filled.' },
+    { key: 'dot', label: 'Dot', about: 'A filled circle: a start point.' },
+    { key: 'circle', label: 'Circle', about: 'A hollow circle: a provided interface, an end point.' },
+  ] },
+  { title: 'Marks', choices: [
+    { key: 'bar', label: 'Bar', about: 'A bar across the end: blocks, inhibits, a hard stop.' },
+    { key: 'cross', label: 'Cross', about: 'An X on the end: rejected, cancelled, destroyed.' },
+    { key: 'stop', label: 'Ring (stop)', about: 'A ring the line runs into, like a station on a route map.' },
+  ] },
+  { title: 'Relationships', choices: [
+    { key: 'one', label: 'One', about: 'One bar: one.' },
+    { key: 'only-one', label: 'Exactly one', about: 'Two bars: exactly one.' },
+    { key: 'many', label: 'Many', about: "A crow's foot: many." },
+    { key: 'one-many', label: 'One or more', about: "A crow's foot and a bar: one or more." },
+    { key: 'zero-one', label: 'Zero or one', about: 'A circle and a bar: optional, at most one.' },
+    { key: 'zero-many', label: 'Zero or more', about: "A circle and a crow's foot: optional, any number." },
+  ] },
+];
+// a marker the groups do not name yet still shows, under its own name
+const LISTED = new Set(END_GROUPS.flatMap((g) => g.choices.map((c) => c.key)));
+const UNLISTED = MARKERS.filter((m) => !LISTED.has(m)).map((m) => ({ key: m, label: m, about: '' }));
+const ALL_ENDS = UNLISTED.length ? [...END_GROUPS, { title: 'Other', choices: UNLISTED }] : END_GROUPS;
+const END_NAME = Object.fromEntries(ALL_ENDS.flatMap((g) => g.choices.map((c) => [c.key, c.label])));
+
+// A line end drawn by the renderer as the diagram draws it, on the left for the start of a line, in the panel's own
+// colours: the marks in the text colour, a hollow end filled with the tile's background (the svg's fill, set in CSS).
+function MarkerTile({ kind, start, w, h }: { kind: string; start: boolean; w: number; h: number }) {
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <g dangerouslySetInnerHTML={{ __html: markerPreview(kind, w, h, 'currentColor', 'inherit', start) }} />
+    </svg>
+  );
+}
+
+// One end of the selected lines, drawn as it is: the start on the left of the Ends row, the end on the right, so the
+// two read as the line. Each opens every end, in groups with what each means, in a popover beside the panel.
+// Choosing Nothing at both ends makes a plain line; an arrowhead at either end, an arrow.
+function EndButton({ start, current, onPick }: { start: boolean; current: string; onPick: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const btn = React.useRef<HTMLButtonElement>(null);
+  const which = start ? 'Start' : 'End', name = END_NAME[current] ?? current;
+  return (
+    <>
+      <button ref={btn} type="button" className={'endbtn' + (start ? ' tail' : ' head')} aria-label={`${which} of the line: ${name}`} title={`${which}: ${name}`}
+        aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {start && <ChevronDown size={12} aria-hidden="true" />}
+        <MarkerTile kind={current} start={start} w={50} h={20} />
+        {!start && <ChevronDown size={12} aria-hidden="true" />}
+      </button>
+      {open && btn.current && <TilePopover anchor={btn.current} label={start ? 'Line starts' : 'Line ends'} groups={ALL_ENDS} current={current}
+        className="marker" tile={(k) => <MarkerTile kind={k} start={start} w={36} h={36} />} onPick={onPick} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// The selection's style, drawn as the look draws it, with its name; it opens every style of the kind, drawn the same
+// way, in a popover beside the panel. The drawings sit on the diagram's page colour.
+function StylePicker({ sc, styles, current, onPick }: { sc: Scene; styles: Style[]; current: string; onPick: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const btn = React.useRef<HTMLButtonElement>(null);
+  const paper = color(sc.look, sc.look.canvas.paper ?? 'paper');
+  const byName = new Map(styles.map((s) => [s.name, s]));
+  const cur = byName.get(current);
+  const drawn = (s: Style | undefined) => <span className="sthumb" style={{ background: paper }}>{s && <Thumb look={sc.look} style={s} />}</span>;
+  return (
+    <>
+      <button ref={btn} type="button" className="stylebtn" aria-label={`Style: ${current}`} title={`Style: ${current}`}
+        aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {drawn(cur)}
+        <span className="sname"><b>{current}</b></span>
+        <ChevronDown size={13} aria-hidden="true" />
+      </button>
+      {open && btn.current && <TilePopover anchor={btn.current} label="Styles" cards info={false} className="stylecard" current={current}
+        groups={[
+          // the look's own styles first, then the plain ones every look has
+          { title: 'This look', choices: styles.filter((s) => !BUILTIN.has(s.name)) },
+          { title: 'Built in', choices: styles.filter((s) => BUILTIN.has(s.name)) },
+        ].filter((g) => g.choices.length).map((g) => ({ title: g.title, choices: g.choices.map((s) => ({ key: s.name, label: s.name, about: '' })) }))}
+        tile={(k) => <>{drawn(byName.get(k))}<span className="tname">{k}</span></>} onPick={onPick} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// A heading over a few rows of the panel.
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="pgroup" aria-label={title}><h4>{title}</h4>{children}</section>;
+}
+
+// One option: its name on the left, its controls on the right. `top` lines the name up with the first of several lines.
+function Row({ label, top, children }: { label: string; top?: boolean; children: React.ReactNode }) {
+  return <div className={'prow' + (top ? ' top' : '')}><span className="plabel">{label}</span><div className="pctl">{children}</div></div>;
+}
+
+// Rotation, opacity and layers: folded shut under a line that says their values, until opened. Whether it is open is
+// remembered on this computer.
+const ARRANGE_KEY = 'fastdraw.panel.arrange';
+function Arrange({ summary, children }: { summary: string; children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(() => { try { return localStorage.getItem(ARRANGE_KEY) === 'open'; } catch { return false; } });
+  const flip = () => { setOpen(!open); try { localStorage.setItem(ARRANGE_KEY, open ? 'closed' : 'open'); } catch { /* not kept */ } };
+  return (
+    <section className="pgroup" aria-label="Arrange">
+      <button type="button" className="ghead" aria-expanded={open} onClick={flip}>
+        <span>Arrange</span>
+        {!open && <span className="gsum">{summary}</span>}
+        {open ? <ChevronDown size={13} aria-hidden="true" /> : <ChevronRight size={13} aria-hidden="true" />}
+      </button>
+      {open && children}
+    </section>
+  );
+}
+
+// A colour that is set less often (a text's, an icon's): the colour and its name on one button that opens the palette.
+function ColorChip({ sc, values, current, shown, onPick, label, text }: {
+  sc: Scene; values: string[]; current: string | undefined; shown: string; onPick: (v: string) => void; label: string; text?: string;
+}) {
+  const recent = React.useMemo(() => {
+    const has = new Set(values.map((v) => color(sc.look, v).toLowerCase()));
+    return customColours(sc).filter((h) => !has.has(h));
+  }, [sc, values.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const c = color(sc.look, shown);
+  return (
+    <ColorPicker className="chip" label={label} title={`${label}: ${shown}`} value={current} palette={values} recent={recent}
+      resolve={(v) => color(sc.look, v)} onPick={onPick}>
+      <span className={'dot' + (c === 'none' ? ' none' : '')} style={c === 'none' ? undefined : { background: c }} />
+      <span className="name">{text ?? shown}</span>
+    </ColorPicker>
+  );
+}
 
 // The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
 function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; onChange: (rows: RowSpec[]) => void }) {
@@ -150,15 +297,8 @@ function RowInput({ value, label, onCommit }: { value: string; label: string; on
 }
 
 // Small drawn glyphs for the line options, where a picture says more than a word.
-const Stroke = ({ dash, w = 1.6 }: { dash?: string; w?: number }) => (
-  <svg width="26" height="14" viewBox="0 0 26 14"><line x1="3" y1="7" x2="23" y2="7" stroke="currentColor" strokeWidth={w} strokeDasharray={dash} strokeLinecap="round" /></svg>
-);
-const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
-  <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="7" x2="22" y2="7" />
-    {b && <path d="M18 3 L22 7 L18 11" />}
-    {a && <path d="M8 3 L4 7 L8 11" />}
-  </svg>
+const Stroke = ({ dash, w = 1.6, len = 20 }: { dash?: string; w?: number; len?: number }) => (
+  <svg width={len + 6} height="14" viewBox={`0 0 ${len + 6} 14`}><line x1="3" y1="7" x2={len + 3} y2="7" stroke="currentColor" strokeWidth={w} strokeDasharray={dash} strokeLinecap="round" /></svg>
 );
 
 // An icon's stroke width in pixels; Regular leaves it to the icon's size.
@@ -268,233 +408,217 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const size = p[sizeKey] ?? baseSize;
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
   // the ends as drawn, not as written: `a -> b head=none` has no arrowhead, whatever its operator says
-  const ends = first.kind === 'conn' ? (first.el.head ? (first.el.tail ? '<->' : '->') : first.el.tail ? '<-' : '--') : undefined;
   const boxes = els.filter((e) => e!.kind !== 'conn').length;
   const aligns: [AlignMode, string, React.ReactNode][] = [
     ['left', 'Align left edges', <AlignStartVertical size={16} />], ['hcenter', 'Centre horizontally', <AlignCenterVertical size={16} />], ['right', 'Align right edges', <AlignEndVertical size={16} />],
     ['top', 'Align top edges', <AlignStartHorizontal size={16} />], ['vcenter', 'Centre vertically', <AlignCenterHorizontal size={16} />], ['bottom', 'Align bottom edges', <AlignEndHorizontal size={16} />],
   ];
 
+  const dash = dashOf(p.dash);
+  const lineLook = (
+    // a stroke's dash and width, side by side under its colour
+    <div className="segs">
+      <div className="seg" role="radiogroup" aria-label="Stroke style">
+        {([['solid', 'Solid', 'none', undefined], ['dashed', 'Dashed', '5,4', '5 4'], ['dotted', 'Dotted', '1,4', '0.5 4']] as const).map(([k, l, v, d]) => (
+          <button key={k} role="radio" aria-checked={dash === k} title={l} aria-label={l} className={dash === k ? 'on' : ''} onClick={() => act.setProp('dash', v)}><Stroke dash={d} len={16} /></button>
+        ))}
+      </div>
+      <div className="seg" role="radiogroup" aria-label="Stroke width">
+        {WIDTHS.map(([l, v, w]) => (
+          <button key={l} role="radio" aria-checked={widthOf(p.sw) === v} title={l} aria-label={l} className={widthOf(p.sw) === v ? 'on' : ''}
+            onClick={() => act.setProp('sw', v === widthOf(styleProp('sw')) ? null : v)}><Stroke w={w} len={16} /></button>
+        ))}
+      </div>
+    </div>
+  );
+  const textSize = (
+    <div className="seg" role="radiogroup" aria-label="Text size">
+      {sizes.map(([l, v]) => <button key={l} role="radio" aria-checked={size === v} className={size === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v === baseSize ? null : v)}>{l}</button>)}
+    </div>
+  );
+  const fonts = (
+    <div className="seg wrap" role="radiogroup" aria-label="Font">
+      {[...sc.look.fonts.keys()].map((f) => (
+        <button key={f} role="radio" aria-checked={font === f} aria-label={f} title={`${f}: ${fontFamily(sc.look, f).split(',')[0]!.replace(/"/g, '')}`}
+          className={'font' + (font === f ? ' on' : '')} style={{ fontFamily: fontFamily(sc.look, f) }}
+          onClick={() => act.setProp(fontKey, f === styleProp(fontKey) ? null : f)}>{f[0]!.toUpperCase() + f.slice(1)}</button>
+      ))}
+    </div>
+  );
+  const textColour = (
+    <ColorChip sc={sc} values={names} current={p[colorKey]} shown={p[colorKey] ?? styleProp(colorKey) ?? (kind === 'conn' ? p.stroke ?? styleProp('stroke') ?? 'muted' : 'ink')}
+      onPick={(v) => act.setProp(colorKey, v)} label="Text colour" />
+  );
+  const boxText = els.length === 1 && first.kind === 'shape' && !stroke && !first.el.legend && !first.el.rows;
+  const hasIcon = same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows;
+  const legend = els.length === 1 && first.kind === 'shape' ? first.el.legend : undefined;
+  const rows = els.length === 1 && first.kind === 'shape' ? first.el.rows : undefined;
+  const opacity = Math.round(Math.min(1, Math.max(0, Number(p.opacity ?? 1) || 0)) * 100);
+  const turnable = els.every((e) => e!.kind !== 'conn');
+
   return (
     <aside className="panel" onPointerDown={(e) => e.stopPropagation()}>
-      {same && (
-        <section>
-          <h4>Style</h4>
-          <select value={first.el.style} onChange={(e) => act.setStyle(e.target.value)}>
-            {styles.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
-          </select>
-        </section>
-      )}
-      {iconShape && (
-        // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
-        <>
-          {/* a solid icon is one filled shape: only its colour (stroke=) applies; fill= is the tint under an outline */}
-          {!solidIcon && <section><h4>Tint</h4><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v !== 'none' ? v : styleTints('fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" /></section>}
-          <section><h4>Colour</h4><Swatches sc={sc} values={names} top={inks} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></section>
-          {!solidIcon && (
-            <section>
-              <h4>Weight</h4>
-              <IconWidths value={p.sw} onPick={(v) => act.setProp('sw', v)} />
-            </section>
+      {same && <StylePicker sc={sc} styles={styles} current={first.el.style} onPick={act.setStyle} />}
+
+      {(boxText || hasIcon || legend || rows) && (
+        <Group title="Content">
+          {boxText && (
+            <>
+              <Row label={caption ? 'Title' : 'Text'} top><TextField bare label={caption ? 'Title' : 'Text'} value={first.el.text ?? ''} onCommit={act.setText} multiline /></Row>
+              {!caption && <Row label="Below"><TextField bare label="Second line" placeholder="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} /></Row>}
+              <Row label="Tag"><TextField bare label="Corner tag" placeholder="Corner tag" value={p.tag ?? ''} onCommit={(v) => act.setProp('tag', v || null)} /></Row>
+            </>
           )}
-        </>
+          {hasIcon && (
+            <Row label="Icon" top>
+              <IconField look={sc.look} value={p.icon} iconStyle={p['icon.style'] === 'solid' || p['icon.style'] === 'duotone' ? p['icon.style'] : 'outline'}
+                onPick={(n, style) => act.setProps({ icon: n, 'icon.style': style !== 'outline' ? style : null })} />
+              {p.icon && p.icon !== 'none' && !iconShape && (
+                <>
+                  <div className="seg">
+                    {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
+                      <button key={l} aria-label={l} title={`Icon ${l.toLowerCase()}`} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l.split(' ')[0]}</button>
+                    ))}
+                  </div>
+                  <div className="seg" role="group" aria-label="Icon size">
+                    {[['Auto', ''], ['S', '16'], ['M', '24'], ['L', '32'], ['XL', '48']].map(([l, v]) => (
+                      <button key={l} title={v ? `${v}px` : 'Sized to fit the box'} className={(p['icon.size'] ?? '') === v ? 'on' : ''} onClick={() => act.setProp('icon.size', v || null)}>{l}</button>
+                    ))}
+                  </div>
+                  {!sc.look.images.has(p.icon) && (
+                    <>
+                      <div className="chips">
+                        <ColorChip sc={sc} values={names} current={p['icon.color']} shown={p['icon.color'] ?? styleProp('icon.color') ?? 'ink'} text="Colour"
+                          onPick={(v) => act.setProp('icon.color', v)} label="Icon colour" />
+                        <ColorChip sc={sc} values={iconFills} current={p['icon.fill']} shown={p['icon.fill'] ?? styleProp('icon.fill') ?? 'none'} text="Tint"
+                          onPick={(v) => act.setProp('icon.fill', v !== 'none' ? v : styleTints('icon.fill') ? 'none' : null)} label="Icon tint" />
+                      </div>
+                      <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
+                    </>
+                  )}
+                </>
+              )}
+            </Row>
+          )}
+          {legend && legend.map((it) => <Row key={it.style} label={it.style}><TextField bare label={it.style} value={it.label} onCommit={(v) => act.setProp(it.style, v || null)} /></Row>)}
+          {legend && <p className="muted small">Clear an entry to remove it.</p>}
+          {rows && first.kind === 'shape' && <RowsEditor rows={rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
+        </Group>
       )}
-      {same && kind === 'shape' && !stroke && !iconShape && (
-        <section><h4>Background</h4><Swatches sc={sc} values={fills} top={topFills} current={p.fill} onPick={(v) => act.setProp('fill', v)} custom="Custom background colour" label="Background colours" /></section>
+
+      {same && iconShape && (
+        // an icon on its own is the shape: fill, stroke and width are the icon's, and there is no box to style
+        <Group title="Appearance">
+          {/* a solid icon is one filled shape: only its colour (stroke=) applies; fill= is the tint under an outline */}
+          <Row label="Colour"><Swatches sc={sc} values={names} top={inks} current={p.stroke ?? 'ink'} onPick={(v) => act.setProp('stroke', v === 'ink' ? null : v)} custom="Custom icon colour" label="Icon colours" /></Row>
+          {!solidIcon && <Row label="Tint"><Swatches sc={sc} values={iconFills} top={topIconFills} current={p.fill ?? 'none'} onPick={(v) => act.setProp('fill', v !== 'none' ? v : styleTints('fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" /></Row>}
+          {!solidIcon && <Row label="Weight"><IconWidths value={p.sw} onPick={(v) => act.setProp('sw', v)} /></Row>}
+        </Group>
       )}
-      {same && kind !== 'text' && !iconShape && (
-        <>
-          <section><h4>Stroke</h4><Swatches sc={sc} values={strokes} top={inks} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} custom="Custom stroke colour" label="Stroke colours" /></section>
-          <section>
-            <h4>Stroke style</h4>
-            <div className="seg">
-              <button title="Solid" className={dashOf(p.dash) === 'solid' ? 'on' : ''} onClick={() => act.setProp('dash', 'none')}><Stroke /></button>
-              <button title="Dashed" className={dashOf(p.dash) === 'dashed' ? 'on' : ''} onClick={() => act.setProp('dash', '5,4')}><Stroke dash="5 4" /></button>
-              <button title="Dotted" className={dashOf(p.dash) === 'dotted' ? 'on' : ''} onClick={() => act.setProp('dash', '1,4')}><Stroke dash="0.5 4" /></button>
-            </div>
-          </section>
-          <section>
-            <h4>Stroke width</h4>
-            <div className="seg">
-              {WIDTHS.map(([l, v, w]) => (
-                <button key={l} title={l} className={widthOf(p.sw) === v ? 'on' : ''} onClick={() => act.setProp('sw', v === widthOf(styleProp('sw')) ? null : v)}><Stroke w={w} /></button>
-              ))}
-            </div>
-          </section>
-        </>
+      {same && kind === 'shape' && !iconShape && (
+        <Group title="Appearance">
+          {!stroke && <Row label="Fill"><Swatches sc={sc} values={fills} top={topFills} current={p.fill} onPick={(v) => act.setProp('fill', v)} custom="Custom background colour" label="Background colours" /></Row>}
+          <Row label="Stroke" top>
+            <Swatches sc={sc} values={strokes} top={inks} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} custom="Custom stroke colour" label="Stroke colours" />
+            {lineLook}
+          </Row>
+        </Group>
       )}
-      {same && kind === 'text' && (
-        <section><h4>Colour</h4><Swatches sc={sc} values={names} top={inks} current={p.color} onPick={(v) => act.setProp('color', v)} custom="Custom text colour" label="Text colours" /></section>
-      )}
-      {same && kind === 'conn' && (
-        <>
-          <section>
-            <h4>Arrowheads</h4>
-            <div className="seg">
-              <button title="No arrowhead" className={ends === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
-              <button title="Arrowhead at the end" className={ends === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
-              <button title="Arrowheads at both ends" className={ends === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
-            </div>
-          </section>
-          <section>
-            <h4>Line shape</h4>
-            <div className="seg">
+      {same && kind === 'conn' && first.kind === 'conn' && (
+        <Group title="Line">
+          <Row label="Colour"><Swatches sc={sc} values={strokes} top={inks} current={p.stroke} onPick={(v) => act.setProp('stroke', v)} custom="Custom stroke colour" label="Stroke colours" /></Row>
+          <Row label="Stroke">{lineLook}</Row>
+          <Row label="Shape">
+            <div className="seg" role="radiogroup" aria-label="Line shape">
               {[['ortho', 'Right angles', 'M3 11 H12 Q14 11 14 9 V5 Q14 3 16 3 H23'], ['straight', 'Straight', 'M3 11 L23 3'], ['curve', 'Curved', 'M3 11 C12 11 14 3 23 3']].map(([v, l, d]) => (
-                <button key={v} title={l} aria-label={l} className={(p.route ?? 'ortho') === v ? 'on' : ''} onClick={() => act.setRoute(v)}>
+                <button key={v} role="radio" aria-checked={(p.route ?? 'ortho') === v} title={l} aria-label={l} className={(p.route ?? 'ortho') === v ? 'on' : ''} onClick={() => act.setRoute(v)}>
                   <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d={d} /></svg>
                 </button>
               ))}
             </div>
-          </section>
-          <section>
-            <h4>Line ends</h4>
-            {([['tail', 'Start', first.kind === 'conn' ? first.el.tailM : 'none'], ['head', 'End', first.kind === 'conn' ? first.el.headM : 'none']] as const).map(([k, label, cur]) => (
-              <label className="field" key={k}>
-                <span>{label}</span>
-                <select aria-label={`${label} of the line`} value={cur} onChange={(e) => act.setProp(k, e.target.value)}>
-                  {MARKERS.map((m) => <option key={m} value={m}>{MARKER_NAMES[m] ?? m}</option>)}
-                </select>
-              </label>
-            ))}
-          </section>
+          </Row>
+          <Row label="Ends">
+            <div className="endpair">
+              <EndButton start current={first.el.tailM} onPick={(v) => act.setProp('tail', v)} />
+              <EndButton start={false} current={first.el.headM} onPick={(v) => act.setProp('head', v)} />
+            </div>
+          </Row>
           {(p.via || p.lpos) && (
-            <section>
-              <h4>Route</h4>
-              <div className="seg"><button title="Forget the hand-set route and label position" onClick={act.resetRoute}>Route automatically</button></div>
-            </section>
+            <Row label="Route"><div className="seg"><button title="Forget the hand-set route and label position" onClick={act.resetRoute}>Route automatically</button></div></Row>
           )}
-          <section>
-            <h4>Label position</h4>
-            <div className="seg">
+        </Group>
+      )}
+
+      {same && kind === 'conn' && (
+        <Group title="Label">
+          <Row label="Place">
+            <div className="seg" role="radiogroup" aria-label="Label position">
               {[['', 'Above'], ['below', 'Below'], ['left', 'Left']].map(([v, l]) => (
-                <button key={l} className={(p.lside ?? '') === v ? 'on' : ''} onClick={() => act.setProp('lside', v || null)}>{l}</button>
+                <button key={l} role="radio" aria-checked={(p.lside ?? '') === v} className={(p.lside ?? '') === v ? 'on' : ''} onClick={() => act.setProp('lside', v || null)}>{l}</button>
               ))}
             </div>
-          </section>
-        </>
+          </Row>
+          <Row label="Size">{textSize}</Row>
+          <Row label="Font">{fonts}</Row>
+          <Row label="Colour">{textColour}</Row>
+        </Group>
       )}
-      {same && !stroke && (
-        <section>
-          <h4>Text size</h4>
-          <div className="seg">
-            {sizes.map(([l, v]) => <button key={l} className={size === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v === baseSize ? null : v)}>{l}</button>)}
-          </div>
-        </section>
+      {same && kind === 'text' && (
+        <Group title="Text">
+          <Row label="Colour"><Swatches sc={sc} values={names} top={inks} current={p.color} onPick={(v) => act.setProp('color', v)} custom="Custom text colour" label="Text colours" /></Row>
+          <Row label="Size">{textSize}</Row>
+          <Row label="Font">{fonts}</Row>
+          <Row label="Align">{textAlign()}</Row>
+        </Group>
       )}
-      {same && !stroke && !iconShape && (
-        <section>
-          <h4>Font</h4>
-          <div className="seg wrap" role="radiogroup" aria-label="Font">
-            {[...sc.look.fonts.keys()].map((f) => (
-              <button key={f} role="radio" aria-checked={font === f} aria-label={f} title={`${f}: ${fontFamily(sc.look, f).split(',')[0]!.replace(/"/g, '')}`}
-                className={'font' + (font === f ? ' on' : '')} style={{ fontFamily: fontFamily(sc.look, f) }}
-                onClick={() => act.setProp(fontKey, f === styleProp(fontKey) ? null : f)}>{f[0]!.toUpperCase() + f.slice(1)}</button>
-            ))}
-          </div>
-        </section>
+      {same && kind === 'shape' && !stroke && (
+        <Group title="Text">
+          <Row label="Size">{textSize}</Row>
+          {!iconShape && <Row label="Font">{fonts}</Row>}
+          {!iconShape && <Row label="Align">{textAlign()}</Row>}
+          {!iconShape && <Row label="Colour">{textColour}</Row>}
+        </Group>
       )}
-      {same && (kind === 'text' || (kind === 'shape' && !stroke && !iconShape)) && (
-        <section>
-          <h4>Text align</h4>
-          <div className="seg" role="radiogroup" aria-label="Text align">
-            {([['start', 'left', 'Left', <TextAlignStart size={16} />], ['middle', 'center', 'Centre', <TextAlignCenter size={16} />], ['end', 'right', 'Right', <TextAlignEnd size={16} />]] as const).map(([a, al, l, icon]) => {
-              // a free text lines up inside its box (width=); one without a box shows no alignment until it has one
-              const boxed = first.kind === 'text' && !!first.el.lines;
-              const on = kind === 'text' ? boxed && (p.align ?? 'left') === al : (p['title.align'] ?? 'center') === al;
-              const pick = () => kind === 'text' ? act.setTextAlign(al) : act.setProp('title.align', al === (styleProp('title.align') ?? 'center') ? null : al);
-              return <button key={a} role="radio" aria-checked={on} aria-label={`Align ${l.toLowerCase()}`} title={l} className={on ? 'on' : ''} onClick={pick}>{icon}</button>;
-            })}
-          </div>
-        </section>
-      )}
-      {same && kind !== 'text' && !stroke && !iconShape && (
-        <section>
-          <h4>Text colour</h4>
-          <Swatches sc={sc} values={names} top={inks} current={p[colorKey]} onPick={(v) => act.setProp(colorKey, v)} custom="Custom text colour" label="Text colours" />
-        </section>
-      )}
-      {els.length === 1 && first.kind === 'shape' && first.el.legend && (
-        <section>
-          <h4>Legend entries</h4>
-          {first.el.legend.map((it) => <TextField key={it.style} label={it.style} value={it.label} onCommit={(v) => act.setProp(it.style, v || null)} />)}
-          <p className="muted small">Clear an entry to remove it.</p>
-        </section>
-      )}
-      {same && kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
-        <section>
-          <h4>Icon</h4>
-          <IconField look={sc.look} value={p.icon} iconStyle={p['icon.style'] === 'solid' || p['icon.style'] === 'duotone' ? p['icon.style'] : 'outline'}
-            onPick={(n, style) => act.setProps({ icon: n, 'icon.style': style !== 'outline' ? style : null })} />
-          {p.icon && p.icon !== 'none' && !iconShape && (
-            <>
-              <div className="seg" style={{ marginTop: 6 }}>
-                {[['', 'Beside the text'], ['top', 'Above the text']].map(([v, l]) => (
-                  <button key={l} aria-label={l} title={`Icon ${l.toLowerCase()}`} className={(p['icon.pos'] ?? '') === v || (v === '' && p['icon.pos'] === 'left') ? 'on' : ''} onClick={() => act.setProp('icon.pos', v || null)}>{l.split(' ')[0]}</button>
-                ))}
-              </div>
-              <div className="seg" role="group" aria-label="Icon size" style={{ marginTop: 6 }}>
-                {[['Auto', ''], ['S', '16'], ['M', '24'], ['L', '32'], ['XL', '48']].map(([l, v]) => (
-                  <button key={l} title={v ? `${v}px` : 'Sized to fit the box'} className={(p['icon.size'] ?? '') === v ? 'on' : ''} onClick={() => act.setProp('icon.size', v || null)}>{l}</button>
-                ))}
-              </div>
-              {!sc.look.images.has(p.icon) && (
-                <>
-                  <div className="sublabel">Icon colour</div>
-                  <Swatches sc={sc} values={names} top={inks} current={p['icon.color']} onPick={(v) => act.setProp('icon.color', v)} custom="Custom icon colour" label="Icon colours" />
-                  <div className="sublabel">Icon tint</div>
-                  <Swatches sc={sc} values={iconFills} top={topIconFills} current={p['icon.fill'] ?? 'none'}
-                    onPick={(v) => act.setProp('icon.fill', v !== 'none' ? v : styleTints('icon.fill') ? 'none' : null)} custom="Custom icon fill" label="Icon fill colours" />
-                  <div className="sublabel">Icon weight</div>
-                  <IconWidths value={p['icon.width']} onPick={(v) => act.setProp('icon.width', v)} />
-                </>
-              )}
-            </>
-          )}
-        </section>
-      )}
-      {els.length === 1 && first.kind === 'shape' && first.el.rows && <RowsEditor rows={first.el.rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
-      {els.length === 1 && first.kind === 'shape' && !stroke && !first.el.legend && !first.el.rows && (
-        <section>
-          <h4>Text</h4>
-          <TextField label={caption ? 'Title' : 'Text'} value={first.el.text ?? ''} onCommit={act.setText} multiline />
-          {!caption && <TextField label="Second line" value={p.sub ?? ''} onCommit={(v) => act.setProp('sub', v || null)} />}
-          <TextField label="Corner tag" value={p.tag ?? ''} onCommit={(v) => act.setProp('tag', v || null)} />
-        </section>
-      )}
+
       {boxes >= 2 && (
-        <section>
-          <h4>Align</h4>
+        <Group title="Align">
           <div className="seg wrap">
             {aligns.map(([m, label, icon]) => <button key={m} title={label} aria-label={label} onClick={() => act.align(m)}>{icon}</button>)}
           </div>
-        </section>
+        </Group>
       )}
-      {els.every((e) => e!.kind !== 'conn') && (
-        <section>
-          <h4>Rotation</h4>
-          <Rotation value={turnOf(p)} act={act} />
-        </section>
-      )}
-      <section>
-        <h4>Opacity</h4>
-        <Opacity value={Math.round(Math.min(1, Math.max(0, Number(p.opacity ?? 1) || 0)) * 100)} own={els.some((e) => sc.look.styles.get(e!.el.style)?.props.opacity !== undefined)} act={act} />
-      </section>
-      <section>
-        <h4>Layers</h4>
-        <div className="seg">
-          <button title="Send to back (Ctrl+Shift+[)" aria-label="Send to back" onClick={() => act.reorder('back')}><ArrowDownToLine size={16} /></button>
-          <button title="Send backward (Ctrl+[)" aria-label="Send backward" onClick={() => act.reorder('backward')}><ArrowDown size={16} /></button>
-          <button title="Bring forward (Ctrl+])" aria-label="Bring forward" onClick={() => act.reorder('forward')}><ArrowUp size={16} /></button>
-          <button title="Bring to front (Ctrl+Shift+])" aria-label="Bring to front" onClick={() => act.reorder('front')}><ArrowUpToLine size={16} /></button>
-        </div>
-      </section>
-      <section>
-        <h4>Actions</h4>
-        <div className="seg">
-          <button title="Duplicate (Ctrl+D)" aria-label="Duplicate" onClick={act.duplicate}><Copy size={16} /></button>
-          <button title="Delete (Del)" aria-label="Delete" className="danger" onClick={act.remove}><Trash2 size={16} /></button>
-        </div>
-      </section>
+
+      <Arrange summary={[turnable ? `${turnOf(p)}°` : '', `${opacity}%`].filter(Boolean).join(' · ')}>
+        {turnable && <Row label="Rotation"><Rotation value={turnOf(p)} act={act} /></Row>}
+        <Row label="Opacity"><Opacity value={opacity} own={els.some((e) => sc.look.styles.get(e!.el.style)?.props.opacity !== undefined)} act={act} /></Row>
+        <Row label="Layer">
+          <div className="seg">
+            <button title="Send to back (Ctrl+Shift+[)" aria-label="Send to back" onClick={() => act.reorder('back')}><ArrowDownToLine size={16} /></button>
+            <button title="Send backward (Ctrl+[)" aria-label="Send backward" onClick={() => act.reorder('backward')}><ArrowDown size={16} /></button>
+            <button title="Bring forward (Ctrl+])" aria-label="Bring forward" onClick={() => act.reorder('forward')}><ArrowUp size={16} /></button>
+            <button title="Bring to front (Ctrl+Shift+])" aria-label="Bring to front" onClick={() => act.reorder('front')}><ArrowUpToLine size={16} /></button>
+          </div>
+        </Row>
+      </Arrange>
+
+      <div className="seg pfoot">
+        <button title="Duplicate (Ctrl+D)" aria-label="Duplicate" onClick={act.duplicate}><Copy size={16} /></button>
+        <button title="Delete (Del)" aria-label="Delete" className="danger" onClick={act.remove}><Trash2 size={16} /></button>
+      </div>
     </aside>
   );
+
+  // the text's alignment: a free text lines up inside its box (width=); one without a box shows none until it has one
+  function textAlign() {
+    return (
+      <div className="seg" role="radiogroup" aria-label="Text align">
+        {([['start', 'left', 'Left', <TextAlignStart size={16} />], ['middle', 'center', 'Centre', <TextAlignCenter size={16} />], ['end', 'right', 'Right', <TextAlignEnd size={16} />]] as const).map(([a, al, l, icon]) => {
+          const boxed = first.kind === 'text' && !!first.el.lines;
+          const on = kind === 'text' ? boxed && (p.align ?? 'left') === al : (p['title.align'] ?? 'center') === al;
+          const pick = () => kind === 'text' ? act.setTextAlign(al) : act.setProp('title.align', al === (styleProp('title.align') ?? 'center') ? null : al);
+          return <button key={a} role="radio" aria-checked={on} aria-label={`Align ${l.toLowerCase()}`} title={l} className={on ? 'on' : ''} onClick={pick}>{icon}</button>;
+        })}
+      </div>
+    );
+  }
 }

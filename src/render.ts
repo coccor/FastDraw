@@ -666,6 +666,18 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   switch (kind) {
     case 'none': return { svg: '', trim: 0 };
     case 'open': return { svg: `<path d="M ${at(10 * k, 5 * k)} L ${at(0, 0)} L ${at(10 * k, -5 * k)}" ${line}/>`, trim: 0 };
+    // swept back, with a notch where the line goes in
+    case 'stealth': return { svg: `<polygon points="${at(0, 0)} ${at(12 * k, 5 * k)} ${at(8 * k, 0)} ${at(12 * k, -5 * k)}" fill="${stroke}"/>`, trim: 8 * k };
+    // two heads one behind the other
+    case 'double': return { svg: `<polygon points="${at(0, 0)} ${at(10 * k, 4 * k)} ${at(10 * k, -4 * k)}" fill="${stroke}"/><polygon points="${at(7 * k, 0)} ${at(17 * k, 4 * k)} ${at(17 * k, -4 * k)}" fill="${stroke}"/>`, trim: 14 * k };
+    // a harpoon: one barb, on the left of the way the line runs
+    case 'half': return { svg: `<path d="M ${at(10 * k, -5 * k)} L ${at(0, 0)}" ${line}/>`, trim: 0 };
+    case 'square': return { svg: `<polygon points="${at(0, 4.5 * k)} ${at(9 * k, 4.5 * k)} ${at(9 * k, -4.5 * k)} ${at(0, -4.5 * k)}" ${hollow}/>`, trim: 9 * k };
+    case 'square-solid': return { svg: `<polygon points="${at(0, 4.5 * k)} ${at(9 * k, 4.5 * k)} ${at(9 * k, -4.5 * k)} ${at(0, -4.5 * k)}" fill="${stroke}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`, trim: 9 * k };
+    // a bar across the very end: the line stops here (blocks, inhibits)
+    case 'bar': return { svg: `<path d="M ${at(0, 6 * k)} L ${at(0, -6 * k)}" ${line}/>`, trim: 0 };
+    // an X over the end: cancelled, destroyed
+    case 'cross': return { svg: `<path d="M ${at(0, 4.5 * k)} L ${at(9 * k, -4.5 * k)} M ${at(0, -4.5 * k)} L ${at(9 * k, 4.5 * k)}" ${line}/>`, trim: 0 };
     case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11 * k, 6 * k)} ${at(11 * k, -6 * k)}" ${hollow}/>`, trim: 11 * k };
     // a stop on a route: a ring the line runs into, in the colour of the boxes' outline
     case 'stop': { const r = Math.max(4, sw / 2 + 3); return { svg: `<circle cx="${r2(tip.x)}" cy="${r2(tip.y)}" r="${r}" fill="${paper}" stroke="${ring2}" stroke-width="${Math.max(2, r2(sw * 0.45))}"/>`, trim: 0 }; }
@@ -680,6 +692,21 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
     case 'zero-one': return { svg: bar(8) + ring(16, 4, hollow), trim: 0 };
     case 'zero-many': return { svg: crow + ring(17, 4, hollow), trim: 0 };
     default: return { svg: `<polygon points="${at(0, 0)} ${at(10 * k, 4 * k)} ${at(10 * k, -4 * k)}" fill="${stroke}"/>`, trim: 7 * k };
+  }
+}
+
+// A line end on its own, for a picker: a short line across a w x h tile ending in `kind`, drawn as on the page and
+// never sketched. At the start the marker is on the left, as a tail on a line running to the right.
+export function markerPreview(kind: string, w: number, h: number, stroke: string, paper: string, start = false): string {
+  const amt = R.amt;
+  R.amt = 0;
+  try {
+    const y = h / 2, tip = { x: start ? 5 : w - 5, y }, other = { x: start ? w - 4 : 4, y };
+    const m = marker(kind, tip, other, 1.4, stroke, paper);
+    const cut = tip.x + (start ? m.trim : -m.trim);
+    return `<path d="M ${other.x},${y} L ${cut},${y}" fill="none" stroke="${stroke}" stroke-width="1.4"/>${m.svg}`;
+  } finally {
+    R.amt = amt;
   }
 }
 
@@ -706,6 +733,15 @@ function cutEnd(pts: Pt[], dist: number): Pt[] {
   return pts.slice(0, 2);
 }
 
+// A see-through colour, rgba(r,g,b,a) with a below 1, as the same colour solid and its alpha; null for any other.
+function seeThrough(c: string): { solid: string; a: number } | null {
+  if (!c.startsWith('rgba(') || !c.endsWith(')')) return null;
+  const v = c.slice(5, -1).split(',').map((x) => x.trim());
+  if (v.length !== 4 || v.some((x) => x === '' || isNaN(+x))) return null;
+  const a = +v[3];
+  return a < 1 ? { solid: `rgb(${v[0]},${v[1]},${v[2]})`, a } : null;
+}
+
 function drawConn(look: Look, c: Conn): string {
   // a line with fewer than two points (a route that simplified down to one) has nothing to draw
   if (c.pts.length < 2) return '';
@@ -714,19 +750,24 @@ function drawConn(look: Look, c: Conn): string {
   // a curve is many short steps: aim its ends along the last stretch of it, not the last step alone
   const hFrom = c.curve ? backAlong(c.pts, 10) : c.pts[n - 2], tFrom = c.curve ? backAlong([...c.pts].reverse(), 10) : c.pts[1];
   // head.size scales the arrowhead (a wide line needs a wide head); stop.color is the ring of a stop marker
-  const hk = Math.max(0.5, Math.min(num(p['head.size'], 1), 4)), ringCol = col(look, p['stop.color'] ?? p.stroke ?? 'muted');
-  const head = marker(c.headM, c.pts[n - 1], hFrom, sw, stroke, paper, hk, ringCol), tail = marker(c.tailM, c.pts[0], tFrom, sw, stroke, paper, hk, ringCol);
+  // a see-through line is drawn solid and faded as one layer, so where the line runs into a head, or a head's
+  // strokes cross, the overlap is no darker than the rest
+  const see = seeThrough(stroke), ink = see ? see.solid : stroke;
+  const hk = Math.max(0.5, Math.min(num(p['head.size'], 1), 4)), ringCol = p['stop.color'] ? col(look, p['stop.color']) : ink;
+  const head = marker(c.headM, c.pts[n - 1], hFrom, sw, ink, paper, hk, ringCol), tail = marker(c.tailM, c.pts[0], tFrom, sw, ink, paper, hk, ringCol);
   const d = c.curve
     ? pathD(cutEnd([...cutEnd(c.pts, head.trim)].reverse(), tail.trim).reverse(), 0, 0, 0) // a copy: the scene's own points stay as they are
     : pathD(c.pts, c.ortho ? num(p.radius, 8) : 0, head.trim, tail.trim);
   const cap = p.cap === 'round' ? ' stroke-linecap="round" stroke-linejoin="round"' : '';
-  const a = `fill="none" stroke="${stroke}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}${cap}${blendOf(p)}`;
+  const a = `fill="none" stroke="${ink}" stroke-width="${sw}"${p.dash && p.dash !== 'none' ? ` stroke-dasharray="${esc(p.dash)}"` : ''}${cap}${see ? '' : blendOf(p)}`;
   let s = roughOf(p) ? sketchSvg(d, a, roughOf(p)) : `<path d="${d}" ${a}/>`;
-  // casing=colour is a wider line underneath, so routes cross cleanly; double=colour is a finer line on top, making two rails
-  if (p.casing && p.casing !== 'none') s = `<path d="${d}" fill="none" stroke="${col(look, p.casing)}" stroke-width="${r2(sw + 2 * num(p['casing.width'], 2.5))}"${cap}/>\n` + s;
+  // double=colour is a finer line on top, making two rails
   if (p.double && p.double !== 'none') s += `\n<path d="${d}" fill="none" stroke="${col(look, p.double)}" stroke-width="${num(p['double.sw'], r2(sw * 0.42))}"${cap}/>`;
   if (head.svg) s += '\n' + head.svg;
   if (tail.svg) s += '\n' + tail.svg;
+  if (see) s = `<g opacity="${see.a}"${blendOf(p)}>${s}</g>`;
+  // casing=colour is a wider line underneath, so routes cross cleanly
+  if (p.casing && p.casing !== 'none') s = `<path d="${d}" fill="none" stroke="${col(look, p.casing)}" stroke-width="${r2(sw + 2 * num(p['casing.width'], 2.5))}"${cap}/>\n` + s;
   return s;
 }
 

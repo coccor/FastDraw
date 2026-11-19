@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Options panel directions</title>
+<style>
+@font-face { font-family: Geist; src: url(../../../fonts/Geist-Variable.woff2) format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url(../../../fonts/GeistMono-Regular.ttf); }
+:root {
+  --ink: #1b1d26; --mute: #6c7080; --line: #e2e4ea; --surface: #ffffff; --bg: #eef0f4;
+  --accent: #dc2f2f; --accent-soft: #fde3e1; --accent-ink: #b91f1f; --hover: #f3f4f8; --hover2: #e8eaf1;
+  --shadow: 0 1px 2px rgba(16,18,32,.06), 0 6px 20px rgba(16,18,32,.08);
+  --page: #f3f4f7; --dot: rgba(27,29,38,.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e2e8f0; --mute: #94a3b8; --line: #263253; --surface: #131c38; --bg: #0b1226;
+  --accent: #ff6b5f; --accent-soft: #39283e; --accent-ink: #ffb4ab; --hover: #222a45; --hover2: #28304a;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 Geist, system-ui, sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 40px 24px 80px; }
+h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em; }
+h2 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+.lede { color: var(--mute); max-width: 760px; margin: 0 0 8px; }
+.top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.theme { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
+.dir { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 28px; }
+.dir header { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; margin-bottom: 20px; }
+.dir header p { margin: 4px 0; color: var(--mute); max-width: 680px; }
+.dir header ul { margin: 8px 0 0; padding-left: 18px; color: var(--mute); }
+.facts { font-size: 13px; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); align-self: start; }
+.facts b { font-weight: 600; }
+.facts div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.facts div span:first-child { color: var(--mute); }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
+.boards { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+.board { display: flex; flex-direction: column; gap: 8px; }
+.board > .cap { font-size: 12px; color: var(--mute); }
+.stage { position: relative; display: flex; gap: 14px; align-items: flex-start; }
+
+/* the panel, as the editor draws it */
+.pn { width: 250px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); padding: 12px; display: flex; flex-direction: column; gap: 12px; font-size: 12px; }
+.pn h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--mute); }
+.sel { height: 30px; border: 1px solid var(--line); border-radius: 7px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; background: var(--surface); }
+.sel::after { content: ''; width: 7px; height: 7px; border-right: 1.5px solid var(--mute); border-bottom: 1.5px solid var(--mute); transform: rotate(45deg) translateY(-2px); }
+.sws { display: flex; align-items: center; gap: 5px; }
+.sw { width: 20px; height: 20px; border-radius: 5px; border: 1px solid rgba(22,24,40,.14); flex: none; }
+.sw.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sw.none { background: linear-gradient(to top right, #fff calc(50% - 1px), #e5484d 50%, #fff calc(50% + 1px)); }
+.sw.more { background: conic-gradient(#f87171, #facc15, #4ade80, #38bdf8, #818cf8, #e879f9, #f87171); }
+.div { width: 1px; height: 18px; background: var(--line); margin: 0 1px; flex: none; }
+.seg { display: flex; gap: 3px; flex: 1; }
+.seg > span { flex: 1; min-width: 0; height: 26px; border-radius: 6px; background: var(--hover); display: flex; align-items: center; justify-content: center; color: var(--ink); font-size: 11.5px; }
+.seg > span.on { background: var(--accent-soft); color: var(--accent-ink); }
+.seg.sm > span { height: 24px; }
+.in { flex: none; height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; display: flex; align-items: center; background: var(--surface); flex: 1; min-width: 0; }
+.in.ph { color: var(--mute); }
+.ico { display: flex; gap: 4px; }
+.ico > span { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+.ico > span.find { border-style: dashed; color: var(--mute); }
+svg.i { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.slider { flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--accent) 92%, var(--line) 92%); position: relative; }
+.slider::after { content: ''; position: absolute; right: 6%; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+
+/* A: label-left rows under group headings */
+.grp { display: flex; flex-direction: column; gap: 8px; }
+.grp + .grp { border-top: 1px solid var(--line); padding-top: 12px; }
+.gh { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); display: flex; justify-content: space-between; align-items: center; }
+.gh .chev { font-weight: 400; letter-spacing: 0; text-transform: none; }
+.row { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 8px; }
+.row > label { color: var(--mute); font-size: 11.5px; }
+.row > .ctl { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.row .in { flex: 1; }
+.mini { height: 24px; border-radius: 6px; background: var(--hover); display: flex; align-items: center; gap: 5px; padding: 0 7px; font-size: 11.5px; flex: none; }
+.mini::after { content: ''; width: 5px; height: 5px; border-right: 1.3px solid var(--mute); border-bottom: 1.3px solid var(--mute); transform: rotate(45deg) translateY(-2px); margin-left: 2px; }
+.foot { display: flex; gap: 4px; border-top: 1px solid var(--line); padding-top: 10px; }
+.foot > span { height: 28px; flex: 1; border-radius: 6px; background: var(--hover); display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.foot > span.bad { color: #e5484d; }
+
+/* B: tabs */
+.tabs { display: flex; gap: 2px; background: var(--hover); padding: 3px; border-radius: 8px; }
+.tabs > span { flex: 1; text-align: center; padding: 4px 0; border-radius: 6px; color: var(--mute); font-size: 12px; }
+.tabs > span.on { background: var(--surface); color: var(--ink); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+/* C: property list */
+.props { display: flex; flex-direction: column; margin: 0 -6px; }
+.prop { display: grid; grid-template-columns: 64px minmax(0, 1fr) 10px; align-items: center; gap: 8px; height: 34px; padding: 0 6px; border-radius: 7px; }
+.prop.open { background: var(--hover); }
+.prop > label { color: var(--mute); font-size: 11.5px; }
+.prop .v { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prop .v .dim { color: var(--mute); }
+.prop::after { content: ''; width: 6px; height: 6px; border-top: 1.4px solid var(--mute); border-right: 1.4px solid var(--mute); transform: rotate(45deg); }
+.dotc { width: 14px; height: 14px; border-radius: 4px; flex: none; border: 1px solid rgba(22,24,40,.14); }
+.pop { width: 236px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+.pop h5 { margin: 0; font-size: 12px; font-weight: 500; }
+.pop .sub { color: var(--mute); font-size: 11px; margin-bottom: -4px; }
+
+/* D: the canvas and a bar over the selection */
+.canvas { position: relative; width: 560px; height: 330px; border-radius: 12px; border: 1px solid var(--line); background: var(--page) radial-gradient(var(--dot) 1px, transparent 1.2px) 0 0 / 18px 18px; overflow: hidden; }
+.bar { position: absolute; display: flex; align-items: center; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 4px; font-size: 12px; }
+.bar > span { height: 30px; min-width: 30px; padding: 0 6px; border-radius: 7px; display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--ink); }
+.bar > span.on { background: var(--accent-soft); color: var(--accent-ink); }
+.bar > i { width: 1px; height: 20px; background: var(--line); margin: 0 3px; }
+.bar .dotc { width: 16px; height: 16px; border-radius: 50%; }
+.canvas .pop { position: absolute; }
+
+/* end tiles, as shipped in this branch */
+.ends { display: flex; gap: 3px; align-items: center; flex: 1; }
+.ends > span { flex: 1; height: 24px; border-radius: 6px; background: var(--hover); display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.ends > span.on { background: var(--accent-soft); color: var(--accent-ink); }
+.ends svg { width: 24px; height: 14px; display: block; }
+
+.baseline { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.baseline img { width: 250px; border-radius: 11px; box-shadow: var(--shadow); display: block; }
+.shot-dark { display: none !important; }
+html[data-theme="dark"] .shot-light { display: none !important; }
+html[data-theme="dark"] .shot-dark { display: block !important; }
+.note { font-size: 13px; color: var(--mute); max-width: 330px; }
+.note ol { padding-left: 18px; margin: 6px 0; }
+.rec { margin-top: 56px; border: 1px solid var(--accent); border-radius: 12px; padding: 18px 22px; background: var(--surface); }
+.rec h2 { margin-bottom: 6px; }
+.rec p { margin: 6px 0; max-width: 820px; }
+@media (max-width: 760px) { .dir header { grid-template-columns: 1fr; } .canvas { width: 100%; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="al-l" viewBox="0 0 16 16"><path d="M3 4h10M3 8h6M3 12h8"/></symbol>
+    <symbol id="al-c" viewBox="0 0 16 16"><path d="M3 4h10M5 8h6M4 12h8"/></symbol>
+    <symbol id="al-r" viewBox="0 0 16 16"><path d="M3 4h10M7 8h6M5 12h8"/></symbol>
+    <symbol id="server" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="4" rx="1"/><rect x="2.5" y="9" width="11" height="4" rx="1"/><path d="M5 5h.01M5 11h.01"/></symbol>
+    <symbol id="db" viewBox="0 0 16 16"><ellipse cx="8" cy="4" rx="5" ry="1.8"/><path d="M3 4v8c0 1 2.2 1.8 5 1.8s5-.8 5-1.8V4M3 8c0 1 2.2 1.8 5 1.8S13 9 13 8"/></symbol>
+    <symbol id="cloud" viewBox="0 0 16 16"><path d="M4.5 12.5h7a2.8 2.8 0 0 0 .3-5.6A4 4 0 0 0 4.2 7.6a2.5 2.5 0 0 0 .3 4.9z"/></symbol>
+    <symbol id="user" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.8-2.6 2.7-3.8 5-3.8s4.2 1.2 5 3.8"/></symbol>
+    <symbol id="lock" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></symbol>
+    <symbol id="find" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4"/><path d="m10 10 3 3"/></symbol>
+    <symbol id="back" viewBox="0 0 16 16"><path d="M8 3v8M4.5 7.5 8 11l3.5-3.5M3.5 13.5h9"/></symbol>
+    <symbol id="down" viewBox="0 0 16 16"><path d="M8 3v10M4.5 9.5 8 13l3.5-3.5"/></symbol>
+    <symbol id="up" viewBox="0 0 16 16"><path d="M8 13V3M4.5 6.5 8 3l3.5 3.5"/></symbol>
+    <symbol id="front" viewBox="0 0 16 16"><path d="M8 13V5M4.5 8.5 8 5l3.5 3.5M3.5 2.5h9"/></symbol>
+    <symbol id="copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3.8c0-.7-.6-1.3-1.3-1.3H3.8c-.7 0-1.3.6-1.3 1.3v5.4c0 .7.6 1.3 1.3 1.3h1.7"/></symbol>
+    <symbol id="trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"/></symbol>
+    <symbol id="turn" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5v2.5h2.5"/></symbol>
+    <symbol id="dots" viewBox="0 0 16 16"><path d="M4 8h.01M8 8h.01M12 8h.01" stroke-width="2.4"/></symbol>
+    <symbol id="type" viewBox="0 0 16 16"><path d="M3 4.5V3h10v1.5M8 3v10M6 13h4"/></symbol>
+    <symbol id="shape-o" viewBox="0 0 26 14"><path d="M3 11 H12 Q14 11 14 9 V5 Q14 3 16 3 H23"/></symbol>
+    <symbol id="shape-s" viewBox="0 0 26 14"><path d="M3 11 L23 3"/></symbol>
+    <symbol id="shape-c" viewBox="0 0 26 14"><path d="M3 11 C12 11 14 3 23 3"/></symbol>
+    <symbol id="e-none" viewBox="0 0 24 14"><path d="M3 7h18" stroke-width="1.3"/></symbol>
+    <symbol id="e-arrow" viewBox="0 0 24 14"><path d="M3 7h12" stroke-width="1.3"/><path d="M21 7l-7 3V4z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="e-open" viewBox="0 0 24 14"><path d="M3 7h18M14 3.5 21 7l-7 3.5" stroke-width="1.3"/></symbol>
+    <symbol id="e-stealth" viewBox="0 0 24 14"><path d="M3 7h10" stroke-width="1.3"/><path d="M21 7l-9 4 3-4-3-4z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="e-tri" viewBox="0 0 24 14"><path d="M3 7h10" stroke-width="1.3"/><path d="M21 7l-8 4V3z" stroke-width="1.3" fill="var(--surface)"/></symbol>
+    <symbol id="e-dot" viewBox="0 0 24 14"><path d="M3 7h14" stroke-width="1.3"/><circle cx="18" cy="7" r="3" fill="currentColor" stroke="none"/></symbol>
+  </defs>
+</svg>
+<main>
+  <div class="top">
+    <div>
+      <h1>The options panel: four ways to organise it</h1>
+      <p class="lede">Same selections in every direction: the <b>Orders API</b> box (focal style) and the <b>writes</b> arrow (primary style), with every option the panel offers today. Nothing here is built yet: pick one (or a mix) and I'll change the editor.</p>
+    </div>
+    <button class="theme" onclick="const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'">Light / dark</button>
+  </div>
+
+  <section class="dir">
+    <header>
+      <div>
+        <h2>Today</h2>
+        <p>Every option is its own section with a heading, all at the same weight, in one long column.</p>
+      </div>
+    </header>
+    <div class="baseline">
+      <img class="shot-light" src="now-box-light.png" alt="The panel today with a box selected"><img class="shot-dark" src="now-box-dark.png" alt="The panel today with a box selected, dark">
+      <img class="shot-light" src="now-line-light.png" alt="The panel today with a line selected"><img class="shot-dark" src="now-line-dark.png" alt="The panel today with a line selected, dark">
+      <div class="note">
+        <b>What makes it read as cluttered</b>
+        <ol>
+          <li>17 sections for a box, 13 for a line, each with the same heading and spacing: nothing says what matters.</li>
+          <li>Three rows of the same five swatches (background, stroke, text colour) look alike at a glance.</li>
+          <li>The text of the box, the thing edited most, is at the very bottom, under Icon.</li>
+          <li>One idea is spread over several rows: stroke is colour + style + width; text is size + font + align + colour.</li>
+          <li>Rotation, opacity, layers and actions are rare, but sit at full weight between the rest.</li>
+        </ol>
+        A box's panel is 1100px tall; on a laptop it scrolls.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== A ===================== -->
+  <section class="dir">
+    <header>
+      <div>
+        <h2><span class="tag">A</span>Grouped inspector</h2>
+        <p>Four groups with small capital headings (Content, Appearance, Text, Arrange) instead of 17 headings. Inside, one line per option: the name on the left, the control on the right. Related controls share a line: a stroke's colour, dash and width are one row; size and font are one row.</p>
+        <ul>
+          <li>Every control is still one click away, as today.</li>
+          <li>Content comes first; Arrange is folded shut until opened, and Duplicate / Delete sit in a footer.</li>
+        </ul>
+      </div>
+      <div class="facts">
+        <div><span>Box panel height</span><b>~590px (today 1100)</b></div>
+        <div><span>Line panel height</span><b>~440px (today 920)</b></div>
+        <div><span>Clicks to any option</span><b>1</b></div>
+        <div><span>Change from today</span><b>small: same controls, regrouped</b></div>
+      </div>
+    </header>
+    <div class="boards">
+      <div class="board"><div class="cap">Box selected</div>
+        <div class="pn">
+          <div class="sel">focal</div>
+          <div class="grp">
+            <div class="gh">Content</div>
+            <div class="row"><label>Text</label><div class="ctl"><div class="in">Orders API</div></div></div>
+            <div class="row"><label>Below</label><div class="ctl"><div class="in">REST</div></div></div>
+            <div class="row"><label>Tag</label><div class="ctl"><div class="in ph">Corner tag</div></div></div>
+            <div class="row"><label>Icon</label><div class="ctl ico">
+              <span><svg class="i"><use href="#server"/></svg></span><span><svg class="i"><use href="#db"/></svg></span><span><svg class="i"><use href="#cloud"/></svg></span><span><svg class="i"><use href="#user"/></svg></span><span class="find"><svg class="i"><use href="#find"/></svg></span>
+            </div></div>
+          </div>
+          <div class="grp">
+            <div class="gh">Appearance</div>
+            <div class="row"><label>Fill</label><div class="ctl sws"><span class="sw none"></span><span class="sw" style="background:#fde8e8"></span><span class="sw" style="background:#e6f1fb"></span><span class="sw" style="background:#e6f4f1"></span><span class="sw" style="background:#fdf3e6"></span><span class="div"></span><span class="sw on" style="background:#fde3e1"></span></div></div>
+            <div class="row"><label>Stroke</label><div class="ctl sws"><span class="sw" style="background:#12131a"></span><span class="sw on" style="background:#dc2f2f"></span><span class="sw" style="background:#0b84d6"></span><span class="sw" style="background:#0f9488"></span><span class="sw" style="background:#d97706"></span><span class="div"></span><span class="sw more"></span></div></div>
+            <div class="row"><label></label><div class="ctl"><div class="seg sm"><span class="on"><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0.1 3.4"/></svg></span></div><div class="seg sm" style="flex:.9"><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="1"/></svg></span><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="2"/></svg></span><span class="on"><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span></div></div></div>
+          </div>
+          <div class="grp">
+            <div class="gh">Text</div>
+            <div class="row"><label>Size</label><div class="ctl"><div class="seg sm"><span>S</span><span class="on">M</span><span>L</span><span>XL</span></div></div></div>
+            <div class="row"><label>Font</label><div class="ctl"><div class="seg sm"><span class="on">Sans</span><span style="font-family:'Geist Mono'">Mono</span><span style="font-family:Georgia,serif">Serif</span></div></div></div>
+            <div class="row"><label>Align</label><div class="ctl"><div class="seg sm" style="flex:1.2"><span><svg class="i"><use href="#al-l"/></svg></span><span class="on"><svg class="i"><use href="#al-c"/></svg></span><span><svg class="i"><use href="#al-r"/></svg></span></div><span class="sw on" style="background:#dc2f2f;width:24px;height:24px;margin-left:4px" title="Text colour"></span></div></div>
+          </div>
+          <div class="grp">
+            <div class="gh">Arrange <span class="chev">Rotation, opacity, layers ▸</span></div>
+          </div>
+          <div class="foot"><span><svg class="i"><use href="#copy"/></svg></span><span class="bad"><svg class="i"><use href="#trash"/></svg></span></div>
+        </div>
+      </div>
+      <div class="board"><div class="cap">Line selected</div>
+        <div class="pn">
+          <div class="sel">primary</div>
+          <div class="grp">
+            <div class="gh">Line</div>
+            <div class="row"><label>Colour</label><div class="ctl sws"><span class="sw" style="background:#12131a"></span><span class="sw on" style="background:#dc2f2f"></span><span class="sw" style="background:#0b84d6"></span><span class="sw" style="background:#0f9488"></span><span class="sw" style="background:#d97706"></span><span class="div"></span><span class="sw more"></span></div></div>
+            <div class="row"><label>Stroke</label><div class="ctl"><div class="seg sm"><span class="on"><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0.1 3.4"/></svg></span></div><div class="seg sm" style="flex:.9"><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="1"/></svg></span><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="2"/></svg></span><span class="on"><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span></div></div></div>
+            <div class="row"><label>Shape</label><div class="ctl"><div class="seg sm"><span class="on"><svg class="i" style="width:22px;height:12px"><use href="#shape-o"/></svg></span><span><svg class="i" style="width:22px;height:12px"><use href="#shape-s"/></svg></span><span><svg class="i" style="width:22px;height:12px"><use href="#shape-c"/></svg></span></div></div></div>
+            <div class="row"><label>Start</label><div class="ctl ends"><span class="on"><svg class="i" style="transform:scaleX(-1)"><use href="#e-none"/></svg></span><span><svg class="i" style="transform:scaleX(-1)"><use href="#e-arrow"/></svg></span><span><svg class="i" style="transform:scaleX(-1)"><use href="#e-open"/></svg></span><span><svg class="i" style="transform:scaleX(-1)"><use href="#e-stealth"/></svg></span><span><svg class="i"><use href="#dots"/></svg></span></div></div>
+            <div class="row"><label>End</label><div class="ctl ends"><span><svg class="i"><use href="#e-none"/></svg></span><span class="on"><svg class="i"><use href="#e-arrow"/></svg></span><span><svg class="i"><use href="#e-open"/></svg></span><span><svg class="i"><use href="#e-stealth"/></svg></span><span><svg class="i"><use href="#dots"/></svg></span></div></div>
+          </div>
+          <div class="grp">
+            <div class="gh">Label</div>
+            <div class="row"><label>Place</label><div class="ctl"><div class="seg sm"><span class="on">Above</span><span>Below</span><span>Left</span></div></div></div>
+            <div class="row"><label>Text</label><div class="ctl"><div class="seg sm" style="flex:.8"><span>S</span><span class="on">M</span><span>L</span></div><div class="mini">Sans</div><span class="sw on" style="background:#dc2f2f;width:24px;height:24px"></span></div></div>
+          </div>
+          <div class="grp">
+            <div class="gh">Arrange <span class="chev">Opacity, layers ▸</span></div>
+          </div>
+          <div class="foot"><span><svg class="i"><use href="#copy"/></svg></span><span class="bad"><svg class="i"><use href="#trash"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B ===================== -->
+  <section class="dir">
+    <header>
+      <div>
+        <h2><span class="tag">B</span>Tabs</h2>
+        <p>The panel keeps today's sections but splits them across tabs at the top: <b>Content · Style · Text · Arrange</b> for a box, <b>Line · Label · Arrange</b> for a line. Only one tab shows at a time, so each view is short.</p>
+        <ul>
+          <li>Short panel, and each tab can keep today's roomy layout.</li>
+          <li>Options on other tabs are out of sight: changing a fill then a font is two tab switches. The editor remembers the last tab per kind.</li>
+        </ul>
+      </div>
+      <div class="facts">
+        <div><span>Box panel height</span><b>~330px per tab</b></div>
+        <div><span>Line panel height</span><b>~360px per tab</b></div>
+        <div><span>Clicks to any option</span><b>1–2</b></div>
+        <div><span>Change from today</span><b>medium</b></div>
+      </div>
+    </header>
+    <div class="boards">
+      <div class="board"><div class="cap">Box selected, Style tab</div>
+        <div class="pn">
+          <div class="tabs"><span>Content</span><span class="on">Style</span><span>Text</span><span>Arrange</span></div>
+          <div><h4>Style</h4><div class="sel">focal</div></div>
+          <div><h4>Background</h4><div class="sws"><span class="sw none"></span><span class="sw" style="background:#fde8e8"></span><span class="sw" style="background:#e6f1fb"></span><span class="sw" style="background:#e6f4f1"></span><span class="sw" style="background:#fdf3e6"></span><span class="div"></span><span class="sw on" style="background:#fde3e1"></span></div></div>
+          <div><h4>Stroke</h4><div class="sws"><span class="sw" style="background:#12131a"></span><span class="sw on" style="background:#dc2f2f"></span><span class="sw" style="background:#0b84d6"></span><span class="sw" style="background:#0f9488"></span><span class="sw" style="background:#d97706"></span><span class="div"></span><span class="sw more"></span></div></div>
+          <div><h4>Stroke style</h4><div class="seg"><span class="on"><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0.1 3.4"/></svg></span></div></div>
+          <div><h4>Stroke width</h4><div class="seg"><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="1"/></svg></span><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="2"/></svg></span><span class="on"><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span></div></div>
+        </div>
+      </div>
+      <div class="board"><div class="cap">Box selected, Content tab</div>
+        <div class="pn">
+          <div class="tabs"><span class="on">Content</span><span>Style</span><span>Text</span><span>Arrange</span></div>
+          <div><h4>Text</h4><div class="in">Orders API</div></div>
+          <div><h4>Second line</h4><div class="in">REST</div></div>
+          <div><h4>Corner tag</h4><div class="in ph">Corner tag</div></div>
+          <div><h4>Icon</h4><div class="ico"><span><svg class="i"><use href="#server"/></svg></span><span><svg class="i"><use href="#db"/></svg></span><span><svg class="i"><use href="#cloud"/></svg></span><span><svg class="i"><use href="#user"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span class="find"><svg class="i"><use href="#find"/></svg></span></div></div>
+        </div>
+      </div>
+      <div class="board"><div class="cap">Line selected, Line tab</div>
+        <div class="pn">
+          <div class="tabs"><span class="on">Line</span><span>Label</span><span>Arrange</span></div>
+          <div><h4>Style</h4><div class="sel">primary</div></div>
+          <div><h4>Colour</h4><div class="sws"><span class="sw" style="background:#12131a"></span><span class="sw on" style="background:#dc2f2f"></span><span class="sw" style="background:#0b84d6"></span><span class="sw" style="background:#0f9488"></span><span class="sw" style="background:#d97706"></span><span class="div"></span><span class="sw more"></span></div></div>
+          <div><h4>Shape</h4><div class="seg"><span class="on"><svg class="i" style="width:22px;height:12px"><use href="#shape-o"/></svg></span><span><svg class="i" style="width:22px;height:12px"><use href="#shape-s"/></svg></span><span><svg class="i" style="width:22px;height:12px"><use href="#shape-c"/></svg></span></div></div>
+          <div><h4>Ends</h4>
+            <div class="ends" style="margin-bottom:4px"><span class="on"><svg class="i" style="transform:scaleX(-1)"><use href="#e-none"/></svg></span><span><svg class="i" style="transform:scaleX(-1)"><use href="#e-arrow"/></svg></span><span><svg class="i" style="transform:scaleX(-1)"><use href="#e-open"/></svg></span><span><svg class="i" style="transform:scaleX(-1)"><use href="#e-stealth"/></svg></span><span><svg class="i"><use href="#dots"/></svg></span></div>
+            <div class="ends"><span><svg class="i"><use href="#e-none"/></svg></span><span class="on"><svg class="i"><use href="#e-arrow"/></svg></span><span><svg class="i"><use href="#e-open"/></svg></span><span><svg class="i"><use href="#e-stealth"/></svg></span><span><svg class="i"><use href="#dots"/></svg></span></div>
+          </div>
+          <div><h4>Stroke</h4><div class="seg sm"><span class="on"><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0.1 3.4"/></svg></span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== C ===================== -->
+  <section class="dir">
+    <header>
+      <div>
+        <h2><span class="tag">C</span>Property list</h2>
+        <p>One line per property, each saying its current value in words and colour: <i>Stroke ● Red · solid · bold</i>. Clicking a line opens its controls in a popover beside the panel, the way <b>More line ends</b> and the colour picker already do. The panel itself becomes a readable summary of the selection.</p>
+        <ul>
+          <li>Shortest panel, and it shows the state of everything at a glance.</li>
+          <li>Every change is two clicks (open, pick). Text is still typed straight into the first line.</li>
+        </ul>
+      </div>
+      <div class="facts">
+        <div><span>Box panel height</span><b>~400px</b></div>
+        <div><span>Line panel height</span><b>~340px</b></div>
+        <div><span>Clicks to any option</span><b>2</b></div>
+        <div><span>Change from today</span><b>large</b></div>
+      </div>
+    </header>
+    <div class="boards">
+      <div class="board"><div class="cap">Box selected, Stroke open</div>
+        <div class="stage">
+          <div class="pn">
+            <div class="sel">focal</div>
+            <div class="in">Orders API</div>
+            <div class="in">REST</div>
+            <div class="props">
+              <div class="prop"><label>Icon</label><span class="v"><span class="dim">None</span></span></div>
+              <div class="prop"><label>Fill</label><span class="v"><span class="dotc" style="background:#fde3e1"></span>Rose tint</span></div>
+              <div class="prop open"><label>Stroke</label><span class="v"><span class="dotc" style="background:#dc2f2f"></span>Red · solid · bold</span></div>
+              <div class="prop"><label>Text</label><span class="v">Sans 12 · centre <span class="dotc" style="background:#dc2f2f;width:10px;height:10px"></span></span></div>
+              <div class="prop"><label>Tag</label><span class="v"><span class="dim">None</span></span></div>
+              <div class="prop"><label>Rotation</label><span class="v">0°</span></div>
+              <div class="prop"><label>Opacity</label><span class="v">100%</span></div>
+            </div>
+            <div class="foot"><span><svg class="i"><use href="#back"/></svg></span><span><svg class="i"><use href="#front"/></svg></span><span><svg class="i"><use href="#copy"/></svg></span><span class="bad"><svg class="i"><use href="#trash"/></svg></span></div>
+          </div>
+          <div class="pop" style="margin-top:150px">
+            <h5>Stroke</h5>
+            <div class="sws"><span class="sw" style="background:#12131a"></span><span class="sw on" style="background:#dc2f2f"></span><span class="sw" style="background:#0b84d6"></span><span class="sw" style="background:#0f9488"></span><span class="sw" style="background:#d97706"></span><span class="div"></span><span class="sw more"></span></div>
+            <div class="sub">Style</div>
+            <div class="seg"><span class="on"><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0.1 3.4"/></svg></span></div>
+            <div class="sub">Width</div>
+            <div class="seg"><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="1"/></svg></span><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="2"/></svg></span><span class="on"><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="board"><div class="cap">Line selected</div>
+        <div class="pn">
+          <div class="sel">primary</div>
+          <div class="in">writes</div>
+          <div class="props">
+            <div class="prop"><label>Stroke</label><span class="v"><span class="dotc" style="background:#dc2f2f"></span>Red · solid · bold</span></div>
+            <div class="prop"><label>Shape</label><span class="v"><svg class="i" style="width:22px;height:12px"><use href="#shape-o"/></svg>Right angles</span></div>
+            <div class="prop"><label>Ends</label><span class="v"><svg class="i" style="width:22px;height:13px"><use href="#e-none"/></svg><span class="dim">to</span><svg class="i" style="width:22px;height:13px"><use href="#e-arrow"/></svg></span></div>
+            <div class="prop"><label>Label</label><span class="v">Above · Sans 10 <span class="dotc" style="background:#dc2f2f;width:10px;height:10px"></span></span></div>
+            <div class="prop"><label>Opacity</label><span class="v">100%</span></div>
+          </div>
+          <div class="foot"><span><svg class="i"><use href="#back"/></svg></span><span><svg class="i"><use href="#front"/></svg></span><span><svg class="i"><use href="#copy"/></svg></span><span class="bad"><svg class="i"><use href="#trash"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== D ===================== -->
+  <section class="dir">
+    <header>
+      <div>
+        <h2><span class="tag">D</span>Bar over the selection</h2>
+        <p>No sidebar while you draw. A short bar floats just above what is selected, with one button per idea (style, fill, stroke, text, icon or ends), each opening a small popover. Text is typed on the canvas as now. The rare options (rotation, opacity, layers) sit behind <b>⋯</b>.</p>
+        <ul>
+          <li>The whole canvas stays visible, and the controls are where your eyes already are.</li>
+          <li>The bar has to dodge the selection and the edges of the view. With many boxes selected it sits over the group.</li>
+        </ul>
+      </div>
+      <div class="facts">
+        <div><span>Space taken</span><b>one 40px bar</b></div>
+        <div><span>Clicks to any option</span><b>2</b></div>
+        <div><span>Change from today</span><b>largest: new place, new pattern</b></div>
+      </div>
+    </header>
+    <div class="boards">
+      <div class="board"><div class="cap">Box selected, Stroke open</div>
+        <div class="canvas">
+          <div style="position:absolute;left:60px;top:150px;width:150px;height:62px;border:1.5px solid #dc2f2f;background:#fde3e1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#dc2f2f;font-weight:600;font-size:13px">Orders API<span style="font-weight:400;font-size:10px;color:#6c7080">REST</span></div>
+          <div style="position:absolute;left:56px;top:146px;width:158px;height:70px;border:1px solid var(--accent);border-radius:12px"></div>
+          <div style="position:absolute;left:210px;top:180px;width:120px;height:2px;background:#dc2f2f"></div>
+          <div style="position:absolute;left:330px;top:156px;width:130px;height:52px;border:1px solid #c9ccd4;background:#e6e7ea;border-radius:50%/14px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#1b1d26">Orders DB</div>
+          <div class="bar" style="left:34px;top:96px">
+            <span>focal <svg width="8" height="8"><path d="M1 3l3 3 3-3" stroke="currentColor" fill="none"/></svg></span><i></i>
+            <span title="Fill"><span class="dotc" style="background:#fde3e1"></span></span>
+            <span class="on" title="Stroke"><span class="dotc" style="background:transparent;border:2.5px solid #dc2f2f"></span></span>
+            <span title="Text"><svg class="i"><use href="#type"/></svg></span>
+            <span title="Icon"><svg class="i"><use href="#server"/></svg></span><i></i>
+            <span title="More"><svg class="i"><use href="#dots"/></svg></span>
+          </div>
+                    <div class="pop" style="left:326px;top:16px;width:216px">
+            <h5>Stroke</h5>
+            <div class="sws"><span class="sw" style="background:#12131a"></span><span class="sw on" style="background:#dc2f2f"></span><span class="sw" style="background:#0b84d6"></span><span class="sw" style="background:#0f9488"></span><span class="sw" style="background:#d97706"></span><span class="div"></span><span class="sw more"></span></div>
+            <div class="seg sm"><span class="on"><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/></svg></span><span><svg width="20" height="6"><path d="M2 3h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0.1 3.4"/></svg></span></div>
+            <div class="seg sm"><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="1"/></svg></span><span><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="2"/></svg></span><span class="on"><svg width="16" height="6"><path d="M1 3h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="board"><div class="cap">Line selected</div>
+        <div class="canvas" style="width:520px">
+          <div style="position:absolute;left:40px;top:150px;width:150px;height:62px;border:1.5px solid #dc2f2f;background:#fde3e1;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#dc2f2f;font-weight:600;font-size:13px">Orders API</div>
+          <div style="position:absolute;left:190px;top:180px;width:160px;height:2.5px;background:#dc2f2f"></div>
+          <svg style="position:absolute;left:340px;top:175px" width="14" height="12"><path d="M14 6 0 12V0z" fill="#dc2f2f"/></svg>
+          <div style="position:absolute;left:250px;top:160px;font-size:10px;color:#dc2f2f">WRITES</div>
+          <div style="position:absolute;left:186px;top:176px;width:8px;height:8px;border-radius:50%;background:#fff;border:1.5px solid var(--accent)"></div>
+          <div style="position:absolute;left:350px;top:176px;width:8px;height:8px;border-radius:50%;background:#fff;border:1.5px solid var(--accent)"></div>
+          <div style="position:absolute;left:356px;top:156px;width:130px;height:52px;border:1px solid #c9ccd4;background:#e6e7ea;border-radius:50%/14px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#1b1d26">Orders DB</div>
+          <div class="bar" style="left:86px;top:100px">
+            <span>primary <svg width="8" height="8"><path d="M1 3l3 3 3-3" stroke="currentColor" fill="none"/></svg></span><i></i>
+            <span title="Stroke"><span class="dotc" style="background:transparent;border:2.5px solid #dc2f2f"></span></span>
+            <span title="Shape"><svg class="i" style="width:22px;height:12px"><use href="#shape-o"/></svg></span>
+            <span title="Start"><svg class="i" style="width:22px;height:13px;transform:scaleX(-1)"><use href="#e-none"/></svg></span>
+            <span title="End"><svg class="i" style="width:22px;height:13px"><use href="#e-arrow"/></svg></span>
+            <span title="Label"><svg class="i"><use href="#type"/></svg></span><i></i>
+            <span title="More"><svg class="i"><use href="#dots"/></svg></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rec">
+    <h2>My pick: A, the grouped inspector</h2>
+    <p>It removes most of the clutter (four group headings instead of 17, the box panel roughly half as tall, content first, rare options folded away) while every control stays one click away and works exactly as it does now. It is the smallest step from today, so it is also the cheapest to try and to undo.</p>
+    <p>C reads best and is shortest, but it makes every change two clicks; it could come later for the rarer properties only (Arrange as a property list). B hides options behind tabs, and D is a different editor, worth it only if you want the canvas to be clear of panels.</p>
+  </section>
+</main>
+</body>
+</html>
