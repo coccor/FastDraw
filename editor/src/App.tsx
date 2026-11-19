@@ -1354,7 +1354,7 @@ export function App() {
     const boxWidth = edEl?.kind === 'text' && edEl.el.lines ? Number(edEl.el.p.width) || 0 : 0;
     // a turned shape or text draws its label in a turned group: the field turns the same way about the same point
     let turn: EdLook['turn'];
-    for (let n = hits[0].parentElement; n && n !== g && n !== probe && !turn; n = n.parentElement) {
+    for (let n: Element | null = hits[0].parentElement; n && n !== g && n !== probe && !turn; n = n.parentElement) {
       const m = /rotate\(\s*(-?[\d.]+)[\s,]+(-?[\d.]+)[\s,]+(-?[\d.]+)\s*\)/.exec(n.getAttribute('transform') ?? '');
       if (m) turn = { a: +m[1]!, cx: +m[2]!, cy: +m[3]! };
     }
