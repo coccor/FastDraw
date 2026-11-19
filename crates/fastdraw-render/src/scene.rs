@@ -1828,7 +1828,11 @@ impl Builder {
         }
         let mut wrapped = None;
         if bw > 0.0 {
-            let l = wrap_lines(&t2, bw, measure);
+            // the lines break where the drawn words reach the box's edge, measured in the look's own font
+            let look = self.look.clone();
+            let l = wrap_lines(&t2, bw, |l: &str| {
+                measure_text(&look, l, fs, font, weight, spacing)
+            });
             n_lines = l.len();
             wrapped = Some(l);
             w = bw;

@@ -878,3 +878,14 @@ test('a text box wraps its words to its width and lines them up with align=', ()
   const svg = renderSvg(sc), ys = [...svg.matchAll(/<text x="130" y="([\d.]+)" text-anchor="end"/g)].map((m) => +m[1]);
   assert.equal(ys.length, t.lines!.length); // every line at the right edge
 });
+
+test('a text box wraps where its drawn words reach the edge, measured in the look\'s font', async () => {
+  const { measureText } = await import('../src/scene.ts');
+  const lk = defaultLook(), words = 'Orders are checked before payment';
+  for (const font of ['serif', 'sans', 'mono']) {
+    const full = measureText(lk, words, 16, font, 400, 0);
+    const lines = (w: number) => buildScene(`n: text "${words}" at 10,10 width=${w} font=${font} size=16`, lk).texts[0]!.lines!;
+    assert.deepEqual(lines(Math.ceil(full) + 1), [words], `${font}: a box just wider than the words keeps one line`);
+    assert.equal(lines(Math.floor(full) - 1).length, 2, `${font}: a box just narrower breaks once`);
+  }
+});
