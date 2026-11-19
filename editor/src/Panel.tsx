@@ -162,6 +162,15 @@ const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
 );
 
 // An icon's stroke width in pixels; Regular leaves it to the icon's size.
+// The stroke widths the panel offers. A width set by a look or by hand (an arrow's 1.4, a focal box's 2) shows as
+// the nearest of them, nearest by ratio, since a step from 1 to 1.4 looks as big as one from 2 to 2.8.
+const WIDTHS = [['Thin', '1', 1.2], ['Medium', '1.6', 2.2], ['Bold', '2.4', 3.4]] as const;
+function widthOf(sw: string | undefined): string {
+  const n = Number(sw ?? '1');
+  if (!(n > 0)) return '1';
+  return WIDTHS.reduce((a, b) => (Math.abs(Math.log(n / +b[1])) < Math.abs(Math.log(n / +a[1])) ? b : a))[1];
+}
+
 function IconWidths({ value, onPick }: { value: string | undefined; onPick: (v: string | null) => void }) {
   return (
     // the line thickness in pixels; a built-in icon takes the nearest of its weights
@@ -307,8 +316,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <section>
             <h4>Stroke width</h4>
             <div className="seg">
-              {[['Thin', '1', 1.2], ['Medium', '1.6', 2.2], ['Bold', '2.4', 3.4]].map(([l, v, w]) => (
-                <button key={l as string} title={l as string} className={(p.sw ?? '1') === v ? 'on' : ''} onClick={() => act.setProp('sw', v as string)}><Stroke w={w as number} /></button>
+              {WIDTHS.map(([l, v, w]) => (
+                <button key={l} title={l} className={widthOf(p.sw) === v ? 'on' : ''} onClick={() => act.setProp('sw', v === widthOf(styleProp('sw')) ? null : v)}><Stroke w={w} /></button>
               ))}
             </div>
           </section>

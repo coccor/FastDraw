@@ -596,6 +596,45 @@ test('the panel names every line end, its arrowheads follow the ends as drawn, a
   expect(errors).toEqual([]);
 });
 
+test('stroke width shows the nearest width for a look\'s own widths, and picking it again keeps the look\'s', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await page.goto('/edit/');
+  await page.waitForSelector('.welcome');
+  await page.getByRole('button', { name: 'Architecture', exact: true }).click();
+  await page.waitForSelector('svg.canvas');
+  const pick = async (id: string) => {
+    await page.keyboard.press('Escape');
+    const b = (await page.locator(`polyline[data-id="${id}"]`).boundingBox())!;
+    await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+  };
+  const widthOn = page.locator('.panel section:has(h4:text-is("Stroke width")) button.on');
+  const line = async () => (await source(page)).split('\n').find((l) => l.startsWith('cf -> astro'))!;
+  await pick('_c19'); // cf -> astro style=primary: sw=1.4 in the look
+  await expect(widthOn).toHaveAttribute('title', 'Medium');
+  await widthOn.click();
+  expect(await line()).toBe('cf -> astro "passes on" style=primary');
+  await page.locator('.panel button[title="Bold"]').click();
+  expect(await line()).toBe('cf -> astro "passes on" style=primary sw=2.4');
+  await expect(widthOn).toHaveAttribute('title', 'Bold');
+  await page.locator('.panel button[title="Medium"]').click();
+  expect(await line()).toBe('cf -> astro "passes on" style=primary');
+  await pick('_c17'); // reader -> cf style=link: sw=1.2
+  await expect(widthOn).toHaveAttribute('title', 'Thin');
+  expect(errors).toEqual([]);
+});
+
+test('a stroke width an agent wrote by hand shows as the nearest of the panel\'s widths', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const widthOn = page.locator('.panel section:has(h4:text-is("Stroke width")) button.on');
+  await paste(page, 'a: node "A" at 40,40 sw=1.8\nb: node "B" at 240,40 sw=3\n');
+  await page.mouse.click(...Object.values(await corner(page, 'a')) as [number, number]);
+  await expect(widthOn).toHaveAttribute('title', 'Medium');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(...Object.values(await corner(page, 'b')) as [number, number]);
+  await expect(widthOn).toHaveAttribute('title', 'Bold');
+  expect(errors).toEqual([]);
+});
+
 test('spaces in a text are drawn on the canvas as written, and an indented cell keeps its spaces through the panel', async ({ page }) => {
   await paste(page, 'canvas 600x300\na: text "abc" at 40,40 font=mono\nb: text "    abc" at 40,70 font=mono\nt: table "T" at 40,120\n  | "x" "    y"\n');
   const len = (s: string) => page.locator('svg.canvas text').evaluateAll((ts, s) => (ts.find((t) => t.textContent === s) as SVGTextElement).getComputedTextLength(), s);
