@@ -80,6 +80,12 @@ test('delete, append, reorder, fresh ids', () => {
   assert.equal(moveStatement(src, 4, 'back').split('\n')[2], 'b: node at 0,80');
   assert.equal(freshId(src, 'a'), 'a2');
   assert.equal(freshId(src, 'node'), 'node');
+  const rects = 'rect: rect at 0,0\nrect2: rect at 0,40\nrect3: rect at 0,80\n';
+  assert.equal(freshId(rects, 'rect3'), 'rect4');
+  assert.equal(freshId(rects, 'rect2'), 'rect4');
+  assert.equal(freshId('s3: node at 0,0\n', 's3'), 's4');
+  assert.equal(freshId('a: node at 0,0\nv2: node at 0,40\n', 'v2'), 'v3');
+  assert.equal(freshId(rects, 'v2'), 'v2');
 });
 
 test('aligned boxes get a straight arrow; unaligned ones get one elbow', () => {
