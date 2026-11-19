@@ -542,8 +542,12 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (p.rotate !== undefined && !isFinite(+p.rotate)) err(st.line, `rotate=${p.rotate}: an angle in degrees, turning clockwise (rotate=-90 reads upwards)`);
       const rot = num(p.rotate, 0);
       const dx = x - at.x; // where the text starts, measured along its own baseline
-      const flat = { x, y: at.y - fs, w, h: th };
-      const bx = rot === -90 ? { x: at.x - fs, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs, y: at.y + dx, w: th, h: w }
+      // dy= draws the text lower than its "at" point (higher when negative), along its own up and down; "at" stays
+      // what the file says, so moving the text in the editor writes the same kind of number back
+      if (p.dy !== undefined && !isFinite(+p.dy)) err(st.line, `dy=${p.dy}: how many pixels lower the text is drawn, e.g. dy=6`);
+      const drop = num(p.dy, 0);
+      const flat = { x, y: at.y - fs + drop, w, h: th };
+      const bx = rot === -90 ? { x: at.x - fs + drop, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs - drop, y: at.y + dx, w: th, h: w }
         : turnOf(p) ? turnedBox(flat, at, turnOf(p)) : flat;
       // frame: the text's box before it is turned, which the editor draws turned
       texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, ...bx, ...(wrapped ? { lines: wrapped } : {}), ...(turnOf(p) ? { frame: flat } : {}) });

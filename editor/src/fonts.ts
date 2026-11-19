@@ -21,6 +21,7 @@ import mono400 from '../../fonts/GeistMono-Regular.ttf?url';
 import mono500 from '../../fonts/GeistMono-Medium.ttf?url';
 import serif from '../../fonts/InstrumentSerif-Regular.ttf?url';
 import serifItalic from '../../fonts/InstrumentSerif-Italic.ttf?url';
+import caslon from '../../fonts/LibreCaslonDisplay-Regular.ttf?url';
 import sketchHand from '../../fonts/SketchHand-Regular.ttf?url';
 
 const FACES: [string, number, string, string][] = [
@@ -31,6 +32,7 @@ const FACES: [string, number, string, string][] = [
   ['Geist', 400, 'normal', geist400], ['Geist', 500, 'normal', geist500], ['Geist', 600, 'normal', geist600], ['Geist', 700, 'normal', geist700],
   ['Geist Mono', 400, 'normal', mono400], ['Geist Mono', 500, 'normal', mono500],
   ['Instrument Serif', 400, 'normal', serif], ['Instrument Serif', 400, 'italic', serifItalic],
+  ['Libre Caslon Display', 400, 'normal', caslon],
   ['Sketch Hand', 400, 'normal', sketchHand],
 ];
 
