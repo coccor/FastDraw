@@ -9,7 +9,7 @@ import { MARKERS, turnOf } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { splitCells } from '../../src/edit.ts';
-import { find, stmtToks } from './ops.ts';
+import { find } from './ops.ts';
 import { IconField } from './IconPicker.tsx';
 import { ColorPicker } from './ColorPicker.tsx';
 import type { AlignMode, Layering } from './ops.ts';
@@ -106,7 +106,7 @@ export function TextField({ label, value, onCommit, multiline }: { label: string
 
 const MARKER_NAMES: Record<string, string> = {
   none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond',
-  dot: 'Dot', circle: 'Circle', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
+  dot: 'Dot', circle: 'Circle', stop: 'Ring (stop)', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
 };
 
 // The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
@@ -254,8 +254,12 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const styleProp = (k: string): string | undefined => sc.look.styles.get(first.el.style)?.props[k];
   const fontKey = kind === 'shape' ? 'title.font' : kind === 'text' ? 'font' : 'label.font';
   const font = p[fontKey] ?? 'sans';
+  // the size the text is drawn at when nothing sets it: the renderer's own fallbacks (an icon's caption is a size smaller)
+  const baseSize = styleProp(sizeKey) ?? (kind === 'conn' ? '8' : iconShape ? '11' : '12');
+  const size = p[sizeKey] ?? baseSize;
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
-  const op = kind === 'conn' ? stmtToks(src, first.el.line)?.find((t) => t.t === 'word' && ['->', '--', '<->'].includes(t.v))?.v : undefined;
+  // the ends as drawn, not as written: `a -> b head=none` has no arrowhead, whatever its operator says
+  const ends = first.kind === 'conn' ? (first.el.head ? (first.el.tail ? '<->' : '->') : first.el.tail ? '<-' : '--') : undefined;
   const boxes = els.filter((e) => e!.kind !== 'conn').length;
   const aligns: [AlignMode, string, React.ReactNode][] = [
     ['left', 'Align left edges', <AlignStartVertical size={16} />], ['hcenter', 'Centre horizontally', <AlignCenterVertical size={16} />], ['right', 'Align right edges', <AlignEndVertical size={16} />],
@@ -318,9 +322,9 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <section>
             <h4>Arrowheads</h4>
             <div className="seg">
-              <button title="No arrowhead" className={op === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
-              <button title="Arrowhead at the end" className={op === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
-              <button title="Arrowheads at both ends" className={op === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
+              <button title="No arrowhead" className={ends === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
+              <button title="Arrowhead at the end" className={ends === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
+              <button title="Arrowheads at both ends" className={ends === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
             </div>
           </section>
           <section>
@@ -364,7 +368,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         <section>
           <h4>Text size</h4>
           <div className="seg">
-            {sizes.map(([l, v]) => <button key={l} className={p[sizeKey] === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v)}>{l}</button>)}
+            {sizes.map(([l, v]) => <button key={l} className={size === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v === baseSize ? null : v)}>{l}</button>)}
           </div>
         </section>
       )}

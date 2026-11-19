@@ -559,6 +559,31 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   expect(errors).toEqual([]);
 });
 
+test('the panel names every line end, its arrowheads follow the ends as drawn, and the text size shows the default', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const sizeOn = page.locator('.panel section:has(h4:text-is("Text size")) button.on');
+  // a box with no size of its own is drawn at 12: M
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await expect(sizeOn).toHaveText('M');
+  // picking the size it already has writes nothing
+  await sizeOn.click();
+  expect(lineOf(await source(page), 'db')).toBe('db: store "Orders DB" at 560,156');
+  await page.keyboard.press('Escape');
+  const mid = (await page.locator('polyline[data-id="r"]').boundingBox())!;
+  await page.mouse.click(mid.x + mid.width / 2, mid.y + mid.height / 2);
+  await expect(page.getByLabel('End of the line').locator('option[value="stop"]')).toHaveText('Ring (stop)');
+  const on = page.locator('.panel button.on[title^="Arrowhead"], .panel button.on[title="No arrowhead"]');
+  await expect(on).toHaveAttribute('title', 'Arrowhead at the end');
+  await page.getByLabel('End of the line').selectOption('none');
+  expect(lineOf(await source(page), 'r')).toContain('head=none');
+  await expect(on).toHaveAttribute('title', 'No arrowhead');
+  await page.getByLabel('Start of the line').selectOption('arrow');
+  await page.getByLabel('End of the line').selectOption('arrow');
+  await expect(on).toHaveAttribute('title', 'Arrowheads at both ends');
+  expect(errors).toEqual([]);
+});
+
 test('spaces in a text are drawn on the canvas as written, and an indented cell keeps its spaces through the panel', async ({ page }) => {
   await paste(page, 'canvas 600x300\na: text "abc" at 40,40 font=mono\nb: text "    abc" at 40,70 font=mono\nt: table "T" at 40,120\n  | "x" "    y"\n');
   const len = (s: string) => page.locator('svg.canvas text').evaluateAll((ts, s) => (ts.find((t) => t.textContent === s) as SVGTextElement).getComputedTextLength(), s);
