@@ -6,6 +6,7 @@ geist mono
 geist mono
 instrument serif
 instrument serif
+libre caslon display
 libre franklin
 libre franklin
 libre franklin

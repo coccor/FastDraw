@@ -792,12 +792,12 @@ function drawText(look: Look, t: TextEl): string {
   const anchor = ta && ta !== 'start' ? ` text-anchor="${esc(ta)}"` : '';
   const x0 = boxed ? t.ax + (al === 'center' ? bw / 2 : al === 'right' ? bw : 0) : t.ax;
   const rot = turnOf(t.p);
-  const lines = t.lines ?? t.text.split('\n'), blend = blendOf(t.p);
-  let body = lines.map((l, i) => `<text x="${x0}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}${blend}>${esc(l)}</text>`).join('\n');
+  const lines = t.lines ?? t.text.split('\n'), blend = blendOf(t.p), y0 = t.ay + num(t.p.dy, 0);
+  let body = lines.map((l, i) => `<text x="${x0}" y="${r2(y0 + i * a.size * 1.3)}"${anchor} ${a.a}${blend}>${esc(l)}</text>`).join('\n');
   if (t.p.echo && t.p.echo !== 'none') {
     // echo=colour prints the text a second time underneath, a little off (echo.dx, echo.dy)
     const dx = num(t.p['echo.dx'], 3), dy = num(t.p['echo.dy'], 3), ea = a.a.replace(/fill="[^"]*"/, () => `fill="${col(look, t.p.echo)}"`);
-    body = lines.map((l, i) => `<text x="${x0 + dx}" y="${r2(t.ay + dy + i * a.size * 1.3)}"${anchor} ${ea}>${esc(l)}</text>`).join('\n') + '\n' + body;
+    body = lines.map((l, i) => `<text x="${x0 + dx}" y="${r2(y0 + dy + i * a.size * 1.3)}"${anchor} ${ea}>${esc(l)}</text>`).join('\n') + '\n' + body;
   }
   return rot ? `<g transform="rotate(${r2(rot)} ${t.ax} ${t.ay})">${body}</g>` : body;
 }

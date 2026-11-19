@@ -18,3 +18,7 @@ a -> b rotate=10
 text "Slanted note" at 480,420 rotate=-15
 text "Reads up" at 20,400 rotate=-90
 text "Wrapped and turned, a text box" at 600,380 width=120 rotate=20 align=center
+text "Dropped" at 700,420 dy=6
+text "Dropped and slanted" at 700,460 dy=-4 rotate=-15
+text "Reads down, dropped" at 860,400 rotate=90 dy=5
+text "Reads up, dropped" at 900,400 rotate=-90 dy=5

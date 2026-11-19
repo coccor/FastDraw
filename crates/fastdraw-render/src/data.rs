@@ -278,13 +278,13 @@ mod tests {
     #[test]
     fn fonts_inflate() {
         let f = fonts();
-        assert_eq!(f.len(), 17);
+        assert_eq!(f.len(), 18);
         assert!(f.iter().any(|(n, _)| *n == "Geist-Regular.ttf"));
         assert!(
             f.iter()
                 .all(|(_, b)| b.len() > 10_000 && (b[..4] == [0, 1, 0, 0] || &b[..4] == b"OTTO"))
         );
-        assert_eq!(bundled_font_families().len(), 17);
+        assert_eq!(bundled_font_families().len(), 18);
         assert!(bundled_font_families().iter().any(|f| f == "sketch hand"));
     }
 }

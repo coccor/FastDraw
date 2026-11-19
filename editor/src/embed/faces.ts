@@ -7,6 +7,7 @@ export const FACES: [string, string, string, string][] = [
   ['Libre Franklin', '400', 'normal', 'LibreFranklin-Regular.ttf'], ['Libre Franklin', '500', 'normal', 'LibreFranklin-Medium.ttf'],
   ['Libre Franklin', '600', 'normal', 'LibreFranklin-SemiBold.ttf'], ['Libre Franklin', '700', 'normal', 'LibreFranklin-Bold.ttf'],
   ['Instrument Serif', '400', 'normal', 'InstrumentSerif-Regular.ttf'], ['Instrument Serif', '400', 'italic', 'InstrumentSerif-Italic.ttf'],
+  ['Libre Caslon Display', '400', 'normal', 'LibreCaslonDisplay-Regular.ttf'],
   ['Sketch Hand', '400', 'normal', 'SketchHand-Regular.ttf'],
 ];
 export const FONT_FILES = FACES.map((f) => f[3]);

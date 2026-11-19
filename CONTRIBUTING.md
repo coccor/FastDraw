@@ -72,6 +72,6 @@ A new language feature also needs a case in `crates/fastdraw-render/tests/covera
 | `crates/fastdraw-render/` | The renderer as a Rust crate, checked against the TypeScript by `tools/rust-parity.ts` |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
 | `compare/` | Renders next to the diagram-design originals, plus editor screenshots |
-| `fonts/` | Geist, Geist Mono and Newsreader (the built-in look), Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
+| `fonts/` | Geist, Geist Mono and Libre Caslon Display (the built-in look), Newsreader, Libre Franklin and Instrument Serif (SIL Open Font License, texts included) |
 | `assets/` | The icon, the diagrams shown in the README with their sources, the gallery renders and the editor screenshot |
 | `test/`, `e2e/` | Core tests and editor tests |
