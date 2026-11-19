@@ -3,6 +3,9 @@
 // hatching for the subject. White page, near-black ink, one blue for what the diagram is about.
 
 canvas paper=paper sketch=1
+
+// the look the dark theme and "fastdraw render --dark" draw this look with
+dark sketch-dark
 fontdir "./fonts"
 
 color paper  #ffffff

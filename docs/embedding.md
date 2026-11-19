@@ -30,8 +30,8 @@ or a `.look` file relative to the `.fdraw` file. The fonts come from the same pl
   `editor="http://localhost:5199/edit/"` to send it to another copy of the editor.
 - **Dark mode.** `theme="auto"` (the default) follows the page: `data-theme` on `<html>` (Starlight,
   Docusaurus), a `dark` class on `<html>` (VitePress), otherwise the system setting, and redraws when it
-  changes. On a dark page a diagram in the built-in look is drawn in `night`; a diagram in another look
-  stays as it is. `theme="light"` or `theme="dark"` fixes it.
+  changes. On a dark page a diagram is drawn in its look's dark version (`night` for the built-in look,
+  `shade-dark` for `shade`, what a look file's `dark` line names); a look without one stays as it is. `theme="light"` or `theme="dark"` fixes it.
 - **When it cannot draw.** If the file is missing or has errors (anything `fastdraw check` reports as an
   error), the image stays and the reason is logged to the browser console. Without JavaScript the image
   is all a reader sees.

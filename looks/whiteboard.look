@@ -4,6 +4,9 @@
 
 canvas paper=paper dots=ink/0.14 dotgap=24
 
+// the look the dark theme and "fastdraw render --dark" draw this look with
+dark whiteboard-dark
+
 color paper  #fafafb
 color ink    #1a1b25
 color muted  #4b4d5c

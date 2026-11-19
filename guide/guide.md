@@ -69,7 +69,8 @@ One statement per line. An indented line continues the statement above it. `//` 
 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
-                            // or a look that ships with FastDraw: look night | reference | shade | sketch | whiteboard
+                            // or a look that ships with FastDraw: look reference | shade | sketch | whiteboard
+                            //   (each has a dark version, drawn in the dark theme and by render --dark; name the light one)
                             // or one on GitHub, by its address: look "https://raw.githubusercontent.com/coccor/fastdraw-looks/main/engraved.look"
                             //   (coccor/fastdraw-looks also has headline, keys, listing, offset and transit; azure, aws, gcp and kubernetes:
                             //   a cloud's colours, its own icons and its groups such as vpc and resource-group; and print, blueprint,

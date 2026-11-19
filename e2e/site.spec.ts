@@ -60,7 +60,7 @@ test('a look writes one line into the file, a kind loads its example, and the fu
   await page.goto('/');
   const canvas = page.locator('.wb-canvas svg'), first = page.locator('.wb-ln').first();
   const before = await canvas.innerHTML();
-  await expect(page.getByRole('radio')).toHaveCount(6);
+  await expect(page.getByRole('radio')).toHaveCount(5);
   await expect(page.getByRole('radio', { name: 'Built-in' })).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('radio', { name: 'Shade' }).click();
   await expect(first).toHaveText('1look shade');

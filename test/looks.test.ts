@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { BUNDLED_LOOK_NAMES, bundledLook, bundledLookSource, defaultLook } from '../src/look.ts';
+import { BUNDLED_LOOK_NAMES, bundledLook, bundledLookSource, defaultLook, isDarkVersion, lightLookName, lookForTheme, menuLookNames } from '../src/look.ts';
 import { DEFAULT_LOOK } from '../src/defaultLook.ts';
 import { parseStatements } from '../src/parse.ts';
 import { buildScene } from '../src/scene.ts';
@@ -281,7 +281,7 @@ test('low tints on a dark page stay told apart: each keeps its hue, distinct fro
 });
 
 test('tints on a light page are a plain alpha blend, unchanged; canvas tint= chooses either way', () => {
-  for (const [name, look] of looks()) if (name !== 'night') assert.equal(color(look, '#fbbf24/0.1'), 'rgba(251,191,36,0.1)', name);
+  for (const [name, look] of looks()) if (!isDarkVersion(name)) assert.equal(color(look, '#fbbf24/0.1'), 'rgba(251,191,36,0.1)', name);
   assert.equal(color(parseLook('canvas paper=#0b1226 tint=alpha'), '#fbbf24/0.1'), 'rgba(251,191,36,0.1)');
   assert.notEqual(color(parseLook('canvas paper=#ffffff tint=hue'), '#fbbf24/0.1'), 'rgba(251,191,36,0.1)');
 });

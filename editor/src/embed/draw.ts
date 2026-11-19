@@ -2,7 +2,7 @@
 // and the built-in icons. The rest of the icons load only for a diagram that uses one of them.
 import { buildScene, lookPath, withLook } from '../../../src/scene.ts';
 import { renderSvg } from '../../../src/render.ts';
-import { parseLook, color, isBundledLook, bundledLook, defaultLook } from '../../../src/look.ts';
+import { parseLook, color, isBundledLook, bundledLook, defaultLook, lightLookName } from '../../../src/look.ts';
 import { loadExtendedIcons, extendedIconsLoaded } from '../../../src/extendedIcons.ts';
 import { darkCounterpart } from './theme.ts';
 import { FACES, familiesDrawn } from './faces.ts';
@@ -31,9 +31,19 @@ export async function fetchSource(url: string): Promise<Source> {
   return { url, text, look: { url: lookUrl, path: ref, text: await fetchText(lookUrl) } };
 }
 
-/** Draws the diagram, in its dark counterpart when `dark` and it has one; the fonts it uses are loaded first. */
+/**
+ * Draws the diagram in its look's version for the page: the dark counterpart when `dark` and it has one, and
+ * on a light page the light look a shipped dark version belongs to (look night is drawn in the built-in look).
+ * The fonts it uses are loaded first.
+ */
 export async function draw(s: Source, dark: boolean, fontBase: string): Promise<Drawn> {
   let text = s.text, lookText = s.look?.text ?? null;
+  let drawIn: Look | undefined;
+  const named = lookPath(text);
+  if (!dark && named && lightLookName(named) !== named) {
+    const light = lightLookName(named);
+    if (light === null) drawIn = defaultLook(); else text = withLook(text, light);
+  }
   if (dark) {
     const ref = lookPath(text);
     const own = !ref ? defaultLook() : isBundledLook(ref) ? bundledLook(ref) : lookText !== null ? parseLook(lookText) : null;
@@ -45,7 +55,7 @@ export async function draw(s: Source, dark: boolean, fontBase: string): Promise<
     }
   }
   let look: Look | null = lookText !== null ? parseLook(lookText) : null;
-  const build = () => buildScene(text, look);
+  const build = () => buildScene(text, look, '', drawIn);
   let sc = build();
   if (!extendedIconsLoaded() && sc.issues.some((i) => i.msg.startsWith('there is no icon called'))) {
     await loadExtendedIcons();

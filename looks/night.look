@@ -1,10 +1,11 @@
-// Night: the built-in look after dark. A deep navy page, raised navy cards with a two-tone icon,
+// Night: the built-in look in the dark theme. A deep navy page, raised navy cards with a two-tone icon,
 // softly tinted zones, cool greys for everything else and one bright tomato red for the subject and the
-// main path. Same styles as the built-in look, so a diagram moves between them without changes.
+// main path. Same styles as the built-in look, so a diagram moves between them without changes. It is not
+// offered as a look of its own: a diagram with no look line is drawn in it whenever the theme is dark.
 
 canvas paper=paper dots=ink/0.08 dotgap=24
 
-// already dark, so "fastdraw render --dark" draws the dark image with this look too
+// already dark, so "fastdraw render --dark" and the dark theme draw this look too
 dark night
 
 color paper  #0b1226

@@ -1407,7 +1407,8 @@ test('the menu changes the background for this diagram and resets to the look', 
 });
 
 test('a dark look offers dark page colours first, and the light ones in the popover', async ({ page }) => {
-  await paste(page, 'look night\n' + SMALL);
+  await paste(page, SMALL);
+  await page.getByRole('button', { name: 'Dark theme' }).click(); // the built-in look is drawn in Night
   await page.getByRole('button', { name: 'Menu' }).click();
   const quick = page.locator('.canvasbg .swatch');
   await expect(quick).toHaveCount(5);
@@ -1540,8 +1541,8 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
-  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Night', 'Reference', 'Shade', 'Sketch', 'Whiteboard']);
-  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(6); // every card shows this diagram
+  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Reference', 'Shade', 'Sketch', 'Whiteboard']);
+  await expect(cards.locator('svg.lookthumb text', { hasText: 'Orders API' })).toHaveCount(5); // every card shows this diagram
   await expect(page.getByRole('button', { name: 'Apply' })).toHaveCount(0);
   // hovering tries a look on the canvas without touching the source
   await card('Sketch').hover();
@@ -1564,7 +1565,7 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await page.locator('.problems').click();
   // hovering then Esc leaves the look in use as it was
   await sidebar(page, 'Look');
-  await card('Night').hover();
+  await card('Shade').hover();
   await page.keyboard.press('Escape');
   await expect(canvas).toHaveCSS('background-color', 'rgb(250, 250, 251)');
   expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
@@ -1576,6 +1577,55 @@ test('the look picker: hover shows the diagram in a look, a click uses it at onc
   await page.keyboard.press('Control+z');
   expect(await source(page)).toBe('look whiteboard\n' + PLAIN);
   expect(errors).toEqual([]);
+});
+
+test('the theme picks each look\'s version: dark draws the dark one, and the menu offers each look once', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const PLAIN = SMALL.replace('canvas 900x420\n', '');
+  await paste(page, PLAIN);
+  const canvas = page.locator('svg.canvas');
+  await expect(canvas).toHaveCSS('background-color', 'rgb(243, 243, 245)'); // the built-in look
+  // dark: the built-in look is drawn in Night, and the file is not changed
+  await page.getByRole('button', { name: 'Dark theme' }).click();
+  await expect(canvas).toHaveCSS('background-color', 'rgb(11, 18, 38)');
+  expect(await source(page)).toBe(PLAIN);
+  // the menu shows each look once, drawn dark: no Night and no shade-dark
+  await sidebar(page, 'Look');
+  await expect(page.locator('.lookcard > span')).toHaveText(['Built-in · in use', 'Reference', 'Shade', 'Sketch', 'Whiteboard']);
+  await expect(page.locator('.lookcard').first().locator('svg.lookthumb rect').first()).toBeAttached();
+  // choosing Shade names Shade; the canvas draws its dark version
+  await page.getByRole('button', { name: /^Shade/ }).click();
+  expect(await source(page)).toBe('look shade\n' + PLAIN);
+  await page.mouse.move(5, 880);
+  await expect(canvas).toHaveCSS('background-color', 'rgb(22, 23, 28)');
+  await page.keyboard.press('Escape');
+  // light again: Shade itself
+  await page.getByRole('button', { name: 'Light theme' }).click();
+  await expect(canvas).toHaveCSS('background-color', 'rgb(245, 245, 245)');
+  expect(await source(page)).toBe('look shade\n' + PLAIN);
+  expect(errors).toEqual([]);
+});
+
+test('a diagram that names Night is the built-in look in the light theme, in use under Built-in', async ({ page }) => {
+  const PLAIN = SMALL.replace('canvas 900x420\n', '');
+  await paste(page, 'look night\n' + PLAIN);
+  await expect(page.locator('svg.canvas')).toHaveCSS('background-color', 'rgb(243, 243, 245)');
+  await sidebar(page, 'Look');
+  await expect(page.locator('.lookcard > span').first()).toHaveText('Built-in · in use');
+  expect(await source(page)).toBe('look night\n' + PLAIN);
+});
+
+test('export draws the light or the dark version, starting with the theme\'s', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.getByRole('button', { name: 'Dark theme' }).click();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  const version = page.getByRole('group', { name: 'Version' });
+  await expect(version.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
+  const img = page.locator('.exportpreview img');
+  expect(decodeURIComponent((await img.getAttribute('src'))!)).toContain('#0b1226');
+  await version.getByRole('button', { name: 'Light' }).click();
+  expect(decodeURIComponent((await img.getAttribute('src'))!)).not.toContain('#0b1226');
 });
 
 test('the right sidebar: the rail opens it for a moment, the open button keeps it open and remembers it', async ({ page }) => {
@@ -1614,7 +1664,7 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await sidebar(page, 'Look');
   const cards = page.locator('.lookcard');
   const card = (name: string) => page.getByRole('button', { name: new RegExp('^' + name) });
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(6);
   await expect(page.locator('.lookcard > span').last()).toHaveText('This diagram’s look file · in use');
   await card('Sketch').click();
   await saved(page);
@@ -1624,7 +1674,7 @@ test("the look picker keeps a diagram's own look file as a choice, and a bundled
   await expect(page.locator('.banner')).toHaveCount(0); // a bundled look needs no file, fonts or folder
   await expect(page.locator('.problems')).toHaveText('No problems');
   // the picker stayed open, and the look file is still there to go back to
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(6);
   await card('This diagram').click();
   await expect.poll(async () => (await diskText(page, SEQ)).split('\n')[0]).toBe(repoText(SEQ).split('\n')[0]);
 });

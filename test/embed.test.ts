@@ -55,11 +55,12 @@ test('theme: the attribute wins, then the page, then the system', () => {
   assert.equal(resolveTheme('bogus', 'nonsense', true), 'dark');
 });
 
-test("dark counterpart: what the parsed look's dark line names; built-in to night; otherwise none", async () => {
+test("dark counterpart: what the parsed look's dark line names; built-in to night; a look without one keeps itself", async () => {
   const { parseLook, bundledLook, defaultLook } = await import('../src/look.ts');
   assert.equal(darkCounterpart(undefined, defaultLook()), 'night');
   assert.equal(darkCounterpart(undefined, null), 'night');
-  assert.equal(darkCounterpart('sketch', bundledLook('sketch')!), null);
+  assert.equal(darkCounterpart('sketch', bundledLook('sketch')!), 'sketch-dark');
+  assert.equal(darkCounterpart('./bare.look', parseLook('color ink #111')), null);
   assert.equal(darkCounterpart('./team.look', parseLook('color ink #111\ndark "./team-night.look"')), './team-night.look');
   assert.equal(darkCounterpart('./team.look', null), null);
   // a look that is its own dark counterpart is left as it is

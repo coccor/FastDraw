@@ -41,10 +41,15 @@ export async function exportBlob(scene: Scene, payload: Payload, o: ExportOpts):
   return new Blob([(o.embed ? embedPng(png, payload) : png).buffer as ArrayBuffer], { type: 'image/png' });
 }
 
-export function ExportDialog({ scene, payload, base, onClose, onDone }: {
-  scene: Scene; payload: Payload; base: string; onClose: () => void; onDone: (msg: string) => void;
+// scenes: the diagram in the light and the dark version of its look (the same scene when it has one version);
+// the export starts in the version the editor shows, the app's theme.
+export function ExportDialog({ scenes, theme, payload, base, onClose, onDone }: {
+  scenes: Record<'light' | 'dark', Scene>; theme: 'light' | 'dark'; payload: Payload; base: string; onClose: () => void; onDone: (msg: string) => void;
 }) {
   const [o, setO] = useState<ExportOpts>(remembered);
+  const [version, setVersion] = useState(theme);
+  const both = scenes.light !== scenes.dark;
+  const scene = scenes[both ? version : theme];
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (p: Partial<ExportOpts>) => setO((cur) => { const n = { ...cur, ...p }; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch { /* private window */ } return n; });
@@ -92,6 +97,13 @@ export function ExportDialog({ scene, payload, base, onClose, onDone }: {
           <div className="seg" role="group" aria-label="Scale">
             {SCALES.map((s) => <button key={s} disabled={o.format === 'svg'} className={o.format === 'png' && o.scale === s ? 'on' : ''} aria-pressed={o.format === 'png' && o.scale === s} onClick={() => set({ scale: s })}>{s}×</button>)}
           </div>
+          {both && <>
+            <span>Version</span>
+            <div className="seg" role="group" aria-label="Version">
+              <button className={version === 'light' ? 'on' : ''} aria-pressed={version === 'light'} onClick={() => setVersion('light')}>Light</button>
+              <button className={version === 'dark' ? 'on' : ''} aria-pressed={version === 'dark'} onClick={() => setVersion('dark')}>Dark</button>
+            </div>
+          </>}
           <span>Background</span>
           <label className="check"><input type="checkbox" checked={o.background} onChange={(e) => set({ background: e.target.checked })} />Page colour and dots; off leaves it see-through</label>
           <span>Diagram inside</span>

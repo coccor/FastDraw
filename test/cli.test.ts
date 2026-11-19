@@ -27,7 +27,8 @@ test('a look names its dark version with a dark line', () => {
   }
   assert.equal(defaultLook().dark, 'night', 'the built-in look draws its dark image with Night');
   assert.equal(bundledLook('night')!.dark, 'night', 'Night is already dark');
-  assert.equal(bundledLook('sketch')!.dark, undefined);
+  assert.equal(bundledLook('sketch')!.dark, 'sketch-dark', 'a look that ships names its dark version');
+  assert.equal(bundledLook('sketch-dark')!.dark, 'sketch-dark', 'and the dark version is already dark');
 });
 
 test('withLook swaps the look line in place, or adds one at the end, keeping line numbers', () => {
@@ -47,7 +48,7 @@ test('darkLookOf follows the dark line, from the look file\'s folder', () => {
   writeFileSync(join(dir, 'looks', 'bare.look'), 'color ink #000000');
   assert.deepEqual(darkLookOf(undefined), { name: 'night' });
   assert.deepEqual(darkLookOf({ name: 'night' }), { name: 'night' });
-  assert.match(darkLookOf({ name: 'sketch' }) as string, /sketch look has no dark version/);
+  assert.deepEqual(darkLookOf({ name: 'sketch' }), { name: 'sketch-dark' });
   const d = darkLookOf({ file: join(dir, 'looks', 'team.look') });
   assert.deepEqual(d, { file: join(dir, 'looks', 'team-night.look') });
   assert.equal(lookRefText(d as { file: string }, join(dir, 'a.fdraw')), './looks/team-night.look');
@@ -75,9 +76,15 @@ test('fastdraw render --look and --dark', () => {
   assert.match(embedded.diagram, /^look night$/m, 'the image carries the diagram as drawn');
   assert.equal(readFileSync(f, 'utf8'), body, 'the file itself is not changed');
 
+  r = fastdraw('render', f, '--dark', '--scale', '1');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /d-dark\.png .*look sketch-dark/, 'a look that ships draws its dark image with its dark version');
+
+  writeFileSync(join(dir, 'bare.look'), 'color paper #ffffff\nstyle node shape=rect');
+  writeFileSync(f, 'look "./bare.look"\na: node "A" at 40,40\n');
   r = fastdraw('render', f, '--dark');
   assert.equal(r.code, 1);
-  assert.match(r.out, /the sketch look has no dark version/);
+  assert.match(r.out, /bare\.look has no dark version/);
 
   writeFileSync(f, 'a: node "A" at 40,40\n');
   r = fastdraw('render', f, '--dark', '--scale', '1', '-o', join(dir, 'out.svg'));
