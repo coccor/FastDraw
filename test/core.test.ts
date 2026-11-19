@@ -343,6 +343,18 @@ test('markers: the newer heads parse and draw, and scale with head.size', () => 
   assert.notEqual(svg('cross'), svg('cross', ' head.size=2'));
 });
 
+test('a see-through line and its heads are drawn solid and faded as one layer, so their overlaps are not darker', () => {
+  const two = 'a: node "A" at 40,40\nb: node "B" at 300,40\n';
+  const svg = renderSvg(scene(two + 'a -> b head=double tail=cross stroke=#ff0000/0.5 blend=multiply casing=#ffd400\n'));
+  const g = /<g opacity="0.5" style="mix-blend-mode:multiply">([\s\S]*?)<\/g>/.exec(svg);
+  assert.ok(g, 'one faded group, blending as the line would');
+  assert.ok(!g[1].includes('rgba('), 'nothing inside it is see-through on its own');
+  assert.ok(g[1].includes('stroke="rgb(255,0,0)"') && g[1].includes('fill="rgb(255,0,0)"'));
+  assert.ok(svg.indexOf('stroke="#ffd400"') < svg.indexOf('<g opacity="0.5"'), 'the casing stays underneath, at full strength');
+  // a solid line is drawn as before, without a group
+  assert.ok(!renderSvg(scene(two + 'a -> b stroke=#ff0000\n')).includes('<g opacity'));
+});
+
 test('markers: -> keeps the style head, head= and tail= override, <-> mirrors', () => {
   const c = (line: string) => scene(`a: node "A" at 40,40\nb: node "B" at 300,40\n${line}\n`).conns[0];
   assert.deepEqual([c('a -> b').tailM, c('a -> b').headM], ['none', 'arrow']);

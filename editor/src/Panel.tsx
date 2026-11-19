@@ -2,7 +2,7 @@ import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2, TextAlignStart, TextAlignCenter, TextAlignEnd,
-  RotateCcw, RotateCw,
+  Ellipsis, RotateCcw, RotateCw,
 } from 'lucide-react';
 import { color, fontFamily } from '../../src/look.ts';
 import { MARKERS, turnOf } from '../../src/scene.ts';
@@ -12,6 +12,9 @@ import { splitCells } from '../../src/edit.ts';
 import { find } from './ops.ts';
 import { IconField } from './IconPicker.tsx';
 import { ColorPicker } from './ColorPicker.tsx';
+import { TilePopover } from './TilePopover.tsx';
+import type { TileChoice } from './TilePopover.tsx';
+import { markerPreview } from '../../src/render.ts';
 import type { AlignMode, Layering } from './ops.ts';
 
 export type PanelActions = {
@@ -104,11 +107,84 @@ export function TextField({ label, value, onCommit, multiline }: { label: string
   );
 }
 
-const MARKER_NAMES: Record<string, string> = {
-  none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', stealth: 'Swept arrow', double: 'Double arrow', half: 'Half arrow',
-  triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond', square: 'Hollow square', 'square-solid': 'Filled square',
-  dot: 'Dot', circle: 'Circle', bar: 'Bar', cross: 'Cross', stop: 'Ring (stop)', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
-};
+// Every line end, in groups for the popover, each with what it usually means.
+const END_GROUPS: { title: string; choices: TileChoice[] }[] = [
+  { title: 'Arrows', choices: [
+    { key: 'none', label: 'Nothing', about: 'No mark: the line just stops.' },
+    { key: 'arrow', label: 'Arrow', about: 'A filled arrowhead, the usual head.' },
+    { key: 'open', label: 'Open arrow', about: 'Two strokes, not filled: a dependency, an asynchronous message.' },
+    { key: 'stealth', label: 'Swept arrow', about: 'A filled head swept back to a notch: a sharper arrow.' },
+    { key: 'double', label: 'Double arrow', about: 'Two heads in a row: a fast or repeated flow.' },
+    { key: 'half', label: 'Half arrow', about: 'One barb, a harpoon: an asynchronous message, one half of a two-way pair.' },
+  ] },
+  { title: 'Shapes', choices: [
+    { key: 'triangle', label: 'Hollow triangle', about: 'Inherits from or implements; it points at the parent.' },
+    { key: 'diamond', label: 'Hollow diamond', about: 'Aggregation; it sits on the owner.' },
+    { key: 'diamond-solid', label: 'Filled diamond', about: 'Composition; it sits on the owner.' },
+    { key: 'square', label: 'Hollow square', about: 'A port, or a stub end.' },
+    { key: 'square-solid', label: 'Filled square', about: 'A port, or a stub end, filled.' },
+    { key: 'dot', label: 'Dot', about: 'A filled circle: a start point.' },
+    { key: 'circle', label: 'Circle', about: 'A hollow circle: a provided interface, an end point.' },
+  ] },
+  { title: 'Marks', choices: [
+    { key: 'bar', label: 'Bar', about: 'A bar across the end: blocks, inhibits, a hard stop.' },
+    { key: 'cross', label: 'Cross', about: 'An X on the end: rejected, cancelled, destroyed.' },
+    { key: 'stop', label: 'Ring (stop)', about: 'A ring the line runs into, like a station on a route map.' },
+  ] },
+  { title: 'Relationships', choices: [
+    { key: 'one', label: 'One', about: 'One bar: one.' },
+    { key: 'only-one', label: 'Exactly one', about: 'Two bars: exactly one.' },
+    { key: 'many', label: 'Many', about: "A crow's foot: many." },
+    { key: 'one-many', label: 'One or more', about: "A crow's foot and a bar: one or more." },
+    { key: 'zero-one', label: 'Zero or one', about: 'A circle and a bar: optional, at most one.' },
+    { key: 'zero-many', label: 'Zero or more', about: "A circle and a crow's foot: optional, any number." },
+  ] },
+];
+// a marker the groups do not name yet still shows, under its own name
+const LISTED = new Set(END_GROUPS.flatMap((g) => g.choices.map((c) => c.key)));
+const UNLISTED = MARKERS.filter((m) => !LISTED.has(m)).map((m) => ({ key: m, label: m, about: '' }));
+const ALL_ENDS = UNLISTED.length ? [...END_GROUPS, { title: 'Other', choices: UNLISTED }] : END_GROUPS;
+const END_NAME = Object.fromEntries(ALL_ENDS.flatMap((g) => g.choices.map((c) => [c.key, c.label])));
+const QUICK_ENDS = ['none', 'arrow', 'open', 'stealth', 'triangle'];
+
+// A line end on the page's colour, drawn by the renderer as the diagram draws it: on the left for the start of a line.
+function MarkerTile({ kind, start, w, h, paper, ink }: { kind: string; start: boolean; w: number; h: number; paper: string; ink: string }) {
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <rect width={w} height={h} fill={paper} />
+      <g dangerouslySetInnerHTML={{ __html: markerPreview(kind, w, h, ink, paper, start) }} />
+    </svg>
+  );
+}
+
+// One end of the selected lines, laid out as the Background menu's patterns: five quick picks, a divider, then a
+// button that opens every end in a popover beside the panel (and shows the current end when it is one of those).
+function EndPicker({ sc, label, start, current, onPick }: { sc: Scene; label: string; start: boolean; current: string; onPick: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const more = React.useRef<HTMLButtonElement>(null);
+  const paper = color(sc.look, sc.look.canvas.paper ?? 'paper'), ink = color(sc.look, 'ink');
+  const tile = (k: string, w: number, h: number) => <MarkerTile kind={k} start={start} w={w} h={h} paper={paper} ink={ink} />;
+  const moreOn = !QUICK_ENDS.includes(current);
+  const plural = start ? 'line starts' : 'line ends';
+  return (
+    <div className="endpick">
+      <span>{label}</span>
+      <div className="swatches" role="radiogroup" aria-label={`${label} of the line`}>
+        {QUICK_ENDS.map((k) => (
+          <button key={k} role="radio" aria-checked={current === k} aria-label={END_NAME[k]} title={END_NAME[k]}
+            className={'pattern' + (current === k ? ' on' : '')} onClick={() => onPick(k)}>{tile(k, 28, 22)}</button>
+        ))}
+        <span className="divider" />
+        <button ref={more} className={'pattern more' + (moreOn ? ' on' : '')} aria-label={`More ${plural}`} aria-expanded={open}
+          title={moreOn ? `${END_NAME[current] ?? current} (more ${plural})` : `More ${plural}`} onClick={() => setOpen(!open)}>
+          {moreOn ? tile(current, 28, 22) : <Ellipsis size={14} />}
+        </button>
+      </div>
+      {open && more.current && <TilePopover anchor={more.current} label={start ? 'Line starts' : 'Line ends'} groups={ALL_ENDS} current={current}
+        className="pattern marker" tile={(k) => tile(k, 34, 34)} onPick={onPick} onClose={() => setOpen(false)} />}
+    </div>
+  );
+}
 
 // The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
 function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; onChange: (rows: RowSpec[]) => void }) {
@@ -350,12 +426,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <section>
             <h4>Line ends</h4>
             {([['tail', 'Start', first.kind === 'conn' ? first.el.tailM : 'none'], ['head', 'End', first.kind === 'conn' ? first.el.headM : 'none']] as const).map(([k, label, cur]) => (
-              <label className="field" key={k}>
-                <span>{label}</span>
-                <select aria-label={`${label} of the line`} value={cur} onChange={(e) => act.setProp(k, e.target.value)}>
-                  {MARKERS.map((m) => <option key={m} value={m}>{MARKER_NAMES[m] ?? m}</option>)}
-                </select>
-              </label>
+              <EndPicker key={k} sc={sc} label={label} start={k === 'tail'} current={cur} onPick={(v) => act.setProp(k, v)} />
             ))}
           </section>
           {(p.via || p.lpos) && (

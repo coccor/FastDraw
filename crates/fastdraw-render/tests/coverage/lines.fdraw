@@ -72,3 +72,7 @@ a.toString@0.3 -> c
 # a line that simplifies to one point draws nothing
 ic: icon "Caption" at 100,600 icon=database
 112,637 -> 112,637
+
+# a see-through line and its heads are faded as one layer
+800,300 -> 1000,300 stroke=#aa3333/0.5 head=double tail=cross blend=multiply casing=#ffd400
+800,340 -> 1000,340 stroke=rgba(10,20,30,0.4) head=square-solid tail=stop stop.color=#3366aa double=#ffffff

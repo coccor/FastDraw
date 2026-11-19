@@ -563,8 +563,10 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   const target = await at(page, 120, 84 + 32 + 24 + 12); // second row of users: r1
   await drag(page, { x: end.x + end.width / 2, y: end.y + end.height / 2 }, target.x - end.x - end.width / 2, target.y - end.y - end.height / 2);
   expect(lineOf(await source(page), 'fk')).toMatch(/^fk: orders\.user_id -- users\.r1 /);
-  await page.getByLabel('End of the line').selectOption('zero-one');
+  await page.getByRole('button', { name: 'More line ends' }).click();
+  await page.getByRole('dialog', { name: 'Line ends' }).getByRole('radio', { name: 'Zero or one' }).click();
   expect(lineOf(await source(page), 'fk')).toContain('head=zero-one');
+  await page.keyboard.press('Escape');
   await page.locator('.panel button[title="Arrowhead at the end"]').click();
   expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -> users.r1 style=relation');
   void k;
@@ -584,15 +586,53 @@ test('the panel names every line end, its arrowheads follow the ends as drawn, a
   await page.keyboard.press('Escape');
   const mid = (await page.locator('polyline[data-id="r"]').boundingBox())!;
   await page.mouse.click(mid.x + mid.width / 2, mid.y + mid.height / 2);
-  await expect(page.getByLabel('End of the line').locator('option[value="stop"]')).toHaveText('Ring (stop)');
+  const startEnds = page.getByRole('radiogroup', { name: 'Start of the line' }), endEnds = page.getByRole('radiogroup', { name: 'End of the line' });
+  await page.getByRole('button', { name: 'More line ends' }).click();
+  await expect(page.getByRole('dialog', { name: 'Line ends' }).getByRole('radio', { name: 'Ring (stop)' })).toHaveCount(1);
+  await page.keyboard.press('Escape');
   const on = page.locator('.panel button.on[title^="Arrowhead"], .panel button.on[title="No arrowhead"]');
   await expect(on).toHaveAttribute('title', 'Arrowhead at the end');
-  await page.getByLabel('End of the line').selectOption('none');
+  await endEnds.getByRole('radio', { name: 'Nothing' }).click();
   expect(lineOf(await source(page), 'r')).toContain('head=none');
   await expect(on).toHaveAttribute('title', 'No arrowhead');
-  await page.getByLabel('Start of the line').selectOption('arrow');
-  await page.getByLabel('End of the line').selectOption('arrow');
+  await startEnds.getByRole('radio', { name: 'Arrow', exact: true }).click();
+  await endEnds.getByRole('radio', { name: 'Arrow', exact: true }).click();
   await expect(on).toHaveAttribute('title', 'Arrowheads at both ends');
+  expect(errors).toEqual([]);
+});
+
+test('a line\'s ends are picked from drawn tiles: five quick picks, then every end in a popover beside the panel', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const mid = (await page.locator('polyline[data-id="r"]').boundingBox())!;
+  await page.mouse.click(mid.x + mid.width / 2, mid.y + mid.height / 2);
+  const endEnds = page.getByRole('radiogroup', { name: 'End of the line' });
+  await expect(endEnds.getByRole('radio')).toHaveCount(5);
+  await expect(endEnds.getByRole('radio', { name: 'Arrow', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(endEnds.locator('button[role="radio"] svg')).toHaveCount(5); // each tile is a drawing of the end
+  // the rest are in the popover, in groups, beside the panel
+  await page.getByRole('button', { name: 'More line ends' }).click();
+  const pop = page.getByRole('dialog', { name: 'Line ends' });
+  await expect(pop.getByRole('radio')).toHaveCount(22);
+  for (const g of ['Arrows', 'Shapes', 'Marks', 'Relationships']) await expect(pop.getByRole('radiogroup', { name: g })).toBeVisible();
+  const [panelBox, popBox] = [await page.locator('.panel').boundingBox(), await pop.boundingBox()];
+  expect(popBox!.x >= panelBox!.x + panelBox!.width || popBox!.x + popBox!.width <= panelBox!.x).toBe(true);
+  // the end under the pointer is named and explained
+  await pop.getByRole('radio', { name: 'Swept arrow' }).hover();
+  await expect(pop.locator('.patterninfo')).toContainText('swept back to a notch');
+  await pop.getByRole('radio', { name: 'Cross' }).click();
+  await expect(pop).toBeVisible(); // it stays open while ends are tried
+  expect(lineOf(await source(page), 'r')).toContain('head=cross');
+  await expect(pop.getByRole('radio', { name: 'Cross' })).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+  await expect(pop).toHaveCount(0);
+  // an end that is not a quick pick shows on the More button
+  const more = page.getByRole('button', { name: 'More line ends' });
+  await expect(more).toHaveClass(/\bon\b/);
+  await expect(more.locator('svg path')).not.toHaveCount(0);
+  await endEnds.getByRole('radio', { name: 'Swept arrow' }).click();
+  expect(lineOf(await source(page), 'r')).toContain('head=stealth');
+  await expect(more).not.toHaveClass(/\bon\b/);
   expect(errors).toEqual([]);
 });
 

@@ -2450,6 +2450,17 @@ fn cut_end(pts: Vec<Pt>, dist: f64) -> Vec<Pt> {
     pts[..pts.len().min(2)].to_vec()
 }
 
+// A see-through colour, rgba(r,g,b,a) with a below 1, as the same colour solid and its alpha; None for any other.
+fn see_through(c: &str) -> Option<(String, f64)> {
+    let inner = c.strip_prefix("rgba(")?.strip_suffix(')')?;
+    let v: Vec<&str> = inner.split(',').map(str::trim).collect();
+    if v.len() != 4 || v.iter().any(|x| x.parse::<f64>().is_err()) {
+        return None;
+    }
+    let a: f64 = v[3].parse().ok()?;
+    (a < 1.0).then(|| (format!("rgb({},{},{})", v[0], v[1], v[2]), a))
+}
+
 fn draw_conn(cx: &RenderCtx, look: &Look, c: &Conn) -> String {
     // a line with fewer than two points (a route that simplified down to one) has nothing to draw
     if c.pts.len() < 2 {
@@ -2473,25 +2484,28 @@ fn draw_conn(cx: &RenderCtx, look: &Look, c: &Conn) -> String {
         c.pts[1]
     };
     // head.size scales the arrowhead (a wide line needs a wide head); stop.color is the ring of a stop marker
+    // a see-through line is drawn solid and faded as one layer, so where the line runs into a head, or a head's
+    // strokes cross, the overlap is no darker than the rest
+    let see = see_through(&stroke);
+    let ink = see.as_ref().map_or(stroke.clone(), |(s, _)| s.clone());
     let hk = js::max(0.5, js::min(num(g(p, "head.size"), 1.0), 4.0));
-    let ring_col = col(
-        look,
-        Some(g(p, "stop.color").or(g(p, "stroke")).unwrap_or("muted")),
-        None,
-    );
+    let ring_col = match g(p, "stop.color").filter(|v| !v.is_empty()) {
+        Some(v) => col(look, Some(v), None),
+        None => ink.clone(),
+    };
     let head = marker(
         cx,
         &c.head_m,
         c.pts[cnt - 1],
         h_from,
         sw,
-        &stroke,
+        &ink,
         &paper,
         hk,
         &ring_col,
     );
     let tail = marker(
-        cx, &c.tail_m, c.pts[0], t_from, sw, &stroke, &paper, hk, &ring_col,
+        cx, &c.tail_m, c.pts[0], t_from, sw, &ink, &paper, hk, &ring_col,
     );
     let d = if c.curve {
         let mut v = cut_end(c.pts.clone(), head.1);
@@ -2517,14 +2531,14 @@ fn draw_conn(cx: &RenderCtx, look: &Look, c: &Conn) -> String {
         ""
     };
     let a = format!(
-        "fill=\"none\" stroke=\"{stroke}\" stroke-width=\"{}\"{}{cap}{}",
+        "fill=\"none\" stroke=\"{ink}\" stroke-width=\"{}\"{}{cap}{}",
         n(sw),
         if set_not_none(g(p, "dash")) {
             format!(" stroke-dasharray=\"{}\"", esc(g(p, "dash").unwrap()))
         } else {
             String::new()
         },
-        blend_of(p)
+        if see.is_some() { "" } else { blend_of(p) }
     );
     let rough = cx.rough_of(p);
     let mut s = if nz(rough) {
@@ -2532,14 +2546,7 @@ fn draw_conn(cx: &RenderCtx, look: &Look, c: &Conn) -> String {
     } else {
         format!("<path d=\"{d}\" {a}/>")
     };
-    // casing=colour is a wider line underneath, so routes cross cleanly; double=colour is a finer line on top, making two rails
-    if set_not_none(g(p, "casing")) {
-        s = format!(
-            "<path d=\"{d}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\"{cap}/>\n{s}",
-            col(look, g(p, "casing"), None),
-            n(r2(sw + 2.0 * num(g(p, "casing.width"), 2.5)))
-        );
-    }
+    // double=colour is a finer line on top, making two rails
     if set_not_none(g(p, "double")) {
         s += &format!(
             "\n<path d=\"{d}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\"{cap}/>",
@@ -2554,6 +2561,17 @@ fn draw_conn(cx: &RenderCtx, look: &Look, c: &Conn) -> String {
     if !tail.0.is_empty() {
         s += "\n";
         s += &tail.0;
+    }
+    if let Some((_, a)) = see {
+        s = format!("<g opacity=\"{}\"{}>{s}</g>", n(a), blend_of(p));
+    }
+    // casing=colour is a wider line underneath, so routes cross cleanly
+    if set_not_none(g(p, "casing")) {
+        s = format!(
+            "<path d=\"{d}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\"{cap}/>\n{s}",
+            col(look, g(p, "casing"), None),
+            n(r2(sw + 2.0 * num(g(p, "casing.width"), 2.5)))
+        );
     }
     s
 }
