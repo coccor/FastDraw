@@ -1054,10 +1054,13 @@ export function App() {
     setCtx({ x: e.clientX, y: e.clientY });
   };
 
-  const zoomBy = (f: number) => setView((v) => {
-    const k = Math.min(4, Math.max(0.1, v.k * f)), mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  // zoom about the middle of the window, to a scale worked out from the current one
+  const zoomTo = (to: (k: number) => number) => setView((v) => {
+    const k = Math.min(4, Math.max(0.1, to(v.k))), mx = window.innerWidth / 2, my = window.innerHeight / 2;
     return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
   });
+  const zoomBy = (f: number) => zoomTo((k) => k * f);
+  const zoomRef = useRef(zoomTo); zoomRef.current = zoomTo;
 
   // The source with a new shape of `styleName` drawn from `a` to `b`: a drag sets its size, a click uses the style's own.
   // Shared by the live preview and the final drop so what is shown while dragging is what gets placed.
@@ -1386,6 +1389,10 @@ export function App() {
       if (text === null) return;
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); return; }
+      // Ctrl+= / Ctrl+- / Ctrl+0 zoom the canvas, not the page around it
+      if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomRef.current((k) => k * 1.2); return; }
+      if (mod && (e.key === '-' || e.key === '_')) { e.preventDefault(); zoomRef.current((k) => k / 1.2); return; }
+      if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => 1); return; }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
@@ -1672,9 +1679,9 @@ export function App() {
 
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island group">
-          <button className="iconbtn" title="Zoom out" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
-          <button className="pct" title="Reset zoom" onClick={() => zoomBy(1 / view.k)}>{Math.round(view.k * 100)}%</button>
-          <button className="iconbtn" title="Zoom in" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
+          <button className="iconbtn" title="Zoom out — Ctrl+-" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
+          <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => 1)}>{Math.round(view.k * 100)}%</button>
+          <button className="iconbtn" title="Zoom in — Ctrl+=" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
         </div>
         <div className="island group">
           <button className="iconbtn" title="Undo — Ctrl+Z" aria-label="Undo" disabled={!hist.current.past.length} onClick={() => undo(false)}><Undo2 size={16} /></button>

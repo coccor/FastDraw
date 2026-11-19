@@ -1011,6 +1011,23 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   expect(errors).toEqual([]);
 });
 
+test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does not zoom the page', async ({ page }) => {
+  await paste(page, SMALL);
+  const pct = page.locator('button.pct');
+  // the keys reach the page with the browser's default (page zoom) cancelled
+  await page.evaluate(() => window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key !== 'Control') (window as unknown as { prevented: boolean[] }).prevented = [...((window as unknown as { prevented?: boolean[] }).prevented ?? []), e.defaultPrevented]; }));
+  await page.keyboard.press('Control+0');
+  await expect(pct).toHaveText('100%');
+  await page.keyboard.press('Control+=');
+  await expect(pct).toHaveText('120%');
+  await page.keyboard.press('Control+-');
+  await page.keyboard.press('Control+-');
+  await expect(pct).toHaveText('83%');
+  await page.keyboard.press('Control+0');
+  await expect(pct).toHaveText('100%');
+  expect(await page.evaluate(() => (window as unknown as { prevented: boolean[] }).prevented)).toEqual([true, true, true, true, true]);
+});
+
 test('Escape closes the export and paste dialogs, from the shortcut and from the menu', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);
