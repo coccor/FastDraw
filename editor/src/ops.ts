@@ -2,6 +2,7 @@
 import { parseStatements } from '../../src/parse.ts';
 import type { Tok } from '../../src/parse.ts';
 import type { Scene, Shape, TextEl, Conn, End, Box, Pt } from '../../src/scene.ts';
+import { turnOf, turnPt } from '../../src/scene.ts';
 import { patchSource, appendStatements, setAt, setSize, setText, setProp, setKind, setEnd, setOp, fmtStmt, freshId, moveStatement, moveStatementsPast, setRows as editRows } from '../../src/edit.ts';
 import type { Patch, RowSpec } from '../../src/edit.ts';
 
@@ -18,6 +19,43 @@ export function boxOf(e: El): Box {
   const xs = e.el.pts.map((p) => p.x), ys = e.el.pts.map((p) => p.y);
   const x = Math.min(...xs), y = Math.min(...ys);
   return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+// An element as an upright box and a turn (rotate=, degrees clockwise) about that box's middle: how the editor draws
+// its outline and handles. A turned text turns about its "at" point, which is the same as its upright box moved to
+// where that turn takes the box's middle, then turned about the middle.
+export function frameOf(e: El): { b: Box; t: number } {
+  if (e.kind === 'shape') return { b: e.el, t: turnOf(e.el.p) };
+  if (e.kind === 'text' && e.el.frame) {
+    const f = e.el.frame, t = turnOf(e.el.p), m = turnPt({ x: f.x + f.w / 2, y: f.y + f.h / 2 }, { x: e.el.ax, y: e.el.ay }, t);
+    return { b: { x: m.x - f.w / 2, y: m.y - f.h / 2, w: f.w, h: f.h }, t };
+  }
+  return { b: boxOf(e), t: 0 };
+}
+// A canvas point as a turned shape sees it: turned back about the shape's middle, so its upright box holds it.
+export function toLocal(s: Box & { p: Shape['p'] }, p: Pt): Pt {
+  const t = turnOf(s.p);
+  return t ? turnPt(p, { x: s.x + s.w / 2, y: s.y + s.h / 2 }, -t) : p;
+}
+// The SVG transform that turns an upright box by t degrees about its middle.
+export const turnAttr = (b: Box, t: number) => (t ? `rotate(${t} ${b.x + b.w / 2} ${b.y + b.h / 2})` : undefined);
+
+// Turn shapes and free texts to `deg` degrees clockwise (rotate=; 0 drops it). Each turns about its own middle: a
+// text's "at" point moves so the text stays where it is. Lines are left alone.
+export function rotateElements(src: string, sc: Scene, ids: string[], deg: number): string {
+  let d = Math.round(deg * 10) / 10 % 360;
+  if (d > 180) d -= 360; else if (d <= -180) d += 360;
+  const patches = new Map<number, Patch>();
+  for (const id of ids) {
+    const e = find(sc, id);
+    if (!e || e.kind === 'conn') continue;
+    const own = sc.look.styles.get(e.el.style)?.props.rotate, v = d === 0 && !own ? null : String(d);
+    if (e.kind === 'shape') { patches.set(e.el.line, (t) => setProp(t, 'rotate', v)); continue; }
+    const { b, t: t0 } = frameOf(e), mid = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+    const at = turnPt({ x: e.el.ax, y: e.el.ay }, mid, d - t0);
+    patches.set(e.el.line, (t) => setProp(setAt(t, Math.round(at.x), Math.round(at.y)), 'rotate', v));
+  }
+  return patchSource(src, patches);
 }
 
 export function unionBox(boxes: Box[]): Box {

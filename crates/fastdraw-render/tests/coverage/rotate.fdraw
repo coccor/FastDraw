@@ -1,0 +1,20 @@
+# rotate= on shapes and free text: any angle, clockwise, a shape about its middle and a text about its at point.
+# Lines find the turned sides; a right-angled line leaves along the way nearest the side, a curve along the side itself.
+z: zone "Turned zone" at 20,20 300x180 rotate=-4
+a: node "Upright" at 40,60
+b: node "Tilted" at 260,60 rotate=30
+c: store "Quarter" at 40,240 rotate=90
+d: node "Half" at 260,240 rotate=180
+e: diamond "Eighth" at 480,60 rotate=45
+f: icon "Turned icon" at 480,240 icon=database rotate=-20
+g: node "Full turn" at 40,400 rotate=360
+a -> b "tilted end"
+b -> e route=curve
+c -> d
+d.right -> f
+a -> c route=straight
+e -> 700,140
+a -> b rotate=10
+text "Slanted note" at 480,420 rotate=-15
+text "Reads up" at 20,400 rotate=-90
+text "Wrapped and turned, a text box" at 600,380 width=120 rotate=20 align=center

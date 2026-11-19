@@ -15,7 +15,7 @@ use crate::js::{self, hypot, num_str, round, to_fixed, to_number};
 use crate::look::{Kind, Look, Props, color, font_family};
 use crate::router::Pt;
 use crate::scene::{
-    Conn, ICON_CAPTION_GAP, RowKind, Scene, Shape, TextEl, measure_text, text_width,
+    Conn, ICON_CAPTION_GAP, RowKind, Scene, Shape, TextEl, measure_text, text_width, turn_of,
 };
 use crate::sketch::{can_sketch, ellipse_d, rect_d, sketch_svg};
 
@@ -168,6 +168,20 @@ fn faded(p: &Props, svg: String) -> String {
     let o = num(g(p, "opacity"), 1.0).clamp(0.0, 1.0);
     if o < 1.0 {
         format!("<g opacity=\"{}\">{svg}</g>", n(r2(o)))
+    } else {
+        svg
+    }
+}
+// rotate=deg: a shape drawn turned clockwise about its middle, everything on it (text, icon, caption) turning with it
+fn turned(s: &Shape, svg: String) -> String {
+    let t = turn_of(&s.p);
+    if t != 0.0 {
+        format!(
+            "<g transform=\"rotate({} {} {})\">{svg}</g>",
+            n(r2(t)),
+            n(r2(s.x + s.w / 2.0)),
+            n(r2(s.y + s.h / 2.0))
+        )
     } else {
         svg
     }
@@ -2561,7 +2575,7 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
     } else {
         t.ax
     };
-    let rot = num(g(&t.p, "rotate"), 0.0);
+    let rot = turn_of(&t.p);
     let lines: Vec<&str> = match &t.lines {
         Some(l) => l.iter().map(String::as_str).collect(),
         None => t.text.split('\n').collect(),
@@ -2606,10 +2620,10 @@ fn draw_text(look: &Look, t: &TextEl) -> String {
             + "\n"
             + &body;
     }
-    if rot == 90.0 || rot == -90.0 {
+    if rot != 0.0 {
         format!(
             "<g transform=\"rotate({} {} {})\">{body}</g>",
-            n(rot),
+            n(r2(rot)),
             n(t.ax),
             n(t.ay)
         )
@@ -2819,6 +2833,7 @@ fn footed(c: &Conn, shapes: &[Shape]) -> Conn {
             let d = num(g(&s.p, "depth"), 0.0);
             if d > 0.0
                 && !s.back
+                && turn_of(&s.p) == 0.0
                 && (q.y - (s.y + s.h)).abs() < 1.0
                 && q.x > s.x
                 && q.x < s.x + s.w
@@ -3090,7 +3105,7 @@ pub fn render_body(sc: &Scene, background: bool) -> String {
     }
     for s in &sc.shapes {
         if s.back {
-            out.push(faded(&s.p, draw_shape(&mut cx, look, s)));
+            out.push(faded(&s.p, turned(s, draw_shape(&mut cx, look, s))));
         }
     }
     // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
@@ -3114,7 +3129,7 @@ pub fn render_body(sc: &Scene, background: bool) -> String {
     }
     for s in &sc.shapes {
         if !s.back {
-            out.push(faded(&s.p, draw_shape(&mut cx, look, s)));
+            out.push(faded(&s.p, turned(s, draw_shape(&mut cx, look, s))));
         }
     }
     for c in &over {

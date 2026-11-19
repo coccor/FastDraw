@@ -1,10 +1,10 @@
 // Geometry and reference checks. Messages are written for an agent to act on.
 import type { Issue, Look } from './look.ts';
 import { color } from './look.ts';
-import { textWidth } from './scene.ts';
+import { textWidth, turnOf, turnPt } from './scene.ts';
 import { segHits } from './router.ts';
 import { iconBox, tagLayout, textBlock, legible } from './render.ts';
-import type { Scene, Box, Pt, Conn, Shape } from './scene.ts';
+import type { Scene, Box, Pt, Conn, Shape, TextEl } from './scene.ts';
 
 const num = (v: string | undefined, d: number) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
 const inter = (a: Box, b: Box, pad = 0) =>
@@ -15,6 +15,35 @@ const hasPt = (b: Box, p: Pt) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y &&
 const inset = (b: Box, n: number): Box => ({ x: b.x + n, y: b.y + n, w: b.w - 2 * n, h: b.h - 2 * n });
 const name = (c: Conn) => (c.id.startsWith('_') ? `${c.a.raw} ${c.head ? '->' : '--'} ${c.b.raw}` : c.id);
 const tiny = (s: Box) => Math.min(s.w, s.h) <= 12;
+
+// A turned shape (rotate=) is tested in its own frame: a point is turned back about the shape's middle, so the
+// shape is its upright box again.
+const turned = (s: Shape) => turnOf(s.p) !== 0;
+const local = (s: Shape, p: Pt): Pt => (turned(s) ? turnPt(p, { x: s.x + s.w / 2, y: s.y + s.h / 2 }, -turnOf(s.p)) : p);
+const corners = (b: Box, turn = 0): Pt[] => {
+  const q = [{ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y }, { x: b.x + b.w, y: b.y + b.h }, { x: b.x, y: b.y + b.h }];
+  return turn ? q.map((p) => turnPt(p, { x: b.x + b.w / 2, y: b.y + b.h / 2 }, turn)) : q;
+};
+// Do a box and a shape, either of them turned, overlap by more than pad? (the separating-axis test on two rectangles)
+function meets(b: Box, bTurn: number, s: Shape, pad: number): boolean {
+  if (!bTurn && !turned(s)) return inter(b, s, pad);
+  const P = corners(inset(b, pad), bTurn), Q = corners(s, turnOf(s.p));
+  for (const [A, B] of [[P[0], P[1]], [P[1], P[2]], [Q[0], Q[1]], [Q[1], Q[2]]]) {
+    const ax = B.x - A.x, ay = B.y - A.y, along = (p: Pt) => p.x * ax + p.y * ay;
+    const p = P.map(along), q = Q.map(along);
+    if (Math.max(...p) <= Math.min(...q) || Math.max(...q) <= Math.min(...p)) return false;
+  }
+  return true;
+}
+const hasPtIn = (s: Shape, p: Pt) => hasPt(s, local(s, p));
+// A text as a box and the turn about that box's middle: a turned text (rotate=) turns about its "at" point, which
+// is the same as its upright box moved to where that turn takes the box's middle, then turned about the middle.
+function textFrame(t: TextEl): [Box, number] {
+  const f = t.frame, turn = turnOf(t.p);
+  if (!f) return [t, 0];
+  const m = turnPt({ x: f.x + f.w / 2, y: f.y + f.h / 2 }, { x: t.ax, y: t.ay }, turn);
+  return [{ x: m.x - f.w / 2, y: m.y - f.h / 2, w: f.w, h: f.h }, turn];
+}
 // an open outline (a trend line, a stroke drawn by hand) is a line: its box is empty space that lines and labels may use
 const isLine = (s: Shape) => !!s.poly && s.p.open === '1';
 
@@ -44,7 +73,12 @@ export function check(sc: Scene): Issue[] {
 
   for (let i = 0; i < front.length; i++) for (let j = i + 1; j < front.length; j++) {
     const a = front[i], b = front[j];
-    if (!inter(a, b, 0.5) || contains(a, b) || contains(b, a) || a.p.overlap === 'ok' || b.p.overlap === 'ok') continue;
+    if (a.p.overlap === 'ok' || b.p.overlap === 'ok') continue;
+    if (turned(a) || turned(b)) {
+      if (meets(a, turnOf(a.p), b, 0.5) && !corners(b, turnOf(b.p)).every((p) => hasPtIn(a, p)) && !corners(a, turnOf(a.p)).every((p) => hasPtIn(b, p))) warn(b.line, `${b.id} overlaps ${a.id}; move one of them`);
+      continue;
+    }
+    if (!inter(a, b, 0.5) || contains(a, b) || contains(b, a)) continue;
     const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
     warn(b.line, `${b.id} overlaps ${a.id} by ${Math.round(Math.min(ox, oy))}px; move one of them`);
   }
@@ -56,7 +90,7 @@ export function check(sc: Scene): Issue[] {
     if (s.rows || s.shape === 'legend' || s.shape === 'chart' || s.p['title.pos'] === 'top') continue;
     // a box with no fill of its own shows whatever filled shape lies under its middle
     const cxs = s.x + s.w / 2, cys = s.y + s.h / 2, at = sc.shapes.indexOf(s);
-    const below = fillOf(s) ? undefined : sc.shapes.slice(0, at).reverse().find((o) => !o.back && !o.rows && fillOf(o) && cxs >= o.x && cxs <= o.x + o.w && cys >= o.y && cys <= o.y + o.h);
+    const below = fillOf(s) ? undefined : sc.shapes.slice(0, at).reverse().find((o) => !o.back && !o.rows && fillOf(o) && hasPtIn(o, { x: cxs, y: cys }));
     const bg = fillOf(s) ?? (below ? fillOf(below)! : paperRgb);
     for (const [what, has, key, dflt] of [['text', s.text, 'title.color', 'ink'], ['second line', s.p.sub, 'sub.color', 'muted']] as const) {
       const fg = rgba(sc.look, s.p[key] ?? dflt);
@@ -66,7 +100,7 @@ export function check(sc: Scene): Issue[] {
   for (const t of sc.texts) {
     // the last-drawn filled shape under the middle of the text is what the text sits on
     const mx = t.x + t.w / 2, my = t.y + t.h / 2;
-    const under = [...sc.shapes].reverse().find((s) => !s.rows && s.shape !== 'legend' && s.shape !== 'chart' && fillOf(s) && mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h);
+    const under = [...sc.shapes].reverse().find((s) => !s.rows && s.shape !== 'legend' && s.shape !== 'chart' && fillOf(s) && hasPtIn(s, { x: mx, y: my }));
     const fg = rgba(sc.look, t.p.color ?? 'ink');
     if (!fg || fg[3] <= 0.3) continue; // a watermark is meant to be faint
     const bg = under ? fillOf(under)! : paperRgb;
@@ -107,7 +141,7 @@ export function check(sc: Scene): Issue[] {
   const seen = new Set<string>();
   for (let i = 0; i < front.length; i++) for (let j = i + 1; j < front.length; j++) {
     const a = front[i], b = front[j];
-    if (tiny(a) || tiny(b) || contains(a, b) || contains(b, a) || a.p.overlap === 'ok' || b.p.overlap === 'ok') continue; // free-form drawings line up by design, not by edges
+    if (tiny(a) || tiny(b) || turned(a) || turned(b) || contains(a, b) || contains(b, a) || a.p.overlap === 'ok' || b.p.overlap === 'ok') continue; // free-form drawings line up by design, not by edges
     const pairs: [string, number, number][] = [
       ['top edges', a.y, b.y], ['vertical centres', a.y + a.h / 2, b.y + b.h / 2],
       ['left edges', a.x, b.x], ['horizontal centres', a.x + a.w / 2, b.x + b.w / 2],
@@ -129,16 +163,16 @@ export function check(sc: Scene): Issue[] {
       for (const s of front) {
         if (c.p.layer === 'back' || c.p.layer === 'front') break; // a grid line or guide meant to run behind the boxes
         if (s.id === c.a.id || s.id === c.b.id || tiny(s) || hit.has(s.id) || isLine(s)) continue;
-        if (hasPt(s, c.pts[0]) || hasPt(s, c.pts[c.pts.length - 1])) continue;
-        if (segHits(A, B, inset(s, 1))) { hit.add(s.id); warn(c.line, `${name(c)} passes through ${s.id}; route around it with from=/to= sides or via=x,y`); }
+        if (hasPtIn(s, c.pts[0]) || hasPtIn(s, c.pts[c.pts.length - 1])) continue;
+        if (segHits(local(s, A), local(s, B), inset(s, 1))) { hit.add(s.id); warn(c.line, `${name(c)} passes through ${s.id}; route around it with from=/to= sides or via=x,y`); }
       }
     }
     const first = c.pts[0], last = c.pts[c.pts.length - 1];
     const l = c.label;
     if (!l) continue;
-    for (const s of front) if (!tiny(s) && !isLine(s) && inter(l, s, 1)) warn(c.line, `label "${l.text}" of ${name(c)} collides with ${s.id}; shorten it, move things apart, or place it with lpos=x,y or lside=below|left`);
+    for (const s of front) if (!tiny(s) && !isLine(s) && meets(l, 0, s, 1)) warn(c.line, `label "${l.text}" of ${name(c)} collides with ${s.id}; shorten it, move things apart, or place it with lpos=x,y or lside=below|left`);
     for (const z of sc.shapes) {
-      if (!z.back || !inter(l, z, 0) || contains(z, l)) continue;
+      if (!z.back || !meets(l, 0, z, 0) || corners(l).every((p) => hasPtIn(z, p))) continue;
       warn(c.line, `label "${l.text}" of ${name(c)} sits on the border of ${z.id}; place it on a clear stretch of the line with lpos=x,y`);
     }
     for (let i = 0; i < c.pts.length - 1; i++) {
@@ -175,7 +209,8 @@ export function check(sc: Scene): Issue[] {
   }
 
   for (const t of sc.texts) {
-    for (const s of front) if (!tiny(s) && s.shape !== 'chart' && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && inter(t, s, 1) && !contains(s, t)) warn(t.line, `text ${t.id} overlaps ${s.id}`);
+    const [tb, tt] = textFrame(t), tc = corners(tb, tt);
+    for (const s of front) if (!tiny(s) && s.shape !== 'chart' && s.p.overlap !== 'ok' && t.p.overlap !== 'ok' && meets(tb, tt, s, 1) && !tc.every((p) => hasPtIn(s, p))) warn(t.line, `text ${t.id} overlaps ${s.id}`);
     for (const o of sc.texts) if (o.line > t.line && inter(t, o, 1) && t.p.overlap !== 'ok' && o.p.overlap !== 'ok') warn(o.line, `text ${o.id} overlaps text ${t.id}`);
   }
 
