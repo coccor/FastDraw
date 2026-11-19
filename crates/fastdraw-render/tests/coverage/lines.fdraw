@@ -15,6 +15,10 @@ c.right@0.2 -> d.left@0.2 head=stop tail=one stop.color=#aa3333
 c.right@0.4 -> d.left@0.4 head=only-one tail=many
 c.right@0.6 -> d.left@0.6 head=one-many tail=zero-one
 c.right@0.8 -> d.left@0.8 head=zero-many tail=arrow head.size=2
+e.right@0.2 -> 900,48 head=stealth tail=double head.size=1.5
+e.right@0.5 -> 900,64 head=half tail=square
+e.right@0.8 -> 900,80 head=square-solid tail=bar sw=3
+f.top -> 760,140 head=cross tail=half route=curve
 a -- c
 a <-> c tail=open
 b -- d style=relation head=many tail=one

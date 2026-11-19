@@ -2275,6 +2275,79 @@ fn marker(
             ),
             0.0,
         ),
+        // swept back, with a notch where the line goes in
+        "stealth" => (
+            format!(
+                "<polygon points=\"{} {} {} {}\" fill=\"{stroke}\"/>",
+                at(0.0, 0.0),
+                at(12.0 * k, 5.0 * k),
+                at(8.0 * k, 0.0),
+                at(12.0 * k, -5.0 * k)
+            ),
+            8.0 * k,
+        ),
+        // two heads one behind the other
+        "double" => (
+            format!(
+                "<polygon points=\"{} {} {}\" fill=\"{stroke}\"/><polygon points=\"{} {} {}\" fill=\"{stroke}\"/>",
+                at(0.0, 0.0),
+                at(10.0 * k, 4.0 * k),
+                at(10.0 * k, -4.0 * k),
+                at(7.0 * k, 0.0),
+                at(17.0 * k, 4.0 * k),
+                at(17.0 * k, -4.0 * k)
+            ),
+            14.0 * k,
+        ),
+        // a harpoon: one barb, on the left of the way the line runs
+        "half" => (
+            format!(
+                "<path d=\"M {} L {}\" {line}/>",
+                at(10.0 * k, -5.0 * k),
+                at(0.0, 0.0)
+            ),
+            0.0,
+        ),
+        "square" => (
+            format!(
+                "<polygon points=\"{} {} {} {}\" {hollow}/>",
+                at(0.0, 4.5 * k),
+                at(9.0 * k, 4.5 * k),
+                at(9.0 * k, -4.5 * k),
+                at(0.0, -4.5 * k)
+            ),
+            9.0 * k,
+        ),
+        "square-solid" => (
+            format!(
+                "<polygon points=\"{} {} {} {}\" fill=\"{stroke}\" stroke=\"{stroke}\" stroke-width=\"{swn}\" stroke-linejoin=\"round\"/>",
+                at(0.0, 4.5 * k),
+                at(9.0 * k, 4.5 * k),
+                at(9.0 * k, -4.5 * k),
+                at(0.0, -4.5 * k)
+            ),
+            9.0 * k,
+        ),
+        // a bar across the very end: the line stops here (blocks, inhibits)
+        "bar" => (
+            format!(
+                "<path d=\"M {} L {}\" {line}/>",
+                at(0.0, 6.0 * k),
+                at(0.0, -6.0 * k)
+            ),
+            0.0,
+        ),
+        // an X over the end: cancelled, destroyed
+        "cross" => (
+            format!(
+                "<path d=\"M {} L {} M {} L {}\" {line}/>",
+                at(0.0, 4.5 * k),
+                at(9.0 * k, -4.5 * k),
+                at(0.0, -4.5 * k),
+                at(9.0 * k, 4.5 * k)
+            ),
+            0.0,
+        ),
         "triangle" => (
             format!(
                 "<polygon points=\"{} {} {}\" {hollow}/>",

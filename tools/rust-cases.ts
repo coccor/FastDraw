@@ -282,7 +282,7 @@ function render() {
   const texts = [
     'text "  indented  code" at 10,10\ntext "a  b" at 10,40 rotate=90\ntext "tab\there " at 10,70\ntext "echo  me" at 60,90 echo=accent anchor=middle\ntext "faint" at 0,120 color=ink/0.2 rotate=-90\ntext "two\\nlines" at 40,140 spacing=0.1 italic=1 weight=600 blend=multiply',
   ];
-  const marks = ['arrow', 'open', 'triangle', 'diamond', 'diamond-solid', 'dot', 'circle', 'stop', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many', 'none', 'bogus'];
+  const marks = ['arrow', 'open', 'stealth', 'double', 'half', 'triangle', 'diamond', 'diamond-solid', 'square', 'square-solid', 'dot', 'circle', 'bar', 'cross', 'stop', 'one', 'only-one', 'many', 'one-many', 'zero-one', 'zero-many', 'none', 'bogus'];
   const conns = marks.map((m, i) => `a${i}: rect "A${i}" at 0,${i * 60} 80x40\nb${i}: rect "B${i}" at 240,${i * 60 + 10} 80x40 depth=6\na${i} -> b${i} "${m}" head=${m} tail=${marks[(i + 3) % marks.length]} head.size=1.5 casing=paper double=accent cap=round label.fill=soft label.border=ink label.weight=600 label.italic=1`).join('\n');
   const shapes = [
     'e: ellipse "Ellipse" sub="sub line" tag="TAG" at 0,0 120x60 fill=soft',

@@ -105,8 +105,9 @@ export function TextField({ label, value, onCommit, multiline }: { label: string
 }
 
 const MARKER_NAMES: Record<string, string> = {
-  none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond',
-  dot: 'Dot', circle: 'Circle', stop: 'Ring (stop)', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
+  none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', stealth: 'Swept arrow', double: 'Double arrow', half: 'Half arrow',
+  triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond', square: 'Hollow square', 'square-solid': 'Filled square',
+  dot: 'Dot', circle: 'Circle', bar: 'Bar', cross: 'Cross', stop: 'Ring (stop)', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
 };
 
 // The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.

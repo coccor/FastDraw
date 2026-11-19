@@ -666,6 +666,18 @@ function marker(kind: string, tip: Pt, from: Pt, sw: number, stroke: string, pap
   switch (kind) {
     case 'none': return { svg: '', trim: 0 };
     case 'open': return { svg: `<path d="M ${at(10 * k, 5 * k)} L ${at(0, 0)} L ${at(10 * k, -5 * k)}" ${line}/>`, trim: 0 };
+    // swept back, with a notch where the line goes in
+    case 'stealth': return { svg: `<polygon points="${at(0, 0)} ${at(12 * k, 5 * k)} ${at(8 * k, 0)} ${at(12 * k, -5 * k)}" fill="${stroke}"/>`, trim: 8 * k };
+    // two heads one behind the other
+    case 'double': return { svg: `<polygon points="${at(0, 0)} ${at(10 * k, 4 * k)} ${at(10 * k, -4 * k)}" fill="${stroke}"/><polygon points="${at(7 * k, 0)} ${at(17 * k, 4 * k)} ${at(17 * k, -4 * k)}" fill="${stroke}"/>`, trim: 14 * k };
+    // a harpoon: one barb, on the left of the way the line runs
+    case 'half': return { svg: `<path d="M ${at(10 * k, -5 * k)} L ${at(0, 0)}" ${line}/>`, trim: 0 };
+    case 'square': return { svg: `<polygon points="${at(0, 4.5 * k)} ${at(9 * k, 4.5 * k)} ${at(9 * k, -4.5 * k)} ${at(0, -4.5 * k)}" ${hollow}/>`, trim: 9 * k };
+    case 'square-solid': return { svg: `<polygon points="${at(0, 4.5 * k)} ${at(9 * k, 4.5 * k)} ${at(9 * k, -4.5 * k)} ${at(0, -4.5 * k)}" fill="${stroke}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`, trim: 9 * k };
+    // a bar across the very end: the line stops here (blocks, inhibits)
+    case 'bar': return { svg: `<path d="M ${at(0, 6 * k)} L ${at(0, -6 * k)}" ${line}/>`, trim: 0 };
+    // an X over the end: cancelled, destroyed
+    case 'cross': return { svg: `<path d="M ${at(0, 4.5 * k)} L ${at(9 * k, -4.5 * k)} M ${at(0, -4.5 * k)} L ${at(9 * k, 4.5 * k)}" ${line}/>`, trim: 0 };
     case 'triangle': return { svg: `<polygon points="${at(0, 0)} ${at(11 * k, 6 * k)} ${at(11 * k, -6 * k)}" ${hollow}/>`, trim: 11 * k };
     // a stop on a route: a ring the line runs into, in the colour of the boxes' outline
     case 'stop': { const r = Math.max(4, sw / 2 + 3); return { svg: `<circle cx="${r2(tip.x)}" cy="${r2(tip.y)}" r="${r}" fill="${paper}" stroke="${ring2}" stroke-width="${Math.max(2, r2(sw * 0.45))}"/>`, trim: 0 }; }

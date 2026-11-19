@@ -330,6 +330,19 @@ test('tables and markers report mistakes in words an agent can act on', () => {
   assert.match(msgs('x: node "X" at 40,300\nx -> x.middle\n'), /only a table has rows/);
 });
 
+test('markers: the newer heads parse and draw, and scale with head.size', () => {
+  const two = 'a: node "A" at 40,40\nb: node "B" at 300,40\n';
+  const svg = (m: string, extra = '') => renderSvg(scene(two + `a -> b head=${m} tail=${m}${extra}\n`));
+  const polys = (s: string) => (s.match(/<polygon/g) ?? []).length;
+  for (const m of ['stealth', 'double', 'half', 'square', 'square-solid', 'bar', 'cross']) {
+    const c = scene(two + `a -> b head=${m} tail=${m}\n`).conns[0];
+    assert.deepEqual([c.headM, c.tailM], [m, m]);
+    assert.notEqual(svg(m), svg('none'), m);
+  }
+  assert.equal(polys(svg('double')) - polys(svg('none')), 4); // two heads at each end
+  assert.notEqual(svg('cross'), svg('cross', ' head.size=2'));
+});
+
 test('markers: -> keeps the style head, head= and tail= override, <-> mirrors', () => {
   const c = (line: string) => scene(`a: node "A" at 40,40\nb: node "B" at 300,40\n${line}\n`).conns[0];
   assert.deepEqual([c('a -> b').tailM, c('a -> b').headM], ['none', 'arrow']);
