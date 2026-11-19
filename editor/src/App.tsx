@@ -1018,7 +1018,8 @@ export function App() {
     const again = (id: string) => lastClick.current.id === id && performance.now() - lastClick.current.t < 450 && !e.shiftKey;
     if (lab && sel.length === 1 && sel[0] === lab && !again(lab)) {
       const c = scene.conns.find((x) => x.id === lab);
-      if (c?.label) { drag.current = { type: 'label', id: lab, base: src, scene, dx: c.label.cx - p.x, dy: c.label.baseline - p.y }; return; }
+      // the press counts as a click too, so a second one straight after edits the label instead of dragging it again
+      if (c?.label) { lastClick.current = { id: lab, t: performance.now() }; drag.current = { type: 'label', id: lab, base: src, scene, dx: c.label.cx - p.x, dy: c.label.baseline - p.y }; return; }
     }
     const id = t.closest('[data-id]')?.getAttribute('data-id');
     if (id) {
