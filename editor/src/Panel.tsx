@@ -9,7 +9,7 @@ import { MARKERS, turnOf } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { splitCells } from '../../src/edit.ts';
-import { find, stmtToks } from './ops.ts';
+import { find } from './ops.ts';
 import { IconField } from './IconPicker.tsx';
 import { ColorPicker } from './ColorPicker.tsx';
 import type { AlignMode, Layering } from './ops.ts';
@@ -106,7 +106,7 @@ export function TextField({ label, value, onCommit, multiline }: { label: string
 
 const MARKER_NAMES: Record<string, string> = {
   none: 'Nothing', arrow: 'Arrow', open: 'Open arrow', triangle: 'Hollow triangle', diamond: 'Hollow diamond', 'diamond-solid': 'Filled diamond',
-  dot: 'Dot', circle: 'Circle', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
+  dot: 'Dot', circle: 'Circle', stop: 'Ring (stop)', one: 'One', 'only-one': 'Exactly one', many: 'Many', 'one-many': 'One or more', 'zero-one': 'Zero or one', 'zero-many': 'Zero or more',
 };
 
 // The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
@@ -162,6 +162,15 @@ const Ends = ({ a, b }: { a: boolean; b: boolean }) => (
 );
 
 // An icon's stroke width in pixels; Regular leaves it to the icon's size.
+// The stroke widths the panel offers. A width set by a look or by hand (an arrow's 1.4, a focal box's 2) shows as
+// the nearest of them, nearest by ratio, since a step from 1 to 1.4 looks as big as one from 2 to 2.8.
+const WIDTHS = [['Thin', '1', 1.2], ['Medium', '1.6', 2.2], ['Bold', '2.4', 3.4]] as const;
+function widthOf(sw: string | undefined): string {
+  const n = Number(sw ?? '1');
+  if (!(n > 0)) return '1';
+  return WIDTHS.reduce((a, b) => (Math.abs(Math.log(n / +b[1])) < Math.abs(Math.log(n / +a[1])) ? b : a))[1];
+}
+
 function IconWidths({ value, onPick }: { value: string | undefined; onPick: (v: string | null) => void }) {
   return (
     // the line thickness in pixels; a built-in icon takes the nearest of its weights
@@ -254,8 +263,12 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
   const styleProp = (k: string): string | undefined => sc.look.styles.get(first.el.style)?.props[k];
   const fontKey = kind === 'shape' ? 'title.font' : kind === 'text' ? 'font' : 'label.font';
   const font = p[fontKey] ?? 'sans';
+  // the size the text is drawn at when nothing sets it: the renderer's own fallbacks (an icon's caption is a size smaller)
+  const baseSize = styleProp(sizeKey) ?? (kind === 'conn' ? '8' : iconShape ? '11' : '12');
+  const size = p[sizeKey] ?? baseSize;
   const sizes = kind === 'conn' ? [['S', '8'], ['M', '10'], ['L', '12']] : kind === 'text' ? [['S', '9'], ['M', '12'], ['L', '16'], ['XL', '28']] : [['S', '10'], ['M', '12'], ['L', '15'], ['XL', '18']];
-  const op = kind === 'conn' ? stmtToks(src, first.el.line)?.find((t) => t.t === 'word' && ['->', '--', '<->'].includes(t.v))?.v : undefined;
+  // the ends as drawn, not as written: `a -> b head=none` has no arrowhead, whatever its operator says
+  const ends = first.kind === 'conn' ? (first.el.head ? (first.el.tail ? '<->' : '->') : first.el.tail ? '<-' : '--') : undefined;
   const boxes = els.filter((e) => e!.kind !== 'conn').length;
   const aligns: [AlignMode, string, React.ReactNode][] = [
     ['left', 'Align left edges', <AlignStartVertical size={16} />], ['hcenter', 'Centre horizontally', <AlignCenterVertical size={16} />], ['right', 'Align right edges', <AlignEndVertical size={16} />],
@@ -303,8 +316,8 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <section>
             <h4>Stroke width</h4>
             <div className="seg">
-              {[['Thin', '1', 1.2], ['Medium', '1.6', 2.2], ['Bold', '2.4', 3.4]].map(([l, v, w]) => (
-                <button key={l as string} title={l as string} className={(p.sw ?? '1') === v ? 'on' : ''} onClick={() => act.setProp('sw', v as string)}><Stroke w={w as number} /></button>
+              {WIDTHS.map(([l, v, w]) => (
+                <button key={l} title={l} className={widthOf(p.sw) === v ? 'on' : ''} onClick={() => act.setProp('sw', v === widthOf(styleProp('sw')) ? null : v)}><Stroke w={w} /></button>
               ))}
             </div>
           </section>
@@ -318,9 +331,9 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <section>
             <h4>Arrowheads</h4>
             <div className="seg">
-              <button title="No arrowhead" className={op === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
-              <button title="Arrowhead at the end" className={op === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
-              <button title="Arrowheads at both ends" className={op === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
+              <button title="No arrowhead" className={ends === '--' ? 'on' : ''} onClick={() => act.setOp('--')}><Ends a={false} b={false} /></button>
+              <button title="Arrowhead at the end" className={ends === '->' ? 'on' : ''} onClick={() => act.setOp('->')}><Ends a={false} b /></button>
+              <button title="Arrowheads at both ends" className={ends === '<->' ? 'on' : ''} onClick={() => act.setOp('<->')}><Ends a b /></button>
             </div>
           </section>
           <section>
@@ -364,7 +377,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
         <section>
           <h4>Text size</h4>
           <div className="seg">
-            {sizes.map(([l, v]) => <button key={l} className={p[sizeKey] === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v)}>{l}</button>)}
+            {sizes.map(([l, v]) => <button key={l} className={size === v ? 'on' : ''} onClick={() => act.setProp(sizeKey, v === baseSize ? null : v)}>{l}</button>)}
           </div>
         </section>
       )}

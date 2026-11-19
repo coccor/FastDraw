@@ -231,7 +231,7 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 
 A shape's text is styled with `title.size=`, `title.color=`, `title.weight=`, `title.font=` (and `sub.` the same for the second line).
 
-Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. `opacity=0.5` draws the whole element (box, line or text, with its text and arrowheads) see-through, from `0` to `1`. `rotate=30` turns a shape clockwise about its middle, by any angle in degrees (negative turns it the other way); its text, icon and caption turn with it, and lines attach to its turned sides. Lines themselves do not turn. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.
+Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. `opacity=0.5` draws the whole element (box, line or text, with its text and arrowheads) see-through, from `0` to `1`. `rotate=30` turns a shape clockwise about its middle, by any angle in degrees (negative turns it the other way); its text, icon and caption turn with it, and lines attach to its turned sides. Lines themselves do not turn. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason. For `sw=`, leave the style's width unless a line or outline must read heavier or lighter than its kind; then `sw=1` (thin), `sw=1.6` (medium) or `sw=2.4` (bold) are the widths a person can pick again in the editor, and any other width shows there as the nearest of them.
 
 ### Connectors
 

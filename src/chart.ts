@@ -34,10 +34,12 @@ const range = (v: string | undefined): [number, number] | null => {
   return m && Math.abs(+m[1]) < 1e15 && Math.abs(+m[2]) < 1e15 && +m[2] > +m[1] ? [+m[1], +m[2]] : null; // must run upwards
 };
 
-export function drawChart(look: Look, s: Shape): string {
-  const p = s.p, rows = (s.rows ?? []).filter((r) => r.id && r.vals.length), out: string[] = [];
+const pairs = (v: string) => (v === '_' ? [] : v.split(',').map(Number)); // _ leaves a gap
+
+// The scales of a chart and where its bars and points go: shared by the renderer and the checker.
+function plot(s: Shape) {
+  const p = s.p, rows = (s.rows ?? []).filter((r) => r.id && r.vals.length);
   const { x, y, w, h } = s;
-  const pairs = (v: string) => (v === '_' ? [] : v.split(',').map(Number)); // _ leaves a gap
   // ---- scales --------------------------------------------------------------
   const xr = range(p.x), cats = !xr && p.x ? p.x.split(',').map((c) => c.trim()) : [];
   const n = xr ? 0 : Math.max(cats.length, ...rows.map((r) => r.vals.length), 1);
@@ -56,6 +58,38 @@ export function drawChart(look: Look, s: Shape): string {
   const X = (i: number) => r2(x + bw * (i + 0.5)); // middle of category i
   const XV = (v: number) => (xr ? r2(x + ((v - xr[0]) / (xr[1] - xr[0])) * w) : 0);
   const base = Y(Math.min(Math.max(0, y0), y1));
+  const bars = rows.filter((r) => r.id === 'bars');
+  const group = bw * num(p['bar.width'], 0.64), each = stacked || !bars.length ? group : group / bars.length;
+  const tops: number[] = [];
+  // every bar: its series (k-th bars row), category i, box, and the values it was drawn from
+  const barBoxes = bars.flatMap((r, k) => r.vals.flatMap((raw, i) => {
+    const q = pairs(raw);
+    if (!q.length) return [];
+    let lo = q.length === 2 ? q[0] : 0, hi = q.length === 2 ? q[1] : q[0];
+    if (stacked && q.length === 1) { lo = tops[i] ?? 0; hi = lo + q[0]; tops[i] = hi; }
+    const top = Math.min(Y(lo), Y(hi)), bh = Math.abs(Y(lo) - Y(hi));
+    const bx = r2(X(i) - group / 2 + (stacked ? 0 : k * each) + (each > 6 ? 1 : 0)), ww = r2(each - (each > 6 ? 2 : 0));
+    return [{ r, i, q, lo, hi, top, bh, bx, ww }];
+  }));
+  // every point of a line, area or dots series
+  const points = rows.filter((r) => r.id !== 'bars').map((r) => ({ r, pts: r.vals.map((raw, i) => ({ raw, i })).filter((e) => e.raw !== '_').map(({ raw, i }) => { const q = pairs(raw); return q.length >= 2 && xr ? { x: XV(q[0]), y: Y(q[1]), v: q[1], r: q[2] ?? 0, i } : { x: X(i), y: Y(q[0]), v: q[0], r: q[1] ?? 0, i }; }) }));
+  return { p, rows, x, y, w, h, xr, cats, n, y0, y1, step, Y, X, XV, bw, base, stacked, barBoxes, points };
+}
+
+// The marks of a chart that cover what lies under them: its bars, and its dots (a dots series, or dots=1 on a line).
+export function chartMarks(s: Shape): { x: number; y: number; w: number; h: number }[] {
+  const { barBoxes, points } = plot(s);
+  const marks = barBoxes.map((b) => ({ x: b.bx, y: b.top, w: b.ww, h: Math.max(b.bh, 0.5) }));
+  for (const { r, pts } of points) {
+    if (r.id !== 'dots' && r.p.dots !== '1') continue;
+    for (const q of pts) { const rad = r.id === 'dots' ? num(r.p.r, q.r || 4) : 3; marks.push({ x: q.x - rad, y: q.y - rad, w: 2 * rad, h: 2 * rad }); }
+  }
+  return marks;
+}
+
+export function drawChart(look: Look, s: Shape): string {
+  const { p, rows, x, y, w, h, xr, cats, n, y0, y1, step, Y, X, XV, bw, base, stacked, barBoxes, points } = plot(s);
+  const out: string[] = [];
   // ---- grid, axes and tick labels -----------------------------------------
   const tick = textAttrs(look, p, 'tick.', { font: 'mono', size: 9, weight: 400, color: 'muted' });
   const axis = col(look, p.stroke ?? 'ink/0.5'), grid = col(look, p['grid.color'] ?? 'ink/0.08'), sw = num(p.sw, 1);
@@ -80,30 +114,17 @@ export function drawChart(look: Look, s: Shape): string {
   const lab = textAttrs(look, p, 'value.', { font: 'mono', size: 9, weight: 400, color: 'ink' });
   const labels = p.labels === '1';
   const value = (cx: number, cy: number, v: number, plus = false) => labels && out.push(`<text x="${cx}" y="${r2(cy)}" text-anchor="middle" ${lab.a}>${esc((plus ? '+' : '') + pre + fmt(v) + unit)}</text>`);
-  const bars = rows.filter((r) => r.id === 'bars');
   const colour = (r: (typeof rows)[number], k: 'fill' | 'stroke') => r.p[k] ?? r.p.fill ?? r.p.stroke ?? PALETTE[rows.indexOf(r) % PALETTE.length];
-  const group = bw * num(p['bar.width'], 0.64), each = stacked || !bars.length ? group : group / bars.length;
-  const tops: number[] = [];
-  bars.forEach((r, k) => {
-    const rad = num(p['bar.radius'], 2);
+  const rad = num(p['bar.radius'], 2);
+  for (const { r, i, q, lo, hi, top, bh, bx, ww } of barBoxes) {
     // fill.3=accent colours the third bar of the series on its own
     const outline = r.p.stroke && r.p.fill ? ` stroke="${col(look, r.p.stroke)}" stroke-width="${num(r.p.sw, 1)}"` : '';
-    r.vals.forEach((raw, i) => {
-      const q = pairs(raw);
-      if (!q.length) return;
-      let lo = q.length === 2 ? q[0] : 0, hi = q.length === 2 ? q[1] : q[0];
-      if (stacked && q.length === 1) { lo = tops[i] ?? 0; hi = lo + q[0]; tops[i] = hi; }
-      const top = Math.min(Y(lo), Y(hi)), bh = Math.abs(Y(lo) - Y(hi));
-      const bx = r2(X(i) - group / 2 + (stacked ? 0 : k * each) + (each > 6 ? 1 : 0)), ww = r2(each - (each > 6 ? 2 : 0));
-      out.push(`<rect x="${bx}" y="${top}" width="${ww}" height="${r2(Math.max(bh, 0.5))}"${rad && bh > rad * 2 && !stacked ? ` rx="${rad}"` : ''} fill="${col(look, r.p[`fill.${i + 1}`] ?? colour(r, 'fill'))}"${outline}/>`);
-      // a floating step that does not start at zero is a change: say so with a sign
-      value(r2(bx + ww / 2), hi >= lo ? top - 4 : top + bh + lab.size + 2, q.length === 2 ? hi - lo : q[0], q.length === 2 && lo !== 0 && hi > lo);
-    });
-  });
-  for (const r of rows) {
-    if (r.id === 'bars') continue;
+    out.push(`<rect x="${bx}" y="${top}" width="${ww}" height="${r2(Math.max(bh, 0.5))}"${rad && bh > rad * 2 && !stacked ? ` rx="${rad}"` : ''} fill="${col(look, r.p[`fill.${i + 1}`] ?? colour(r, 'fill'))}"${outline}/>`);
+    // a floating step that does not start at zero is a change: say so with a sign
+    value(r2(bx + ww / 2), hi >= lo ? top - 4 : top + bh + lab.size + 2, q.length === 2 ? hi - lo : q[0], q.length === 2 && lo !== 0 && hi > lo);
+  }
+  for (const { r, pts } of points) {
     const stroke = col(look, colour(r, 'stroke')), lw = num(r.p.sw, 2);
-    const pts = r.vals.map((raw, i) => ({ raw, i })).filter((e) => e.raw !== '_').map(({ raw, i }) => { const q = pairs(raw); return q.length >= 2 && xr ? { x: XV(q[0]), y: Y(q[1]), v: q[1], r: q[2] ?? 0, i } : { x: X(i), y: Y(q[0]), v: q[0], r: q[1] ?? 0, i }; });
     if (!pts.length) continue;
     const d = pts.map((q) => `${q.x},${q.y}`).join(' ');
     if (r.id === 'area') out.push(`<polygon points="${pts[0].x},${base} ${d} ${pts[pts.length - 1].x},${base}" fill="${col(look, r.p.fill ?? colour(r, 'stroke') + (/\/[\d.]+$/.test(colour(r, 'stroke')) ? '' : '/0.1'))}"/>`);

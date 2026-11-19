@@ -382,6 +382,18 @@ test('legend from the menu, editable entries, grouping selects together', async 
   await field.fill('');
   await field.press('Enter');
   expect(lineOf(await source(page), 'legend')).not.toContain('focal=');
+  // asked again, the menu adds what the legend lacks to the same legend instead of stacking a second one on it
+  const before = lineOf(await source(page), 'legend');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Add a legend' }).click();
+  expect(await source(page)).not.toContain('legend2');
+  const after = lineOf(await source(page), 'legend');
+  expect(after.startsWith(`${before} focal="`)).toBe(true);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Add a legend' }).click();
+  await expect(page.locator('.status')).toHaveText('the legend already lists every component');
+  expect(lineOf(await source(page), 'legend')).toBe(after);
   await page.keyboard.press('Escape');
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
   await page.keyboard.down('Shift');
@@ -556,6 +568,70 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   await page.locator('.panel button[title="Arrowhead at the end"]').click();
   expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -> users.r1 style=relation');
   void k;
+  expect(errors).toEqual([]);
+});
+
+test('the panel names every line end, its arrowheads follow the ends as drawn, and the text size shows the default', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const sizeOn = page.locator('.panel section:has(h4:text-is("Text size")) button.on');
+  // a box with no size of its own is drawn at 12: M
+  await page.mouse.click(...Object.values(await corner(page, 'db')) as [number, number]);
+  await expect(sizeOn).toHaveText('M');
+  // picking the size it already has writes nothing
+  await sizeOn.click();
+  expect(lineOf(await source(page), 'db')).toBe('db: store "Orders DB" at 560,156');
+  await page.keyboard.press('Escape');
+  const mid = (await page.locator('polyline[data-id="r"]').boundingBox())!;
+  await page.mouse.click(mid.x + mid.width / 2, mid.y + mid.height / 2);
+  await expect(page.getByLabel('End of the line').locator('option[value="stop"]')).toHaveText('Ring (stop)');
+  const on = page.locator('.panel button.on[title^="Arrowhead"], .panel button.on[title="No arrowhead"]');
+  await expect(on).toHaveAttribute('title', 'Arrowhead at the end');
+  await page.getByLabel('End of the line').selectOption('none');
+  expect(lineOf(await source(page), 'r')).toContain('head=none');
+  await expect(on).toHaveAttribute('title', 'No arrowhead');
+  await page.getByLabel('Start of the line').selectOption('arrow');
+  await page.getByLabel('End of the line').selectOption('arrow');
+  await expect(on).toHaveAttribute('title', 'Arrowheads at both ends');
+  expect(errors).toEqual([]);
+});
+
+test('stroke width shows the nearest width for a look\'s own widths, and picking it again keeps the look\'s', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await page.goto('/edit/');
+  await page.waitForSelector('.welcome');
+  await page.getByRole('button', { name: 'Architecture', exact: true }).click();
+  await page.waitForSelector('svg.canvas');
+  const pick = async (id: string) => {
+    await page.keyboard.press('Escape');
+    const b = (await page.locator(`polyline[data-id="${id}"]`).boundingBox())!;
+    await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+  };
+  const widthOn = page.locator('.panel section:has(h4:text-is("Stroke width")) button.on');
+  const line = async () => (await source(page)).split('\n').find((l) => l.startsWith('cf -> astro'))!;
+  await pick('_c19'); // cf -> astro style=primary: sw=1.4 in the look
+  await expect(widthOn).toHaveAttribute('title', 'Medium');
+  await widthOn.click();
+  expect(await line()).toBe('cf -> astro "passes on" style=primary');
+  await page.locator('.panel button[title="Bold"]').click();
+  expect(await line()).toBe('cf -> astro "passes on" style=primary sw=2.4');
+  await expect(widthOn).toHaveAttribute('title', 'Bold');
+  await page.locator('.panel button[title="Medium"]').click();
+  expect(await line()).toBe('cf -> astro "passes on" style=primary');
+  await pick('_c17'); // reader -> cf style=link: sw=1.2
+  await expect(widthOn).toHaveAttribute('title', 'Thin');
+  expect(errors).toEqual([]);
+});
+
+test('a stroke width an agent wrote by hand shows as the nearest of the panel\'s widths', async ({ page }) => {
+  const errors = noPageErrors(page);
+  const widthOn = page.locator('.panel section:has(h4:text-is("Stroke width")) button.on');
+  await paste(page, 'a: node "A" at 40,40 sw=1.8\nb: node "B" at 240,40 sw=3\n');
+  await page.mouse.click(...Object.values(await corner(page, 'a')) as [number, number]);
+  await expect(widthOn).toHaveAttribute('title', 'Medium');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(...Object.values(await corner(page, 'b')) as [number, number]);
+  await expect(widthOn).toHaveAttribute('title', 'Bold');
   expect(errors).toEqual([]);
 });
 
@@ -983,6 +1059,69 @@ test('a reload brings back every open diagram, the active one, and its undo hist
   expect(await source(page)).toBe(SMALL);
   await page.getByRole('tab', { name: 'untitled' }).click();
   expect(await source(page)).toBe('\n');
+  expect(errors).toEqual([]);
+});
+
+test('at phone width every tool and the menu button can be reached, and the page does not scroll sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await paste(page, SMALL);
+  const menu = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
+  // what is under the middle of the menu button is the menu button
+  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('button')?.getAttribute('aria-label'), [menu.x + menu.width / 2, menu.y + menu.height / 2])).toBe('Menu');
+  for (const b of await page.getByRole('toolbar', { name: 'Tools' }).getByRole('button').all()) {
+    const r = (await b.boundingBox())!;
+    expect(r.x).toBeGreaterThanOrEqual(0);
+    expect(r.x + r.width).toBeLessThanOrEqual(390);
+    expect(r.x >= menu.x + menu.width || r.y >= menu.y + menu.height).toBe(true);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  // the problems badge leaves the zoom, undo and theme buttons beside it uncovered
+  const badge = (await page.locator('.problems').boundingBox())!;
+  for (const b of await page.locator('.bottomleft button').all()) {
+    const r = (await b.boundingBox())!;
+    expect(r.x + r.width <= badge.x || r.y + r.height <= badge.y).toBe(true);
+  }
+  await expect(page.getByRole('button', { name: 'No problems' })).toBeVisible();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await expect(page.getByRole('menuitem', { name: /Export image/ })).toBeVisible();
+});
+
+test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does not zoom the page', async ({ page }) => {
+  await paste(page, SMALL);
+  const pct = page.locator('button.pct');
+  // the keys reach the page with the browser's default (page zoom) cancelled
+  await page.evaluate(() => window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key !== 'Control') (window as unknown as { prevented: boolean[] }).prevented = [...((window as unknown as { prevented?: boolean[] }).prevented ?? []), e.defaultPrevented]; }));
+  await page.keyboard.press('Control+0');
+  await expect(pct).toHaveText('100%');
+  await page.keyboard.press('Control+=');
+  await expect(pct).toHaveText('120%');
+  await page.keyboard.press('Control+-');
+  await page.keyboard.press('Control+-');
+  await expect(pct).toHaveText('83%');
+  await page.keyboard.press('Control+0');
+  await expect(pct).toHaveText('100%');
+  expect(await page.evaluate(() => (window as unknown as { prevented: boolean[] }).prevented)).toEqual([true, true, true, true, true]);
+});
+
+test('Escape closes the export and paste dialogs, from the shortcut and from the menu', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  const exp = page.getByRole('dialog', { name: 'Export image' }), pst = page.getByRole('dialog', { name: 'Paste diagram text' });
+  await page.keyboard.press('Control+Shift+E');
+  await expect(exp).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(exp).toBeHidden();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  await expect(exp).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(exp).toBeHidden();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Paste diagram text' }).click();
+  await expect(pst.locator('textarea')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(pst).toBeHidden();
+  await expect(page.getByRole('tablist', { name: 'Open diagrams' }).getByRole('tab')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 

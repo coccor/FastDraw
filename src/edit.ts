@@ -170,11 +170,15 @@ export function setOp(toks: Tok[], op: string): Tok[] {
   return toks;
 }
 
-// A fresh id that no statement uses yet: base, base2, base3, ...
+// A fresh id that no statement uses yet: base, base2, base3, ... A taken base
+// that already ends in a number counts on from that number, so a copy of rect3
+// is rect4 (or the next free rectN after it), not rect32.
 export function freshId(src: string, base: string): string {
   const used = new Set<string>();
   for (const s of parseStatements(src)) if (hasId(s.toks)) used.add(s.toks[0].v.slice(0, -1));
   const b = base.replace(/[^A-Za-z0-9_]/g, '') || 'el';
   if (!used.has(b)) return b;
-  for (let i = 2; ; i++) if (!used.has(`${b}${i}`)) return `${b}${i}`;
+  const m = /^(.*?[^\d])(\d+)$/.exec(b);
+  const stem = m ? m[1] : b;
+  for (let i = m ? Number(m[2]) + 1 : 2; ; i++) if (!used.has(`${stem}${i}`)) return `${stem}${i}`;
 }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEscape } from './useEscape.ts';
 import type { Scene } from '../../src/scene.ts';
 import { renderSvg } from '../../src/render.ts';
 import { embedSvg, embedPng, type Payload } from '../../src/embed.ts';
@@ -48,7 +49,9 @@ export function ExportDialog({ scene, payload, base, onClose, onDone }: {
   const [err, setErr] = useState('');
   const set = (p: Partial<ExportOpts>) => setO((cur) => { const n = { ...cur, ...p }; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch { /* private window */ } return n; });
   const preview = useMemo(() => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(renderSvg(scene, undefined, { background: o.background })), [scene, o.background]);
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onClose]);
+  useEscape(onClose);
+  const card = useRef<HTMLDivElement>(null);
+  useEffect(() => card.current?.focus(), []); // keys go to the dialog, not to the canvas behind it
 
   const size = o.format === 'png' ? `${Math.round(scene.w * o.scale)} × ${Math.round(scene.h * o.scale)} px` : `${scene.w} × ${scene.h}, scales freely`;
   const fileName = `${base}.${o.format}`;
@@ -76,7 +79,7 @@ export function ExportDialog({ scene, payload, base, onClose, onDone }: {
 
   return (
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="card exportcard" role="dialog" aria-label="Export image">
+      <div className="card exportcard" role="dialog" aria-label="Export image" tabIndex={-1} ref={card}>
         <h3>Export image</h3>
         <div className={'exportpreview' + (o.background ? '' : ' checker')}><img src={preview} alt="Preview of the exported image" /></div>
         <div className="exportopts">

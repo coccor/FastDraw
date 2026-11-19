@@ -80,6 +80,12 @@ test('delete, append, reorder, fresh ids', () => {
   assert.equal(moveStatement(src, 4, 'back').split('\n')[2], 'b: node at 0,80');
   assert.equal(freshId(src, 'a'), 'a2');
   assert.equal(freshId(src, 'node'), 'node');
+  const rects = 'rect: rect at 0,0\nrect2: rect at 0,40\nrect3: rect at 0,80\n';
+  assert.equal(freshId(rects, 'rect3'), 'rect4');
+  assert.equal(freshId(rects, 'rect2'), 'rect4');
+  assert.equal(freshId('s3: node at 0,0\n', 's3'), 's4');
+  assert.equal(freshId('a: node at 0,0\nv2: node at 0,40\n', 'v2'), 'v3');
+  assert.equal(freshId(rects, 'v2'), 'v2');
 });
 
 test('aligned boxes get a straight arrow; unaligned ones get one elbow', () => {
@@ -124,6 +130,15 @@ test('checker: overlap, arrow through a box, label on a zone border, clean diagr
   assert.match(warns('a: node at 40,40\nm: node at 240,40\nb: node at 440,40\na -> b via=200,72').join('|'), /passes through m/);
   assert.match(warns('z: zone "Z" at 300,20 200x300\na: node at 40,100\nb: node at 328,200\na -> b "reads data"').join('|'), /border of z/);
   assert.deepEqual(warns('a: node "A" at 40,40\nb: node "B" at 240,40\na -> b "go"'), []);
+});
+
+test('checker: a box under a chart and text on its bars are reported; a label in clear plot space is not', () => {
+  const chart = 'c: chart at 80,60 300x200 x="A,B,C" y=0..100\n  | bars "Revenue" 42 61 75\n';
+  const w = warns(`a: node "Orders API" at 100,100\n${chart}t: text "Hello there" at 120,220`).join('|');
+  assert.match(w, /c overlaps a/);
+  assert.match(w, /text t sits on the bars or dots of chart c/);
+  assert.deepEqual(warns(`${chart}t: text "peak" at 300,70 size=10`), []);
+  assert.deepEqual(warns(`a: node "Orders API" at 100,100 overlap=ok\n${chart}t: text "Hello there" at 120,220 overlap=ok`), []);
 });
 
 test('missing look file is an error, not a crash', () => {

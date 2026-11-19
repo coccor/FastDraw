@@ -32,6 +32,7 @@ import { setLookFonts, setWebFonts, BUNDLED_FAMILIES } from './fonts.ts';
 import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, fetchWebLook, hostOf, type WebIcons } from '../../src/webassets.ts';
 import { extractSvg, extractPng } from '../../src/embed.ts';
 import { ExportDialog } from './ExportDialog.tsx';
+import { useEscape } from './useEscape.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '../../src/iconfiles.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
@@ -1053,10 +1054,13 @@ export function App() {
     setCtx({ x: e.clientX, y: e.clientY });
   };
 
-  const zoomBy = (f: number) => setView((v) => {
-    const k = Math.min(4, Math.max(0.1, v.k * f)), mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  // zoom about the middle of the window, to a scale worked out from the current one
+  const zoomTo = (to: (k: number) => number) => setView((v) => {
+    const k = Math.min(4, Math.max(0.1, to(v.k))), mx = window.innerWidth / 2, my = window.innerHeight / 2;
     return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
   });
+  const zoomBy = (f: number) => zoomTo((k) => k * f);
+  const zoomRef = useRef(zoomTo); zoomRef.current = zoomTo;
 
   // The source with a new shape of `styleName` drawn from `a` to `b`: a drag sets its size, a click uses the style's own.
   // Shared by the live preview and the final drop so what is shown while dragging is what gets placed.
@@ -1294,7 +1298,7 @@ export function App() {
     resetRoute: () => src !== null && commit(ops.resetRoute(src, scene, sel)),
     setRoute: (r: string) => src !== null && commit(ops.setRoute(src, scene, sel, r)),
     setRows: (rows: RowSpec[]) => { const e = ops.find(scene, sel[0]); if (src !== null && e?.kind === 'shape') commit(ops.setRows(src, scene, e.el, rows)); },
-    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r) commit(r.src, [r.id]); else setStatus('nothing to list: the diagram uses no components yet'); },
+    legend: () => { if (src === null) return; const r = ops.addLegend(src, scene); if (r?.added) commit(r.src, [r.id]); else if (r) { setSel([r.id]); setStatus('the legend already lists every component'); } else setStatus('nothing to list: the diagram uses no components yet'); },
   };
   const actRef = useRef(act); actRef.current = act;
   const stateRef = useRef({ sel, scene, src, editing }); stateRef.current = { sel, scene, src, editing };
@@ -1385,6 +1389,10 @@ export function App() {
       if (text === null) return;
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); return; }
+      // Ctrl+= / Ctrl+- / Ctrl+0 zoom the canvas, not the page around it
+      if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomRef.current((k) => k * 1.2); return; }
+      if (mod && (e.key === '-' || e.key === '_')) { e.preventDefault(); zoomRef.current((k) => k / 1.2); return; }
+      if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => 1); return; }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
@@ -1671,9 +1679,9 @@ export function App() {
 
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island group">
-          <button className="iconbtn" title="Zoom out" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
-          <button className="pct" title="Reset zoom" onClick={() => zoomBy(1 / view.k)}>{Math.round(view.k * 100)}%</button>
-          <button className="iconbtn" title="Zoom in" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
+          <button className="iconbtn" title="Zoom out — Ctrl+-" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
+          <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => 1)}>{Math.round(view.k * 100)}%</button>
+          <button className="iconbtn" title="Zoom in — Ctrl+=" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
         </div>
         <div className="island group">
           <button className="iconbtn" title="Undo — Ctrl+Z" aria-label="Undo" disabled={!hist.current.past.length} onClick={() => undo(false)}><Undo2 size={16} /></button>
@@ -1693,9 +1701,10 @@ export function App() {
           </ul>
         )}
         <button className={'island problems' + (issues.length ? ' has' : '')} onClick={() => setShowIssues((s) => !s)} aria-expanded={showIssues}
-          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'}>
+          title={issues.length ? 'Show what the checker found' : 'The checker found no problems'} aria-label={issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}>
           {issues.length ? <TriangleAlert size={15} /> : <Check size={15} />}
-          {issues.length ? `${issues.length} problem${issues.length > 1 ? 's' : ''}` : 'No problems'}
+          {/* on a phone only the count shows, so the badge leaves room for the buttons beside it */}
+          {issues.length ? <span>{issues.length}<span className="pword">{` problem${issues.length > 1 ? 's' : ''}`}</span></span> : <span className="pword">No problems</span>}
         </button>
       </div>
 
@@ -1763,9 +1772,10 @@ export function App() {
 
 function PasteDialog({ onClose, onLoad }: { onClose: () => void; onLoad: (text: string) => void }) {
   const [v, setV] = useState('');
+  useEscape(onClose);
   return (
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="card">
+      <div className="card" role="dialog" aria-label="Paste diagram text">
         <h3>Paste diagram text</h3>
         <p className="muted">Paste what an assistant wrote. It opens in memory, drawn with the built-in look unless it names its own. Use Download to keep it.</p>
         <textarea autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder={'a: node "Orders API" at 80,80\nb: store "Orders DB" at 320,80\na -> b "writes"'} />

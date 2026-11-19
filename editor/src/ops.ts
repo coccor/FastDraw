@@ -497,8 +497,10 @@ export function groupElements(src: string, sc: Scene, ids: string[]): string {
   return setProps(src, sc, ids, 'group', `g${n}`);
 }
 
-// A legend listing every look style the diagram uses, placed under the drawing.
-export function addLegend(src: string, sc: Scene): { src: string; id: string } | null {
+// A legend listing every look style the diagram uses, placed under the drawing. When the diagram has a legend
+// already, the styles it does not list yet are added to that one, so a second legend never lands on the first;
+// its place and the entries written by hand stay. `added` is how many entries were new.
+export function addLegend(src: string, sc: Scene): { src: string; id: string; added: number } | null {
   const skip = new Set(['rect', 'ellipse', 'diamond', 'freehand', 'text', 'arrow', 'line', 'legend']);
   const used: string[] = [];
   const note = (name: string) => { if (!skip.has(name) && sc.look.styles.has(name) && !used.includes(name)) used.push(name); };
@@ -507,11 +509,18 @@ export function addLegend(src: string, sc: Scene): { src: string; id: string } |
   if (sc.conns.some((c) => c.style === 'arrow') && sc.look.styles.has('arrow')) used.push('arrow');
   if (!used.length) return null;
   const label = (n: string) => { const u = sc.look.styles.get(n)?.props.use ?? n; const t = u.split(/[:;,.]/)[0].trim(); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const legend = sc.shapes.find((s) => s.shape === 'legend');
+  if (legend) {
+    const listed = new Set((legend.legend ?? []).map((i) => i.style));
+    const missing = used.filter((n) => !listed.has(n));
+    const patch: Patch = (t) => missing.reduce((acc, n) => setProp(acc, n, label(n)), t);
+    return { src: missing.length ? patchSource(src, new Map([[legend.line, patch]])) : src, id: legend.id, added: missing.length };
+  }
   const bottom = Math.max(0, ...sc.shapes.filter((s) => s.shape !== 'legend').map((s) => s.y + s.h), ...sc.texts.map((t) => t.y + t.h), ...sc.conns.flatMap((c) => c.pts.map((p) => p.y)));
   const y = Math.ceil((bottom + 28) / 4) * 4;
   const id = freshId(src, 'legend');
   const line = `${id}: legend at 40,${y} ` + used.map((n) => `${n}=${JSON.stringify(label(n))}`).join(' ');
-  return { src: appendStatements(src, [line]), id };
+  return { src: appendStatements(src, [line]), id, added: used.length };
 }
 
 // Drag one segment of a right-angle connector sideways. Inner segments move freely; a segment
