@@ -44,7 +44,8 @@ type Drag =
   | { type: 'resize'; id: string; corner: string; base: string; scene: Scene; dx: number; dy: number }
   // c: the middle the element turns about; a0: the pointer's angle from it when pressed; t0: the turn it had then
   | { type: 'rotate'; id: string; base: string; scene: Scene; c: Pt; a0: number; t0: number }
-  | { type: 'marquee'; start: Pt; add: boolean }
+  // zone: the back-layer shape (a zone) pressed inside, picked if the press ends without a drag
+  | { type: 'marquee'; start: Pt; add: boolean; zone?: string }
   | { type: 'draw'; style: string; start: Pt; base: string }
   | { type: 'free'; pts: Pt[] }
   | { type: 'conn'; op: string; from: string; start: Pt; style?: string }
@@ -1028,14 +1029,18 @@ export function App() {
       if (ids.includes(id)) drag.current = { type: 'move', start: p, ids, base: src, scene, moved: false };
       return;
     }
+    // inside a zone, away from its edge: a drag still selects what it covers, a click picks the zone
+    const zone = t.getAttribute('data-zone') ?? undefined;
+    if (zone && again(zone)) { lastClick.current = { id: '', t: 0 }; pendingEdit.current = { id: zone, p }; setSel([zone]); return; }
     if (!e.shiftKey) setSel([]);
-    drag.current = { type: 'marquee', start: p, add: e.shiftKey };
+    drag.current = { type: 'marquee', start: p, add: e.shiftKey, zone };
   };
 
   const onContext = (e: React.MouseEvent) => {
     e.preventDefault();
     if (src === null) return;
-    const id = (e.target as Element).closest('[data-id]')?.getAttribute('data-id');
+    const t = e.target as Element;
+    const id = t.closest('[data-id]')?.getAttribute('data-id') ?? t.getAttribute('data-zone');
     if (!id) { setCtx(null); return; }
     if (!sel.includes(id)) setSel([id]);
     setTool('select');
@@ -1197,7 +1202,13 @@ export function App() {
     if (d.type === 'move' || d.type === 'resize' || d.type === 'rotate' || d.type === 'end' || d.type === 'seg' || d.type === 'label' || d.type === 'vertex') { if (draft !== null) commit(draft); else setDraft(null); return; }
     if (d.type === 'marquee') {
       const box = { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) };
-      if (box.w < 3 && box.h < 3) return;
+      if (box.w < 3 && box.h < 3) {
+        if (!d.zone) return;
+        const grp = e.altKey ? [d.zone] : ops.withGroups(scene, [d.zone]);
+        lastClick.current = { id: d.zone, t: performance.now() };
+        setSel(d.add ? (sel.includes(d.zone) ? sel.filter((s) => !grp.includes(s)) : [...new Set([...sel, ...grp])]) : grp);
+        return;
+      }
       const inside = (b: Box) => b.x >= box.x && b.y >= box.y && b.x + b.w <= box.x + box.w && b.y + b.h <= box.y + box.h;
       const hit = [...scene.shapes, ...scene.texts].filter(inside).map((s) => s.id).concat(scene.conns.filter((c) => inside(ops.boxOf({ kind: 'conn', el: c }))).map((c) => c.id));
       setSel(d.add ? [...new Set([...sel, ...hit])] : hit);
@@ -1464,6 +1475,8 @@ export function App() {
           <PageLayers sc={shown} view={view} />
           <g ref={bodyRef} dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
           <g fill="transparent" stroke="transparent">
+            {/* a zone's inside, under everything else and the smallest on top: a click there picks the zone */}
+            {scene.shapes.filter((s) => s.back).sort((a, b) => b.w * b.h - a.w * a.h).map((s) => <rect key={s.id + '-in'} data-zone={s.id} x={s.x} y={s.y} width={s.w} height={s.h} transform={ops.turnAttr(s, turnOf(s.p))} />)}
             {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} transform={ops.turnAttr(s, turnOf(s.p))} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
             {scene.conns.map((c) => <polyline key={c.id} data-id={c.id} points={c.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" strokeWidth={12} pointerEvents="stroke" />)}
             {scene.conns.filter((c) => c.label).map((c) => <rect key={c.id + '-l'} data-id={c.id} data-label={c.id} style={sel.length === 1 && sel[0] === c.id ? { cursor: 'grab' } : undefined} x={c.label!.x} y={c.label!.y} width={c.label!.w} height={c.label!.h} />)}
