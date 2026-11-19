@@ -62,3 +62,5 @@ a -> nowhere
 +1,+2 -> +3,+4
 a -> b via=x,y
 a -> b via=10,20;30
+rb: node "Bad turn" at 900,40 rotate=sideways
+text "Bad turn" at 900,140 rotate=1e999

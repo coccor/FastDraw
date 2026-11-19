@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { parseLook, color, isBundledLook, isWebLook, fallbackFamily } from '../../src/look.ts';
-import { buildScene, lookPath, captionBox, textWidth as measure } from '../../src/scene.ts';
+import { buildScene, lookPath, captionBox, textWidth as measure, turnOf, turnPt } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
@@ -42,6 +42,8 @@ type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
   | { type: 'move'; start: Pt; ids: string[]; base: string; scene: Scene; moved: boolean }
   | { type: 'resize'; id: string; corner: string; base: string; scene: Scene; dx: number; dy: number }
+  // c: the middle the element turns about; a0: the pointer's angle from it when pressed; t0: the turn it had then
+  | { type: 'rotate'; id: string; base: string; scene: Scene; c: Pt; a0: number; t0: number }
   | { type: 'marquee'; start: Pt; add: boolean }
   | { type: 'draw'; style: string; start: Pt; base: string }
   | { type: 'free'; pts: Pt[] }
@@ -50,6 +52,12 @@ type Drag =
   | { type: 'seg'; id: string; index: number; base: string; scene: Scene }
   | { type: 'vertex'; id: string; index: number; base: string; scene: Scene }
   | { type: 'label'; id: string; base: string; scene: Scene; dx: number; dy: number };
+// The resize cursor for a handle (n, ne, e, ...) on a box turned by `turn` degrees: the arrow nearest the way it moves.
+const CURSORS = ['ns-resize', 'nesw-resize', 'ew-resize', 'nwse-resize'];
+const HANDLE_ANGLE: Record<string, number> = { n: 0, ne: 45, e: 90, se: 135, s: 180, sw: 225, w: 270, nw: 315 };
+function resizeCursor(handle: string, turn: number): string {
+  return CURSORS[((Math.round(((HANDLE_ANGLE[handle] ?? 0) + turn) / 45) % 4) + 4) % 4];
+}
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 // entry: on a legend, the key of the one entry being edited (a style name, swatch.colour, ...) or 'title'
 type Editing = { id: string; value: string; box: Box; entry?: string } | null;
@@ -839,13 +847,13 @@ export function App() {
     return { x: (e.clientX - r.left - view.x) / view.k, y: (e.clientY - r.top - view.y) / view.k };
   };
   const shapeAt = (sc: Scene, p: Pt) =>
-    [...sc.shapes].reverse().find((s) => !s.back && !isStroke(s) && p.x >= s.x && p.x <= s.x + s.w && p.y >= s.y && p.y <= s.y + s.h);
+    [...sc.shapes].reverse().find((s) => { const q = ops.toLocal(s, p); return !s.back && !isStroke(s) && q.x >= s.x && q.x <= s.x + s.w && q.y >= s.y && q.y <= s.y + s.h; });
   // What a connector end dropped at p should attach to: a shape, a point on a straight line, or a free point.
   const attachAt = (sc: Scene, p: Pt, not?: string): string => {
     const s = shapeAt(sc, p);
     if (s) {
       // on a table, a row that has an id takes the arrow; anywhere else the whole table does
-      const row = s.rows?.find((r) => r.id && p.y >= r.y && p.y <= r.y + r.h);
+      const q = ops.toLocal(s, p), row = s.rows?.find((r) => r.id && q.y >= r.y && q.y <= r.y + r.h);
       return row ? `${s.id}.${row.id}` : s.id;
     }
     for (const c of sc.conns) {
@@ -978,11 +986,22 @@ export function App() {
     if (tool !== 'select') { drag.current = { type: 'draw', style: tool.replace(/^style:/, ''), start: p, base: src }; return; }
     const handle = t.getAttribute('data-handle'), end = t.getAttribute('data-end');
     if (handle || end || t.hasAttribute('data-seg')) lastClick.current = { id: '', t: 0 }; // a press on a handle never counts towards a double-click
+    if (t.hasAttribute('data-rotate') && sel.length === 1) {
+      const e0 = ops.find(scene, sel[0]);
+      if (e0 && e0.kind !== 'conn') {
+        lastClick.current = { id: '', t: 0 };
+        const { b, t: t0 } = ops.frameOf(e0), c = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+        drag.current = { type: 'rotate', id: sel[0], base: src, scene, c, a0: Math.atan2(p.y - c.y, p.x - c.x) * 180 / Math.PI, t0 };
+        return;
+      }
+    }
     if (handle && sel.length === 1) {
       // remember where on the handle the press landed, so the corner does not jump to the pointer
+      // (on a turned shape, measured in the shape's own frame)
       const s0 = ops.find(scene, sel[0]);
-      const cx = s0 && s0.kind !== 'conn' ? s0.el.x + (handle.includes('w') ? 0 : s0.el.w) : p.x, cy = s0 && s0.kind !== 'conn' ? s0.el.y + (handle.includes('n') ? 0 : s0.el.h) : p.y;
-      drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene, dx: cx - p.x, dy: cy - p.y }; return;
+      const q = s0?.kind === 'shape' ? ops.toLocal(s0.el, p) : p;
+      const cx = s0 && s0.kind !== 'conn' ? s0.el.x + (handle.includes('w') ? 0 : s0.el.w) : q.x, cy = s0 && s0.kind !== 'conn' ? s0.el.y + (handle.includes('n') ? 0 : s0.el.h) : q.y;
+      drag.current = { type: 'resize', id: sel[0], corner: handle, base: src, scene, dx: cx - q.x, dy: cy - q.y }; return;
     }
     const vertex = t.getAttribute('data-vertex');
     if (vertex !== null && sel.length === 1) { lastClick.current = { id: '', t: 0 }; drag.current = { type: 'vertex', id: sel[0], index: +vertex, base: src, scene }; return; }
@@ -1096,9 +1115,10 @@ export function App() {
         return;
       }
       if (!e0 || e0.kind !== 'shape') return;
-      const s = e0.el;
+      const s = e0.el, turn = turnOf(s.p), lp = ops.toLocal(s, p);
       let x1 = s.x, y1 = s.y, x2 = s.x + s.w, y2 = s.y + s.h;
-      const q = e.altKey ? { x: p.x + d.dx, y: p.y + d.dy } : { x: snap(p.x + d.dx), y: snap(p.y + d.dy) };
+      // a turned shape is sized in its own frame, where the canvas grid does not line up, so it is not snapped
+      const q = e.altKey || turn ? { x: lp.x + d.dx, y: lp.y + d.dy } : { x: snap(lp.x + d.dx), y: snap(lp.y + d.dy) };
       // a corner moves both sides, an edge handle only its own side
       const hx = /[we]/.test(d.corner), hy = /[ns]/.test(d.corner);
       if (hx) { if (d.corner.includes('w')) x1 = Math.min(q.x, x2 - 8); else x2 = Math.max(q.x, x1 + 8); }
@@ -1119,7 +1139,21 @@ export function App() {
         } else if (hx) { y1 = Math.round(s.y + s.h / 2 - h / 2); y2 = y1 + h; }
         else { x1 = Math.round(s.x + s.w / 2 - w / 2); x2 = x1 + w; }
       }
+      if (turn) {
+        // the new box's middle, back on the canvas: the side held still stays where it is on the page
+        const w = Math.round(x2 - x1), h = Math.round(y2 - y1), m = turnPt({ x: (x1 + x2) / 2, y: (y1 + y2) / 2 }, { x: s.x + s.w / 2, y: s.y + s.h / 2 }, turn);
+        setDraft(ops.resizeShape(d.base, s, { x: Math.round(m.x - w / 2), y: Math.round(m.y - h / 2), w, h }));
+        return;
+      }
       setDraft(ops.resizeShape(d.base, s, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }));
+      return;
+    }
+    if (d.type === 'rotate') {
+      // the turn follows the pointer around the middle, in 15 degree steps; Alt turns freely
+      const a = Math.atan2(p.y - d.c.y, p.x - d.c.x) * 180 / Math.PI;
+      let t = d.t0 + a - d.a0;
+      t = e.altKey ? Math.round(t) : Math.round(t / 15) * 15;
+      setDraft(ops.rotateElements(d.base, d.scene, [d.id], t));
       return;
     }
     if (d.type === 'end') {
@@ -1129,7 +1163,7 @@ export function App() {
     }
     if (d.type === 'vertex') {
       const e0 = ops.find(d.scene, d.id);
-      if (e0?.kind === 'shape') setDraft(ops.movePolyPoint(d.base, e0.el, d.index, e.altKey ? p : { x: snap(p.x), y: snap(p.y) }));
+      if (e0?.kind === 'shape') { const q = ops.toLocal(e0.el, p); setDraft(ops.movePolyPoint(d.base, e0.el, d.index, e.altKey || turnOf(e0.el.p) ? q : { x: snap(q.x), y: snap(q.y) })); }
       return;
     }
     if (d.type === 'seg' || d.type === 'label') {
@@ -1160,7 +1194,7 @@ export function App() {
     if (pendingEdit.current) { const { id, p } = pendingEdit.current; pendingEdit.current = null; startEdit(id, p); return; }
     if (!d || src === null) return;
     const p = world(e);
-    if (d.type === 'move' || d.type === 'resize' || d.type === 'end' || d.type === 'seg' || d.type === 'label' || d.type === 'vertex') { if (draft !== null) commit(draft); else setDraft(null); return; }
+    if (d.type === 'move' || d.type === 'resize' || d.type === 'rotate' || d.type === 'end' || d.type === 'seg' || d.type === 'label' || d.type === 'vertex') { if (draft !== null) commit(draft); else setDraft(null); return; }
     if (d.type === 'marquee') {
       const box = { x: Math.min(d.start.x, p.x), y: Math.min(d.start.y, p.y), w: Math.abs(p.x - d.start.x), h: Math.abs(p.y - d.start.y) };
       if (box.w < 3 && box.h < 3) return;
@@ -1226,6 +1260,7 @@ export function App() {
   const act = {
     setProp: (k: string, v: string | null) => src !== null && commit(ops.setProps(src, scene, sel, k, v)),
     previewProp: (k: string, v: string | null) => src !== null && setDraft(ops.setProps(src, scene, sel, k, v)),
+    rotate: (deg: number) => src !== null && commit(ops.rotateElements(src, scene, sel, deg)),
     setTextAlign: (a: 'left' | 'center' | 'right') => src !== null && commit(ops.setTextAlign(src, scene, sel, a)),
     // the main text of the one selected element, typed in the sidebar
     setText: (text: string) => { const e = ops.find(scene, sel[0]); if (src !== null && e) commit(ops.editText(src, e, text)); },
@@ -1429,26 +1464,26 @@ export function App() {
           <PageLayers sc={shown} view={view} />
           <g ref={bodyRef} dangerouslySetInnerHTML={{ __html: body }} style={{ pointerEvents: 'none' }} />
           <g fill="transparent" stroke="transparent">
-            {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
+            {scene.shapes.filter((s) => s.back).map((s) => <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} transform={ops.turnAttr(s, turnOf(s.p))} fill="none" strokeWidth={10} pointerEvents="stroke" />)}
             {scene.conns.map((c) => <polyline key={c.id} data-id={c.id} points={c.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" strokeWidth={12} pointerEvents="stroke" />)}
             {scene.conns.filter((c) => c.label).map((c) => <rect key={c.id + '-l'} data-id={c.id} data-label={c.id} style={sel.length === 1 && sel[0] === c.id ? { cursor: 'grab' } : undefined} x={c.label!.x} y={c.label!.y} width={c.label!.w} height={c.label!.h} />)}
             {scene.shapes.filter((s) => !s.back).map((s) => isStroke(s)
-              ? <polyline key={s.id} data-id={s.id} points={polyPoints(s.poly!)} fill="none" strokeWidth={Math.max(12, +s.p.sw || 0)} strokeLinecap="round" strokeLinejoin="round" pointerEvents="stroke" />
-              : <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} />)}
+              ? <polyline key={s.id} data-id={s.id} points={polyPoints(s.poly!)} transform={ops.turnAttr(s, turnOf(s.p))} fill="none" strokeWidth={Math.max(12, +s.p.sw || 0)} strokeLinecap="round" strokeLinejoin="round" pointerEvents="stroke" />
+              : <rect key={s.id} data-id={s.id} x={s.x} y={s.y} width={s.w} height={s.h} transform={ops.turnAttr(s, turnOf(s.p))} />)}
             {/* an icon's caption hangs under it and picks the icon */}
-            {scene.shapes.map((s) => { const c = captionBox(s); return c && <rect key={s.id + '-cap'} data-id={s.id} x={c.x - 4} y={c.y - 2} width={c.w + 8} height={c.h + 4} />; })}
-            {scene.texts.map((t) => <rect key={t.id} data-id={t.id} x={t.x - 2} y={t.y - 2} width={t.w + 4} height={t.h + 4} />)}
+            {scene.shapes.map((s) => { const c = captionBox(s); return c && <rect key={s.id + '-cap'} data-id={s.id} x={c.x - 4} y={c.y - 2} width={c.w + 8} height={c.h + 4} transform={ops.turnAttr(s, turnOf(s.p))} />; })}
+            {scene.texts.map((t) => { const { b, t: turn } = ops.frameOf({ kind: 'text', el: t }); return <rect key={t.id} data-id={t.id} x={b.x - 2} y={b.y - 2} width={b.w + 4} height={b.h + 4} transform={ops.turnAttr(b, turn)} />; })}
           </g>
           <g fill="none" stroke="var(--accent)" strokeWidth={1.5 / view.k} pointerEvents="none">
             {hovered && !editing && (hovered.kind === 'conn'
               ? <polyline points={hovered.el.pts.map((p) => `${p.x},${p.y}`).join(' ')} strokeWidth={4 / view.k} opacity={0.25} />
-              : <rect x={ops.boxOf(hovered).x - 2} y={ops.boxOf(hovered).y - 2} width={ops.boxOf(hovered).w + 4} height={ops.boxOf(hovered).h + 4} opacity={0.45} rx={3 / view.k} />)}
+              : (() => { const { b, t } = ops.frameOf(hovered); return <rect x={b.x - 2} y={b.y - 2} width={b.w + 4} height={b.h + 4} transform={ops.turnAttr(b, t)} opacity={0.45} rx={3 / view.k} />; })())}
             {(editing ? [] : sel).map((id) => {
               const e = ops.find(scene, id);
               if (!e) return null;
               if (e.kind === 'conn') return <polyline key={id} points={e.el.pts.map((p) => `${p.x},${p.y}`).join(' ')} strokeWidth={3.5 / view.k} opacity={0.45} />;
-              const b = ops.boxOf(e);
-              return <rect key={id} x={b.x - 4} y={b.y - 4} width={b.w + 8} height={b.h + 8} rx={2 / view.k} />;
+              const { b, t } = ops.frameOf(e);
+              return <rect key={id} x={b.x - 4} y={b.y - 4} width={b.w + 8} height={b.h + 8} transform={ops.turnAttr(b, t)} rx={2 / view.k} />;
             })}
             {guides.x !== undefined && <line x1={guides.x} y1={-2000} x2={guides.x} y2={4000} stroke="#e0338a" strokeDasharray={`${4 / view.k}`} />}
             {guides.y !== undefined && <line x1={-2000} y1={guides.y} x2={4000} y2={guides.y} stroke="#e0338a" strokeDasharray={`${4 / view.k}`} />}
@@ -1460,11 +1495,12 @@ export function App() {
             return <polyline className="ink" points={polyPoints(ink)} fill="none" stroke={col(scene.look, p.stroke ?? 'ink')} strokeWidth={+p.sw || 2} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />;
           })()}
           {/* a text has a box's handles; dragging any of them scales the text (ops.scaleText) */}
-          {(single?.kind === 'shape' || (single?.kind === 'text' && !Number(single.el.p.rotate ?? 0))) && tool === 'select' && !editing && (
-            <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k}>
+          {(single?.kind === 'shape' || (single?.kind === 'text' && !turnOf(single.el.p))) && tool === 'select' && !editing && (
+            <g fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k} transform={single.kind === 'shape' ? ops.turnAttr(single.el, turnOf(single.el.p)) : undefined}>
               {(() => {
                 const { x, y, w, h } = single.el, l = x - 4, r = x + w + 4, t = y - 4, b = y + h + 4, mx = (l + r) / 2, my = (t + b) / 2;
-                const cursor = (c: string) => c.length === 2 ? (c === 'nw' || c === 'se' ? 'nwse-resize' : 'nesw-resize') : (c === 'n' || c === 's' ? 'ns-resize' : 'ew-resize');
+                // the resize arrow points the way the handle moves, turned with the shape
+                const cursor = (c: string) => resizeCursor(c, single.kind === 'shape' ? turnOf(single.el.p) : 0);
                 const isText = single.kind === 'text';
                 const tips = (_c: string) => isText ? 'Drag to make the text bigger or smaller' : 'Drag to resize · Shift keeps proportions · Alt turns off snapping';
                 // invisible strips along each side, so a whole edge can be grabbed, not only its middle handle
@@ -1476,8 +1512,20 @@ export function App() {
               })()}
             </g>
           )}
+          {single && single.kind !== 'conn' && tool === 'select' && !editing && (() => {
+            // the turning knob: a circle on a short stem above the top edge, turned with the element
+            const { b, t } = ops.frameOf(single), mx = b.x + b.w / 2, top = b.y - 4, stem = 22 / view.k;
+            return (
+              <g transform={ops.turnAttr(b, t)}>
+                <line x1={mx} y1={top} x2={mx} y2={top - stem + hs * 0.6} stroke="var(--accent)" strokeWidth={1.5 / view.k} pointerEvents="none" />
+                <circle data-rotate="" cx={mx} cy={top - stem} r={hs * 0.6} fill="#fff" stroke="var(--accent)" strokeWidth={1.5 / view.k} style={{ cursor: 'grab' }}>
+                  <title>Drag to turn · Alt turns freely, without 15° steps</title>
+                </circle>
+              </g>
+            );
+          })()}
           {single?.kind === 'shape' && single.el.poly && single.el.poly.length <= 12 && tool === 'select' && !editing && (
-            <g fill="var(--accent)" stroke="#fff" strokeWidth={1 / view.k}>
+            <g fill="var(--accent)" stroke="#fff" strokeWidth={1 / view.k} transform={ops.turnAttr(single.el, turnOf(single.el.p))}>
               {single.el.poly.map((q, i) => <circle key={i} data-vertex={i} cx={q.x} cy={q.y} r={hs * 0.55} style={{ cursor: 'move' }}><title>Drag to move this corner</title></circle>)}
             </g>
           )}

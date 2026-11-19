@@ -1537,3 +1537,78 @@ test('the opacity slider fades the selection as it moves and writes one undo ste
   await slider.blur();
   expect(await source(page)).not.toContain('opacity=');
 });
+
+test('the turning knob turns a box about its middle in 15 degree steps, and lines meet the turned sides', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  const box = (await page.locator('rect[data-id="api"]').first().boundingBox())!;
+  const knob = (await page.locator('circle[data-rotate]').boundingBox())!;
+  const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 }, k = { x: knob.x + knob.width / 2, y: knob.y + knob.height / 2 };
+  const r = Math.hypot(k.x - c.x, k.y - c.y), on = (a: number) => [c.x + r * Math.cos((a * Math.PI) / 180), c.y + r * Math.sin((a * Math.PI) / 180)] as const;
+  // from straight up (-90) round to -32: 58 degrees, which lands on the 60 degree step
+  await page.mouse.move(k.x, k.y);
+  await page.mouse.down();
+  for (const a of [-80, -70, -60, -50, -40, -32]) await page.mouse.move(...on(a), { steps: 2 });
+  await page.mouse.up();
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 rotate=60');
+  await expect(page.locator('svg.canvas g[transform^="rotate(60 "]')).not.toHaveCount(0);
+  // the hit area turns with it
+  await expect(page.locator('rect[data-id="api"]').first()).toHaveAttribute('transform', /^rotate\(60 /);
+  // Alt turns freely, a degree at a time
+  const knob2 = (await page.locator('circle[data-rotate]').boundingBox())!;
+  await page.keyboard.down('Alt');
+  await page.mouse.move(knob2.x + knob2.width / 2, knob2.y + knob2.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(...on(-23), { steps: 4 });
+  await page.mouse.up();
+  await page.keyboard.up('Alt');
+  expect(lineOf(await source(page), 'api')).toMatch(/ rotate=(6[5-9]|7[0-3])$/);
+  await page.keyboard.press('Control+z');
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 rotate=60');
+  expect(errors).toEqual([]);
+});
+
+test('the rotation field and quarter-turn buttons turn the selection; 0 drops rotate=', async ({ page }) => {
+  await paste(page, SMALL);
+  await page.mouse.click(...Object.values(await corner(page, 'api')) as [number, number]);
+  const field = page.locator('.panel').getByLabel('Rotation in degrees');
+  await expect(field).toHaveValue('0');
+  await field.fill('30');
+  await field.press('Enter');
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 rotate=30');
+  await page.locator('.panel').getByRole('button', { name: 'Turn a quarter clockwise' }).click();
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 rotate=120');
+  await page.keyboard.press('Control+z');
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160 rotate=30');
+  await field.fill('0');
+  await field.press('Enter');
+  expect(lineOf(await source(page), 'api')).toBe('api: focal "Orders API" sub="REST" at 280,160');
+  // a line has nothing to turn
+  await page.keyboard.press('Control+a');
+  await expect(page.locator('.panel').getByLabel('Rotation in degrees')).toHaveCount(0);
+});
+
+test('resizing a turned box moves the dragged side along the turn and keeps the far side still', async ({ page }) => {
+  await paste(page, 'canvas 900x420\nn: node "Turned" at 200,100 160x80 rotate=90\n');
+  await page.mouse.click(...Object.values(await at(page, 280, 80)) as [number, number]);
+  // a quarter turn puts the box's own right side (handle e) at the bottom: dragging it down 40 makes the box 40 longer
+  const e = (await page.locator('rect[data-handle="e"]:not([data-strip])').boundingBox())!;
+  const z = await zoom(page);
+  await drag(page, { x: e.x + e.width / 2, y: e.y + e.height / 2 }, 0, 40 * z);
+  expect(lineOf(await source(page), 'n')).toBe('n: node "Turned" at 180,120 200x80 rotate=90');
+});
+
+test('turning a free text keeps it where it is', async ({ page }) => {
+  await paste(page, 'canvas 900x420\nnote: text "A turned note" at 300,200\n');
+  const before = (await page.locator('rect[data-id="note"]').boundingBox())!;
+  await page.mouse.click(before.x + before.width / 2, before.y + before.height / 2);
+  const field = page.locator('.panel').getByLabel('Rotation in degrees');
+  await field.fill('90');
+  await field.press('Enter');
+  expect(lineOf(await source(page), 'note')).toMatch(/^note: text "A turned note" at \d+,\d+ rotate=90$/);
+  const after = (await page.locator('rect[data-id="note"]').boundingBox())!;
+  expect(Math.abs(after.x + after.width / 2 - (before.x + before.width / 2))).toBeLessThan(3);
+  expect(Math.abs(after.y + after.height / 2 - (before.y + before.height / 2))).toBeLessThan(3);
+  expect(after.height).toBeGreaterThan(after.width);
+});

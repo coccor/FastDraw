@@ -26,7 +26,8 @@ export type Shape = Box & {
   poly?: Pt[]; // shape=polygon: its corners on the canvas
 };
 // lines: a text box's lines (width=), each written line broken to fit; a plain text draws its own lines
-export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number; lines?: string[] };
+// frame: a turned text's (rotate=) box before it turns; x, y, w and h are then the box around the turned text
+export type TextEl = Box & { id: string; line: number; style: string; p: Props; text: string; ax: number; ay: number; lines?: string[]; frame?: Box };
 
 // The lines of `text` no wider than `w`: each written line broken at its spaces; a word wider than w keeps a line to itself.
 export function wrapLines(text: string, w: number, measure: (s: string) => number): string[] {
@@ -103,6 +104,37 @@ export function measureText(look: Look, text: string, size: number, role: string
 const cx = (b: Box) => b.x + b.w / 2;
 const cy = (b: Box) => b.y + b.h / 2;
 const within = (v: number, lo: number, hi: number) => v >= lo && v <= hi;
+
+// rotate=deg: how far an element is turned, clockwise, in degrees (0 when it is not). A shape turns about its middle,
+// a text about its "at" point.
+export function turnOf(p: Props): number {
+  const r = num(p.rotate, 0) % 360;
+  return Number.isFinite(r) && r !== 0 ? r : 0;
+}
+// cos and sin of a turn; exact for quarter turns, so a box turned by 90 lands on whole numbers
+function cosSin(deg: number): [number, number] {
+  if (deg % 90 === 0) return ([[1, 0], [0, 1], [-1, 0], [0, -1]] as [number, number][])[(((deg / 90) % 4) + 4) % 4];
+  const a = (deg * Math.PI) / 180;
+  return [Math.cos(a), Math.sin(a)];
+}
+// p turned clockwise by deg about c (the y axis points down, as on the canvas)
+export function turnPt(p: Pt, c: Pt, deg: number): Pt {
+  const [co, si] = cosSin(deg), dx = p.x - c.x, dy = p.y - c.y;
+  return { x: c.x + dx * co - dy * si, y: c.y + dx * si + dy * co };
+}
+// The box around b once it is turned by deg about c.
+export function turnedBox(b: Box, c: Pt, deg: number): Box {
+  const q = [{ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y }, { x: b.x, y: b.y + b.h }, { x: b.x + b.w, y: b.y + b.h }].map((p) => turnPt(p, c, deg));
+  const x0 = Math.min(...q.map((p) => p.x)), y0 = Math.min(...q.map((p) => p.y));
+  return { x: x0, y: y0, w: Math.max(...q.map((p) => p.x)) - x0, h: Math.max(...q.map((p) => p.y)) - y0 };
+}
+const mid = (b: Box): Pt => ({ x: cx(b), y: cy(b) });
+const r2 = (v: number) => Math.round(v * 100) / 100;
+// What a shape covers on the canvas: its box, or the box around it once turned.
+export function footprint(s: Shape): Box {
+  const t = turnOf(s.p);
+  return t ? turnedBox(s, mid(s), t) : s;
+}
 
 export function autoSides(A: Box, B: Box): [Side, Side] {
   if (within(cx(A), B.x, B.x + B.w) || within(cx(B), A.x, A.x + A.w)) return cy(A) <= cy(B) ? ['bottom', 'top'] : ['top', 'bottom'];
@@ -429,6 +461,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       }
       const p = { ...style.props, ...over };
       if (p.route && !['ortho', 'straight', 'curve'].includes(p.route)) err(st.line, `route=${p.route} is not a route; use ortho, straight or curve`);
+      if (over.rotate !== undefined) warn(st.line, 'rotate= does nothing on a line; it follows the things it joins');
       // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
       const styleHead = style.props.head && style.props.head !== 'none' ? style.props.head : 'arrow';
       // a style made for plain lines (head=none: a rule, a lifeline) never grows a head, even when written with ->
@@ -505,12 +538,15 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       const anchor = box ? 'start' : p.anchor ?? 'start';
       const x = anchor === 'middle' ? at.x - w / 2 : anchor === 'end' ? at.x - w : at.x;
       const th = fs * 1.3 * lines.length;
-      // rotate=-90 reads upwards, rotate=90 downwards; the text turns about its "at" point
+      // rotate= turns the text clockwise about its "at" point: -90 reads upwards, 90 downwards, any angle between
+      if (p.rotate !== undefined && !isFinite(+p.rotate)) err(st.line, `rotate=${p.rotate}: an angle in degrees, turning clockwise (rotate=-90 reads upwards)`);
       const rot = num(p.rotate, 0);
-      if (p.rotate !== undefined && ![0, 90, -90].includes(rot)) err(st.line, `rotate=${p.rotate}: text can be turned by 90 (reading down) or -90 (reading up)`);
       const dx = x - at.x; // where the text starts, measured along its own baseline
-      const bx = rot === -90 ? { x: at.x - fs, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs, y: at.y + dx, w: th, h: w } : { x, y: at.y - fs, w, h: th };
-      texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, ...bx, ...(wrapped ? { lines: wrapped } : {}) });
+      const flat = { x, y: at.y - fs, w, h: th };
+      const bx = rot === -90 ? { x: at.x - fs, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs, y: at.y + dx, w: th, h: w }
+        : turnOf(p) ? turnedBox(flat, at, turnOf(p)) : flat;
+      // frame: the text's box before it is turned, which the editor draws turned
+      texts.push({ id: register('text', 't'), line: st.line, style: styleName, p, text: t2, ax: at.x, ay: at.y, ...bx, ...(wrapped ? { lines: wrapped } : {}), ...(turnOf(p) ? { frame: flat } : {}) });
       continue;
     }
     if (!size && p.size) { const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(p.size); if (m) size = { w: +m[1], h: +m[2] }; }
@@ -536,6 +572,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     if (p['icon.style'] !== undefined && !['outline', 'solid', 'duotone'].includes(p['icon.style'])) err(st.line, `icon.style=${p['icon.style']}: an icon is drawn as an outline (the default), filled in one colour (icon.style=solid), or as an outline over a light tint (icon.style=duotone)`);
     else if ((p['icon.style'] === 'solid' || p['icon.style'] === 'duotone') && p.icon && p.icon !== 'none' && (look.icons.has(p.icon) || look.images.has(p.icon)) && !isBuiltIn(look, p.icon)) warn(st.line, `icon ${p.icon} is the look's own, with no ${p['icon.style']} version (only the built-in icons have one), so it is drawn as it is; drop icon.style=${p['icon.style']}`);
     if (p['icon.pos'] && !['left', 'top', 'corner'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text, on top of it, or in the top-left corner as a tab (icon.pos=left, icon.pos=top or icon.pos=corner)`);
+    if (p.rotate !== undefined && !isFinite(+p.rotate)) err(st.line, `rotate=${p.rotate}: an angle in degrees; the shape turns clockwise about its middle (e.g. rotate=45)`);
     for (const k of ['color', 'weight', 'font', 'italic']) if (over[k] !== undefined) warn(st.line, `${k}= does nothing on a shape; its text is set with title.${k}= (and sub.${k}= for the second line)`);
     if (sh.shape === 'polygon') {
       // points are written relative to the element's position; a given WxH stretches them to fit
@@ -628,6 +665,8 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   // ---- connector resolution -------------------------------------------------
   const shapeById = new Map<string, Box & { shape?: string }>();
   for (const s of shapes) shapeById.set(s.id, s);
+  // a turned shape's turn; a line on a turned text meets the box around it, as for any text
+  const turnById = new Map(shapes.filter((s) => turnOf(s.p)).map((s) => [s.id, turnOf(s.p)]));
   for (const t of texts) shapeById.set(t.id, { x: t.x - 4, y: t.y - 2, w: t.w + 8, h: t.h + 4 });
   const connById = new Map(conns.map((c) => [c.id, c]));
   const rowsById = new Map(shapes.filter((s) => s.rows).map((s) => [s.id, s.rows!]));
@@ -638,6 +677,20 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     return r ? { x: S.x, y: r.y, w: S.w, h: r.h } : S;
   };
   const sideKey = (e: End) => `${e.id}${e.row ? '.' + e.row : ''}|${e.side}`;
+  // the turn (rotate=) of the shape an end is on, about the shape's middle; null when it is not turned
+  const turnAt = (e: End): { c: Pt; deg: number } | null => {
+    const deg = e.kind === 'shape' ? turnById.get(e.id!) : undefined;
+    return deg ? { c: mid(shapeById.get(e.id!)!), deg } : null;
+  };
+  // a step (dx,dy) as the turned shape of end e sees it
+  const turnBack = (e: End, r: Pt): Pt => { const t = turnAt(e); return t ? turnPt(r, { x: 0, y: 0 }, -t.deg) : r; };
+  // box b as the turned shape of end e sees it: the same size, its middle turned back about the shape's
+  const seenFrom = (e: End, b: Box | null): Box | null => {
+    const t = turnAt(e);
+    if (!t || !b) return b;
+    const m = turnPt(mid(b), t.c, -t.deg);
+    return { x: m.x - b.w / 2, y: m.y - b.h / 2, w: b.w, h: b.h };
+  };
   const done = new Set<Conn>();
   const bad = new Set<Conn>();
 
@@ -667,16 +720,20 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (e.kind === 'conn') { e.pt = pointAlong(connById.get(e.id!)!, e.v!); return { x: e.pt.x, y: e.pt.y, w: 0, h: 0 }; }
       return null;
     };
-    // sides
+    // sides (an end on a turned shape picks its side as the shape sees the other end, turned back with it)
     for (const c of batch) {
       const ba = boxOf(c.a), bb = boxOf(c.b);
       const relSide = (r: Pt): Side => (Math.abs(r.y) >= Math.abs(r.x) ? (r.y >= 0 ? 'bottom' : 'top') : r.x >= 0 ? 'right' : 'left');
       // a table row is reached from the left or right edge of the table, whichever faces the other end
       const rowSide = (me: Box, other: Box | null, rel: Pt): Side => ((other ? cx(other) >= cx(me) : rel.x >= 0) ? 'right' : 'left');
-      if (c.a.kind === 'shape' && !c.a.side) { c.a.side = c.a.row ? rowSide(ba!, bb, c.b.rel ?? { x: 0, y: 0 }) : bb ? autoSides(ba!, bb)[0] : relSide(c.b.rel!); c.a.fanned = true; }
+      if (c.a.kind === 'shape' && !c.a.side) {
+        const ob = seenFrom(c.a, bb), rel = c.b.rel && turnBack(c.a, c.b.rel);
+        c.a.side = c.a.row ? rowSide(ba!, ob, rel ?? { x: 0, y: 0 }) : ob ? autoSides(ba!, ob)[0] : relSide(rel!);
+        c.a.fanned = true;
+      }
       if (c.b.kind === 'shape' && !c.b.side) {
-        const back = c.a.rel ? { x: -c.a.rel.x, y: -c.a.rel.y } : { x: 0, y: 0 };
-        c.b.side = c.b.row ? rowSide(bb!, ba, back) : ba ? autoSides(ba, bb!)[1] : relSide(back);
+        const back = turnBack(c.b, c.a.rel ? { x: -c.a.rel.x, y: -c.a.rel.y } : { x: 0, y: 0 }), ob = seenFrom(c.b, ba);
+        c.b.side = c.b.row ? rowSide(bb!, ob, back) : ob ? autoSides(ob, bb!)[1] : relSide(back);
         c.b.fanned = true;
       }
     }
@@ -692,9 +749,9 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
     const single = new Set<End>();
     for (const [k, g] of groups) {
       const horiz = k.endsWith('top') || k.endsWith('bottom');
-      const ref = (o: End) => { const b = boxOf(o); return b ? (horiz ? cx(b) : cy(b)) : 0; };
+      const ref = (e: End, o: End) => { const b = seenFrom(e, boxOf(o)); return b ? (horiz ? cx(b) : cy(b)) : 0; };
       if (g.length === 1) { frac.set(g[0].e, 0.5); single.add(g[0].e); continue; }
-      const order = g.map((m, idx) => ({ m, idx, r: ref(m.o) })).sort((p, q) => byNumber(p.r, q.r) || p.idx - q.idx);
+      const order = g.map((m, idx) => ({ m, idx, r: ref(m.e, m.o) })).sort((p, q) => byNumber(p.r, q.r) || p.idx - q.idx);
       order.forEach((o, n) => frac.set(o.m.e, (n + 1) / (g.length + 1)));
     }
     for (const c of batch) {
@@ -708,12 +765,20 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
             const lo = horiz ? S.x : S.y, hi = horiz ? S.x + S.w : S.y + S.h;
             if (e.v < lo || e.v > hi) warn(c.line, `${e.raw}: ${e.v} is outside the ${e.side} side of ${e.id}, which runs from ${lo} to ${hi}; the end was moved to the nearest point`);
           }
+          const t = turnAt(e);
+          if (t) {
+            // the point turns with the shape; a right-angled line leaves along whichever way is nearest the turned side
+            const q = turnPt(e.pt, t.c, t.deg), d = turnPt(e.dir, { x: 0, y: 0 }, t.deg);
+            e.pt = { x: Math.round(q.x), y: Math.round(q.y) };
+            const ax = Math.abs(Math.round(d.x * 1e6)), ay = Math.abs(Math.round(d.y * 1e6));
+            e.dir = !c.ortho ? d : ax >= ay ? { x: Math.sign(d.x), y: 0 } : { x: 0, y: Math.sign(d.y) };
+          }
         }
       }
       // keep a lone connector straight when the two things line up
       const a = c.a, b = c.b;
       const opposing = a.dir && b.dir && a.dir.x === -b.dir.x && a.dir.y === -b.dir.y;
-      if (a.kind === 'shape' && b.kind === 'shape' && opposing) {
+      if (a.kind === 'shape' && b.kind === 'shape' && opposing && !turnAt(a) && !turnAt(b)) {
         const A = tgt(a), B = tgt(b);
         const horiz = a.side === 'top' || a.side === 'bottom';
         const lo = horiz ? Math.max(A.x, B.x) : Math.max(A.y, B.y);
@@ -737,7 +802,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
         }
       }
       for (const [e, o] of [[a, b], [b, a]] as [End, End][]) {
-        if (e.kind !== 'shape' || !single.has(e) || (o.kind !== 'point' && o.kind !== 'conn')) continue;
+        if (e.kind !== 'shape' || !single.has(e) || (o.kind !== 'point' && o.kind !== 'conn') || turnAt(e)) continue;
         const S = tgt(e);
         const horiz = e.side === 'top' || e.side === 'bottom';
         const pos = horiz ? o.pt.x : o.pt.y;
@@ -756,16 +821,16 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
       if (c.ortho && !via.length && !c.ushape) {
         const strictlyIn = (o: Box, p: Pt) => p.x > o.x + 1 && p.x < o.x + o.w - 1 && p.y > o.y + 1 && p.y < o.y + o.h - 1;
         // (an open outline is a line, not a box: nothing goes around it)
-        const obs: Box[] = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(o, a.pt) && !strictlyIn(o, b.pt));
+        const obs: Box[] = shapes.filter((o) => !o.back && o.shape !== 'legend' && !(o.poly && o.p.open === '1') && Math.min(o.w, o.h) > 12 && !strictlyIn(footprint(o), a.pt) && !strictlyIn(footprint(o), b.pt)).map(footprint);
         // an icon's caption hangs below it: other lines go around it too
         for (const o of shapes) {
-          const cb = o.id !== c.a.id && o.id !== c.b.id ? captionBox(o) : null;
+          const cb = o.id !== c.a.id && o.id !== c.b.id ? captionFootprint(o) : null;
           if (cb) obs.push({ x: cb.x - 4, y: cb.y - 2, w: cb.w + 8, h: cb.h + 4 });
         }
         if (crosses(c.pts, obs)) { const alt = routeAround(a.pt, a.dir, b.pt, b.dir, obs, taken); if (alt) c.pts = alt; }
       }
       if (c.ortho) for (let i = 0; i < c.pts.length - 1; i++) taken.push([c.pts[i], c.pts[i + 1]]);
-      c.label = makeLabel(c, shapes.filter((o) => !o.back && o.shape !== 'legend'));
+      c.label = makeLabel(c, shapes.filter((o) => !o.back && o.shape !== 'legend').map(footprint));
       done.add(c);
     }
   };
@@ -783,7 +848,7 @@ export function buildScene(src: string, lookIn: Look | null, file = ''): Scene {
   resolvePass(second.filter((c) => !bad.has(c)));
   const finalConns = conns.filter((c) => done.has(c));
 
-  const ext = extent([...shapes, ...shapes.map(captionBox).filter((b): b is Box => !!b)], texts, finalConns);
+  const ext = extent([...shapes.map(footprint), ...shapes.map(captionFootprint).filter((b): b is Box => !!b)], texts, finalConns);
   return { file, ...ext, look, canvasLine, canvasSize, baseCanvas, shapes, texts, conns: finalConns, issues };
 }
 
@@ -796,6 +861,12 @@ export function captionBox(s: Shape): Box | null {
   const w = Math.max(0, ...lines.map((l) => textWidth(l, size, p['title.font'] ?? 'sans', +(p['title.weight'] ?? 600) || 600, 0)), ...subs.map((l) => textWidth(l, sub, p['sub.font'] ?? 'mono', 400, 0)));
   const h = lines.length * Math.round(size * 1.17) + (subs.length ? 2 + subs.length * Math.round(sub * 1.3) : 0);
   return { x: s.x + s.w / 2 - w / 2, y: s.y + s.h + ICON_CAPTION_GAP, w, h };
+}
+
+// The caption under an icon as it sits on the canvas: turned with the icon (rotate=), about the icon's middle.
+export function captionFootprint(s: Shape): Box | null {
+  const b = captionBox(s), t = turnOf(s.p);
+  return b && t ? turnedBox(b, mid(s), t) : b;
 }
 
 // The picture's extent: the box around every shape, text, line and line label, 40px clear on all sides,

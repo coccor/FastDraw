@@ -2,9 +2,10 @@ import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2, TextAlignStart, TextAlignCenter, TextAlignEnd,
+  RotateCcw, RotateCw,
 } from 'lucide-react';
 import { color, fontFamily } from '../../src/look.ts';
-import { MARKERS } from '../../src/scene.ts';
+import { MARKERS, turnOf } from '../../src/scene.ts';
 import type { Scene, Row } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { splitCells } from '../../src/edit.ts';
@@ -30,6 +31,8 @@ export type PanelActions = {
   resetRoute: () => void;
   setRows: (rows: RowSpec[]) => void;
   setRoute: (route: string) => void;
+  // turns the selected shapes and texts to an angle, each about its own middle
+  rotate: (deg: number) => void;
 };
 
 // One row, as Excalidraw does it: a few quick picks (`top`, else the first five of `values`), a divider, then a
@@ -185,6 +188,27 @@ function Opacity({ value, own, act }: { value: number; own: boolean; act: PanelA
         onChange={(e) => { const n = +e.target.value; setV(n); pending.current = true; act.previewProp('opacity', out(n)); }}
         onPointerUp={done} onKeyUp={done} onBlur={done} />
       <span className="value">{v}%</span>
+    </div>
+  );
+}
+
+// How far the selection is turned, in degrees clockwise: typed (Enter or leaving the field writes it), or a quarter
+// turn either way from the buttons.
+function Rotation({ value, act }: { value: number; act: PanelActions }) {
+  const [v, setV] = React.useState(String(value));
+  React.useEffect(() => setV(String(value)), [value]);
+  const commit = () => { const n = Number(v); if (v.trim() !== '' && Number.isFinite(n) && n !== value) act.rotate(n); else setV(String(value)); };
+  return (
+    <div className="rotation">
+      <label className="angle">
+        <input value={v} inputMode="decimal" aria-label="Rotation in degrees" onChange={(e) => setV(e.target.value)} onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLElement).blur(); } }} />
+        <span>°</span>
+      </label>
+      <div className="seg">
+        <button title="Turn a quarter anticlockwise" aria-label="Turn a quarter anticlockwise" onClick={() => act.rotate(value - 90)}><RotateCcw size={16} /></button>
+        <button title="Turn a quarter clockwise" aria-label="Turn a quarter clockwise" onClick={() => act.rotate(value + 90)}><RotateCw size={16} /></button>
+      </div>
     </div>
   );
 }
@@ -430,6 +454,12 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
           <div className="seg wrap">
             {aligns.map(([m, label, icon]) => <button key={m} title={label} aria-label={label} onClick={() => act.align(m)}>{icon}</button>)}
           </div>
+        </section>
+      )}
+      {els.every((e) => e!.kind !== 'conn') && (
+        <section>
+          <h4>Rotation</h4>
+          <Rotation value={turnOf(p)} act={act} />
         </section>
       )}
       <section>

@@ -439,7 +439,32 @@ test('legend swatches, turned text, lines behind boxes, text in a triangle, and 
   assert.ok(turned.h > turned.w && turned.y < 300 && turned.y + turned.h <= 300.01);
   const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
   assert.match(msgs('a: node "A" at 40,40 100x40\nb: node "B" at 140,80 100x40\na.right@80 -> b.left@80\n'), /meet at the same point \(140,80\)/);
-  assert.match(msgs('text "x" at 40,40 rotate=45\n'), /text can be turned by 90/);
+  assert.match(msgs('text "x" at 40,40 rotate=sideways\n'), /rotate=sideways: an angle in degrees/);
+  assert.doesNotMatch(msgs('text "x" at 40,40 rotate=45\n'), /rotate/);
+});
+
+test('rotate= turns a shape about its middle and a text about its at point; lines meet the turned sides', () => {
+  const sc = scene('a: node "A" at 40,40 120x40\nb: node "B" at 300,40 120x40 rotate=90\nc: node "C" at 300,240 120x40 rotate=45\na -> b\nb -> c route=curve\ntext "Slant" at 40,200 rotate=30\n');
+  const svg = renderSvg(sc);
+  assert.ok(svg.includes('<g transform="rotate(90 360 60)">'));
+  assert.ok(svg.includes('<g transform="rotate(45 360 260)">'));
+  assert.ok(svg.includes('transform="rotate(30 40 200)"'));
+  // b stands upright now (40 wide, 120 tall): a quarter turn faces its own bottom side left, towards a
+  const ab = sc.conns[0];
+  assert.equal(ab.b.side, 'bottom');
+  assert.deepEqual(ab.pts[ab.pts.length - 1], { x: 340, y: 60 });
+  assert.deepEqual(ab.b.dir, { x: -1, y: 0 });
+  // a curve arrives along c's turned side: its top side, turned 45 degrees, faces up and to the right
+  const bc = sc.conns[1];
+  assert.equal(bc.b.side, 'top');
+  assert.deepEqual(bc.pts[bc.pts.length - 1], { x: 374, y: 246 });
+  assert.ok(Math.abs(bc.b.dir!.x - Math.SQRT1_2) < 1e-9 && Math.abs(bc.b.dir!.y + Math.SQRT1_2) < 1e-9);
+  // the picture grows to hold the turned shape: b reaches up to y=0, so the page starts 40px above that
+  assert.equal(sc.y, -40);
+  const t = sc.texts[0];
+  assert.ok(t.frame && t.h > t.frame.h);
+  assert.deepEqual(check(scene('a: node "A" at 40,40 120x40 rotate=45\nb: node "B" at 180,40 120x40\n')).filter((i) => i.level === 'warn'), []);
+  assert.match(check(scene('a: node "A" at 40,40 120x40 rotate=45\nb: node "B" at 120,40 120x40\n')).map((i) => i.msg).join('\n'), /b overlaps a/);
 });
 
 test('sub text can run over several lines, and a tag on a short box is reported', () => {

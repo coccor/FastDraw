@@ -249,6 +249,17 @@ pub fn hypot(values: &[f64]) -> f64 {
     sum.sqrt() * max
 }
 
+/// `Math.sign`: -1, 1, or the number itself for 0, -0 and NaN.
+pub fn sign(x: f64) -> f64 {
+    if x > 0.0 {
+        1.0
+    } else if x < 0.0 {
+        -1.0
+    } else {
+        x
+    }
+}
+
 /// `Math.sin`.
 pub fn sin(x: f64) -> f64 {
     libm::sin(x)

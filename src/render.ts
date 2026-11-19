@@ -1,7 +1,7 @@
 // Draws a resolved scene as SVG. The same output feeds PNG export.
 import { color, fontFamily } from './look.ts';
 import type { Look, Props } from './look.ts';
-import { textWidth, measureText, ICON_CAPTION_GAP } from './scene.ts';
+import { textWidth, measureText, ICON_CAPTION_GAP, turnOf } from './scene.ts';
 import type { Scene, Shape, Conn, Pt, TextEl } from './scene.ts';
 import { drawChart } from './chart.ts';
 import { isIconUri, iconStandIn } from './iconfiles.ts';
@@ -47,6 +47,11 @@ const blendOf = (p: Props) => (p.blend === 'multiply' ? BLEND : '');
 function faded(p: Props, svg: string): string {
   const o = Math.min(1, Math.max(0, num(p.opacity, 1)));
   return o < 1 ? `<g opacity="${r2(o)}">${svg}</g>` : svg;
+}
+// rotate=deg: a shape drawn turned clockwise about its middle, everything on it (text, icon, caption) turning with it
+function turned(s: Shape, svg: string): string {
+  const t = turnOf(s.p);
+  return t ? `<g transform="rotate(${r2(t)} ${r2(s.x + s.w / 2)} ${r2(s.y + s.h / 2)})">${svg}</g>` : svg;
 }
 // The same shape somewhere else: for a slab under it, a shadow beside it, a fill printed out of register.
 const shifted = (s: Shape, dx: number, dy: number): Shape => ({ ...s, x: s.x + dx, y: s.y + dy, poly: s.poly?.map((q) => ({ x: q.x + dx, y: q.y + dy })) });
@@ -745,7 +750,7 @@ function drawText(look: Look, t: TextEl): string {
   const ta = boxed ? (al === 'center' ? 'middle' : al === 'right' ? 'end' : 'start') : t.p.anchor;
   const anchor = ta && ta !== 'start' ? ` text-anchor="${esc(ta)}"` : '';
   const x0 = boxed ? t.ax + (al === 'center' ? bw / 2 : al === 'right' ? bw : 0) : t.ax;
-  const rot = num(t.p.rotate, 0);
+  const rot = turnOf(t.p);
   const lines = t.lines ?? t.text.split('\n'), blend = blendOf(t.p);
   let body = lines.map((l, i) => `<text x="${x0}" y="${r2(t.ay + i * a.size * 1.3)}"${anchor} ${a.a}${blend}>${esc(l)}</text>`).join('\n');
   if (t.p.echo && t.p.echo !== 'none') {
@@ -753,7 +758,7 @@ function drawText(look: Look, t: TextEl): string {
     const dx = num(t.p['echo.dx'], 3), dy = num(t.p['echo.dy'], 3), ea = a.a.replace(/fill="[^"]*"/, () => `fill="${col(look, t.p.echo)}"`);
     body = lines.map((l, i) => `<text x="${x0 + dx}" y="${r2(t.ay + dy + i * a.size * 1.3)}"${anchor} ${ea}>${esc(l)}</text>`).join('\n') + '\n' + body;
   }
-  return rot === 90 || rot === -90 ? `<g transform="rotate(${rot} ${t.ax} ${t.ay})">${body}</g>` : body;
+  return rot ? `<g transform="rotate(${r2(rot)} ${t.ax} ${t.ay})">${body}</g>` : body;
 }
 
 // A colour as numbers, laid over the page when it is see-through; null for anything that is not a plain colour.
@@ -829,7 +834,7 @@ function footed(c: Conn, shapes: Shape[]): Conn {
     if (Math.abs(q.x - n.x) > 0.5 || n.y < q.y) continue; // only a line coming straight up into the edge
     for (const s of shapes) {
       const d = num(s.p.depth, 0);
-      if (d > 0 && !s.back && Math.abs(q.y - (s.y + s.h)) < 1 && q.x > s.x && q.x < s.x + s.w && n.y - q.y > d + 6) { q.y += d; moved = true; break; }
+      if (d > 0 && !s.back && !turnOf(s.p) && Math.abs(q.y - (s.y + s.h)) < 1 && q.x > s.x && q.x < s.x + s.w && n.y - q.y > d + 6) { q.y += d; moved = true; break; }
     }
   }
   return moved ? { ...c, pts } : c;
@@ -932,13 +937,13 @@ export function renderBody(sc: Scene, background = true): string {
     out.push(`<rect class="fd-page" x="${sc.x}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-l)"/><rect class="fd-page" x="${sc.x + sc.w - 26}" y="${sc.y}" width="26" height="${sc.h}" fill="url(#fd-feed-r)"/>`);
     out.push(`<path class="fd-page" d="M ${sc.x + 26},${sc.y} v ${sc.h} M ${sc.x + sc.w - 26},${sc.y} v ${sc.h}" stroke="${c}" stroke-width="1" stroke-dasharray="2 3" fill="none"/>`);
   }
-  for (const s of sc.shapes) if (s.back) out.push(faded(s.p, drawShape(look, s)));
+  for (const s of sc.shapes) if (s.back) out.push(faded(s.p, turned(s, drawShape(look, s))));
   // lines go under the shapes, except those marked layer=front (an edge drawn on a face)
   const conns = sc.shapes.some((s) => num(s.p.depth, 0) > 0) ? sc.conns.map((c) => footed(c, sc.shapes)) : sc.conns;
   const under = conns.filter((c) => c.p.layer !== 'front'), over = conns.filter((c) => c.p.layer === 'front');
   for (const c of under) out.push(faded(c.p, drawConn(look, c)));
   for (const c of under) if (c.label) out.push(faded(c.p, drawLabel(look, c)));
-  for (const s of sc.shapes) if (!s.back) out.push(faded(s.p, drawShape(look, s)));
+  for (const s of sc.shapes) if (!s.back) out.push(faded(s.p, turned(s, drawShape(look, s))));
   for (const c of over) out.push(faded(c.p, drawConn(look, c)));
   for (const c of over) if (c.label) out.push(faded(c.p, drawLabel(look, c)));
   for (const t of sc.texts) out.push(faded(t.p, drawText(look, t)));

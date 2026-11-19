@@ -422,6 +422,84 @@ fn within(v: f64, lo: f64, hi: f64) -> bool {
     v >= lo && v <= hi
 }
 
+/// rotate=deg: how far an element is turned, clockwise, in degrees (0 when it is not). A shape turns about its
+/// middle, a text about its "at" point.
+pub fn turn_of(p: &Props) -> f64 {
+    let r = num(p.get("rotate").map(String::as_str), 0.0) % 360.0;
+    if r.is_finite() && r != 0.0 { r } else { 0.0 }
+}
+/// cos and sin of a turn; exact for quarter turns, so a box turned by 90 lands on whole numbers
+fn cos_sin(deg: f64) -> (f64, f64) {
+    if deg % 90.0 == 0.0 {
+        let q = (((deg / 90.0) % 4.0 + 4.0) % 4.0) as usize;
+        return [(1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), (0.0, -1.0)][q];
+    }
+    let a = deg * std::f64::consts::PI / 180.0;
+    (js::cos(a), js::sin(a))
+}
+/// p turned clockwise by deg about c (the y axis points down, as on the canvas)
+pub fn turn_pt(p: Pt, c: Pt, deg: f64) -> Pt {
+    let (co, si) = cos_sin(deg);
+    let (dx, dy) = (p.x - c.x, p.y - c.y);
+    Pt {
+        x: c.x + dx * co - dy * si,
+        y: c.y + dx * si + dy * co,
+    }
+}
+/// The box around b once it is turned by deg about c.
+pub fn turned_box(b: &Rect, c: Pt, deg: f64) -> Rect {
+    let q = [
+        Pt { x: b.x, y: b.y },
+        Pt {
+            x: b.x + b.w,
+            y: b.y,
+        },
+        Pt {
+            x: b.x,
+            y: b.y + b.h,
+        },
+        Pt {
+            x: b.x + b.w,
+            y: b.y + b.h,
+        },
+    ]
+    .map(|p| turn_pt(p, c, deg));
+    let x0 = q.iter().map(|p| p.x).fold(f64::INFINITY, js::min);
+    let y0 = q.iter().map(|p| p.y).fold(f64::INFINITY, js::min);
+    let x1 = q.iter().map(|p| p.x).fold(f64::NEG_INFINITY, js::max);
+    let y1 = q.iter().map(|p| p.y).fold(f64::NEG_INFINITY, js::max);
+    Rect {
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        h: y1 - y0,
+    }
+}
+fn mid(b: &Rect) -> Pt {
+    Pt { x: cx(b), y: cy(b) }
+}
+/// What a shape covers on the canvas: its box, or the box around it once turned.
+pub fn footprint(s: &Shape) -> Rect {
+    let r = shape_rect(s);
+    let t = turn_of(&s.p);
+    if t != 0.0 {
+        turned_box(&r, mid(&r), t)
+    } else {
+        r
+    }
+}
+/// The caption under an icon as it sits on the canvas: turned with the icon (rotate=), about the icon's middle.
+pub fn caption_footprint(s: &Shape) -> Option<Rect> {
+    let t = turn_of(&s.p);
+    caption_box(s).map(|b| {
+        if t != 0.0 {
+            turned_box(&b, mid(&shape_rect(s)), t)
+        } else {
+            b
+        }
+    })
+}
+
 pub fn auto_sides(a: &Rect, b: &Rect) -> (Side, Side) {
     if within(cx(a), b.x, b.x + b.w) || within(cx(b), a.x, a.x + a.w) {
         return if cy(a) <= cy(b) {
@@ -1474,6 +1552,12 @@ impl Builder {
                 format!("route={r} is not a route; use ortho, straight or curve"),
             );
         }
+        if over.contains_key("rotate") {
+            self.warn(
+                line,
+                "rotate= does nothing on a line; it follows the things it joins".into(),
+            );
+        }
         // -> and <-> put the style's head on the line; head= and tail= on the statement choose any marker for either end
         let style_head = style.props.get("head").map(String::as_str);
         let style_head = match style_head {
@@ -1767,15 +1851,17 @@ impl Builder {
             at.x
         };
         let th = fs * 1.3 * n_lines as f64;
-        // rotate=-90 reads upwards, rotate=90 downwards; the text turns about its "at" point
-        let rot = num(prop("rotate"), 0.0);
+        // rotate= turns the text clockwise about its "at" point: -90 reads upwards, 90 downwards, any angle between
         if let Some(r) = prop("rotate")
-            && ![0.0, 90.0, -90.0].contains(&rot)
+            && !to_number(r).is_finite()
         {
-            let msg =
-                format!("rotate={r}: text can be turned by 90 (reading down) or -90 (reading up)");
+            let msg = format!(
+                "rotate={r}: an angle in degrees, turning clockwise (rotate=-90 reads upwards)"
+            );
             self.err(line, msg);
         }
+        let rot = num(prop("rotate"), 0.0);
+        let turn = turn_of(&p);
         let dx = x - at.x; // where the text starts, measured along its own baseline
         let bx = if rot == -90.0 {
             Rect {
@@ -1791,6 +1877,14 @@ impl Builder {
                 w: th,
                 h: w,
             }
+        } else if turn != 0.0 {
+            let flat = Rect {
+                x,
+                y: at.y - fs,
+                w,
+                h: th,
+            };
+            turned_box(&flat, at, turn)
         } else {
             Rect {
                 x,
@@ -1992,6 +2086,11 @@ impl Builder {
             && !["left", "top", "corner"].contains(&pos)
         {
             self.err(line, format!("icon.pos={pos}: an icon sits left of the text, on top of it, or in the top-left corner as a tab (icon.pos=left, icon.pos=top or icon.pos=corner)"));
+        }
+        if let Some(r) = prop("rotate")
+            && !to_number(r).is_finite()
+        {
+            self.err(line, format!("rotate={r}: an angle in degrees; the shape turns clockwise about its middle (e.g. rotate=45)"));
         }
         for k in ["color", "weight", "font", "italic"] {
             if over.contains_key(k) {
@@ -2240,6 +2339,8 @@ struct Member {
 struct Resolver<'s> {
     shapes: &'s [Shape],
     shape_by_id: HashMap<&'s str, (Rect, Option<&'s str>)>,
+    /// a turned shape's turn; a line on a turned text meets the box around it, as for any text
+    turn_by_id: HashMap<&'s str, f64>,
     rows_by_id: HashMap<&'s str, &'s [Row]>,
     conn_by_id: HashMap<String, usize>,
     conns: Vec<Conn>,
@@ -2270,6 +2371,11 @@ impl<'s> Resolver<'s> {
             };
             shape_by_id.insert(t.id.as_str(), (r, None));
         }
+        let turn_by_id = shapes
+            .iter()
+            .filter(|s| turn_of(&s.p) != 0.0)
+            .map(|s| (s.id.as_str(), turn_of(&s.p)))
+            .collect();
         let conn_by_id = conns
             .iter()
             .enumerate()
@@ -2282,6 +2388,7 @@ impl<'s> Resolver<'s> {
         Resolver {
             shapes,
             shape_by_id,
+            turn_by_id,
             rows_by_id,
             conn_by_id,
             conns,
@@ -2321,6 +2428,38 @@ impl<'s> Resolver<'s> {
             ),
             None => (s, shape),
         }
+    }
+
+    /// the turn (rotate=) of the shape an end is on, about the shape's middle; None when it is not turned
+    fn turn_at(&self, e: &End) -> Option<(Pt, f64)> {
+        if e.kind != EndKind::Shape {
+            return None;
+        }
+        let id = e.id.as_deref().unwrap();
+        let deg = *self.turn_by_id.get(id)?;
+        Some((mid(&self.shape_by_id[id].0), deg))
+    }
+
+    /// a step (dx,dy) as the turned shape of end e sees it
+    fn turn_back(&self, e: &End, r: Pt) -> Pt {
+        match self.turn_at(e) {
+            Some((_, deg)) => turn_pt(r, Pt { x: 0.0, y: 0.0 }, -deg),
+            None => r,
+        }
+    }
+
+    /// box b as the turned shape of end e sees it: the same size, its middle turned back about the shape's
+    fn seen_from(&self, e: &End, b: Option<Rect>) -> Option<Rect> {
+        let (Some((c, deg)), Some(b)) = (self.turn_at(e), b) else {
+            return b;
+        };
+        let m = turn_pt(mid(&b), c, -deg);
+        Some(Rect {
+            x: m.x - b.w / 2.0,
+            y: m.y - b.h / 2.0,
+            w: b.w,
+            h: b.h,
+        })
     }
 
     /// Every end names something that exists: a shape (and a row it has), a text, or another line.
@@ -2448,31 +2587,42 @@ impl<'s> Resolver<'s> {
             };
             if right { Side::Right } else { Side::Left }
         };
+        // (an end on a turned shape picks its side as the shape sees the other end, turned back with it)
         for &ci in batch {
             let ba = self.box_of((ci, false));
             let bb = self.box_of((ci, true));
-            let c = &mut self.conns[ci];
+            let c = &self.conns[ci];
             if c.a.kind == EndKind::Shape && c.a.side.is_none() {
-                c.a.side = Some(if c.a.row.is_some() {
-                    row_side(ba.unwrap(), bb, c.b.rel.unwrap_or(Pt { x: 0.0, y: 0.0 }))
-                } else if let Some(bb) = bb {
-                    auto_sides(&ba.unwrap(), &bb).0
+                let ob = self.seen_from(&c.a, bb);
+                let rel = c.b.rel.map(|r| self.turn_back(&c.a, r));
+                let side = if c.a.row.is_some() {
+                    row_side(ba.unwrap(), ob, rel.unwrap_or(Pt { x: 0.0, y: 0.0 }))
+                } else if let Some(ob) = ob {
+                    auto_sides(&ba.unwrap(), &ob).0
                 } else {
-                    rel_side(c.b.rel.unwrap())
-                });
+                    rel_side(rel.unwrap())
+                };
+                let c = &mut self.conns[ci];
+                c.a.side = Some(side);
                 c.a.fanned = Some(true);
             }
+            let c = &self.conns[ci];
             if c.b.kind == EndKind::Shape && c.b.side.is_none() {
-                let back =
+                let back = self.turn_back(
+                    &c.b,
                     c.a.rel
-                        .map_or(Pt { x: 0.0, y: 0.0 }, |r| Pt { x: -r.x, y: -r.y });
-                c.b.side = Some(if c.b.row.is_some() {
-                    row_side(bb.unwrap(), ba, back)
-                } else if let Some(ba) = ba {
-                    auto_sides(&ba, &bb.unwrap()).1
+                        .map_or(Pt { x: 0.0, y: 0.0 }, |r| Pt { x: -r.x, y: -r.y }),
+                );
+                let ob = self.seen_from(&c.b, ba);
+                let side = if c.b.row.is_some() {
+                    row_side(bb.unwrap(), ob, back)
+                } else if let Some(ob) = ob {
+                    auto_sides(&ob, &bb.unwrap()).1
                 } else {
                     rel_side(back)
-                });
+                };
+                let c = &mut self.conns[ci];
+                c.b.side = Some(side);
                 c.b.fanned = Some(true);
             }
         }
@@ -2512,7 +2662,8 @@ impl<'s> Resolver<'s> {
             }
             let mut order: Vec<(f64, usize)> = Vec::with_capacity(g.len());
             for (idx, m) in g.iter().enumerate() {
-                let r = match self.box_of(m.o) {
+                let ob = self.box_of(m.o);
+                let r = match self.seen_from(end_of(&self.conns, m.e), ob) {
                     Some(b) if horiz => cx(&b),
                     Some(b) => cy(&b),
                     None => 0.0,
@@ -2567,6 +2718,32 @@ impl<'s> Resolver<'s> {
                     self.warn(line, msg);
                 }
             }
+            if let Some((c, deg)) = self.turn_at(end_of(&self.conns, r)) {
+                // the point turns with the shape; a right-angled line leaves along whichever way is nearest the turned side
+                let ortho = self.conns[ci].ortho;
+                let q = turn_pt(pt, c, deg);
+                let d = turn_pt(side.dir(), Pt { x: 0.0, y: 0.0 }, deg);
+                let ax = round(d.x * 1e6).abs();
+                let ay = round(d.y * 1e6).abs();
+                let em = end_mut(&mut self.conns, r);
+                em.pt = Pt {
+                    x: round(q.x),
+                    y: round(q.y),
+                };
+                em.dir = Some(if !ortho {
+                    d
+                } else if ax >= ay {
+                    Pt {
+                        x: js::sign(d.x),
+                        y: 0.0,
+                    }
+                } else {
+                    Pt {
+                        x: 0.0,
+                        y: js::sign(d.y),
+                    }
+                });
+            }
         }
     }
 
@@ -2585,7 +2762,12 @@ impl<'s> Resolver<'s> {
             (Some(da), Some(db)) => da.x == -db.x && da.y == -db.y,
             _ => false,
         };
-        if a.kind != EndKind::Shape || b.kind != EndKind::Shape || !opposing {
+        if a.kind != EndKind::Shape
+            || b.kind != EndKind::Shape
+            || !opposing
+            || self.turn_at(a).is_some()
+            || self.turn_at(b).is_some()
+        {
             return;
         }
         let ((sa, shape_a), (sb, shape_b)) = (self.tgt(a), self.tgt(b));
@@ -2650,6 +2832,7 @@ impl<'s> Resolver<'s> {
             if ee.kind != EndKind::Shape
                 || !single.contains(&e)
                 || (oe.kind != EndKind::Point && oe.kind != EndKind::Conn)
+                || self.turn_at(ee).is_some()
             {
                 continue;
             }
@@ -2733,6 +2916,7 @@ impl<'s> Resolver<'s> {
         // the simple route cuts through a box: find a way around (hand-set via points are left alone)
         if c.ortho && via.is_empty() && !c.ushape {
             let strictly_in = |o: &Shape, p: Pt| {
+                let o = footprint(o);
                 p.x > o.x + 1.0 && p.x < o.x + o.w - 1.0 && p.y > o.y + 1.0 && p.y < o.y + o.h - 1.0
             };
             // (an open outline is a line, not a box: nothing goes around it)
@@ -2747,14 +2931,14 @@ impl<'s> Resolver<'s> {
                         && !strictly_in(o, a)
                         && !strictly_in(o, b)
                 })
-                .map(shape_rect)
+                .map(footprint)
                 .collect();
             // an icon's caption hangs below it: other lines go around it too
             for o in self.shapes {
                 let cb = if Some(o.id.as_str()) != c.a.id.as_deref()
                     && Some(o.id.as_str()) != c.b.id.as_deref()
                 {
-                    caption_box(o)
+                    caption_footprint(o)
                 } else {
                     None
                 };
@@ -2782,7 +2966,7 @@ impl<'s> Resolver<'s> {
             .shapes
             .iter()
             .filter(|o| !o.back && o.shape != "legend")
-            .map(shape_rect)
+            .map(footprint)
             .collect();
         c.label = make_label(c, &avoid);
         self.done.insert(ci);
@@ -2892,8 +3076,8 @@ pub fn build_scene(src: &str, look_in: Option<Look>, file: &str) -> Scene {
 
     let shape_boxes: Vec<Rect> = shapes
         .iter()
-        .map(shape_rect)
-        .chain(shapes.iter().filter_map(caption_box))
+        .map(footprint)
+        .chain(shapes.iter().filter_map(caption_footprint))
         .collect();
     let text_boxes: Vec<Rect> = texts.iter().map(text_rect).collect();
     let ext = extent(&shape_boxes, &text_boxes, &conns);

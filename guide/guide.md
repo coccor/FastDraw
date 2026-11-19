@@ -231,7 +231,7 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 
 A shape's text is styled with `title.size=`, `title.color=`, `title.weight=`, `title.font=` (and `sub.` the same for the second line).
 
-Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. `opacity=0.5` draws the whole element (box, line or text, with its text and arrowheads) see-through, from `0` to `1`. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.
+Any appearance property can be overridden on one element: `fill=`, `stroke=`, `sw=` (stroke width), `dash=4,3`, `radius=`. `opacity=0.5` draws the whole element (box, line or text, with its text and arrowheads) see-through, from `0` to `1`. `rotate=30` turns a shape clockwise about its middle, by any angle in degrees (negative turns it the other way); its text, icon and caption turn with it, and lines attach to its turned sides. Lines themselves do not turn. Colours are `#hex`, a colour name from the look, or either followed by `/opacity` (`ink/0.3`). Prefer the look's styles; override only with a reason.
 
 ### Connectors
 
@@ -287,7 +287,7 @@ Labels are drawn in small caps on a paper-coloured patch, above a horizontal lin
 
 ### Text
 
-`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. `width=240` makes the text a box: `at` is the left end of its first line, the words wrap to the width, and `align=center` or `align=right` lines them up in it. `rotate=-90` turns the text to read upwards about its `at` point (`rotate=90`: downwards), for a label along a vertical axis. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1` (only where the font has an italic face; the bundled sans and mono do not, the serif does).
+`text "words" at x,y style=name` — `at` is the left end of the text baseline. `anchor=middle` or `anchor=end` changes that. `width=240` makes the text a box: `at` is the left end of its first line, the words wrap to the width, and `align=center` or `align=right` lines them up in it. `rotate=-90` turns the text to read upwards about its `at` point (`rotate=90`: downwards), for a label along a vertical axis; any other angle in degrees turns it that far clockwise. Overrides: `size=`, `color=`, `weight=`, `font=sans|mono|serif`, `italic=1` (only where the font has an italic face; the bundled sans and mono do not, the serif does).
 
 Spaces inside the quotes are drawn as written, here and in every other text (labels, `sub=`, table cells): leading spaces indent, and a run of spaces stays a run. So indented code or lined-up columns can be one text per line at the same x, with `font=mono` for the columns to line up: `text "  orders:" at 40,58 font=mono`.
 
