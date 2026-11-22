@@ -157,6 +157,7 @@ h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em;
 .term .dim { color: #6b6f80; }
 .check .pane { background: var(--canvas); border-radius: 14px; padding: 18px; }
 .check .pane svg { display: block; width: 100%; height: auto; }
+.demo { display: block; width: 100%; height: auto; margin-top: 44px; border-radius: 24px; background: #111216; box-shadow: var(--shadow); }
 
 /* closing band */
 .close { background: var(--yellow); padding: 96px 0; text-align: center; }

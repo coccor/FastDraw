@@ -20,6 +20,17 @@ small text edits, so the file stays readable in a diff.
   <img src="assets/how-it-works.png" alt="An AI agent writes diagram.fdraw; a person edits the same file in the browser editor; a look file sets the styles" width="760">
 </p>
 
+## Demo
+
+A two-minute recording of a real session. Claude Code reads the guide, asks which kind of diagram to
+draw, writes the file and checks it, while the editor draws the file as it changes. Then a person edits
+the same file on the canvas, tries other looks and exports it. Click the picture to play the
+[video](https://fastdraw.dev/demo.mp4).
+
+<p align="center">
+  <a href="https://fastdraw.dev/demo.mp4"><img src="assets/demo.png" alt="Claude Code in a terminal next to the FastDraw editor, which shows the checkout diagram Claude has just written" width="760"></a>
+</p>
+
 ## Example
 
 ```

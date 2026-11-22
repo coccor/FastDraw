@@ -215,6 +215,7 @@ export function Landing() {
       <header className="top">
         <a className="brand" href="./"><img src="favicon.svg" alt="" width="28" height="28" />FastDraw</a>
         <nav>
+          <a href="#demo">Demo</a>
           <a href="#looks">Looks</a>
           <a href="#kinds">Kinds</a>
           <a href="#setup">Set up</a>
@@ -240,6 +241,20 @@ export function Landing() {
           <LookPills doc={settled} pick={pickLook} />
         </div>
       </main>
+
+      <section id="demo" className="band white" aria-labelledby="demo-title">
+        <div className="wrap">
+          <h2 id="demo-title">Claude Code draws a diagram, <em>then a person edits it.</em></h2>
+          <p className="lede">
+            A two-minute recording of a real session. Claude Code reads the guide, asks which kind of diagram to draw,
+            writes the file and checks it, while the editor draws the file as it changes. Then a person edits the same
+            file on the canvas, tries other looks and exports it.
+          </p>
+          <video className="demo" src="demo.mp4" poster="demo-poster.jpg" controls preload="none" playsInline width={1920} height={1080}>
+            <a href="demo.mp4">Download the recording (MP4)</a>
+          </video>
+        </div>
+      </section>
 
       <Kinds current={doc.kind} pick={pickKind} />
 
