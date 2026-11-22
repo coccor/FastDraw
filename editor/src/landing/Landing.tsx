@@ -12,6 +12,8 @@ import { Workbench, type Doc } from './Workbench.tsx';
 import checkout from './checkout.fdraw?raw';
 
 const REPO = 'https://github.com/coccor/fastdraw';
+// the hero recording plays by itself unless the visitor asked for less motion
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function CopyButton({ text, label = 'Copy' }: { text: string | (() => Promise<string>); label?: string }) {
   const [done, setDone] = useState(false);
@@ -233,6 +235,11 @@ export function Landing() {
             <a className="btn focal big" href="edit/">Open the editor</a>
           </div>
           <p className="small muted">The command installs the FastDraw skill for the coding agents it finds: Claude Code, Codex, OpenCode, Cursor and others. <a href="#setup">Claude Code's plugin, Copilot and chat assistants</a> are below.</p>
+          {/* a recorded session: a person asks Claude Code for a diagram and three changes, then edits it by hand */}
+          <video className="herovideo" src="demo.mp4" poster="demo-poster.jpg" autoPlay={!reducedMotion()} muted loop playsInline controls preload="metadata" width={1920} height={1080}
+            aria-label="Recording: a person asks Claude Code for a checkout diagram, a Redis cache, a Stripe payment and a look of their own, then moves boxes and adds one in the editor">
+            <a href="demo.mp4">Watch the recording (MP4)</a>
+          </video>
         </section>
 
         <div className="stage">
