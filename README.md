@@ -22,13 +22,13 @@ small text edits, so the file stays readable in a diff.
 
 ## Demo
 
-A two-minute recording of a real session. Claude Code reads the guide, asks which kind of diagram to
-draw, writes the file and checks it, while the editor draws the file as it changes. Then a person edits
-the same file on the canvas, tries other looks and exports it. Click the picture to play the
-[video](https://fastdraw.dev/demo.mp4).
+A recording of a real session, with the time spent waiting for Claude cut out. A person asks Claude Code
+for a checkout diagram, then for a Redis cache, a Stripe payment and a look of their own; the editor
+redraws the file after each change. Then they move boxes and add one in the editor, and each edit is
+saved into the same file. Click the picture to play the [video](https://fastdraw.dev/demo.mp4).
 
 <p align="center">
-  <a href="https://fastdraw.dev/demo.mp4"><img src="assets/demo.png" alt="Claude Code in a terminal next to the FastDraw editor, which shows the checkout diagram Claude has just written" width="760"></a>
+  <a href="https://fastdraw.dev/demo.mp4"><img src="assets/demo.png" alt="The conversation with Claude Code next to the FastDraw editor, which shows the checkout diagram in the person's own light look" width="760"></a>
 </p>
 
 ## Example

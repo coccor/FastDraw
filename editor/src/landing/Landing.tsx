@@ -12,6 +12,8 @@ import { Workbench, type Doc } from './Workbench.tsx';
 import checkout from './checkout.fdraw?raw';
 
 const REPO = 'https://github.com/coccor/fastdraw';
+// the hero recording plays by itself unless the visitor asked for less motion
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function CopyButton({ text, label = 'Copy' }: { text: string | (() => Promise<string>); label?: string }) {
   const [done, setDone] = useState(false);
@@ -215,7 +217,6 @@ export function Landing() {
       <header className="top">
         <a className="brand" href="./"><img src="favicon.svg" alt="" width="28" height="28" />FastDraw</a>
         <nav>
-          <a href="#demo">Demo</a>
           <a href="#looks">Looks</a>
           <a href="#kinds">Kinds</a>
           <a href="#setup">Set up</a>
@@ -234,6 +235,11 @@ export function Landing() {
             <a className="btn focal big" href="edit/">Open the editor</a>
           </div>
           <p className="small muted">The command installs the FastDraw skill for the coding agents it finds: Claude Code, Codex, OpenCode, Cursor and others. <a href="#setup">Claude Code's plugin, Copilot and chat assistants</a> are below.</p>
+          {/* a recorded session: a person asks Claude Code for a diagram and three changes, then edits it by hand */}
+          <video className="herovideo" src="demo.mp4" poster="demo-poster.jpg" autoPlay={!reducedMotion()} muted loop playsInline controls preload="metadata" width={1920} height={1080}
+            aria-label="Recording: a person asks Claude Code for a checkout diagram, a Redis cache, a Stripe payment and a look of their own, then moves boxes and adds one in the editor">
+            <a href="demo.mp4">Watch the recording (MP4)</a>
+          </video>
         </section>
 
         <div className="stage">
@@ -241,20 +247,6 @@ export function Landing() {
           <LookPills doc={settled} pick={pickLook} />
         </div>
       </main>
-
-      <section id="demo" className="band white" aria-labelledby="demo-title">
-        <div className="wrap">
-          <h2 id="demo-title">Claude Code draws a diagram, <em>then a person edits it.</em></h2>
-          <p className="lede">
-            A two-minute recording of a real session. Claude Code reads the guide, asks which kind of diagram to draw,
-            writes the file and checks it, while the editor draws the file as it changes. Then a person edits the same
-            file on the canvas, tries other looks and exports it.
-          </p>
-          <video className="demo" src="demo.mp4" poster="demo-poster.jpg" controls preload="none" playsInline width={1920} height={1080}>
-            <a href="demo.mp4">Download the recording (MP4)</a>
-          </video>
-        </div>
-      </section>
 
       <Kinds current={doc.kind} pick={pickKind} />
 
