@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Review : submit
+    Review --> Draft : reject
+    Review --> Published : approve
+    Published --> Archived : archive
+    Archived --> [*]
+    state Review {
+        [*] --> Waiting
+        Waiting --> Checking : pick up
+        Checking --> [*]
+    }

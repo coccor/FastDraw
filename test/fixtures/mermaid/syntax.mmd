@@ -1,0 +1,31 @@
+%%{init: {"theme": "forest"}}%%
+graph TB
+    %% every node shape, and the ways to write a line
+    start([Start]) --> in[/Read input/] --> check{"Valid? (a & b)"}
+    check -- yes --> proc[["Process<br/>batch"]] & log>Log it]
+    check -. no .-> err((Error))
+    proc ==>|done| store[(Save)]
+    hex{{Prepare}} --- start
+    a1 --> a2 --> a3; a3 --x b1
+    b1 o--o b2
+    b2 <--> c1
+    api-v2@{ shape: cyl, label: "Orders v2" } --> store
+    md["`**Bold** and *italic*`"] ---> store
+    subgraph outer [Outer group]
+        direction LR
+        a1
+        subgraph inner [Inner]
+            a2
+            a3
+        end
+    end
+    subgraph other
+        b1
+        b2
+    end
+    log --> outer
+    click start "https://example.com"
+    style err fill:#f00
+    c1:::warn
+    12 --> 34
+    café --> naïve

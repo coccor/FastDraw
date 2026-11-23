@@ -21,6 +21,8 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 
 When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
 
+When the diagram already exists as Mermaid (a `.mmd` file, or a ` ```mermaid ` block in a Markdown file) and the person wants it in FastDraw, start from `fastdraw import <file> --dir docs/diagrams` instead of redrawing it. It reads flowcharts, sequence, ER, state and class diagrams. The result has the look's styles and nothing overlapping, but its layout is worked out by rule, so treat it as a first draft: read the kind's guide, then go on from step 7 (check, render, look at the PNG) and improve the composition. Mermaid's colours (`classDef`, `style`) are not carried over; give the one or two boxes that matter the accent style yourself.
+
 ## Know the system first
 
 A diagram of a real system is only as good as your knowledge of it. Before choosing a kind, read enough of the code to list:

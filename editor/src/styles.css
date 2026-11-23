@@ -19,6 +19,7 @@ select, input, textarea { border: 1px solid var(--line); background: #fff; borde
 hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
 kbd { font: 10px 'Geist Mono', monospace; color: var(--mute); }
 .muted { color: var(--mute); margin: 0; }
+.card .err { color: var(--bad); margin: 0; font-size: 13px; }
 .warn { color: var(--bad); }
 
 .app { position: relative; height: 100%; }

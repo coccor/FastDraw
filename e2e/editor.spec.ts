@@ -1177,6 +1177,31 @@ test('Escape closes the export and paste dialogs, from the shortcut and from the
   expect(errors).toEqual([]);
 });
 
+test('pasting a Mermaid diagram opens it laid out as FastDraw; one it cannot read says why and stays in the box', async ({ page }) => {
+  const errors = noPageErrors(page);
+  // as a chat assistant writes it: in a fenced block, with words around
+  await paste(page, 'Here is the flow:\n\n```mermaid\nflowchart TD\n  A[Start] --> B{Ready?}\n  B -->|yes| C([Done])\n```\n');
+  const text = await source(page);
+  expect(lineOf(text, 'B')).toMatch(/^B: decision "Ready\?" at \d+,\d+ \d+x\d+$/);
+  expect(text).toMatch(/B\.\w+ -> C\.\w+ "yes"/);
+  await expect(page.getByRole('tab', { name: 'pasted Mermaid diagram' })).toBeVisible();
+  await expect(page.locator('svg.canvas')).toContainText('Ready?');
+
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Paste diagram text' }).click();
+  const box = page.getByRole('dialog', { name: 'Paste diagram text' });
+  await box.locator('textarea').fill('flowchart TD\n  subgraph s\n  a --> b\n');
+  await box.getByRole('button', { name: 'Open', exact: true }).click();
+  await expect(box.getByRole('alert')).toHaveText('Mermaid, line 3: subgraph s is not closed with end');
+  await expect(box.locator('textarea')).toHaveValue(/subgraph s/);
+  await box.locator('textarea').fill('sequenceDiagram\n  A->>B: hi\n');
+  await expect(box.getByRole('alert')).toBeHidden();
+  await box.getByRole('button', { name: 'Open', exact: true }).click();
+  await expect(box).toBeHidden();
+  expect(await source(page)).toMatch(/^A_l: A\.bottom -- \+0,\d+ style=lifeline layer=back$/m);
+  expect(errors).toEqual([]);
+});
+
 test('each tab keeps its own diagram and history; closing one asks first and stays closed after a reload', async ({ page }) => {
   await paste(page, SMALL);
   await page.getByRole('button', { name: 'Menu' }).click();

@@ -5,6 +5,7 @@ import { buildScene, lookPath, captionBox, textWidth as measure, turnOf, turnPt 
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
+import { importMermaid, looksLikeMermaid, mermaidBlocks, MermaidError } from '../../src/mermaid.ts';
 import { renderBody, col, pageMarks } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
@@ -1483,7 +1484,7 @@ export function App() {
           </p>
           {status && <p className="muted warn">{status}</p>}
         </div>
-        {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, null, 'pasted diagram'); }} />}
+        {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t, what) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, null, what); }} />}
         {templateDialog}
       </div>
     );
@@ -1752,7 +1753,7 @@ export function App() {
         </div>
       )}
 
-      {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, 'pasted diagram'); }} />}
+      {pasteOpen && <PasteDialog onClose={() => setPasteOpen(false)} onLoad={(t, what) => { setPasteOpen(false); io.current = { fileMod: 0, lookMod: 0, written: '' }; load(t, lookSrc, what); }} />}
       {iconToolOpen && (
         <IconDialog look={viewScene.look} value={undefined} iconStyle={iconToPlace.current.style} onClose={() => setIconToolOpen(false)}
           onPick={(n, style) => { setIconToolOpen(false); setPickedIcon({ name: n, style }); rememberIcon({ name: n, style }); setSel([]); setTool('style:icon'); }} />
@@ -1763,17 +1764,27 @@ export function App() {
   );
 }
 
-function PasteDialog({ onClose, onLoad }: { onClose: () => void; onLoad: (text: string) => void }) {
+// Pasted text is FastDraw text, or a Mermaid diagram (bare, or in a ```mermaid block), which is laid out first.
+function PasteDialog({ onClose, onLoad }: { onClose: () => void; onLoad: (text: string, what: string) => void }) {
   const [v, setV] = useState('');
+  const [err, setErr] = useState('');
   useEscape(onClose);
+  const open = () => {
+    const block = mermaidBlocks(v)[0]?.code;
+    const mermaid = block ?? (looksLikeMermaid(v) ? v : undefined);
+    if (mermaid === undefined) { onLoad(v, 'pasted diagram'); return; }
+    try { onLoad(importMermaid(mermaid).text, 'pasted Mermaid diagram'); }
+    catch (e) { if (e instanceof MermaidError) setErr(`Mermaid, line ${e.line}: ${e.message}`); else throw e; }
+  };
   return (
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="card" role="dialog" aria-label="Paste diagram text">
         <h3>Paste diagram text</h3>
-        <p className="muted">Paste what an assistant wrote. It opens in memory, drawn with the built-in look unless it names its own. Use Download to keep it.</p>
-        <textarea autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder={'a: node "Orders API" at 80,80\nb: store "Orders DB" at 320,80\na -> b "writes"'} />
+        <p className="muted">Paste what an assistant wrote: FastDraw text, or a Mermaid flowchart, sequence, ER, state or class diagram, which is laid out as FastDraw boxes and lines. It opens in memory, drawn with the built-in look unless it names its own. Use Download to keep it.</p>
+        <textarea autoFocus value={v} onChange={(e) => { setV(e.target.value); setErr(''); }} placeholder={'a: node "Orders API" at 80,80\nb: store "Orders DB" at 320,80\na -> b "writes"'} />
+        {err && <p className="err" role="alert">{err}</p>}
         <div className="startbtns">
-          <button className="primary" disabled={!v.trim()} onClick={() => onLoad(v)}>Open</button>
+          <button className="primary" disabled={!v.trim()} onClick={open}>Open</button>
           <button onClick={onClose}>Cancel</button>
         </div>
       </div>

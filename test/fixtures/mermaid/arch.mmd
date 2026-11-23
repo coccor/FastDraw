@@ -1,0 +1,10 @@
+graph LR
+    user((User)) --> web[Web app]
+    subgraph backend [Backend]
+        api[Orders API] --> db[(Postgres)]
+        api --> queue[[Queue]]
+        worker[Worker] --> db
+    end
+    web -- HTTPS --> api
+    queue --> worker
+    worker ==> mail>Email service]
