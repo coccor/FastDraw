@@ -1317,6 +1317,31 @@ test('a second line and a corner tag are edited in place, each on its own; empti
   expect(errors).toEqual([]);
 });
 
+test('legend in the panel: a title, a remove button on each entry, and entries added from a list', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, SMALL + 'key: legend at 40,300 external="Shopper" focal="The service"\n');
+  await page.locator('[data-id="key"]').first().click();
+  const panel = page.locator('.panel');
+  const title = panel.getByRole('textbox', { name: 'Legend title' });
+  await title.fill('What it shows');
+  await title.press('Enter');
+  expect(lineOf(await source(page), 'key')).toContain('title="What it shows"');
+  await panel.getByRole('button', { name: 'Remove external' }).click();
+  expect(lineOf(await source(page), 'key')).not.toContain('external=');
+  // the list offers the styles the diagram uses first, then colours
+  const add = panel.getByRole('combobox', { name: 'Add a legend entry' });
+  await expect(add.locator('optgroup').first()).toHaveAttribute('label', 'In this diagram');
+  await add.selectOption('swatch.accent');
+  expect(lineOf(await source(page), 'key')).toContain('swatch.accent="What it means"');
+  await add.selectOption('store');
+  expect(lineOf(await source(page), 'key')).toMatch(/ store="[^"]+"/);
+  await title.fill('');
+  await title.press('Enter');
+  expect(lineOf(await source(page), 'key')).not.toContain('title=');
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
 test('a legend moved sideways keeps its width', async ({ page }) => {
   await paste(page, SMALL + 'key: legend at 40,300 external="Shopper" focal="The service"\n');
   const width = async () => (await page.locator('rect[data-id="key"]').first().boundingBox())!.width;
