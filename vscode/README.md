@@ -69,8 +69,8 @@ git tag vscode-v0.1.0 && git push origin vscode-v0.1.0
 ```
 
 `.github/workflows/vscode-release.yml` runs the tests, publishes the `.vsix` to the VS Code Marketplace
-(trusted publishing, no token) and to Open VSX (the `OVSX_PAT` secret), and attaches it to a GitHub
-release. The one-time setup for both stores is at the top of that file.
+and to Open VSX (trusted publishing on both, no tokens), and attaches it to a GitHub release. The
+one-time setup for both stores is at the top of that file.
 
 ## License
 

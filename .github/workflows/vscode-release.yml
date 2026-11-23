@@ -6,13 +6,12 @@ name: vscode-release
 #   git tag vscode-v0.1.0 && git push origin vscode-v0.1.0
 # The tags are separate from the npm package's v* tags, which release.yml publishes.
 #
-# VS Code Marketplace: Trusted Publishing (OIDC), so there is no Marketplace token in the repository. One-time
-# setup on marketplace.visualstudio.com/manage: publisher coccor > Trusted Publishing, with repository owner
-# coccor, repository FastDraw, workflow vscode-release.yml and environment release.
-#
-# Open VSX (what Cursor, Windsurf and VSCodium install from): a token in the secret OVSX_PAT of the `release`
-# environment, made on open-vsx.org > Settings > Access Tokens by an account that has signed the Eclipse
-# Foundation publisher agreement. The first run creates the coccor namespace if it does not exist yet.
+# Both stores use trusted publishing (OIDC): there is no store token in the repository. One-time setup:
+# - VS Code Marketplace: marketplace.visualstudio.com/manage > publisher coccor > Trusted Publishing, with
+#   repository owner coccor, repository FastDraw, workflow vscode-release.yml and environment release.
+# - Open VSX (what Cursor, Windsurf and VSCodium install from): the coccor namespace, owned by an account that
+#   has signed the Eclipse Foundation publisher agreement, and open-vsx.org/user-settings/trusted-publishers
+#   with the same repository, workflow and environment.
 #
 # A rerun after a partial failure is safe: a version already on a store is skipped (--skip-duplicate).
 
@@ -84,7 +83,7 @@ jobs:
     environment: release
     permissions:
       contents: write # the GitHub Release with the .vsix
-      id-token: write # Marketplace trusted publishing
+      id-token: write # trusted publishing to both stores
     env:
       VSIX: ${{ needs.build.outputs.vsix }}
     steps:
@@ -106,17 +105,7 @@ jobs:
       - name: Publish to the VS Code Marketplace
         run: vsce publish --oidc --skip-duplicate --packagePath "$VSIX"
       - name: Publish to Open VSX
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: |
-          if [ -z "$OVSX_PAT" ]; then
-            echo "::error::the release environment has no OVSX_PAT secret; see the top of vscode-release.yml"
-            exit 1
-          fi
-          if ! curl -fsS -o /dev/null https://open-vsx.org/api/coccor; then
-            ovsx create-namespace coccor
-          fi
-          ovsx publish --skip-duplicate --packagePath "$VSIX"
+        run: ovsx publish --trusted-publishing --skip-duplicate --packagePath "$VSIX"
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
