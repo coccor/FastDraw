@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { color, fontFamily } from '../../src/look.ts';
 import { MARKERS, turnOf } from '../../src/scene.ts';
-import type { Scene, Row } from '../../src/scene.ts';
+import type { Scene, Row, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { splitCells } from '../../src/edit.ts';
 import { find } from './ops.ts';
@@ -253,6 +253,45 @@ function ColorChip({ sc, values, current, shown, onPick, label, text }: {
       <span className={'dot' + (c === 'none' ? ' none' : '')} style={c === 'none' ? undefined : { background: c }} />
       <span className="name">{text ?? shown}</span>
     </ColorPicker>
+  );
+}
+
+// A legend's title and entries, each with a button that removes it, and a list to add one from: the look's
+// styles (the ones this diagram uses first), or a colour drawn as a swatch, a dot or a line.
+function LegendEditor({ sc, el, colours, setProp }: { sc: Scene; el: Shape; colours: string[]; setProp: (k: string, v: string | null) => void }) {
+  const items = el.legend ?? [];
+  const listed = new Set(items.map((i) => i.style));
+  const title = el.p.title && el.p.title !== 'none' ? el.p.title : '';
+  const used = new Set<string>([...sc.shapes.filter((s) => !s.back).map((s) => s.style), ...sc.conns.map((c) => c.style)]);
+  const free = [...sc.look.styles.values()].filter((st) => (st.kind === 'shape' || st.kind === 'line') && !['legend', 'chart', 'freehand'].includes(st.name) && !listed.has(st.name));
+  const groups: [string, string[]][] = [
+    ['In this diagram', free.filter((st) => used.has(st.name)).map((st) => st.name)],
+    ['Other styles', free.filter((st) => !used.has(st.name)).map((st) => st.name)],
+    ...(['swatch', 'dot', 'line'] as const).map((k): [string, string[]] => [k === 'swatch' ? 'Colour swatch' : k === 'dot' ? 'Dot' : 'Line', colours.map((c) => `${k}.${c}`).filter((n) => !listed.has(n))]),
+  ];
+  // a style's own description, cut to its first phrase, as a starting label
+  const labelFor = (key: string) => {
+    const use = sc.look.styles.get(key)?.props.use;
+    if (!use) return 'What it means';
+    const t = use.split(/[:;,.(]/)[0].trim();
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+  return (
+    <>
+      <Row label="Title"><TextField bare label="Legend title" placeholder="Title" value={title} onCommit={(v) => setProp('title', v.trim() ? v : null)} /></Row>
+      {items.map((it) => (
+        <Row key={it.style} label={it.style}>
+          <div className="rowline" title={it.style}>
+            <TextField bare label={it.style} value={it.label} onCommit={(v) => setProp(it.style, v || null)} />
+            <button className="rowx" title={`Remove ${it.style} from the legend`} aria-label={`Remove ${it.style}`} onClick={() => setProp(it.style, null)}><X size={13} /></button>
+          </div>
+        </Row>
+      ))}
+      <select aria-label="Add a legend entry" value="" onChange={(e) => e.target.value && setProp(e.target.value, labelFor(e.target.value))}>
+        <option value="">Add an entry…</option>
+        {groups.filter(([, keys]) => keys.length).map(([g, keys]) => <optgroup key={g} label={g}>{keys.map((k) => <option key={k} value={k}>{k}</option>)}</optgroup>)}
+      </select>
+    </>
   );
 }
 
@@ -507,8 +546,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
               )}
             </Row>
           )}
-          {legend && legend.map((it) => <Row key={it.style} label={it.style}><TextField bare label={it.style} value={it.label} onCommit={(v) => act.setProp(it.style, v || null)} /></Row>)}
-          {legend && <p className="muted small">Clear an entry to remove it.</p>}
+          {legend && first.kind === 'shape' && <LegendEditor sc={sc} el={first.el} colours={names} setProp={act.setProp} />}
           {rows && first.kind === 'shape' && <RowsEditor rows={rows} chart={first.el.shape === 'chart'} onChange={act.setRows} />}
         </Group>
       )}
