@@ -11,7 +11,8 @@ name: vscode-release
 #   repository owner coccor, repository FastDraw, workflow vscode-release.yml and environment release.
 # - Open VSX (what Cursor, Windsurf and VSCodium install from): the coccor namespace, owned by an account that
 #   has signed the Eclipse Foundation publisher agreement, and open-vsx.org/user-settings/trusted-publishers
-#   with the same repository, workflow and environment.
+#   with the same repository, workflow and environment. Then set the repository variable PUBLISH_OPEN_VSX to
+#   true (Settings > Secrets and variables > Actions > Variables); until then the Open VSX step is skipped.
 #
 # A rerun after a partial failure is safe: a version already on a store is skipped (--skip-duplicate).
 
@@ -104,7 +105,10 @@ jobs:
           echo "$GITHUB_WORKSPACE/vscode/publish/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Publish to the VS Code Marketplace
         run: vsce publish --oidc --skip-duplicate --packagePath "$VSIX"
+      # off until the repository variable PUBLISH_OPEN_VSX is true: the namespace has to be verified before
+      # open-vsx.org takes a trusted publisher for it
       - name: Publish to Open VSX
+        if: vars.PUBLISH_OPEN_VSX == 'true'
         run: ovsx publish --trusted-publishing --skip-duplicate --packagePath "$VSIX"
       - name: Create GitHub Release
         env:
