@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant W as Web app
+    participant A as Orders API
+    participant D as Database
+    U->>W: Place order
+    W->>+A: POST /orders
+    A->>+D: INSERT order
+    D-->>-A: id
+    alt payment ok
+        A->>A: charge card
+        A-->>W: 201 created
+    else payment failed
+        A-->>W: 402
+    end
+    deactivate A
+    Note right of W: shows receipt
+    W-->>U: Confirmation

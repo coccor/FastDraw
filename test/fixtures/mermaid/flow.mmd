@@ -1,0 +1,15 @@
+---
+title: Checkout
+---
+flowchart TD
+    A[Customer opens cart] --> B{Logged in?}
+    B -->|Yes| C[Load saved address]
+    B -->|No| D[Ask for email]
+    D --> E[Create guest session]
+    E --> C
+    C --> F{Payment ok?}
+    F -->|Yes| G([Order placed])
+    F -->|No| H[Show error]
+    H -.-> C
+    classDef hot fill:#f96
+    class G hot

@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, webLookFile, openRoot, type LookRef } from './node.ts';
 import { buildScene, withLook, type Scene } from './scene.ts';
-import { defaultLook, isWebLook } from './look.ts';
+import { defaultLook, isWebLook, bundledLook } from './look.ts';
+import { importMermaid, mermaidBlocks, MermaidError } from './mermaid.ts';
 import { iconMatches, ICONS } from './icons.ts';
 import { isBuiltIn } from './iconStyle.ts';
 import { loadExtendedIcons } from './extendedIcons.ts';
@@ -61,6 +62,14 @@ function usage(): never {
                                           GitHub, say), and the icons and fonts a look names that way,
                                           are fetched and kept in a cache folder; --offline (also for
                                           check) uses only what is already there
+  import <file.mmd | file.md> ... [-o out.fdraw | --dir folder] [--look name|file.look|https://...]
+         [--force]                        turn Mermaid diagrams (flowchart, sequence, ER, state, class)
+                                          into .fdraw files, laid out and drawn with the look's styles.
+                                          A .mmd file becomes x.fdraw next to it; the \`\`\`mermaid blocks
+                                          of a Markdown file become x-1.fdraw, x-2.fdraw... --dir writes
+                                          them into a folder instead (docs/diagrams, say). Files that
+                                          exist are kept unless --force. --look writes the look line and
+                                          sizes the boxes for that look
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
@@ -112,7 +121,7 @@ function diagramFiles(paths: string[]): { files: string[]; many: boolean } {
   return { files, many: folder || files.length > 1 };
 }
 // the arguments that are not flags or a flag's value
-const VALUE_FLAGS = ['-o', '--scale', '--look', '--editor'];
+const VALUE_FLAGS = ['-o', '--scale', '--look', '--editor', '--dir'];
 const positional = (a: string[]) => a.filter((x, i) => !x.startsWith('-') && !VALUE_FLAGS.includes(a[i - 1]));
 
 // icon and font files the looks name by web address, fetched once and kept in a cache folder
@@ -320,6 +329,57 @@ if (cmd === 'check') {
   const look = file ? loadLook(file) : defaultLook();
   const names = [...new Set([...look.images.keys(), ...look.iconUrls.keys(), ...(look.listedIcons ?? []), ...[...look.icons.keys()].filter((n) => !(look.hideBuiltIns && isBuiltIn(look, n)))])].filter((n) => !word || iconMatches(n, word));
   console.log(names.length ? names.join('\n') : `no icon${word ? ` for "${word}"` : ''}`);
+} else if (cmd === 'import') {
+  const files = positional(args);
+  if (!files.length) usage();
+  const oi = args.indexOf('-o'), li = args.indexOf('--look'), di = args.indexOf('--dir'), force = args.includes('--force');
+  const dir = di >= 0 ? args[di + 1] : undefined;
+  if (di >= 0 && !dir) { console.log('give --dir the folder to write the .fdraw files into'); process.exit(1); }
+  if (dir) mkdirSync(dir, { recursive: true });
+  let look = defaultLook(), ref: LookRef | undefined;
+  if (li >= 0) {
+    const r = args[li + 1] ? lookArg(args[li + 1]) : 'give --look the name of a look that ships with FastDraw, a path to a .look file, or the https address of one';
+    if (typeof r === 'string') { console.log(r); process.exit(1); }
+    ref = r;
+    if ('url' in r) await fetchWeb([]);
+    look = 'name' in r ? bundledLook(r.name)! : loadLook(r.file);
+    const bad = look.issues.find((i) => i.level === 'error');
+    if (bad) { console.log(`--look: ${bad.msg}`); process.exit(1); }
+  }
+  // every diagram to import: a .mmd file is one, a Markdown file has one per mermaid block
+  const todo: { from: string; code: string; line: number; out: string }[] = [];
+  for (const f of files) {
+    let src: string;
+    try { src = readFileSync(f, 'utf8'); } catch { console.log(`cannot read ${f}`); process.exit(1); }
+    const base = dir ? join(dir, basename(f).replace(/\.(mmd|mermaid|md|markdown)$/i, '')) : f.replace(/\.(mmd|mermaid|md|markdown)$/i, '');
+    if (/\.(md|markdown)$/i.test(f)) {
+      const blocks = mermaidBlocks(src);
+      if (!blocks.length) { console.log(`${f}: no mermaid blocks`); continue; }
+      blocks.forEach((b, i) => todo.push({ from: f, code: b.code, line: b.line - 1, out: blocks.length === 1 ? base + '.fdraw' : `${base}-${i + 1}.fdraw` }));
+    } else todo.push({ from: f, code: src, line: 0, out: base + '.fdraw' });
+  }
+  if (oi >= 0) {
+    if (todo.length !== 1) { console.log('-o names one output file, so it works with one diagram; leave it out to write each next to its source'); process.exit(1); }
+    todo[0]!.out = args[oi + 1]!;
+  }
+  let failed = false;
+  for (const t of todo) {
+    if (existsSync(t.out) && !force) { console.log(`${t.out} exists, not changed (--force writes over it)`); failed = true; continue; }
+    try {
+      const r = importMermaid(t.code, { look, lookLine: ref ? lookRefText(ref, t.out) : undefined });
+      writeFileSync(t.out, r.text);
+      const issues = check(loadScene(t.out)).filter((i) => i.level !== 'hint');
+      const e = issues.filter((i) => i.level === 'error').length, w = issues.length - e;
+      const kind = { flowchart: 'a flowchart', sequence: 'a sequence diagram', er: 'an ER diagram', state: 'a state diagram', class: 'a class diagram' }[r.kind];
+      console.log(`wrote ${t.out} (${kind}${t.line ? `, from line ${t.line} of ${t.from}` : ''})${issues.length ? `: ${e} error(s), ${w} warning(s); run fastdraw check ${t.out}` : ''}`);
+      for (const n of r.notes) console.log(`  note: ${n}`);
+    } catch (err) {
+      if (!(err instanceof MermaidError)) throw err;
+      console.log(`${t.from}:${t.line + err.line}  ${err.message}`);
+      failed = true;
+    }
+  }
+  process.exit(failed ? 1 : 0);
 } else if (cmd === 'guide') {
   const topic = args[0];
   const file = join(root, 'guide', topic ? `${topic}.md` : 'guide.md');

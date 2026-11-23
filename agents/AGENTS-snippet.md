@@ -14,4 +14,5 @@ Diagrams in this repo are FastDraw files (`.fdraw`), drawn with the look in `.lo
 - On a docs site (a web page, not a GitHub README), show a diagram with `<fastdraw-diagram src="....fdraw">` from https://fastdraw.dev/embed.js and keep the rendered PNG inside it as the fallback image; see "Embedding a diagram" in FastDraw's README.
 - When a diagram needs vendor icons (Azure, AWS, Google Cloud, Kubernetes, product logos) or a font that does not ship with FastDraw, add them to the look by their https:// address from the recommended sources in `fastdraw guide look`, with a fixed version in the address, rather than downloading files into the repo.
 - When changing an existing diagram, leave the position, size and styling of existing elements alone unless asked.
+- A diagram that already exists as Mermaid (a `.mmd` file or a ```` ```mermaid ```` block in Markdown) is turned into FastDraw with `fastdraw import <file> --dir docs/diagrams`, not redrawn by hand; then check it, render it and improve the composition.
 - If `fastdraw` is not on the PATH, run it as `npx fastdraw`.

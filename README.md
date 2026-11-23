@@ -119,6 +119,9 @@ with `npm install -g fastdraw@latest`. Set `FASTDRAW_NO_UPDATE_CHECK=1` to turn 
   an SVG image in a GitHub README.
 - **VS Code.** A preview beside the `.fdraw` file that redraws as you type, with `check`'s problems
   in the Problems panel. Click an element in the preview to go to its line.
+- **Mermaid import.** `fastdraw import diagram.mmd` turns a Mermaid flowchart, sequence, ER, state or
+  class diagram into a `.fdraw` file, laid out and drawn with the look's styles. It also takes the
+  ` ```mermaid ` blocks of a Markdown file, and the editor's **Paste diagram text** takes Mermaid too.
 
 ## Gallery
 
