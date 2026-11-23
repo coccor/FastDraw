@@ -11,3 +11,9 @@ playwright-report/
 !assets/gallery/*.png
 dist/
 /target
+!vscode/media/*.png
+vscode/fonts/
+vscode/LICENSE
+vscode/*.vsix
+vscode/.vscode-test/
+vscode/licenses/

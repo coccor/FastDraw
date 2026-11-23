@@ -1,0 +1,54 @@
+# FastDraw for VS Code
+
+A live preview of [FastDraw](https://fastdraw.dev) diagrams (`.fdraw` files) next to their text, with
+`fastdraw check`'s problems in the Problems panel.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/coccor/FastDraw/main/vscode/media/screenshot.png" alt="A .fdraw file open in VS Code with its preview beside it; the box on the line the cursor is on is outlined, and an overlap is reported as a warning" width="760">
+</p>
+
+## What it does
+
+- **Preview.** Open a `.fdraw` file and run **FastDraw: Open Preview to the Side** (`Ctrl+K V`, or the
+  preview button at the top right of the editor). The preview redraws as you type, before you save, and
+  uses the same renderer as `fastdraw render`, so it shows what the PNG will show.
+- **Click to find the line.** Click a box, a line or a piece of text in the preview to put the cursor
+  on the line that draws it. The box on the line the cursor is on is outlined in the preview.
+- **Problems.** What `fastdraw check` reports (overlapping boxes, arrows through boxes, colliding
+  labels, text that does not fit) appears in the Problems panel and as squiggles on the lines, updated
+  as you type. A problem in a `.look` file next to the diagram goes on that file.
+- **Light and dark.** In a dark VS Code theme the preview draws the diagram in its look's dark version,
+  as `fastdraw render --dark` does. The `fastdraw.preview.theme` setting fixes it to light or dark.
+- **Open in the editor.** The **Open in editor** button opens the diagram in the FastDraw editor in the
+  browser, as `fastdraw open` does. Edits there save to the file, and the preview follows them.
+- Syntax colouring for `.fdraw` and `.look` files.
+
+Icons and fonts a look names by web address are fetched once and kept in the same cache folder the
+`fastdraw` command uses. Nothing else leaves the computer, except when you choose Open in editor: then
+the browser loads the editor from fastdraw.dev and reads the files from a server on `127.0.0.1`.
+
+## Settings
+
+| Setting | Default | What it does |
+|---|---|---|
+| `fastdraw.preview.theme` | `auto` | `auto` follows the VS Code theme; `light` always draws the diagram's own look; `dark` always draws its dark version |
+| `fastdraw.editorUrl` | `https://fastdraw.dev/edit/` | The web editor that Open in editor uses, like `fastdraw open --editor` |
+
+## Building from source
+
+```
+cd vscode
+npm ci
+npm run build              # dist/extension.js
+npm test                   # the core and the preview page, in Node and Chromium
+npm run test:integration   # the extension inside VS Code (downloads VS Code; VSCODE_PATH uses an installed one)
+npm run package            # fastdraw-<version>.vsix
+```
+
+The extension bundles FastDraw's own sources from `../src`, so it draws with the version of FastDraw in
+the same commit.
+
+## License
+
+MIT. The bundled fonts are under the SIL Open Font License and the icons are Phosphor Icons (MIT); the
+texts are in `fonts/` and `licenses/`.

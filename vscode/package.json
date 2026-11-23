@@ -1,0 +1,195 @@
+{
+  "name": "fastdraw",
+  "displayName": "FastDraw",
+  "description": "Live preview of FastDraw diagrams (.fdraw), with the checker's problems in the Problems panel",
+  "version": "0.1.0",
+  "publisher": "coccor",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "homepage": "https://fastdraw.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coccor/FastDraw.git",
+    "directory": "vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/coccor/FastDraw/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Visualization",
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "diagram",
+    "fastdraw",
+    "fdraw",
+    "architecture",
+    "preview"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "fastdraw",
+        "aliases": [
+          "FastDraw",
+          "fdraw"
+        ],
+        "extensions": [
+          ".fdraw"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./media/file.svg",
+          "dark": "./media/file.svg"
+        }
+      },
+      {
+        "id": "fastdraw-look",
+        "aliases": [
+          "FastDraw look"
+        ],
+        "extensions": [
+          ".look"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./media/file.svg",
+          "dark": "./media/file.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "fastdraw",
+        "scopeName": "source.fdraw",
+        "path": "./syntaxes/fdraw.tmLanguage.json"
+      },
+      {
+        "language": "fastdraw-look",
+        "scopeName": "source.fdraw-look",
+        "path": "./syntaxes/look.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "fastdraw.showPreview",
+        "title": "Open Preview",
+        "category": "FastDraw",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "fastdraw.showPreviewToSide",
+        "title": "Open Preview to the Side",
+        "category": "FastDraw",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "fastdraw.openInEditor",
+        "title": "Open in the FastDraw Editor",
+        "category": "FastDraw",
+        "icon": "$(edit)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "fastdraw.showPreviewToSide",
+          "when": "editorLangId == fastdraw && activeWebviewPanelId != 'fastdraw.preview'",
+          "group": "navigation"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "fastdraw.showPreview",
+          "when": "resourceLangId == fastdraw",
+          "group": "1_open"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "fastdraw.showPreview",
+          "when": "resourceLangId == fastdraw",
+          "group": "navigation"
+        },
+        {
+          "command": "fastdraw.openInEditor",
+          "when": "resourceLangId == fastdraw",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "fastdraw.showPreview",
+          "when": "editorLangId == fastdraw"
+        },
+        {
+          "command": "fastdraw.showPreviewToSide",
+          "when": "editorLangId == fastdraw"
+        },
+        {
+          "command": "fastdraw.openInEditor",
+          "when": "editorLangId == fastdraw"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "fastdraw.showPreview",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorLangId == fastdraw"
+      },
+      {
+        "command": "fastdraw.showPreviewToSide",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "editorLangId == fastdraw"
+      }
+    ],
+    "configuration": {
+      "title": "FastDraw",
+      "properties": {
+        "fastdraw.preview.theme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "enumDescriptions": [
+            "Follow the VS Code theme: a dark theme draws the diagram in its look's dark version",
+            "Always draw the diagram in its own look",
+            "Always draw the diagram in its look's dark version"
+          ],
+          "default": "auto",
+          "description": "Which version of the diagram's look the preview draws."
+        },
+        "fastdraw.editorUrl": {
+          "type": "string",
+          "default": "https://fastdraw.dev/edit/",
+          "description": "The FastDraw web editor that Open in Editor uses, as `fastdraw open --editor` does."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc -p .",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
+    "test:integration": "node build.mjs && node test/integration/run.mjs",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "node build.mjs"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.2.0"
+  }
+}
