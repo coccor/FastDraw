@@ -18,7 +18,8 @@ api -> db "writes"
 legend at 40,240 focal="The service" store="Holds data"
 `;
 const xml = toDrawio(buildScene(SRC, null, 'd.fdraw'), { name: 'd', source: SRC });
-const cell = (id: string) => new RegExp(`<mxCell id="${id}"[^>]*>`).exec(xml)?.[0] ?? '';
+// a cell's tag, or for a cell that carries data, its object tag followed by its mxCell tag
+const cell = (id: string) => (new RegExp(`<mxCell id="${id}"[^>]*>`).exec(xml) ?? new RegExp(`<object [^>]*id="${id}"[^>]*><mxCell[^>]*>`).exec(xml))?.[0] ?? '';
 const attr = (el: string, k: string) => new RegExp(` ${k}="([^"]*)"`).exec(el)?.[1];
 const unxml = (s: string) => s.replace(/&#10;/g, '\n').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
@@ -85,6 +86,9 @@ test('the line is fastened to both boxes where FastDraw meets them, with its lab
 test('the diagram\'s text rides on the page; without a source nothing does', () => {
   const kept = /<object label="" id="0" fastdraw-source="([^"]*)"/.exec(xml)![1]!;
   assert.equal(unxml(kept), SRC);
+  // and on the first box, whose data survives copying and pasting into another draw.io diagram
+  const onBox = /<object label="" id="(fd:[^"]+)" fastdraw-source="([^"]*)"><mxCell [^>]*vertex="1" parent="1">/.exec(xml)!;
+  assert.equal(unxml(onBox[2]!), SRC);
   assert.doesNotMatch(toDrawio(buildScene(SRC, null, 'd.fdraw')), /fastdraw-source/);
 });
 

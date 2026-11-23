@@ -107,8 +107,9 @@ opened.
 
 Where only draw.io is available (a Confluence page with the draw.io app, say), export the diagram as a
 draw.io file: `fastdraw render diagram.fdraw -o diagram.drawio`, or **Export… → draw.io** in the editor,
-which downloads the file or copies it. In draw.io, open the file, or paste what was copied into a draw.io
-diagram; in Confluence, edit the draw.io diagram on the page and paste it there.
+which downloads the file or copies it. In draw.io, open the file, or import it into a diagram (File →
+Import from → Device); in Confluence, edit the draw.io diagram on the page and import it there. What
+**Copy to clipboard** copied can be pasted onto a draw.io page as well.
 
 What arrives is an ordinary draw.io diagram that people edit in draw.io:
 
@@ -119,5 +120,6 @@ What arrives is an ordinary draw.io diagram that people edit in draw.io:
   Newsreader, Roboto and others), in a font of the same kind when not.
 - What a look adds to a box (icons, tags, side strips, caption plates, a soft shadow) comes along and moves
   with the box. A legend, a table and a chart are FastDraw's drawing with their texts editable on top.
-- The diagram's text and its look ride on the page (`--no-embed`, or unticking **Carry the FastDraw
-  diagram**, leaves them out). A diagram changed in draw.io does not change back in FastDraw by itself.
+- The diagram's text and its look ride along, on the page and on the first box, so they survive being
+  pasted into another draw.io diagram (`--no-embed`, or unticking **Carry the FastDraw diagram**, leaves
+  them out). A diagram changed in draw.io does not change back in FastDraw by itself.

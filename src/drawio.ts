@@ -389,6 +389,12 @@ export function toDrawio(scene: Scene, opts: DrawioOptions = {}): string {
 
   const keep = [opts.source !== undefined ? ` fastdraw-source="${xmlEsc(opts.source)}"` : '', opts.look ? ` fastdraw-look="${xmlEsc(opts.look)}"` : ''].join('');
   const root = keep ? `<object label="" id="0"${keep}><mxCell/></object>` : '<mxCell id="0"/>';
+  // The page's root does not travel when the diagram is copied and pasted into another draw.io diagram (as into
+  // a Confluence page); a cell's own data does, so the first box on the page carries the text too.
+  if (keep) {
+    const i = ctx.cells.findIndex((c) => /^<mxCell id="[^"]*" value="" [^>]*vertex="1" parent="1">/.test(c));
+    if (i >= 0) ctx.cells[i] = ctx.cells[i]!.replace(/^<mxCell id="([^"]*)" value="" /, (_, id: string) => `<object label="" id="${id}"${keep}><mxCell `).replace(/<\/mxCell>$/, '</mxCell></object>');
+  }
   return `<mxfile host="fastdraw" type="device"><diagram id="fastdraw" name="${xmlEsc(opts.name ?? 'Diagram')}">` +
     `<mxGraphModel dx="${r(sc.w)}" dy="${r(sc.h)}" grid="0" gridSize="8" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="${Math.ceil(sc.w)}" pageHeight="${Math.ceil(sc.h)}" background="${paper.hex}" math="0" shadow="0">` +
     `<root>${root}<mxCell id="1" parent="0"/>${ctx.cells.join('')}</root></mxGraphModel></diagram></mxfile>\n`;

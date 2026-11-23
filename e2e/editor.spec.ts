@@ -489,7 +489,7 @@ test('Export → draw.io downloads a draw.io file that carries the diagram, and 
     const d = new DOMParser().parseFromString(x, 'application/xml');
     if (d.querySelector('parsererror')) return null;
     const edge = d.querySelector('mxCell[edge="1"]');
-    return { api: !!d.querySelector('mxCell[id="fd:api"]'), source: edge?.getAttribute('source'), target: edge?.getAttribute('target'), kept: d.querySelector('object[id="0"]')?.getAttribute('fastdraw-source') };
+    return { api: !!d.querySelector('[id="fd:api"]'), source: edge?.getAttribute('source'), target: edge?.getAttribute('target'), kept: d.querySelector('object[id="0"]')?.getAttribute('fastdraw-source') };
   }, xml);
   expect(parsed).toEqual({ api: true, source: 'fd:api', target: 'fd:db', kept: SRC });
   // Copy puts the same file on the clipboard, for pasting into a draw.io diagram

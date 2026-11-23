@@ -21,6 +21,8 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 
 When you change an existing diagram: do not move, resize or restyle anything that is already there unless asked. Place only what you add, in free space.
 
+When the diagram has to go where people use draw.io (a Confluence page with the draw.io app, say), run `fastdraw render <file> -o <name>.drawio` once it is checked. It writes a draw.io file whose boxes, lines and texts draw.io edits. Tell the person to open it in draw.io, or, on the page, to edit the draw.io diagram and use File → Import from → Device (or open the file in a text editor, copy all of it and paste it onto the draw.io page). Keep the `.fdraw` file: it stays the one you change, and you export again after a change.
+
 ## Know the system first
 
 A diagram of a real system is only as good as your knowledge of it. Before choosing a kind, read enough of the code to list:
