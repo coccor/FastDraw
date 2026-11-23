@@ -41,6 +41,14 @@ function hatchDefs(): string {
     return `<pattern id="${id}" width="${a}" height="${a}" patternUnits="userSpaceOnUse" patternTransform="rotate(-41)"><line x1="0" y1="0" x2="0" y2="${a}" stroke="${c}" stroke-width="${b}" stroke-linecap="round"/></pattern>`;
   }).join('');
 }
+// One element drawn outside a whole render (a piece for an exporter): with the look's roughness, and the fill
+// patterns it uses defined in front of it. The render state is put back afterwards.
+export function drawPiece(look: Look, draw: () => string): string {
+  const keep = R;
+  R = { amt: Math.max(0, Math.min(num(pageMarks(look).sketch, 0), 4)), defs: new Map() };
+  try { const body = draw(); return R.defs.size ? `<defs>${hatchDefs()}</defs>${body}` : body; }
+  finally { R = keep; }
+}
 const BLEND = ' style="mix-blend-mode:multiply"';
 const blendOf = (p: Props) => (p.blend === 'multiply' ? BLEND : '');
 // opacity=0..1: the whole element (fill, outline, text, arrowheads) drawn see-through, as one layer
@@ -193,7 +201,7 @@ function outline(s: Shape, attrs: string, under?: string): string {
   return [outlinePlain(s, attrs.replace(/stroke="[^"]*"/, 'stroke="none"')), outlinePlain(s, `fill="${under}" stroke="none"`), outlinePlain(s, attrs.replace(/fill="[^"]*"/, 'fill="none"'))].join('\n');
 }
 
-function outlinePlain(s: Shape, attrs: string): string {
+export function outlinePlain(s: Shape, attrs: string): string {
   const { x, y, w, h } = s;
   if (s.shape === 'ellipse') return `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" ${attrs}/>`;
   if (s.shape === 'diamond') return `<polygon points="${x + w / 2},${y} ${x + w},${y + h / 2} ${x + w / 2},${y + h} ${x},${y + h / 2}" ${attrs}/>`;
@@ -424,7 +432,7 @@ function drawIconShape(look: Look, s: Shape): string {
   return out.join('\n');
 }
 
-function drawShape(look: Look, s: Shape): string {
+export function drawShape(look: Look, s: Shape): string {
   if (s.shape === 'legend') return drawLegend(look, s);
   if (s.shape === 'table') return drawTable(look, s);
   if (s.shape === 'chart') return drawChart(look, s);
@@ -784,7 +792,7 @@ function drawLabel(look: Look, c: Conn): string {
     `<text x="${r2(l.cx)}" y="${r2(l.baseline)}" text-anchor="middle" font-family="${fam(look, l.font)}" font-size="${l.size}" fill="${fill}"${weight !== 400 ? ` font-weight="${weight}"` : ''}${p['label.italic'] === '1' ? ' font-style="italic"' : ''}${l.spacing ? ` letter-spacing="${r2(l.spacing * l.size)}"` : ''}>${esc(l.text)}</text>`;
 }
 
-function drawText(look: Look, t: TextEl): string {
+export function drawText(look: Look, t: TextEl): string {
   const a = textAttrs(look, t.p, '', { font: 'sans', size: 12, weight: 400, color: 'ink' });
   // a text box (width=) draws its wrapped lines at its left edge, middle or right edge (align=)
   const boxed = !!t.lines, al = t.p.align, bw = num(t.p.width, 0);
