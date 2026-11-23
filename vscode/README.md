@@ -60,6 +60,18 @@ npm run package            # fastdraw-<version>.vsix
 The extension bundles FastDraw's own sources from `../src`, so it draws with the version of FastDraw in
 the same commit.
 
+## Releasing
+
+Set `version` in `vscode/package.json`, merge, then push a tag `vscode-v<version>`:
+
+```
+git tag vscode-v0.1.0 && git push origin vscode-v0.1.0
+```
+
+`.github/workflows/vscode-release.yml` runs the tests, publishes the `.vsix` to the VS Code Marketplace
+and to Open VSX (trusted publishing on both, no tokens), and attaches it to a GitHub release. The
+one-time setup for both stores is at the top of that file.
+
 ## License
 
 MIT. The bundled fonts are under the SIL Open Font License and the icons are Phosphor Icons (MIT); the

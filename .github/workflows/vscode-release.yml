@@ -1,0 +1,114 @@
+name: vscode-release
+
+# Publishes the VS Code extension (vscode/) to the VS Code Marketplace and Open VSX when a tag
+# vscode-v<version> is pushed, the version being the one in vscode/package.json:
+#   (set "version" in vscode/package.json, commit, merge) then
+#   git tag vscode-v0.1.0 && git push origin vscode-v0.1.0
+# The tags are separate from the npm package's v* tags, which release.yml publishes.
+#
+# Both stores use trusted publishing (OIDC): there is no store token in the repository. One-time setup:
+# - VS Code Marketplace: marketplace.visualstudio.com/manage > publisher coccor > Trusted Publishing, with
+#   repository owner coccor, repository FastDraw, workflow vscode-release.yml and environment release.
+# - Open VSX (what Cursor, Windsurf and VSCodium install from): the coccor namespace, owned by an account that
+#   has signed the Eclipse Foundation publisher agreement, and open-vsx.org/user-settings/trusted-publishers
+#   with the same repository, workflow and environment.
+#
+# A rerun after a partial failure is safe: a version already on a store is skipped (--skip-duplicate).
+
+on:
+  push:
+    tags: ['vscode-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  # Tests and packs the extension. It installs and runs every dependency, so it gets no publishing rights:
+  # read-only contents, no OIDC token, no secrets, and no git credentials left in the checkout.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: vscode
+    outputs:
+      vsix: ${{ steps.version.outputs.vsix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            vscode/package-lock.json
+      - name: The tag matches vscode/package.json
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "vscode-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match vscode/package.json version $version (expected vscode-v$version)"
+            exit 1
+          fi
+          echo "vsix=fastdraw-$version.vsix" >> "$GITHUB_OUTPUT"
+      # the extension bundles ../src, so the repository's own dependencies come first
+      - run: npm ci
+        working-directory: .
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx tsc -p .
+      - run: npm test
+      - run: xvfb-run -a npm run test:integration
+      # one package, published as it was tested; vscode:prepublish builds dist/ first
+      - run: npx vsce package --no-dependencies --out "$VSIX"
+        env:
+          VSIX: ${{ steps.version.outputs.vsix }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vsix
+          path: vscode/${{ steps.version.outputs.vsix }}
+          if-no-files-found: error
+          retention-days: 7
+
+  # Publishes the package the build job made. It checks out only vscode/publish and installs only the two
+  # publishing tools from its lockfile (every package pinned by hash), without install scripts.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write # the GitHub Release with the .vsix
+      id-token: write # trusted publishing to both stores
+    env:
+      VSIX: ${{ needs.build.outputs.vsix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: vscode/publish
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vsix
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install vsce and ovsx
+        run: |
+          npm ci --prefix vscode/publish --ignore-scripts --no-audit --no-fund
+          echo "$GITHUB_WORKSPACE/vscode/publish/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Publish to the VS Code Marketplace
+        run: vsce publish --oidc --skip-duplicate --packagePath "$VSIX"
+      - name: Publish to Open VSX
+        run: ovsx publish --trusted-publishing --skip-duplicate --packagePath "$VSIX"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#vscode-v}
+          gh release create "$GITHUB_REF_NAME" "$VSIX" --repo "$GITHUB_REPOSITORY" --title "VS Code extension $version" --generate-notes --verify-tag --latest=false
