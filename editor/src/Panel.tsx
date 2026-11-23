@@ -2,7 +2,7 @@ import React from 'react';
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical,
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Trash2, TextAlignStart, TextAlignCenter, TextAlignEnd,
-  ChevronDown, ChevronRight, RotateCcw, RotateCw,
+  ChevronDown, ChevronRight, RotateCcw, RotateCw, X,
 } from 'lucide-react';
 import { color, fontFamily } from '../../src/look.ts';
 import { MARKERS, turnOf } from '../../src/scene.ts';
@@ -256,7 +256,8 @@ function ColorChip({ sc, values, current, shown, onPick, label, text }: {
   );
 }
 
-// The rows of a table, one input each. Cells are separated by "|"; "---" is a dividing line; an empty row is removed.
+// The rows of a table, one input each, with a button that removes it. Cells are separated by "|"; "---" is a
+// dividing line; an empty row is removed too. A header row (`|=`, like "Indexes") is shown in bold.
 function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; onChange: (rows: RowSpec[]) => void }) {
   const specs: RowSpec[] = rows.map((r) => ({ id: r.id, kind: r.kind, cells: r.cells, vals: r.vals, p: r.p }));
   // a chart row is a series: its name, then its numbers
@@ -273,7 +274,12 @@ function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; on
   return (
     <section>
       <h4>{chart ? 'Series' : 'Rows'}</h4>
-      {specs.map((r, i) => <RowInput key={i + show(r)} value={show(r)} label={`Row ${i + 1}`} onCommit={(v) => commit(i, v)} />)}
+      {specs.map((r, i) => (
+        <div className="rowline" key={i + r.kind + show(r)}>
+          <RowInput value={show(r)} head={r.kind === 'head'} label={`Row ${i + 1}`} onCommit={(v) => commit(i, v)} />
+          <button className="rowx" title={`Remove row ${i + 1}`} aria-label={`Remove row ${i + 1}`} onClick={() => onChange(specs.filter((_, k) => k !== i))}><X size={13} /></button>
+        </div>
+      ))}
       {chart && (
         <div className="seg">
           {(['bars', 'line', 'area', 'dots'] as const).map((k) => (
@@ -282,17 +288,18 @@ function RowsEditor({ rows, chart, onChange }: { rows: Row[]; chart: boolean; on
         </div>
       )}
       {!chart && <div className="seg">
-        <button title="Add a row at the bottom" onClick={() => onChange([...specs, { id: nextId(), kind: 'row', cells: ['name', 'value'] }])}>Add row</button>
-        <button title="Add a dividing line at the bottom" onClick={() => onChange([...specs, { kind: 'rule', cells: [] }])}>Add divider</button>
+        <button title="Add a row at the bottom" onClick={() => onChange([...specs, { id: nextId(), kind: 'row', cells: ['name', 'value'] }])} aria-label="Add row">+ Row</button>
+        <button title="Add a header row at the bottom, like Indexes" onClick={() => onChange([...specs, { kind: 'head', cells: ['Header'] }])} aria-label="Add header">+ Header</button>
+        <button title="Add a dividing line at the bottom" onClick={() => onChange([...specs, { kind: 'rule', cells: [] }])} aria-label="Add divider">+ Divider</button>
       </div>}
-      <p className="muted small">{chart ? 'Name, then the numbers, separated by |. Clear a series to remove it.' : 'Separate columns with |. Clear a row to remove it.'}</p>
+      <p className="muted small">{chart ? 'Name, then the numbers, separated by |.' : 'Separate columns with |. Header rows are in bold.'}</p>
     </section>
   );
 }
-function RowInput({ value, label, onCommit }: { value: string; label: string; onCommit: (v: string) => void }) {
+function RowInput({ value, head, label, onCommit }: { value: string; head?: boolean; label: string; onCommit: (v: string) => void }) {
   const [v, setV] = React.useState(value);
   React.useEffect(() => setV(value), [value]);
-  return <input className="rowinput" aria-label={label} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)}
+  return <input className={'rowinput' + (head ? ' head' : '')} aria-label={label} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== value && onCommit(v)}
     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />;
 }
 

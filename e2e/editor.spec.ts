@@ -551,9 +551,16 @@ test('tables: edit, add and remove rows in the panel; arrows follow rows; line e
   // moving the table keeps every row on its own line
   await page.keyboard.press('ArrowDown');
   expect(await source(page)).toContain('users: table "users" at 40,84\n  | id "id" "uuid" "PK"\n');
+  // a header row, like Indexes, is added at the bottom and edited like any row; the x removes a row
+  await page.getByRole('button', { name: 'Add header' }).click();
+  expect(await source(page)).toContain('  | r1 "name" "value"\n  |= "Header"\norders:');
+  await row(4).fill('Indexes');
+  await row(4).press('Enter');
+  expect(await source(page)).toContain('  | r1 "name" "value"\n  |= "Indexes"\norders:');
+  await page.getByRole('button', { name: 'Remove row 4', exact: true }).click();
+  expect(await source(page)).toContain('  | email "email" "citext" "UK"\n  | r1 "name" "value"\norders:');
   // removing the row an arrow ends on re-attaches the arrow to the table
-  await row(1).fill('');
-  await row(1).press('Enter');
+  await page.getByRole('button', { name: 'Remove row 1', exact: true }).click();
   expect(lineOf(await source(page), 'fk')).toMatch(/^fk: orders\.user_id -- users /);
   await expect(page.locator('.problems')).toHaveText('No problems');
   // drag the arrow's end onto a row that has an id
