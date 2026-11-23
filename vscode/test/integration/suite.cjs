@@ -16,8 +16,38 @@ const wait = async (what, ok, ms = 10000) => {
 const previewTabs = () => vscode.window.tabGroups.all.flatMap((g) => g.tabs)
   .filter((t) => t.input instanceof vscode.TabInputWebview && t.input.viewType.endsWith('fastdraw.preview'));
 
+const tabs = () => vscode.window.tabGroups.all.flatMap((g) => g.tabs);
+
+async function opensAsDiagram(uri) {
+  // a .fdraw file opens as the diagram, not its text
+  await vscode.commands.executeCommand('vscode.open', uri);
+  const tab = await wait('the diagram tab', () => tabs().find((t) => t.input instanceof vscode.TabInputCustom && t.input.viewType === 'fastdraw.diagram'));
+  assert.equal(tab.input.uri.toString(), uri.toString());
+  assert.ok(!tabs().some((t) => t.input instanceof vscode.TabInputText));
+  // its problems are checked without the text open
+  await wait('the problems', () => vscode.languages.getDiagnostics(uri).some((d) => d.source === 'fastdraw'));
+  await pause();
+  // Show Source puts the text beside it
+  await vscode.commands.executeCommand('fastdraw.showSource', uri);
+  await wait('the text beside', () => vscode.window.visibleTextEditors.some((e) => e.document.uri.toString() === uri.toString()));
+  await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+  // and the text editor is the default again with VS Code's own setting
+  const assoc = vscode.workspace.getConfiguration('workbench');
+  await assoc.update('editorAssociations', { '*.fdraw': 'default' }, vscode.ConfigurationTarget.Global);
+  await vscode.commands.executeCommand('vscode.open', uri);
+  await wait('the text tab', () => tabs().find((t) => t.input instanceof vscode.TabInputText));
+  assert.ok(!tabs().some((t) => t.input instanceof vscode.TabInputCustom));
+  await assoc.update('editorAssociations', undefined, vscode.ConfigurationTarget.Global);
+  await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+}
+
 async function steps() {
   const uri = vscode.Uri.file(join(process.env.FASTDRAW_WORK, 'checkout.fdraw'));
+  // a file with an overlap, so the check has something to say
+  const other = vscode.Uri.file(join(process.env.FASTDRAW_WORK, 'other.fdraw'));
+  await vscode.workspace.fs.writeFile(other, Buffer.from('a: node "A" at 40,40\nb: node "B" at 60,50\n'));
+  await opensAsDiagram(other);
+
   const doc = await vscode.workspace.openTextDocument(uri);
   assert.equal(doc.languageId, 'fastdraw');
   const ed = await vscode.window.showTextDocument(doc);

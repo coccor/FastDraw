@@ -170,6 +170,7 @@
   document.getElementById('in').addEventListener('click', () => zoomTo(k * 1.25));
   document.getElementById('out').addEventListener('click', () => zoomTo(k / 1.25));
   document.getElementById('edit').addEventListener('click', () => vscode.postMessage({ type: 'openEditor' }));
+  document.getElementById('source').addEventListener('click', () => vscode.postMessage({ type: 'source' }));
   problemsBtn.addEventListener('click', () => vscode.postMessage({ type: 'problems' }));
   new ResizeObserver(() => { if (fit) layout(); }).observe(stage);
 

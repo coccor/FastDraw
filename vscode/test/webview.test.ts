@@ -22,7 +22,7 @@ writeFileSync(file, SRC);
 // the page the extension writes, with its toolbar, minus the policy and the webview addresses
 const PAGE = `<!doctype html><html><head><style>${readFileSync(join(media, 'preview.css'), 'utf8')}</style><style id="faces"></style></head><body>
 <div class="bar"><button id="out">−</button><button id="zoom">100%</button><button id="in">+</button><button id="fit">Fit</button>
-<span id="note" hidden></span><span class="sep"></span><button id="problems" hidden></button><button id="edit">Open in editor</button></div>
+<span id="note" hidden></span><span class="sep"></span><button id="problems" hidden></button><button id="source">Source</button><button id="edit">Open in editor</button></div>
 <div id="stage"><div id="canvas"></div></div>
 <script>window.posted = []; window.acquireVsCodeApi = () => ({ postMessage: (m) => posted.push(m), getState: () => undefined, setState: () => {} });</script>
 <script>${readFileSync(join(media, 'preview.js'), 'utf8')}</script></body></html>`;
@@ -80,4 +80,10 @@ test('fit fills the view; zoom buttons and 100% change the scale', async () => {
   await page.click('#fit');
   assert.equal(await width(), fitted);
   assert.equal(await page.textContent('#problems'), '1 warning');
+});
+
+test('Source asks for the text', async () => {
+  await page.click('#source');
+  const posted = await page.evaluate(() => (window as unknown as { posted: { type: string }[] }).posted);
+  assert.deepEqual(posted.at(-1), { type: 'source' });
 });

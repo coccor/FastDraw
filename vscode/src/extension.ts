@@ -9,7 +9,8 @@ import { bundledFonts, openRoot } from '../../src/node.ts';
 import { serveFolder, DEFAULT_EDITOR, type Served } from '../../src/serve.ts';
 import type { Issue } from '../../src/look.ts';
 
-const VIEW = 'fastdraw.preview';
+const VIEW = 'fastdraw.preview'; // a preview beside the text
+const DIAGRAM = 'fastdraw.diagram'; // the diagram view that opens a .fdraw file in place of its text
 const isDiagram = (d: vscode.TextDocument) => d.languageId === 'fastdraw';
 // loadScene finds the look next to the file; an unsaved new file is read as if it sat in the first folder
 const pathOf = (d: vscode.TextDocument) =>
@@ -133,19 +134,20 @@ class Preview implements vscode.Disposable {
   private subs: vscode.Disposable[] = [];
   readonly onDispose = new vscode.EventEmitter<void>();
 
-  constructor(readonly panel: vscode.WebviewPanel, public doc: vscode.TextDocument, private ext: vscode.ExtensionContext, private probs: Problems) {
+  // side: a preview beside the text, titled and iconed as one; editor: the file's own editor tab
+  constructor(readonly panel: vscode.WebviewPanel, public doc: vscode.TextDocument, private ext: vscode.ExtensionContext, private probs: Problems, readonly kind: 'side' | 'editor') {
     const media = vscode.Uri.joinPath(ext.extensionUri, 'media');
     panel.webview.options = { enableScripts: true, localResourceRoots: [media, vscode.Uri.joinPath(ext.extensionUri, 'fonts')] };
-    panel.iconPath = vscode.Uri.joinPath(media, 'icon.svg');
+    if (kind === 'side') {
+      panel.iconPath = vscode.Uri.joinPath(media, 'icon.svg');
+      panel.title = `Preview ${basename(doc.uri.path)}`;
+    }
     panel.webview.html = this.html();
-    this.title();
     this.subs.push(
       panel.webview.onDidReceiveMessage((m) => this.message(m)),
       panel.onDidDispose(() => this.dispose()),
     );
   }
-
-  private title() { this.panel.title = `Preview ${basename(this.doc.uri.path)}`; }
 
   refresh(ms = 150) {
     clearTimeout(this.timer);
@@ -181,6 +183,7 @@ class Preview implements vscode.Disposable {
     if (m.type === 'ready') this.refresh(0);
     else if (m.type === 'reveal' && m.line) await reveal(this.doc, m.line, this.panel.viewColumn);
     else if (m.type === 'openEditor') await openInEditor(this.doc);
+    else if (m.type === 'source') await showSource(this.doc, this.panel.viewColumn);
     else if (m.type === 'problems') await vscode.commands.executeCommand('workbench.actions.view.problems');
   }
 
@@ -204,6 +207,7 @@ class Preview implements vscode.Disposable {
   <span id="note" hidden></span>
   <span class="sep"></span>
   <button id="problems" hidden title="Show the Problems panel"></button>
+  <button id="source" title="Show the diagram's text beside this">Source</button>
   <button id="edit" title="Open this diagram in the FastDraw editor in the browser; edits there save to the file">Open in editor</button>
 </div>
 <div id="stage"><div id="canvas"></div></div>
@@ -220,11 +224,16 @@ class Preview implements vscode.Disposable {
   }
 }
 
-// Put the cursor on a line of the diagram, in an editor already showing it if there is one.
-async function reveal(doc: vscode.TextDocument, line: number, besides?: vscode.ViewColumn) {
+// The diagram's text in an editor: one already showing it, or a new one in the column beside `from`.
+async function showSource(doc: vscode.TextDocument, from?: vscode.ViewColumn) {
   const shown = vscode.window.visibleTextEditors.find((e) => e.document === doc);
-  const column = shown?.viewColumn ?? (besides === vscode.ViewColumn.One ? vscode.ViewColumn.Two : vscode.ViewColumn.One);
-  const ed = await vscode.window.showTextDocument(doc, { viewColumn: column, preserveFocus: false });
+  const column = shown?.viewColumn ?? (from === vscode.ViewColumn.One ? vscode.ViewColumn.Two : from ? vscode.ViewColumn.One : vscode.ViewColumn.Beside);
+  return vscode.window.showTextDocument(doc, { viewColumn: column, preserveFocus: false });
+}
+
+// Put the cursor on a line of the diagram, in an editor already showing it if there is one.
+async function reveal(doc: vscode.TextDocument, line: number, from?: vscode.ViewColumn) {
+  const ed = await showSource(doc, from);
   const n = Math.min(Math.max(0, line - 1), doc.lineCount - 1);
   const at = new vscode.Position(n, doc.lineAt(n).firstNonWhitespaceCharacterIndex);
   ed.selection = new vscode.Selection(at, at);
@@ -235,16 +244,17 @@ async function reveal(doc: vscode.TextDocument, line: number, besides?: vscode.V
 
 export function activate(ext: vscode.ExtensionContext) {
   const probs = new Problems();
-  const previews = new Map<string, Preview>();
+  // every open view of a diagram: previews beside the text and diagram tabs, several per file at times
+  const previews = new Set<Preview>();
   ext.subscriptions.push(probs);
 
-  const forDoc = (doc: vscode.TextDocument) => previews.get(doc.uri.toString());
+  const forDoc = (doc: vscode.TextDocument) => [...previews].filter((p) => p.doc === doc);
+  const forUri = (uri: vscode.Uri) => [...previews].filter((p) => p.doc.uri.toString() === uri.toString());
 
-  const attach = (panel: vscode.WebviewPanel, doc: vscode.TextDocument) => {
-    const p = new Preview(panel, doc, ext, probs);
-    const key = doc.uri.toString();
-    previews.set(key, p);
-    p.onDispose.event(() => { if (previews.get(key) === p) previews.delete(key); });
+  const attach = (panel: vscode.WebviewPanel, doc: vscode.TextDocument, kind: 'side' | 'editor') => {
+    const p = new Preview(panel, doc, ext, probs, kind);
+    previews.add(p);
+    p.onDispose.event(() => previews.delete(p));
     probs.lint(doc);
     return p;
   };
@@ -253,10 +263,10 @@ export function activate(ext: vscode.ExtensionContext) {
     const doc = uri ? await vscode.workspace.openTextDocument(uri) : vscode.window.activeTextEditor?.document;
     if (!doc || !isDiagram(doc)) { vscode.window.showInformationMessage('Open a .fdraw diagram to preview it.'); return; }
     const column = beside ? vscode.ViewColumn.Beside : vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.Active;
-    const open = forDoc(doc);
+    const open = forDoc(doc).find((p) => p.kind === 'side');
     if (open) { open.panel.reveal(column, beside); return; }
     const panel = vscode.window.createWebviewPanel(VIEW, `Preview ${basename(doc.uri.path)}`, { viewColumn: column, preserveFocus: beside }, { enableScripts: true, retainContextWhenHidden: false });
-    attach(panel, doc);
+    attach(panel, doc, 'side');
   };
 
   ext.subscriptions.push(
@@ -267,13 +277,24 @@ export function activate(ext: vscode.ExtensionContext) {
       if (doc && isDiagram(doc)) await openInEditor(doc);
       else vscode.window.showInformationMessage('Open a .fdraw diagram first.');
     }),
+    vscode.commands.registerCommand('fastdraw.showSource', async (uri?: vscode.Uri) => {
+      const p = uri instanceof vscode.Uri ? forUri(uri)[0] : [...previews].find((x) => x.panel.active);
+      if (p) await showSource(p.doc, p.panel.viewColumn);
+      else if (uri instanceof vscode.Uri) await vscode.window.showTextDocument(uri);
+    }),
+
+    // a .fdraw file opens as the diagram; its text is a click away (Source), or the default again with
+    // "workbench.editorAssociations": { "*.fdraw": "default" }
+    vscode.window.registerCustomEditorProvider(DIAGRAM, {
+      resolveCustomTextEditor(doc, panel) { attach(panel, doc, 'editor'); },
+    }, { supportsMultipleEditorsPerDocument: true }),
 
     // a preview left open is put back when VS Code restarts
     vscode.window.registerWebviewPanelSerializer(VIEW, {
       async deserializeWebviewPanel(panel, state: { uri?: string } | undefined) {
         const uri = state?.uri;
         if (!uri) { panel.dispose(); return; }
-        try { attach(panel, await vscode.workspace.openTextDocument(vscode.Uri.parse(uri))); }
+        try { attach(panel, await vscode.workspace.openTextDocument(vscode.Uri.parse(uri)), 'side'); }
         catch { panel.dispose(); }
       },
     }),
@@ -282,9 +303,9 @@ export function activate(ext: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument((e) => {
       if (!isDiagram(e.document)) return;
       probs.later(e.document);
-      forDoc(e.document)?.refresh();
+      for (const p of forDoc(e.document)) p.refresh();
     }),
-    vscode.workspace.onDidCloseTextDocument((d) => { if (isDiagram(d) && !forDoc(d)) probs.forget(d); }),
+    vscode.workspace.onDidCloseTextDocument((d) => { if (isDiagram(d) && !forDoc(d).length) probs.forget(d); }),
     // a look is shared by the diagrams next to it: redraw and re-check them all when one is saved
     vscode.workspace.onDidSaveTextDocument((d) => {
       if (!/\.look$/i.test(d.uri.path)) return;
@@ -292,8 +313,8 @@ export function activate(ext: vscode.ExtensionContext) {
       for (const p of previews.values()) p.refetch();
     }),
     // counts in the preview's bar follow the Problems panel
-    probs.onChange.event((uri) => previews.get(uri.toString())?.counts()),
-    vscode.window.onDidChangeTextEditorSelection((e) => forDoc(e.textEditor.document)?.cursor(e.selections[0].active.line + 1)),
+    probs.onChange.event((uri) => { for (const p of forUri(uri)) p.counts(); }),
+    vscode.window.onDidChangeTextEditorSelection((e) => { for (const p of forDoc(e.textEditor.document)) p.cursor(e.selections[0].active.line + 1); }),
     vscode.window.onDidChangeActiveColorTheme(() => { for (const p of previews.values()) p.refresh(0); }),
     vscode.workspace.onDidChangeConfiguration((e) => { if (e.affectsConfiguration('fastdraw.preview')) for (const p of previews.values()) p.refresh(0); }),
     { dispose: () => { for (const p of previews.values()) p.dispose(); } },

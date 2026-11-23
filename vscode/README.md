@@ -9,9 +9,19 @@ A live preview of [FastDraw](https://fastdraw.dev) diagrams (`.fdraw` files) nex
 
 ## What it does
 
-- **Preview.** Open a `.fdraw` file and run **FastDraw: Open Preview to the Side** (`Ctrl+K V`, or the
-  preview button at the top right of the editor). The preview redraws as you type, before you save, and
-  uses the same renderer as `fastdraw render`, so it shows what the PNG will show.
+- **Opens as the diagram.** A `.fdraw` file opens as its drawing, since an agent usually writes the
+  text. **Source** in its toolbar (or the button at the top right) puts the text beside it. It redraws
+  as the file changes, uses the same renderer as `fastdraw render`, so it shows what the PNG will show.
+  To open `.fdraw` files as text instead, add this to your settings, or use **Reopen Editor With…**
+  for one file:
+
+  ```json
+  "workbench.editorAssociations": { "*.fdraw": "default" }
+  ```
+
+- **Preview beside the text.** With the text open, **FastDraw: Open Preview to the Side** (`Ctrl+K V`,
+  or the preview button at the top right) shows the drawing next to it, redrawn as you type, before you
+  save.
 - **Click to find the line.** Click a box, a line or a piece of text in the preview to put the cursor
   on the line that draws it. The box on the line the cursor is on is outlined in the preview.
 - **Problems.** What `fastdraw check` reports (overlapping boxes, arrows through boxes, colliding

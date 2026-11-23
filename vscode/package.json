@@ -64,6 +64,18 @@
         }
       }
     ],
+    "customEditors": [
+      {
+        "viewType": "fastdraw.diagram",
+        "displayName": "FastDraw Diagram",
+        "selector": [
+          {
+            "filenamePattern": "*.fdraw"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "grammars": [
       {
         "language": "fastdraw",
@@ -94,6 +106,12 @@
         "title": "Open in the FastDraw Editor",
         "category": "FastDraw",
         "icon": "$(edit)"
+      },
+      {
+        "command": "fastdraw.showSource",
+        "title": "Show Source",
+        "category": "FastDraw",
+        "icon": "$(go-to-file)"
       }
     ],
     "menus": {
@@ -101,6 +119,11 @@
         {
           "command": "fastdraw.showPreviewToSide",
           "when": "editorLangId == fastdraw && activeWebviewPanelId != 'fastdraw.preview'",
+          "group": "navigation"
+        },
+        {
+          "command": "fastdraw.showSource",
+          "when": "activeCustomEditorId == 'fastdraw.diagram' || activeWebviewPanelId == 'fastdraw.preview'",
           "group": "navigation"
         }
       ],
@@ -135,6 +158,10 @@
         {
           "command": "fastdraw.openInEditor",
           "when": "editorLangId == fastdraw"
+        },
+        {
+          "command": "fastdraw.showSource",
+          "when": "activeCustomEditorId == 'fastdraw.diagram' || activeWebviewPanelId == 'fastdraw.preview'"
         }
       ]
     },
