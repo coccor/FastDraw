@@ -289,6 +289,22 @@ export function lookOfDiagram(file: string, src: string): LookRef | undefined {
   return isBundledLook(p) ? { name: p } : isWebLook(p) ? { url: p, file: cachePath(p) } : { file: resolve(dirname(file), p) };
 }
 
+// The folder to lend the editor for a diagram, and the diagram's path in it: the diagram's own folder, or
+// the nearest one above it that also holds the look file the diagram names by path (look "../../looks/
+// team.look"), so the editor can read that look. It is never widened past `bound` (the workspace, or the
+// folder the command runs in), and not at all when the diagram or its look is outside `bound`.
+export function openRoot(file: string, src: string, bound?: string): { root: string; open: string } {
+  const full = resolve(file);
+  let root = dirname(full);
+  const holds = (dir: string, p: string) => p === dir || p.startsWith(dir.endsWith(sep) ? dir : dir + sep);
+  const ref = lookOfDiagram(full, src);
+  if (bound && ref && 'file' in ref && !('url' in ref)) {
+    const b = resolve(bound), lookDir = dirname(ref.file);
+    if (holds(b, root) && holds(b, lookDir)) while (!holds(root, lookDir)) root = dirname(root);
+  }
+  return { root, open: relative(root, full).split(sep).join('/') };
+}
+
 // How a diagram at `file` names the look: a bare name, or a path from the diagram's folder.
 export function lookRefText(ref: LookRef, file: string): string {
   if ('name' in ref) return ref.name;

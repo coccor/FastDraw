@@ -1,0 +1,35 @@
+// Bundles the extension and the parts of FastDraw it draws with into dist/extension.js, and copies the fonts
+// FastDraw ships so the preview draws text as `fastdraw render` does.
+import { build, context } from 'esbuild';
+import { cpSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const fonts = join(here, '..', 'fonts');
+
+rmSync(join(here, 'fonts'), { recursive: true, force: true });
+mkdirSync(join(here, 'fonts'));
+for (const f of readdirSync(fonts)) if (/\.(ttf|otf|txt)$/i.test(f)) cpSync(join(fonts, f), join(here, 'fonts', f));
+// the package carries the repository's licence and the icon set's
+cpSync(join(here, '..', 'LICENSE'), join(here, 'LICENSE'));
+cpSync(join(here, '..', 'licenses'), join(here, 'licenses'), { recursive: true });
+
+const opts = {
+  entryPoints: [join(here, 'src', 'extension.ts')],
+  outfile: join(here, 'dist', 'extension.js'),
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  target: 'node20',
+  external: ['vscode'],
+  sourcemap: true,
+  // FastDraw's Node code finds its fonts folder from import.meta.url; in a CommonJS bundle that is this file,
+  // so dist/../fonts is the copy made above
+  define: { 'import.meta.url': '__fastdrawModuleUrl' },
+  banner: { js: "const __fastdrawModuleUrl = require('url').pathToFileURL(__filename).href;" },
+  logLevel: 'info',
+};
+
+if (process.argv.includes('--watch')) await (await context(opts)).watch();
+else await build(opts);

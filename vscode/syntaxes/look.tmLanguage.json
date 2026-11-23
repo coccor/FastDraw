@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "FastDraw look",
+  "scopeName": "source.fdraw-look",
+  "patterns": [{ "include": "source.fdraw" }]
+}

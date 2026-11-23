@@ -117,6 +117,8 @@ with `npm install -g fastdraw@latest`. Set `FASTDRAW_NO_UPDATE_CHECK=1` to turn 
   editor opens it for editing.
 - **Embedding.** Show a diagram as a live drawing on a docs site with `<fastdraw-diagram>`, or as
   an SVG image in a GitHub README.
+- **VS Code.** A preview beside the `.fdraw` file that redraws as you type, with `check`'s problems
+  in the Problems panel. Click an element in the preview to go to its line.
 
 ## Gallery
 
@@ -131,6 +133,7 @@ Written by agents from the guides alone and drawn in the built-in look; sources 
 
 - [Command-line tool](docs/cli.md): every command and option, and setup for each coding agent
 - [Editor](docs/editor.md): editing in the browser and `fastdraw open`
+- [VS Code extension](vscode/README.md): the preview and Problems panel, and building it
 - [Looks](docs/looks.md): the bundled looks and writing your own
 - [Showing diagrams on other sites](docs/embedding.md): `<fastdraw-diagram>` and GitHub images
 - The language: `npx fastdraw guide`, or https://fastdraw.dev/llms.txt

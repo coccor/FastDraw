@@ -1,0 +1,39 @@
+html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+body {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  display: flex; flex-direction: column;
+}
+
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px; flex: none;
+  padding: 4px 8px; min-height: 28px; box-sizing: border-box;
+  border-bottom: 1px solid var(--vscode-panel-border, transparent);
+}
+.bar button {
+  background: none; border: none; color: inherit; font: inherit; cursor: pointer;
+  padding: 2px 6px; border-radius: 4px; line-height: 18px; white-space: nowrap; flex: none;
+}
+.bar button.on { background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground)); }
+.bar button:hover { background: var(--vscode-toolbar-hoverBackground); }
+.bar button:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+#zoom { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+.bar .sep { flex: 1; }
+#note {
+  color: var(--vscode-descriptionForeground); margin: 0 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+#problems.err { color: var(--vscode-errorForeground); }
+#problems.warn { color: var(--vscode-editorWarning-foreground); }
+#edit { border: 1px solid var(--vscode-button-secondaryBackground, var(--vscode-panel-border)); }
+
+#stage { flex: 1; overflow: auto; position: relative; }
+#stage.fit { overflow: hidden; }
+#canvas { display: grid; place-items: center; min-width: 100%; min-height: 100%; padding: 16px; box-sizing: border-box; width: max-content; }
+#canvas svg { display: block; box-shadow: 0 0 0 1px var(--vscode-panel-border, rgba(128,128,128,.25)); }
+#canvas.over { cursor: pointer; }
+
+.fd-mark { fill: none; stroke: var(--vscode-focusBorder, #0078d4); pointer-events: none; }
+.fd-mark.line { stroke-opacity: 0.35; stroke-linecap: round; stroke-linejoin: round; }

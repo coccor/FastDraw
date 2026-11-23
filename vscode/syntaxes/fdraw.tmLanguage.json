@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "FastDraw",
+  "scopeName": "source.fdraw",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#statement-head" },
+    { "include": "#string" },
+    { "include": "#property" },
+    { "include": "#arrow" },
+    { "include": "#at" },
+    { "include": "#color" },
+    { "include": "#number" }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        { "name": "comment.line.number-sign.fdraw", "match": "^\\s*#(?:\\s.*)?$" },
+        { "name": "comment.line.double-slash.fdraw", "match": "//.*$" }
+      ]
+    },
+    "statement-head": {
+      "comment": "An optional id and colon, then the word that says what the line draws (a style, text, legend, look); a line that joins two elements starts with an id and an arrow instead",
+      "match": "^\\s*(?:([A-Za-z][\\w-]*)\\s*(:)\\s+)?([A-Za-z][\\w-]*)\\b(?!\\s*(?:<->|->|<-|---|--)|[.:=])",
+      "captures": {
+        "1": { "name": "entity.name.tag.fdraw" },
+        "2": { "name": "punctuation.separator.key-value.fdraw" },
+        "3": { "name": "keyword.other.fdraw" }
+      }
+    },
+    "string": {
+      "name": "string.quoted.double.fdraw",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{ "name": "constant.character.escape.fdraw", "match": "\\\\." }]
+    },
+    "property": {
+      "match": "\\b([A-Za-z][\\w./#-]*)(=)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.fdraw" },
+        "2": { "name": "keyword.operator.assignment.fdraw" }
+      }
+    },
+    "arrow": { "name": "keyword.operator.arrow.fdraw", "match": "<->|->|<-|---|--" },
+    "at": { "name": "keyword.other.at.fdraw", "match": "(?<=\\s)at(?=\\s)" },
+    "color": { "name": "constant.other.color.fdraw", "match": "#[0-9a-fA-F]{3,8}\\b" },
+    "number": { "name": "constant.numeric.fdraw", "match": "(?<![\\w.])-?\\d+(?:\\.\\d+)?(?:x-?\\d+(?:\\.\\d+)?)?(?!\\w)" }
+  }
+}

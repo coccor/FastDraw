@@ -68,6 +68,7 @@ A new language feature also needs a case in `crates/fastdraw-render/tests/covera
 | `src/githublooks.ts` | What the editor's **From GitHub** finds: reads `owner/repo` or a link, lists the repository's `.look` files, and names each by its raw.githubusercontent.com address |
 | `editor/` | The browser editor (Vite + React) |
 | `editor/src/embed/` | `<fastdraw-diagram>`, built as `embed.js` by `vite.embed.config.ts` |
+| `vscode/` | The VS Code extension: a preview drawn by `src/` and the checker's problems in the Problems panel. Its own `npm ci`, tests and `.vsix`; see `vscode/README.md` |
 | `worker/` | The fastdraw.dev Worker: diagrams as SVG images at `/gh/*` and `/s/*`, for GitHub |
 | `crates/fastdraw-render/` | The renderer as a Rust crate, checked against the TypeScript by `tools/rust-parity.ts` |
 | `examples/` | Diagrams written by agents from the guides, and looks used in tests |
