@@ -1,0 +1,9 @@
+{
+  "name": "fastdraw-vscode-publish",
+  "private": true,
+  "description": "The tools vscode-release.yml publishes the extension with, locked so its publish job installs exactly these",
+  "dependencies": {
+    "@vscode/vsce": "4.1.1",
+    "ovsx": "1.4.0"
+  }
+}

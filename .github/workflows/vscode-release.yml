@@ -75,8 +75,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Publishes the package the build job made. It installs only the two publishing tools, at fixed versions
-  # and without their install scripts, and checks nothing out.
+  # Publishes the package the build job made. It checks out only vscode/publish and installs only the two
+  # publishing tools from its lockfile (every package pinned by hash), without install scripts.
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -87,8 +87,12 @@ jobs:
       id-token: write # Marketplace trusted publishing
     env:
       VSIX: ${{ needs.build.outputs.vsix }}
-      TOOLS: ${{ github.workspace }}/../tools
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: vscode/publish
+          sparse-checkout-cone-mode: true
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: vsix
@@ -97,8 +101,8 @@ jobs:
           node-version: 26
       - name: Install vsce and ovsx
         run: |
-          npm install --prefix "$TOOLS" --ignore-scripts --no-audit --no-fund @vscode/vsce@4.1.1 ovsx@1.4.0
-          echo "$TOOLS/node_modules/.bin" >> "$GITHUB_PATH"
+          npm ci --prefix vscode/publish --ignore-scripts --no-audit --no-fund
+          echo "$GITHUB_WORKSPACE/vscode/publish/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Publish to the VS Code Marketplace
         run: vsce publish --oidc --skip-duplicate --packagePath "$VSIX"
       - name: Publish to Open VSX
