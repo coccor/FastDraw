@@ -1,0 +1,83 @@
+name: vscode-release
+
+# Publishes the VS Code extension (vscode/) to the VS Code Marketplace and Open VSX when a tag
+# vscode-v<version> is pushed, the version being the one in vscode/package.json:
+#   (set "version" in vscode/package.json, commit, merge) then
+#   git tag vscode-v0.1.0 && git push origin vscode-v0.1.0
+# The tags are separate from the npm package's v* tags, which release.yml publishes.
+#
+# VS Code Marketplace: Trusted Publishing (OIDC), so there is no Marketplace token in the repository. One-time
+# setup on marketplace.visualstudio.com/manage: publisher coccor > Trusted Publishing, with repository owner
+# coccor, repository FastDraw, workflow vscode-release.yml and environment release.
+#
+# Open VSX (what Cursor, Windsurf and VSCodium install from): a token in the secret OVSX_PAT of the `release`
+# environment, made on open-vsx.org > Settings > Access Tokens by an account that has signed the Eclipse
+# Foundation publisher agreement. The first run creates the coccor namespace if it does not exist yet.
+#
+# A rerun after a partial failure is safe: a version already on a store is skipped (--skip-duplicate).
+
+on:
+  push:
+    tags: ['vscode-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write # the GitHub Release with the .vsix
+      id-token: write # Marketplace trusted publishing
+    defaults:
+      run:
+        working-directory: vscode
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            vscode/package-lock.json
+      - name: The tag matches vscode/package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "vscode-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match vscode/package.json version $version (expected vscode-v$version)"
+            exit 1
+          fi
+          echo "VSIX=fastdraw-$version.vsix" >> "$GITHUB_ENV"
+      # the extension bundles ../src, so the repository's own dependencies come first
+      - run: npm ci
+        working-directory: .
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx tsc -p .
+      - run: npm test
+      - run: xvfb-run -a npm run test:integration
+      # one package, published as it was tested; vscode:prepublish builds dist/ first
+      - run: npx vsce package --no-dependencies --out "$VSIX"
+      - name: Publish to the VS Code Marketplace
+        run: npx vsce publish --oidc --skip-duplicate --packagePath "$VSIX"
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::error::the release environment has no OVSX_PAT secret; see the top of vscode-release.yml"
+            exit 1
+          fi
+          if ! curl -fsS -o /dev/null https://open-vsx.org/api/coccor; then
+            npx ovsx create-namespace coccor
+          fi
+          npx ovsx publish --skip-duplicate --packagePath "$VSIX"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#vscode-v}
+          gh release create "$GITHUB_REF_NAME" "$VSIX" --title "VS Code extension $version" --generate-notes --verify-tag --latest=false
