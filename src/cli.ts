@@ -10,6 +10,7 @@ import { loadExtendedIcons } from './extendedIcons.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
+import { toDrawio } from './drawio.ts';
 import { check } from './check.ts';
 import { serveFolder, DEFAULT_EDITOR } from './serve.ts';
 import { spawn } from 'node:child_process';
@@ -50,7 +51,7 @@ function usage(): never {
 
   check  <file.fdraw | folder> ...        report problems, with line numbers. A folder means every
                                           .fdraw file under it
-  render <file.fdraw | folder> ... [-o out.png|.svg] [--scale 2] [--transparent] [--no-embed]
+  render <file.fdraw | folder> ... [-o out.png|.svg|.drawio] [--scale 2] [--transparent] [--no-embed]
          [--look name|file.look|https://...look] [--dark] [--offline]
                                           draw the diagram (PNG by default) next to it. With several
                                           files or a folder, checks them all first and draws nothing
@@ -60,7 +61,9 @@ function usage(): never {
                                           built-in look). A look named by https:// address (one on
                                           GitHub, say), and the icons and fonts a look names that way,
                                           are fetched and kept in a cache folder; --offline (also for
-                                          check) uses only what is already there
+                                          check) uses only what is already there. -o x.drawio writes
+                                          a draw.io file instead: shapes, lines and texts draw.io can
+                                          edit (a Confluence draw.io diagram too)
   sizes  [file.fdraw | file.look]         list the look's styles and their sizes
                                           (the built-in look when no file is given)
   init-look [path]                        write the built-in look to a file to make your own
@@ -202,13 +205,15 @@ if (cmd === 'check') {
     const svg = renderSvg(sc, undefined, { background: !transparent });
     const payload = { v: 1 as const, ...readSources(file, sc, src) };
     if (out.endsWith('.svg')) writeFileSync(out, embed ? embedSvg(svg, payload) : svg);
+    // a draw.io file: shapes, lines and texts draw.io can edit; the diagram's text rides along unless --no-embed
+    else if (out.endsWith('.drawio')) writeFileSync(out, toDrawio(sc, { name: basename(file, '.fdraw'), ...(embed ? { source: payload.diagram, look: payload.look } : {}) }));
     else {
       // the ligature-free copies are made on the first image and reused for the rest of the run
       const fontFiles = withoutLigatureFonts([...bundledFonts(), ...(sc.fontFiles ?? [])]);
       const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng());
       writeFileSync(out, embed ? embedPng(png, payload) : png);
     }
-    const notes = [out.endsWith('.svg') ? '' : `at ${scale}x`, look ? `look ${look}` : '', transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
+    const notes = [/\.(svg|drawio)$/.test(out) ? '' : `at ${scale}x`, look ? `look ${look}` : '', transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
     console.log(`wrote ${out} (${sc.w}x${sc.h}${notes.length ? ', ' + notes.join(', ') : ''})`);
   }
 } else if (cmd === 'sizes') {

@@ -272,7 +272,7 @@ dark "./team-night.look"      // a look file, relative to this look file
 
 The built-in look's dark version is `night`, and every look that ships names its own: `shade` names `shade-dark`, `sketch` names `sketch-dark`, and so on. A dark version names itself, since it is already dark. A dark look should keep the same style names, shapes, sizes and fonts, so the diagram draws the same way in both.
 
-The editor and an embedded diagram follow their theme: in the dark theme a diagram is drawn with the look its look's `dark` line names, and the file keeps its look line. The editor's **Look** panel shows each look once, drawn in the version for the theme, and a diagram that names a dark version (`look night`) is drawn in its light look in the light theme. Export image draws either version. Without a `dark` line a look is drawn as it is in both themes, and `--dark` stops with an error that names the look. To draw one diagram with another look without changing the file, use `fastdraw render x.fdraw --look night` (or `--look ./other.look`).
+The editor and an embedded diagram follow their theme: in the dark theme a diagram is drawn with the look its look's `dark` line names, and the file keeps its look line. The editor's **Look** panel shows each look once, drawn in the version for the theme, and a diagram that names a dark version (`look night`) is drawn in its light look in the light theme. Export draws either version. Without a `dark` line a look is drawn as it is in both themes, and `--dark` stops with an error that names the look. To draw one diagram with another look without changing the file, use `fastdraw render x.fdraw --look night` (or `--look ./other.look`).
 
 ### Guidance
 

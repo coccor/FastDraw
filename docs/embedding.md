@@ -93,7 +93,7 @@ their browser.
 
 Icon files make the link longer: a few hundred characters for a simple icon, a few thousand for a vendor
 icon with gradients. Past 64 KB the editor says so, because chat and mail apps may cut long links. Share an
-exported image instead (**Export image…**): it carries the same things and opens in the editor when dropped
+exported image instead (**Export…**): it carries the same things and opens in the editor when dropped
 on it. An icon that is missing from a link (an older link, or one cut short) is drawn as the closest
 built-in icon, and the diagram's notes name it.
 
@@ -102,3 +102,22 @@ ships with FastDraw (Geist, Newsreader and the others listed in the look guide),
 https:// address (`font sans "Inter" "https://..."`), looks the same wherever it is opened. Text in a font
 from the look's font folder is drawn in Geist, Geist Mono or Newsreader, by its role, until that folder is
 opened.
+
+## In draw.io and Confluence
+
+Where only draw.io is available (a Confluence page with the draw.io app, say), export the diagram as a
+draw.io file: `fastdraw render diagram.fdraw -o diagram.drawio`, or **Export… → draw.io** in the editor,
+which downloads the file or copies it. In draw.io, open the file, or paste what was copied into a draw.io
+diagram; in Confluence, edit the draw.io diagram on the page and paste it there.
+
+What arrives is an ordinary draw.io diagram that people edit in draw.io:
+
+- Every box is a draw.io shape with its own fill, outline and rounding, and every line a draw.io connector
+  fastened to its boxes at the same points, with the same bends, arrowheads and label. Moving a box takes
+  its lines along.
+- Every text is a draw.io text, in the look's font when draw.io can load it from Google Fonts (Geist,
+  Newsreader, Roboto and others), in a font of the same kind when not.
+- What a look adds to a box (icons, tags, side strips, caption plates, a soft shadow) comes along and moves
+  with the box. A legend, a table and a chart are FastDraw's drawing with their texts editable on top.
+- The diagram's text and its look ride on the page (`--no-embed`, or unticking **Carry the FastDraw
+  diagram**, leaves them out). A diagram changed in draw.io does not change back in FastDraw by itself.

@@ -1439,7 +1439,7 @@ export function App() {
       const n = Object.keys(icons).length, kb = Math.ceil(link.length / 1000);
       const what = n ? ` with ${n} icon file${n === 1 ? '' : 's'} inside` : '';
       setStatus(link.length > LONG_LINK
-        ? `copied a link${what}, but it is ${kb} KB long and chat or mail apps may cut it short; Export image… makes a file that opens here too`
+        ? `copied a link${what}, but it is ${kb} KB long and chat or mail apps may cut it short; Export… makes a file that opens here too`
         : `copied a link to this diagram${what} (${kb} KB); it holds the whole diagram, so nothing is uploaded`);
     } catch {
       setStatus('the link could not be copied to the clipboard');
@@ -1619,7 +1619,7 @@ export function App() {
             <button role="menuitem" onClick={() => { closePopups(); openFile(); }}><FileText size={16} />Open file</button>
             <button role="menuitem" onClick={() => { closePopups(); setPasteOpen(true); }}><ClipboardPaste size={16} />Paste diagram text</button>
             <hr />
-            <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export image…<kbd>Ctrl ⇧ E</kbd></button>
+            <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export…<kbd>Ctrl ⇧ E</kbd></button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
             <button role="menuitem" onClick={() => { closePopups(); copyLink(); }}><Link2 size={16} />Copy link</button>
             <hr />

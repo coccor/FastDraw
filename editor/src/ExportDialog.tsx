@@ -3,11 +3,12 @@ import { useEscape } from './useEscape.ts';
 import type { Scene } from '../../src/scene.ts';
 import { renderSvg } from '../../src/render.ts';
 import { embedSvg, embedPng, type Payload } from '../../src/embed.ts';
+import { toDrawio } from '../../src/drawio.ts';
 import { fontCss } from './fonts.ts';
 import * as files from './files.ts';
 import { Copy, Download } from 'lucide-react';
 
-export type ExportOpts = { format: 'png' | 'svg'; scale: number; background: boolean; embed: boolean };
+export type ExportOpts = { format: 'png' | 'svg' | 'drawio'; scale: number; background: boolean; embed: boolean };
 const DEFAULTS: ExportOpts = { format: 'png', scale: 2, background: true, embed: true };
 const SCALES = [1, 2, 3, 4];
 const KEY = 'fastdraw.export';
@@ -17,7 +18,7 @@ function remembered(): ExportOpts {
   try {
     const o = JSON.parse(localStorage.getItem(KEY) ?? '{}');
     return {
-      format: o.format === 'svg' ? 'svg' : 'png',
+      format: o.format === 'svg' || o.format === 'drawio' ? o.format : 'png',
       scale: SCALES.includes(o.scale) ? o.scale : DEFAULTS.scale,
       background: typeof o.background === 'boolean' ? o.background : DEFAULTS.background,
       embed: typeof o.embed === 'boolean' ? o.embed : DEFAULTS.embed,
@@ -25,8 +26,10 @@ function remembered(): ExportOpts {
   } catch { return DEFAULTS; }
 }
 
-// The exported file as a blob: SVG text, or a PNG drawn from it at `scale`.
-export async function exportBlob(scene: Scene, payload: Payload, o: ExportOpts): Promise<Blob> {
+// The exported file as a blob: SVG text, a PNG drawn from it at `scale`, or a draw.io file.
+export async function exportBlob(scene: Scene, payload: Payload, o: ExportOpts, name = 'Diagram'): Promise<Blob> {
+  // draw.io: the diagram's text rides along (embed) so it can come back to FastDraw
+  if (o.format === 'drawio') return new Blob([toDrawio(scene, { name, ...(o.embed ? { source: payload.diagram, look: payload.look } : {}) })], { type: 'application/vnd.jgraph.mxfile' });
   const opts = { background: o.background };
   const svg = renderSvg(scene, await fontCss(renderSvg(scene, undefined, opts)), opts);
   if (o.format === 'svg') return new Blob([o.embed ? embedSvg(svg, payload) : svg], { type: 'image/svg+xml' });
@@ -58,16 +61,20 @@ export function ExportDialog({ scenes, theme, payload, base, onClose, onDone }: 
   const card = useRef<HTMLDivElement>(null);
   useEffect(() => card.current?.focus(), []); // keys go to the dialog, not to the canvas behind it
 
-  const size = o.format === 'png' ? `${Math.round(scene.w * o.scale)} × ${Math.round(scene.h * o.scale)} px` : `${scene.w} × ${scene.h}, scales freely`;
+  const size = o.format === 'png' ? `${Math.round(scene.w * o.scale)} × ${Math.round(scene.h * o.scale)} px` : o.format === 'drawio' ? 'opens and edits in draw.io, a Confluence draw.io diagram too' : `${scene.w} × ${scene.h}, scales freely`;
   const fileName = `${base}.${o.format}`;
-  const canCopy = o.format === 'svg' ? !!navigator.clipboard?.writeText : typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write;
+  const canCopy = o.format !== 'png' ? !!navigator.clipboard?.writeText : typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write;
 
   const run = async (to: 'file' | 'clipboard') => {
     setBusy(true); setErr('');
     try {
       if (to === 'file') {
-        files.download(fileName, await exportBlob(scene, payload, o));
+        files.download(fileName, await exportBlob(scene, payload, o, base));
         onDone(`exported ${fileName}`);
+      } else if (o.format === 'drawio') {
+        // draw.io takes this pasted onto its page, the draw.io editor in Confluence too
+        await navigator.clipboard.writeText(await (await exportBlob(scene, payload, o, base)).text());
+        onDone('copied the diagram for draw.io: paste it into a draw.io diagram');
       } else if (o.format === 'svg') {
         await navigator.clipboard.writeText(await (await exportBlob(scene, payload, o)).text());
         onDone('copied the SVG to the clipboard');
@@ -84,18 +91,19 @@ export function ExportDialog({ scenes, theme, payload, base, onClose, onDone }: 
 
   return (
     <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="card exportcard" role="dialog" aria-label="Export image" tabIndex={-1} ref={card}>
-        <h3>Export image</h3>
+      <div className="card exportcard" role="dialog" aria-label="Export" tabIndex={-1} ref={card}>
+        <h3>Export</h3>
         <div className={'exportpreview' + (o.background ? '' : ' checker')}><img src={preview} alt="Preview of the exported image" /></div>
         <div className="exportopts">
           <span>Format</span>
           <div className="seg" role="group" aria-label="Format">
             <button className={o.format === 'png' ? 'on' : ''} aria-pressed={o.format === 'png'} onClick={() => set({ format: 'png' })}>PNG</button>
             <button className={o.format === 'svg' ? 'on' : ''} aria-pressed={o.format === 'svg'} onClick={() => set({ format: 'svg' })}>SVG</button>
+            <button className={o.format === 'drawio' ? 'on' : ''} aria-pressed={o.format === 'drawio'} onClick={() => set({ format: 'drawio' })}>draw.io</button>
           </div>
           <span>Scale</span>
           <div className="seg" role="group" aria-label="Scale">
-            {SCALES.map((s) => <button key={s} disabled={o.format === 'svg'} className={o.format === 'png' && o.scale === s ? 'on' : ''} aria-pressed={o.format === 'png' && o.scale === s} onClick={() => set({ scale: s })}>{s}×</button>)}
+            {SCALES.map((s) => <button key={s} disabled={o.format !== 'png'} className={o.format === 'png' && o.scale === s ? 'on' : ''} aria-pressed={o.format === 'png' && o.scale === s} onClick={() => set({ scale: s })}>{s}×</button>)}
           </div>
           {both && <>
             <span>Version</span>
@@ -105,9 +113,9 @@ export function ExportDialog({ scenes, theme, payload, base, onClose, onDone }: 
             </div>
           </>}
           <span>Background</span>
-          <label className="check"><input type="checkbox" checked={o.background} onChange={(e) => set({ background: e.target.checked })} />Page colour and dots; off leaves it see-through</label>
+          <label className="check"><input type="checkbox" checked={o.format === 'drawio' || o.background} disabled={o.format === 'drawio'} onChange={(e) => set({ background: e.target.checked })} />Page colour and dots; off leaves it see-through</label>
           <span>Diagram inside</span>
-          <label className="check"><input type="checkbox" checked={o.embed} onChange={(e) => set({ embed: e.target.checked })} />Carry the diagram, so the image opens again for editing</label>
+          <label className="check"><input type="checkbox" checked={o.embed} onChange={(e) => set({ embed: e.target.checked })} />{o.format === 'drawio' ? 'Carry the FastDraw diagram, so it can come back from draw.io' : 'Carry the diagram, so the image opens again for editing'}</label>
         </div>
         <p className="muted exportsize">{fileName} · {size}</p>
         {err && <p className="exporterr">{err}</p>}

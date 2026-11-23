@@ -117,6 +117,8 @@ with `npm install -g fastdraw@latest`. Set `FASTDRAW_NO_UPDATE_CHECK=1` to turn 
   editor opens it for editing.
 - **Embedding.** Show a diagram as a live drawing on a docs site with `<fastdraw-diagram>`, or as
   an SVG image in a GitHub README.
+- **draw.io.** `fastdraw render x.fdraw -o x.drawio` writes a draw.io file whose boxes, lines and texts
+  draw.io can edit, for Confluence pages and other places that take draw.io.
 - **VS Code.** A preview beside the `.fdraw` file that redraws as you type, with `check`'s problems
   in the Problems panel. Click an element in the preview to go to its line.
 

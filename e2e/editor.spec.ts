@@ -414,7 +414,7 @@ test('legend from the menu, editable entries, grouping selects together', async 
 test('an exported PNG reopens as the same diagram; a foreign image is refused with a reason', async ({ page }) => {
   await paste(page, SMALL);
   await page.getByRole('button', { name: 'Menu' }).click();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /Export image/ }).click().then(() => page.getByRole('button', { name: 'Download' }).click())]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /^Export…/ }).click().then(() => page.getByRole('button', { name: 'Download' }).click())]);
   expect(dl.suggestedFilename()).toBe('pasted-diagram.png');
   const bytes = (await import('node:fs')).readFileSync(await dl.path()).toString('base64');
   const drop = (name: string, b64: string) => page.evaluate(({ name, b64 }) => {
@@ -435,7 +435,7 @@ test('export options: scale, see-through background, leaving the diagram out, SV
   const fs = await import('node:fs');
   await paste(page, SMALL);
   await page.keyboard.press('Control+Shift+E');
-  const dlg = page.getByRole('dialog', { name: 'Export image' });
+  const dlg = page.getByRole('dialog', { name: 'Export' });
   await expect(dlg.locator('.exportsize')).toHaveText('pasted-diagram.png · 1488 × 296 px');
   await dlg.getByRole('button', { name: '3×' }).click();
   await dlg.getByLabel(/Page colour and dots/).uncheck();
@@ -456,7 +456,7 @@ test('export options: scale, see-through background, leaving the diagram out, SV
   await expect(page.locator('.status')).toContainText('exported pasted-diagram.png');
 
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  await page.getByRole('menuitem', { name: /^Export…/ }).click();
   await expect(dlg.getByRole('button', { name: '3×' })).toHaveAttribute('aria-pressed', 'true'); // the last choices come back
   await dlg.getByLabel(/Carry the diagram/).check();
   await dlg.getByRole('button', { name: 'SVG' }).click();
@@ -467,6 +467,39 @@ test('export options: scale, see-through background, leaving the diagram out, SV
   expect(text).toContain('<metadata id="fastdraw-source">');
   expect(text).not.toContain('fd-page');
   await expect(dlg).toHaveCount(0);
+});
+
+test('Export → draw.io downloads a draw.io file that carries the diagram, and copies it for pasting', async ({ page, context }) => {
+  const errors = noPageErrors(page);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const SRC = 'api: focal "Orders API" at 40,60 icon=database\ndb: store "Orders DB" at 320,56\napi -> db "writes"\n';
+  await paste(page, SRC);
+  const dlg = page.getByRole('dialog', { name: 'Export' });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: /^Export…/ }).click();
+  await dlg.getByRole('button', { name: 'draw.io' }).click();
+  await expect(dlg.getByRole('button', { name: '2×' })).toBeDisabled();
+  await expect(dlg.getByLabel(/Carry the FastDraw diagram/)).toBeVisible();
+  await expect(dlg.getByText(/pasted-diagram\.drawio/)).toBeVisible();
+  const [dl] = await Promise.all([page.waitForEvent('download'), dlg.getByRole('button', { name: 'Download' }).click()]);
+  expect(dl.suggestedFilename()).toBe('pasted-diagram.drawio');
+  const xml = readFileSync(await dl.path(), 'utf8');
+  // well-formed XML, with the boxes, the line fastened to both, and the diagram's text
+  const parsed = await page.evaluate((x) => {
+    const d = new DOMParser().parseFromString(x, 'application/xml');
+    if (d.querySelector('parsererror')) return null;
+    const edge = d.querySelector('mxCell[edge="1"]');
+    return { api: !!d.querySelector('mxCell[id="fd:api"]'), source: edge?.getAttribute('source'), target: edge?.getAttribute('target'), kept: d.querySelector('object[id="0"]')?.getAttribute('fastdraw-source') };
+  }, xml);
+  expect(parsed).toEqual({ api: true, source: 'fd:api', target: 'fd:db', kept: SRC });
+  // Copy puts the same file on the clipboard, for pasting into a draw.io diagram
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: /^Export…/ }).click();
+  await expect(dlg.getByRole('button', { name: 'draw.io' })).toHaveAttribute('aria-pressed', 'true');
+  await dlg.getByRole('button', { name: 'Copy to clipboard' }).click();
+  await expect(page.locator('.status')).toContainText('copied the diagram for draw.io');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(xml);
+  expect(errors).toEqual([]);
 });
 
 test('routing by hand: drag a run, slide an end, drag the label, reset, and stale routes are dropped', async ({ page }) => {
@@ -1048,7 +1081,7 @@ test("a look's own colour icons load in folder mode, survive an export, and loos
   expect(lineOf(await diskText(page, 'docs/team-icons.fdraw'), 'st')).toContain('icon=sample-screen');
   // an exported image carries the icons it uses, so it still shows them when opened with no folder
   await page.getByRole('button', { name: 'Menu' }).click();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /Export image/ }).click().then(() => page.getByRole('button', { name: 'Download' }).click())]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /^Export…/ }).click().then(() => page.getByRole('button', { name: 'Download' }).click())]);
   const bytes = (await import('node:fs')).readFileSync(await dl.path()).toString('base64');
   await fresh(page);
   await page.evaluate((b64) => {
@@ -1135,7 +1168,7 @@ test('at phone width every tool and the menu button can be reached, and the page
   }
   await expect(page.getByRole('button', { name: 'No problems' })).toBeVisible();
   await page.getByRole('button', { name: 'Menu' }).click();
-  await expect(page.getByRole('menuitem', { name: /Export image/ })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /^Export…/ })).toBeVisible();
 });
 
 test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does not zoom the page', async ({ page }) => {
@@ -1158,13 +1191,13 @@ test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does 
 test('Escape closes the export and paste dialogs, from the shortcut and from the menu', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);
-  const exp = page.getByRole('dialog', { name: 'Export image' }), pst = page.getByRole('dialog', { name: 'Paste diagram text' });
+  const exp = page.getByRole('dialog', { name: 'Export' }), pst = page.getByRole('dialog', { name: 'Paste diagram text' });
   await page.keyboard.press('Control+Shift+E');
   await expect(exp).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(exp).toBeHidden();
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  await page.getByRole('menuitem', { name: /^Export…/ }).click();
   await expect(exp).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(exp).toBeHidden();
@@ -1677,7 +1710,7 @@ test('export draws the light or the dark version, starting with the theme\'s', a
   await paste(page, SMALL);
   await page.getByRole('button', { name: 'Dark theme' }).click();
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('menuitem', { name: /Export image/ }).click();
+  await page.getByRole('menuitem', { name: /^Export…/ }).click();
   const version = page.getByRole('group', { name: 'Version' });
   await expect(version.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
   const img = page.locator('.exportpreview img');
