@@ -7,7 +7,12 @@ import { withLook, type Scene } from '../../src/scene.ts';
 import { renderSvg } from '../../src/render.ts';
 import { check } from '../../src/check.ts';
 import { fontMeta } from '../../src/fontmeta.ts';
+import { loadExtendedIcons } from '../../src/extendedIcons.ts';
 import type { Issue } from '../../src/look.ts';
+
+// All of Phosphor's icons, as the command-line tool has them; until then only the first ~130 are known,
+// and a diagram using any other is reported as naming an icon that does not exist.
+export const loadIcons = (): Promise<void> => loadExtendedIcons();
 
 // An element's box on the canvas and the line it is written on; conns are hit along their points.
 export type Hit = { line: number; x: number; y: number; w: number; h: number; pts?: [number, number][] };

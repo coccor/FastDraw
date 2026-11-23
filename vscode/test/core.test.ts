@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { draw, problems, fontFaces } from '../src/core.ts';
+import { draw, problems, fontFaces, loadIcons } from '../src/core.ts';
 import { bundledFonts } from '../../src/node.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'fastdraw-vscode-'));
@@ -50,6 +50,12 @@ test('problems are the checker\'s, with the lines of the text as written', () =>
   const issues = problems(file, src);
   assert.ok(issues.some((i) => i.line === 6 && i.level === 'warn' && /overlaps api/.test(i.msg)), JSON.stringify(issues));
   assert.deepEqual(problems(file, SRC).filter((i) => i.level !== 'hint'), []);
+});
+
+test('every Phosphor icon is known once loaded, as on the command line', async () => {
+  const src = 'a: node "Home" at 40,40 icon=house\nb: node "Pay" at 240,40 icon=credit-card\n';
+  await loadIcons();
+  assert.deepEqual(problems(file, src).filter((i) => i.level === 'error'), []);
 });
 
 test('font faces are named by what is in the file', () => {

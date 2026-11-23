@@ -26,6 +26,8 @@ async function opensAsDiagram(uri) {
   assert.ok(!tabs().some((t) => t.input instanceof vscode.TabInputText));
   // its problems are checked without the text open
   await wait('the problems', () => vscode.languages.getDiagnostics(uri).some((d) => d.source === 'fastdraw'));
+  // an icon past the first ~130 (house) is known, as on the command line
+  assert.deepEqual(vscode.languages.getDiagnostics(uri).filter((d) => d.severity === vscode.DiagnosticSeverity.Error).map((d) => d.message), []);
   await pause();
   // Show Source puts the text beside it
   await vscode.commands.executeCommand('fastdraw.showSource', uri);
@@ -45,7 +47,7 @@ async function steps() {
   const uri = vscode.Uri.file(join(process.env.FASTDRAW_WORK, 'checkout.fdraw'));
   // a file with an overlap, so the check has something to say
   const other = vscode.Uri.file(join(process.env.FASTDRAW_WORK, 'other.fdraw'));
-  await vscode.workspace.fs.writeFile(other, Buffer.from('a: node "A" at 40,40\nb: node "B" at 60,50\n'));
+  await vscode.workspace.fs.writeFile(other, Buffer.from('a: node "A" at 40,40 icon=house\nb: node "B" at 60,50\n'));
   await opensAsDiagram(other);
 
   const doc = await vscode.workspace.openTextDocument(uri);

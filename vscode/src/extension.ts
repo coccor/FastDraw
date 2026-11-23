@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { draw, problems, fetchAssets, fontFaces } from './core.ts';
+import { draw, problems, fetchAssets, fontFaces, loadIcons } from './core.ts';
 import { bundledFonts, openRoot } from '../../src/node.ts';
 import { serveFolder, DEFAULT_EDITOR, type Served } from '../../src/serve.ts';
 import type { Issue } from '../../src/look.ts';
@@ -58,9 +58,18 @@ class Problems implements vscode.Disposable {
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
   counts = new Map<string, { errors: number; warns: number }>();
   onChange = new vscode.EventEmitter<vscode.Uri>();
+  // icons and fonts each diagram's look names by web address, fetched once per look line before the first
+  // check: without them the checker reports those icons as missing and the fonts as not found
+  private fetched = new Set<string>();
 
   lint(doc: vscode.TextDocument) {
     if (!isDiagram(doc)) return;
+    const file = pathOf(doc), want = `${file}\n${/^\s*look\s+(.*)$/m.exec(doc.getText())?.[1] ?? ''}`;
+    if (!this.fetched.has(want)) {
+      this.fetched.add(want);
+      fetchAssets(file).catch(() => []).then(() => { if (!doc.isClosed) this.lint(doc); });
+      return;
+    }
     const key = doc.uri.toString();
     let issues: Issue[];
     try { issues = problems(pathOf(doc), doc.getText()); }
@@ -87,6 +96,9 @@ class Problems implements vscode.Disposable {
     this.owned.delete(key);
     this.counts.delete(key);
   }
+
+  // a look was saved: what it names on the web may have changed
+  refetch() { this.fetched.clear(); }
 
   dispose() { for (const t of this.timers.values()) clearTimeout(t); this.coll.dispose(); this.onChange.dispose(); }
 }
@@ -242,7 +254,9 @@ async function reveal(doc: vscode.TextDocument, line: number, from?: vscode.View
 
 // ---- Wiring --------------------------------------------------------------------------------------------
 
-export function activate(ext: vscode.ExtensionContext) {
+export async function activate(ext: vscode.ExtensionContext) {
+  // every Phosphor icon before the first check or drawing, as the command-line tool does
+  await loadIcons();
   const probs = new Problems();
   // every open view of a diagram: previews beside the text and diagram tabs, several per file at times
   const previews = new Set<Preview>();
@@ -309,6 +323,7 @@ export function activate(ext: vscode.ExtensionContext) {
     // a look is shared by the diagrams next to it: redraw and re-check them all when one is saved
     vscode.workspace.onDidSaveTextDocument((d) => {
       if (!/\.look$/i.test(d.uri.path)) return;
+      probs.refetch();
       for (const doc of vscode.workspace.textDocuments) if (isDiagram(doc)) probs.lint(doc);
       for (const p of previews.values()) p.refetch();
     }),
