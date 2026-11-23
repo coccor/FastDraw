@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { mkdtempSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { serveFolder } from '../src/serve.ts';
+import { openRoot } from '../src/node.ts';
 import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex, kept } from './helpers.ts';
 
 // open the right sidebar on a tab, from the rail or from its own tabs
@@ -1376,6 +1377,31 @@ test('`fastdraw open` lends a folder: the diagram opens with its look and icons,
     writeFileSync(file, readFileSync(file, 'utf8').replace('"Web VM"', '"Web VM 2"'));
     await expect(page.locator('.status')).toHaveText('updated from disk');
     expect(lineOf(await source(page), 'vm')).toContain('"Web VM 2"');
+    expect(errors).toEqual([]);
+  } finally { await s.close(); }
+});
+
+test('`fastdraw open` on a diagram whose look is in a folder above it: the look loads and edits save', async ({ page, baseURL }) => {
+  const repo = mkdtempSync(join(tmpdir(), 'fdopen-up-'));
+  mkdirSync(join(repo, 'examples', 'kinds'), { recursive: true });
+  mkdirSync(join(repo, 'looks'));
+  cpSync(resolve(import.meta.dirname, '../looks/reference.look'), join(repo, 'looks', 'reference.look'));
+  const file = join(repo, 'examples', 'kinds', 'deployment.fdraw');
+  cpSync(resolve(import.meta.dirname, '../examples/kinds/deployment.fdraw'), file);
+  const src = readFileSync(file, 'utf8');
+  expect(src).toMatch(/^look "\.\.\/\.\.\/looks\/reference\.look"/);
+  const { root, open } = openRoot(file, src, repo);
+  const s = await serveFolder(root, { editor: baseURL!, open });
+  try {
+    const errors = noPageErrors(page);
+    await page.goto(s.url);
+    await page.waitForSelector('svg.canvas');
+    await expect(page.locator('rect[data-id="ingress"]').first()).toBeVisible();
+    await expect(page.getByText('which is not loaded')).toHaveCount(0);
+    const k = await zoom(page);
+    await drag(page, await corner(page, 'ingress'), 40 * k, 0);
+    await saved(page);
+    expect(lineOf(readFileSync(file, 'utf8'), 'ingress')).toContain('at 96,128');
     expect(errors).toEqual([]);
   } finally { await s.close(); }
 });

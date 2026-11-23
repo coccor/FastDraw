@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { draw, problems, fetchAssets, fontFaces } from './core.ts';
-import { bundledFonts } from '../../src/node.ts';
+import { bundledFonts, openRoot } from '../../src/node.ts';
 import { serveFolder, DEFAULT_EDITOR, type Served } from '../../src/serve.ts';
 import type { Issue } from '../../src/look.ts';
 
@@ -99,15 +99,16 @@ async function openInEditor(doc: vscode.TextDocument) {
   if (doc.uri.scheme !== 'file') { vscode.window.showWarningMessage('Save the diagram to a file first; the FastDraw editor works on files.'); return; }
   // the editor reads the file from disk, so it has to see what is on screen
   if (doc.isDirty && !(await doc.save())) return;
-  const folder = dirname(doc.uri.fsPath);
+  // the diagram's folder, or the one above it that also holds its look file, within the workspace folder
+  const { root: folder, open } = openRoot(doc.uri.fsPath, doc.getText(), vscode.workspace.getWorkspaceFolder(doc.uri)?.uri.fsPath);
   const editor = vscode.workspace.getConfiguration('fastdraw').get<string>('editorUrl') || DEFAULT_EDITOR;
   const key = `${editor} ${folder}`;
   let s = served.get(key);
   if (!s) { s = serveFolder(folder, { editor }); served.set(key, s); s.catch(() => served.delete(key)); }
   try {
-    // the server's link names no file; each diagram in the folder is opened through the same server
+    // the server's link names no file; each diagram under the folder is opened through the same server
     const url = new URL((await s).url);
-    url.searchParams.set('open', basename(doc.uri.fsPath));
+    url.searchParams.set('open', open);
     await vscode.env.openExternal(vscode.Uri.parse(url.href));
   } catch (e) {
     vscode.window.showErrorMessage(`FastDraw could not serve ${folder} to the editor: ${e instanceof Error ? e.message : e}`);

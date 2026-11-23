@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, webLookFile, type LookRef } from './node.ts';
+import { loadScene, loadLook, readSources, fetchWebAssets, PREVIEW_ICONS, bundledFonts, lookFonts, lookFileOf, withoutLigatureFonts, lookArg, lookOfDiagram, lookRefText, darkLookOf, webLookFile, openRoot, type LookRef } from './node.ts';
 import { buildScene, withLook, type Scene } from './scene.ts';
 import { defaultLook, isWebLook } from './look.ts';
 import { iconMatches, ICONS } from './icons.ts';
@@ -345,8 +345,10 @@ if (cmd === 'check') {
   if (!file || !file.endsWith('.fdraw') || !existsSync(file)) usage();
   const ei = args.indexOf('--editor');
   const editor = ei >= 0 ? args[ei + 1] : process.env.FASTDRAW_EDITOR ?? DEFAULT_EDITOR;
-  const s = await serveFolder(dirname(resolve(file)), { editor, open: basename(file) });
-  console.log(`serving ${dirname(resolve(file))} to the editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
+  // the diagram's folder, or the one above it that also holds its look, but not past the folder this runs in
+  const { root, open } = openRoot(file, readFileSync(file, 'utf8'), process.cwd());
+  const s = await serveFolder(root, { editor, open });
+  console.log(`serving ${root} to the editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
   if (!args.includes('--no-browser')) openBrowser(s.url);
   const stop = () => { s.close().then(() => process.exit(0)); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop);

@@ -11,6 +11,8 @@ agent and a person can work on the same diagram at the same time. Other browsers
 memory and download the result. Nothing is uploaded; there is no server.
 
 `fastdraw open diagram.fdraw` is the one-step way in, in any browser: it lends the diagram's folder
+(or, when the diagram names a look file in a folder above it, like `look "../../looks/team.look"`, the
+nearest folder that holds both, but never one above the folder the command runs in)
 to the editor at https://fastdraw.dev/edit/ from a small server on `127.0.0.1` (a random link, answered
 only for the editor's own address), opens the browser at the diagram, and writes edits back to the
 `.fdraw` file. The files never leave the computer. Chrome may ask once to let the page reach apps

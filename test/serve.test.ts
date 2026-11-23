@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveFolder } from '../src/serve.ts';
+import { openRoot } from '../src/node.ts';
 
 const EDITOR = 'https://fastdraw.dev';
 
@@ -103,5 +104,31 @@ test('writes only diagrams and looks', async () => {
     symlinkSync(join(outside, 'target.fdraw'), join(dir, 'link.fdraw'));
     assert.equal((await put('link.fdraw', 'x')).status, 403);
     assert.equal(readFileSync(join(outside, 'target.fdraw'), 'utf8'), 'keep');
+  } finally { await s.close(); }
+});
+
+test('open lends the folder that holds both the diagram and the look file it names, within the bound', async () => {
+  const repo = mkdtempSync(join(tmpdir(), 'fdroot-'));
+  mkdirSync(join(repo, 'examples', 'kinds'), { recursive: true });
+  mkdirSync(join(repo, 'looks'));
+  writeFileSync(join(repo, 'looks', 'team.look'), 'color ink #000\n');
+  const file = join(repo, 'examples', 'kinds', 'd.fdraw'), own = { root: join(repo, 'examples', 'kinds'), open: 'd.fdraw' };
+  const src = 'look "../../looks/team.look"\nrect at 0,0\n';
+  writeFileSync(file, src);
+  // the look two folders up: lend the folder above both, and open the diagram by its path in it
+  assert.deepEqual(openRoot(file, src, repo), { root: repo, open: 'examples/kinds/d.fdraw' });
+  // a look beside it, a bundled one, or none: the diagram's own folder
+  for (const s of ['look "./team.look"\n', 'look night\n', 'rect at 0,0\n']) assert.deepEqual(openRoot(file, s, repo), own);
+  // never past the bound: a look outside it, or no bound at all, keeps the diagram's folder
+  assert.deepEqual(openRoot(file, src, join(repo, 'examples')), own);
+  assert.deepEqual(openRoot(file, src), own);
+  // what the editor then reads through the server: the look, by the path the diagram gives from its folder
+  const { root, open } = openRoot(file, src, repo);
+  const s = await serveFolder(root, { editor: EDITOR, open });
+  try {
+    assert.equal(new URL(s.url).searchParams.get('open'), 'examples/kinds/d.fdraw');
+    const r = await fetch(`${s.base}/f/looks/team.look`);
+    assert.equal(r.status, 200);
+    assert.equal(await r.text(), 'color ink #000\n');
   } finally { await s.close(); }
 });
