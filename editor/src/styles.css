@@ -421,3 +421,5 @@ html[data-theme="dark"] .swatch, html[data-theme="dark"] .pswatch, html[data-the
 .locallook { padding: 12px 14px; font-size: 13px; line-height: 1.45; }
 .locallook p { margin: 0 0 10px; }
 .locallook .linkbtn { display: inline-flex; align-items: center; gap: 4px; padding: 0; }
+.iconmore { grid-column: 1 / -1; margin: 8px 2px 2px; line-height: 1.45; }
+.iconmore .linkbtn { padding: 0; }

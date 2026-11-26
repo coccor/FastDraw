@@ -41,7 +41,7 @@ import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '
 import { useExtendedIcons } from './useExtendedIcons.ts';
 import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
 import { decodeShared, sharedInHash, editorLink, LONG_LINK } from './embed/share.ts';
-import { LOCAL, SITE, HOSTED_EDITOR } from './edition.ts';
+import { LOCAL, SITE, HOSTED_EDITOR, setOpenOnSite } from './edition.ts';
 import { LocalLook } from './LocalLook.tsx';
 
 type Drag =
@@ -1447,6 +1447,7 @@ export function App() {
     window.open(link, '_blank', 'noopener');
     setStatus('opened a copy on fastdraw.dev; edits there are not saved to this file');
   };
+  if (LOCAL) setOpenOnSite(() => { void openOnSite(); });
   const copyLink = async () => {
     try {
       const { link, icons } = await shareLink(LOCAL ? HOSTED_EDITOR : location.origin + location.pathname);

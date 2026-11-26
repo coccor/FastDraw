@@ -1428,6 +1428,15 @@ test('`fastdraw open --editor local`: the local editor opens the diagram from th
     await expect(page.getByRole('menuitem', { name: 'New from a template' })).toHaveCount(0);
     await expect(page.getByRole('menuitem', { name: 'Open on fastdraw.dev' })).toBeVisible();
     await page.keyboard.press('Escape');
+    // the icon picker offers a small set, outline only, and says where the rest are
+    await page.locator('rect[data-id="vm"]').first().click();
+    await page.getByRole('button', { name: 'Search all icons' }).click();
+    await expect(page.locator('.icondialog .icontabs')).toHaveCount(0);
+    await expect(page.getByText('Loading the rest of the icons')).toHaveCount(0);
+    await expect(page.getByText(/fastdraw\.dev has about 1,600 icons/)).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'server' })).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'calendar' })).toHaveCount(0); // built in, but not in the local set
+    await page.locator('.icondialog .iconclose').click();
     // Open there: a copy in the editor at fastdraw.dev, carried after the # (the new tab is not loaded here)
     await page.context().route('https://fastdraw.dev/**', (r) => r.fulfill({ body: 'ok' }));
     const [tab] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('button', { name: /Open there/ }).click()]);
