@@ -1389,7 +1389,7 @@ test('`fastdraw open` lends the diagram: it opens with its look and icons, edits
     await page.goto(s.url);
     await page.waitForSelector('svg.canvas');
     await saved(page);
-    expect(new URL(page.url()).search).toBe(''); // the link is not kept for a reload
+    expect(new URL(page.url()).search + new URL(page.url()).hash).toBe(''); // the link is not kept for a reload
     expect(lineOf(await source(page), 'vm')).toContain('at 40,96');
     // an icon from the look's folder is drawn as an image
     expect(await page.locator('svg.canvas image').count()).toBeGreaterThan(0);

@@ -11,7 +11,7 @@ import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '
 import { hasWebIcons, localIconDirs, fetchWebIcons, listWebIcons, webFaces, webFetch, fetchWebLook, hostOf, MAX_FONT_BYTES } from './webassets.ts';
 import type { WebIcons, Fetch } from './webassets.ts';
 import { createHash } from 'node:crypto';
-import { lstatSync, realpathSync } from 'node:fs';
+import { lstatSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, relative, sep } from 'node:path';
 import type { Scene } from './scene.ts';
 
@@ -292,10 +292,21 @@ export function lookOfDiagram(file: string, src: string): LookRef | undefined {
 // The files on disk the editor reads for one diagram: the diagram, the .look file it names by path and that
 // look's dark look when it is a file too, and the font and SVG icon files in those looks' fontdir and icondir
 // folders, found the way drawing finds them. Bundled looks and web addresses need nothing from disk.
-export function diagramFiles(file: string): string[] {
+// within: a folder to stay in; a look outside it (with links resolved) is not read at all. Only plain files
+// are read, so a named pipe or device cannot stall the caller.
+export function diagramFiles(file: string, within?: string): string[] {
   const full = resolve(file);
   const out = [full];
+  const readable = (f: string) => {
+    try {
+      if (!statSync(f).isFile()) return false;
+      if (!within) return true;
+      const real = realpathSync(f), w = realpathSync(within);
+      return real.startsWith(w + sep);
+    } catch { return false; }
+  };
   let src = '';
+  if (!readable(full)) return out;
   try { src = readFileSync(full, 'utf8'); } catch { return out; }
   const looks: string[] = [];
   const p = lookPath(src);
@@ -303,6 +314,7 @@ export function diagramFiles(file: string): string[] {
   for (let i = 0; i < looks.length && i < 2; i++) {
     const lookFile = looks[i];
     let look: Look;
+    if (!readable(lookFile)) continue;
     try { look = parseLook(readFileSync(lookFile, 'utf8'), lookFile); } catch { continue; }
     out.push(lookFile);
     for (const d of look.fontDirs) { const dir = lookFolder(lookFile, d); if (dir) out.push(...plainFiles(dir, /\.(ttf|otf)$/i, 20_000_000, 200)); }

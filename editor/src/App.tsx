@@ -684,9 +684,9 @@ export function App() {
   useEffect(() => {
     if (!ready || servedOnce.current) return;
     servedOnce.current = true;
-    const link = served.servedLink(location.search);
+    const link = served.servedLink(location.search, location.hash);
     if (!link) return;
-    history.replaceState(null, '', location.pathname + location.hash);
+    history.replaceState(null, '', location.pathname);
     (async () => {
       try {
         const folder = await files.scanFolder(await served.openServed(link.base));

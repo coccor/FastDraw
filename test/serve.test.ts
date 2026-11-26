@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveDiagrams } from '../src/serve.ts';
@@ -22,13 +22,17 @@ function folder() {
   return dir;
 }
 
-test('open link points the editor at a token on 127.0.0.1 and names the diagram', async () => {
+test('open link points the editor at a token on 127.0.0.1 and names the diagram, after the # only', async () => {
   const s = await serveDiagrams(folder(), { editor: EDITOR, open: 'a.fdraw' });
   try {
     const u = new URL(s.url);
     assert.equal(u.origin, EDITOR);
-    assert.match(u.searchParams.get('serve')!, /^http:\/\/127\.0\.0\.1:\d+\/[\w-]{20,}$/);
-    assert.equal(u.searchParams.get('open'), 'a.fdraw');
+    // the browser sends the path and query to the editor's host, never the part after the #
+    assert.equal(u.search, '');
+    assert.doesNotMatch(u.pathname, /127\.0\.0\.1|a\.fdraw/);
+    const h = new URLSearchParams(u.hash.slice(1));
+    assert.match(h.get('serve')!, /^http:\/\/127\.0\.0\.1:\d+\/[\w-]{20,}$/);
+    assert.equal(h.get('open'), 'a.fdraw');
   } finally { await s.close(); }
 });
 
@@ -68,20 +72,58 @@ test('shares nothing else in the folder: other diagrams, other files, and nothin
   } finally { await s.close(); }
 });
 
-test('follows the look the diagram names now, its dark look, and the look\'s font folder', async () => {
+test('shares the look, its dark look and font folder as they were when opened; a save cannot widen that', async () => {
   const dir = folder();
   mkdirSync(join(dir, 'fonts'));
   writeFileSync(join(dir, 'fonts', 'f.ttf'), 'x');
   writeFileSync(join(dir, 'night.look'), 'fontdir "./fonts"\n');
+  writeFileSync(join(dir, 'other.look'), 'color ink #111\n');
   writeFileSync(join(dir, 'a.look'), 'icondir "./icons"\ndark "./night.look"\n');
   const s = await serveDiagrams(dir, { editor: EDITOR, open: 'a.fdraw' });
   try {
-    const list = async () => ((await (await fetch(s.base + '/list', { headers: { Origin: EDITOR } })).json()) as { files: { path: string }[] }).files.map((f) => f.path).sort();
-    assert.deepEqual(await list(), ['a.fdraw', 'a.look', 'fonts/f.ttf', 'icons/x y.svg', 'night.look']);
-    // the diagram switches to a bundled look: its old look and their files are no longer shared
-    writeFileSync(join(dir, 'a.fdraw'), 'look night\ncanvas 100x100\n');
-    assert.deepEqual(await list(), ['a.fdraw']);
-    assert.equal((await fetch(s.base + '/f/a.look')).status, 403);
+    const h = { Origin: EDITOR };
+    const list = async () => ((await (await fetch(s.base + '/list', { headers: h })).json()) as { files: { path: string }[] }).files.map((f) => f.path).sort();
+    const shared = ['a.fdraw', 'a.look', 'fonts/f.ttf', 'icons/x y.svg', 'night.look'];
+    assert.deepEqual(await list(), shared);
+    // the editor saves the diagram pointing at another look file: it is still not shared
+    const put = await fetch(s.base + '/f/a.fdraw', { method: 'PUT', body: 'look "./other.look"\ncanvas 100x100\n', headers: h });
+    assert.equal(put.status, 200);
+    assert.deepEqual(await list(), shared);
+    assert.equal((await fetch(s.base + '/f/other.look', { headers: h })).status, 403);
+  } finally { await s.close(); }
+});
+
+test('reads no look outside the folder, and lists nothing the server would refuse', async () => {
+  const dir = folder();
+  const outside = mkdtempSync(join(tmpdir(), 'fdlookout-'));
+  writeFileSync(join(outside, 'x.look'), 'color ink #000\n');
+  writeFileSync(join(dir, 'out.fdraw'), `look "${join(outside, 'x.look')}"\ncanvas 100x100\n`);
+  mkdirSync(join(dir, 'hid'));
+  writeFileSync(join(dir, 'hid', 'h.look'), 'icondir "./.icons"\n');
+  mkdirSync(join(dir, 'hid', '.icons'));
+  writeFileSync(join(dir, 'hid', '.icons', 'i.svg'), '<svg/>');
+  writeFileSync(join(dir, 'hidden.fdraw'), 'look "./hid/h.look"\n');
+  const s = await serveDiagrams(dir, { editor: EDITOR, open: 'out.fdraw' });
+  try {
+    s.add('hidden.fdraw');
+    const l = await fetch(s.base + '/list', { headers: { Origin: EDITOR } });
+    const paths = ((await l.json()) as { files: { path: string }[] }).files.map((f) => f.path).sort();
+    assert.deepEqual(paths, ['hid/h.look', 'hidden.fdraw', 'out.fdraw']);
+  } finally { await s.close(); }
+});
+
+test('does not write through a link swapped in for a shared file', async () => {
+  const dir = folder();
+  const s = await serveDiagrams(dir, { editor: EDITOR, open: 'a.fdraw' });
+  try {
+    const outside = mkdtempSync(join(tmpdir(), 'fdswap-'));
+    writeFileSync(join(outside, 't.look'), 'keep');
+    rmSync(join(dir, 'a.look'));
+    symlinkSync(join(outside, 't.look'), join(dir, 'a.look'));
+    const r = await fetch(s.base + '/f/a.look', { method: 'PUT', body: 'x', headers: { Origin: EDITOR } });
+    assert.equal(r.status, 403);
+    assert.equal(readFileSync(join(outside, 't.look'), 'utf8'), 'keep');
+    assert.equal((await fetch(s.base + '/f/a.look', { headers: { Origin: EDITOR } })).status, 403);
   } finally { await s.close(); }
 });
 
@@ -157,7 +199,7 @@ test('open lends the folder that holds both the diagram and the look file it nam
   const { root, open } = openRoot(file, src, repo);
   const s = await serveDiagrams(root, { editor: EDITOR, open });
   try {
-    assert.equal(new URL(s.url).searchParams.get('open'), 'examples/kinds/d.fdraw');
+    assert.equal(new URLSearchParams(new URL(s.url).hash.slice(1)).get('open'), 'examples/kinds/d.fdraw');
     const r = await fetch(`${s.base}/f/looks/team.look`);
     assert.equal(r.status, 200);
     assert.equal(await r.text(), 'color ink #000\n');
