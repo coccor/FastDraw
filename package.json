@@ -29,6 +29,7 @@
   "files": [
     "dist/cli.js",
     "dist-embed",
+    "dist-local",
     "guide",
     "fonts",
     "agents",
@@ -50,9 +51,10 @@
     "typecheck": "tsc -p .",
     "test:e2e": "playwright test",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node20 --external:@resvg/resvg-js --banner:js=\"#!/usr/bin/env node\" --outfile=dist/cli.js",
-    "prepack": "npm run build:cli && npm run build:embed",
+    "prepack": "npm run build:cli && npm run build:embed && npm run build:local",
     "build:embed": "vite build -c vite.embed.config.ts",
-    "version": "node tools/syncPluginVersion.ts && git add plugins/fastdraw/.claude-plugin/plugin.json crates/fastdraw-render/Cargo.toml Cargo.lock"
+    "version": "node tools/syncPluginVersion.ts && git add plugins/fastdraw/.claude-plugin/plugin.json crates/fastdraw-render/Cargo.toml Cargo.lock",
+    "build:local": "vite build -c vite.local.config.ts"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2"

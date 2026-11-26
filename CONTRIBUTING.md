@@ -18,6 +18,7 @@ npm run typecheck
 npm run test:e2e      # editor tests (Playwright)
 npm run build:editor  # static site in dist-editor/, with embed.js
 npm run build:embed   # embed.js alone, in dist-embed/
+npm run build:local   # the smaller editor `fastdraw open --editor local` serves, in dist-local/ (its e2e test needs it)
 python3 tools/check_budgets.py  # AGENTS.md and the docs it routes to, within their word budgets (budgets.json)
 ```
 

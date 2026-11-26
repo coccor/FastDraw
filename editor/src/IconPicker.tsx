@@ -14,6 +14,7 @@ import { ICON_BOX, isBuiltIn, iconLayers } from '../../src/iconStyle.ts';
 import type { IconStyle } from '../../src/iconStyle.ts';
 import { useRecentIcons, rememberIcon } from './recentIcons.ts';
 import { useExtendedIcons } from './useExtendedIcons.ts';
+import { LOCAL, LOCAL_ICONS, openOnSite } from './edition.ts';
 
 // One icon drawn small, the way the diagram draws it: a built-in icon in the style asked for (outline,
 // solid, or duotone with its tint), a look's own outline, or an icon file as an image.
@@ -64,8 +65,10 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
   const [q, setQ] = React.useState('');
   // open on the tab of the chosen icon; with none chosen, on outline
   // solid and duotone are built-in icons only, so a look that hides those has outline alone
-  const [tab, setTab] = React.useState<IconStyle>(look.hideBuiltIns ? 'outline' : iconStyle);
-  React.useEffect(() => { if (value && !look.hideBuiltIns) setTab(iconStyle); }, [value, iconStyle, look.hideBuiltIns]);
+  // the local editor offers outline only
+  const oneStyle = look.hideBuiltIns || LOCAL;
+  const [tab, setTab] = React.useState<IconStyle>(oneStyle ? 'outline' : iconStyle);
+  React.useEffect(() => { if (value && !oneStyle) setTab(iconStyle); }, [value, iconStyle, oneStyle]);
   const match = (n: string) => iconMatches(n, q);
   const plain = tab === 'outline';
   const folder = plain ? ownFiles(look).filter(match) : [];
@@ -74,7 +77,8 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
   const word = q.trim().toLowerCase().replace(/\s+/g, '-');
   const rank = (n: string) => (!word || n === word ? 0 : n.startsWith(word) ? 1 : n.includes(word) ? 2 : 3);
   // a look with icons builtin=hidden offers only its own
-  const builtIn = [...look.icons.keys()].filter((n) => isBuiltIn(look, n) && !isWebIcon(look, n) && !look.hideBuiltIns).filter(match).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
+  // the local editor offers a small everyday set of them (edition.ts)
+  const builtIn = [...look.icons.keys()].filter((n) => isBuiltIn(look, n) && !isWebIcon(look, n) && !look.hideBuiltIns && (!LOCAL || LOCAL_ICONS.includes(n))).filter(match).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
   const first = folder[0] ?? builtIn[0];
   const on = (n: string) => value === n && iconStyle === tab;
   // keep the chosen icon in sight when the panel opens on a box that has one
@@ -92,7 +96,7 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
   return (
     <div className="iconpicker">
       {/* the styles are the built-in icons' own, so a look that hides them has nothing to switch between */}
-      {!look.hideBuiltIns && <div className="seg icontabs" role="tablist" aria-label="Icon set">
+      {!oneStyle && <div className="seg icontabs" role="tablist" aria-label="Icon set">
         {([['outline', 'Outline'], ['solid', 'Solid'], ['duotone', 'Duotone']] as const).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}
@@ -111,6 +115,9 @@ export function IconPicker({ look, value, iconStyle, onPick, autoFocus = false }
         {folder.length > 0 && builtIn.length > 0 && <div className="iconhead">Built in</div>}
         {builtIn.map(tile)}
         {!folder.length && !builtIn.length && <p className="muted small">No icon is called anything like “{q.trim()}”.</p>}
+        {LOCAL && !look.hideBuiltIns && (
+          <p className="muted small iconmore">The editor at fastdraw.dev has about 1,600 icons, in outline, solid and duotone. <button type="button" className="linkbtn" onClick={openOnSite}>Open this diagram there</button></p>
+        )}
       </div>
     </div>
   );
@@ -164,7 +171,7 @@ export function IconDialog({ look, value, iconStyle, onPick, onClose }: { look: 
         <div className="icondialoghead">
           <div>
             <h3>Choose an icon</h3>
-            <p className="muted small">{ready ? 'Search by name or meaning, then click one.' : 'Loading the rest of the icons…'}</p>
+            <p className="muted small">{ready || LOCAL ? 'Search by name or meaning, then click one.' : 'Loading the rest of the icons…'}</p>
           </div>
           <button type="button" className="iconclose" aria-label="Close" title="Close" onClick={onClose}>×</button>
         </div>

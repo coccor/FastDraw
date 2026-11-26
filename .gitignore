@@ -17,3 +17,4 @@ vscode/LICENSE
 vscode/*.vsix
 vscode/.vscode-test/
 vscode/licenses/
+dist-local/

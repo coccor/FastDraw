@@ -5,6 +5,7 @@ import type { Stmt } from './parse.ts';
 import { emptyLook, defaultLook, bundledLook, BUNDLED_LOOK_NAMES, isWebLook, movedLookUrl, LOOKS_REPO } from './look.ts';
 import { iconMatches } from './icons.ts';
 import { iconStandIn, iconSources } from './iconfiles.ts';
+import { leftOutIcon } from './extendedIcons.ts';
 import { isBuiltIn } from './iconStyle.ts';
 import type { Kind } from './look.ts';
 import type { Look, Props, Issue } from './look.ts';
@@ -566,6 +567,8 @@ export function buildScene(src: string, lookIn: Look | null, file = '', drawIn?:
     };
     const standIn = iconStandIn(look, p.icon);
     if (standIn) warn(st.line, `icon ${p.icon} is one of the look's icon files (${iconSources(look, p.icon)}), which could not be loaded here, so the built-in icon ${standIn} is drawn in its place`);
+    // the local editor leaves the full icon set out: the icon exists, so this is not a mistake in the file
+    else if (p.icon && !look.icons.has(p.icon) && !look.images.has(p.icon) && leftOutIcon(p.icon)) warn(st.line, `icon ${p.icon} is in the full icon set, which this editor leaves out, so it is not drawn here; the editor at fastdraw.dev draws it`);
     else if (p.icon && p.icon !== 'none' && !look.icons.has(p.icon) && !look.images.has(p.icon)) {
       const every = [...look.images.keys(), ...look.icons.keys()];
       // a look that hides the built-in icons suggests only its own, when it has some
