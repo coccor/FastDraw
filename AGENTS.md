@@ -31,7 +31,7 @@ Skill defaults apply, with these departures (each dated, in the owner's words wh
 - **Pickers show the drawing and the name, no descriptions** (2026-11-19: "remove the descriptions").
 - **Reviewer:** the `independent-review` default order (Codex, then headless Claude Code, then Grok; Codex and Grok are installed here). Fallback: a fresh headless Claude Code session.
 
-Installed packs: Claude Code → `product`, `ai-shipping`, `agent-teams`, `agent-harness`, `app-stack`, `work-humanizer` from `phuryn/product-engineering`, project scope (`.claude/settings.json`, auto-update on). Codex → none. They update themselves; nothing pins a version. **Precedence: current session owner instruction > this file > user-level instructions > skill defaults.** Record standing choices here, not only in one agent's memory.
+Installed packs: the owner's Claude Code in this checkout → `product`, `ai-shipping`, `agent-teams`, `agent-harness`, `app-stack`, `work-humanizer` from `phuryn/product-engineering`, local scope (`.claude/settings.local.json`, not committed, auto-update on; 2026-11-26, the owner chose to keep auto-updating third-party packs out of contributors' setups). Codex and other contributors → none; never assume another agent loads them. **Precedence: current session owner instruction > this file > user-level instructions > skill defaults.** Record standing choices here, not only in one agent's memory.
 
 ## 1.3 Working rules
 
@@ -55,7 +55,7 @@ At the start of every new task, find the moment you are in — several can hold 
 
 | When you are… | The rule that applies | Open |
 |---|---|---|
-| starting a session, or asking what comes next | Read this file; the backlog says what waits and why | `docs/BACKLOG.md` · type `/product:start-here` |
+| starting a session, or asking what comes next | Read this file; the backlog says what waits and why | `docs/BACKLOG.md` · type `/product:start-here` where the packs are installed |
 | planning a change you can't say in a sentence | A plan first: key assumptions up front, parts with rough hours, how to test it, acceptance criteria | the `product:start-here` skill (§ Plan) · `docs/superpowers/plans/` for earlier plans |
 | building a feature or changing behaviour | Its tests land with it: core in `test/`, editor in `e2e/` | `CONTRIBUTING.md` § Checks · the doc that describes it (`docs/cli.md`, `docs/editor.md`, `docs/embedding.md`, `docs/looks.md`) |
 | fixing a bug | A test that fails before the fix; the doc that described the old behaviour, corrected | the `test-harness` skill |
