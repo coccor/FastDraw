@@ -4,7 +4,7 @@ What each file in `docs/` holds. `AGENTS.md` § 1.5 says which to open for a tas
 
 | File | What it holds |
 |---|---|
-| `cli.md` | The `fastdraw` command: every subcommand and option |
+| `cli.md` | The `fastdraw` command and its subcommands (`fastdraw --help` lists every option) |
 | `editor.md` | The browser editor: what it does and how its edits reach the file |
 | `embedding.md` | `<fastdraw-diagram>` and the README images served at `/gh/*` and `/s/*` |
 | `looks.md` | Look files: the styles, shapes and fonts a look sets |

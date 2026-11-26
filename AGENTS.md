@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Master instructions for every coding agent in this repository. Claude Code reads this file because there is no `CLAUDE.md`; a `CLAUDE.md` or `CLAUDE.local.md` that does not import `@AGENTS.md` stops it loading, so keep none (or one whose first line is `@AGENTS.md`). Codex reads it directly. Keep must-follow rules in the first 32 KiB.
+Master instructions for every coding agent in this repository. Codex reads it directly; Claude Code reads `CLAUDE.md`, whose only line is `@AGENTS.md`. Keep it that way: a `CLAUDE.md` or `CLAUDE.local.md` with anything else is a second, unowned instruction file. Keep must-follow rules in the first 32 KiB.
 
 Two sections. **Section 1 is how we build** — the mechanics and the owner's choices. **Section 2 is FastDraw** — what it is and what it will not do. Section 1 wins on mechanics, Section 2 on product. What neither says follows the installed skills' defaults; where those are silent too, decide and say so in the summary. Depth lives in `CONTRIBUTING.md` and `docs/` (indexed in `docs/README.md`). **§ 1.5 says what opens when — find the moment you are in before every new task.**
 
@@ -17,7 +17,7 @@ TypeScript run directly by Node 22.18+ (`--experimental-strip-types`) · core in
 - **The gate:** `npm run typecheck`, `npm test`, `npm run test:e2e`, `npm run build:editor`, plus the Rust parity steps when the renderer changed and the `vscode/` checks when the extension changed (`CONTRIBUTING.md` § Checks). CI runs all of it on every PR.
 - **Read the exit code from the log, never the notification.** An inherited report is a claim, not evidence: re-run the gate yourself before repeating a count.
 - **Merging to `main` deploys fastdraw.dev** (Cloudflare Workers Builds). A merge is a deploying push: it needs a green gate and a clean independent round first (`independent-review`). The owner merges.
-- **Version tags publish:** `vX.Y.Z` publishes to npm (`release.yml`), `vscode-vX.Y.Z` to the VS Code Marketplace and Open VSX (`vscode-release.yml`). A tag is pushed only after the owner's go, for that release.
+- **Version tags publish:** `vX.Y.Z` publishes to npm (`release.yml`), `vscode-vX.Y.Z` to the VS Code Marketplace, and to Open VSX when the repository variable `PUBLISH_OPEN_VSX` is `true` (`vscode-release.yml`). A tag is pushed only after the owner's go, for that release.
 - The harness: the `test-harness` skill. How a change ships: the `release-gate` skill.
 
 ### Owner's choices and installed packs
@@ -98,12 +98,12 @@ Coding agents (Claude Code, Codex and others) that read `fastdraw guide` and wri
 ## 2.3 Shape
 
 - **Distribution:** npm package `fastdraw` (CLI, embed, guides, agent skills in `agents/` and `plugins/`); VS Code extension `coccor.fastdraw`; fastdraw.dev (landing page, editor, `/gh/*` and `/s/*` SVG images for READMEs).
-- **Server side:** only the Worker, which draws a diagram from GitHub (`/gh/*`) or a share link (`/s/*`) as an SVG image.
+- **Hosted server side:** only the Worker, which draws a diagram from GitHub (`/gh/*`) or a share link (`/s/*`) as an SVG image.
 - **Consumers of the Rust crate:** FastPad, at a pinned commit; it is not on crates.io.
 
 ## 2.4 Not in scope
 
-- Automatic layout: what the file says is what is drawn.
+- Automatic layout of `.fdraw` files: what the file says is what is drawn. (`fastdraw import` lays out a Mermaid diagram once, as it writes the file.)
 - Export to other diagram tools in this repository (2026-11-23, owner: it "takes users away from us").
 - The Rust crate as the only renderer, through WebAssembly: parked 2026-11-19 as not worth it yet; don't start it unasked.
 
@@ -115,4 +115,4 @@ Coding agents (Claude Code, Codex and others) that read `fastdraw guide` and wri
 
 ## 2.6 Status
 
-0.5.0 is on npm (Mermaid import, VS Code preview, panel editing); the VS Code extension is on the Marketplace. Next: the table name field, then chart settings and polygon corner editing (`docs/BACKLOG.md`).
+0.5.0 is on npm (Mermaid import, VS Code preview, panel editing); the VS Code extension is on the Marketplace. Next: the table name field, then chart settings and polygon corners in the panel (`docs/BACKLOG.md`).
