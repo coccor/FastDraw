@@ -8,7 +8,7 @@
 // another look file on disk loads that look after `fastdraw open` runs again. It lists and reads nothing
 // else, and writes only those diagrams and look files. Whole folders are not shared (2026-11-26).
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFileSync, realpathSync, existsSync, lstatSync, openSync, closeSync, fstatSync, writeSync, ftruncateSync, constants } from 'node:fs';
+import { readFileSync, realpathSync, existsSync, openSync, closeSync, fstatSync, writeSync, ftruncateSync, constants } from 'node:fs';
 import { resolve, sep, extname, dirname, relative } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { diagramFiles } from './node.ts';
@@ -28,6 +28,17 @@ const TYPES: Record<string, string> = {
 
 // add: share one more diagram under the same folder (the VS Code extension opens several through one server)
 export type Served = { url: string; base: string; port: number; add: (open: string) => void; close: () => Promise<void> };
+
+// Whether `rel` reaches its file under `root` with no link on the way: its real path is the path itself. For a
+// file that is not there (deleted since it was opened), its folder's path is checked instead.
+function linkFree(root: string, rel: string): boolean {
+  const full = resolve(root, ...rel.split('/'));
+  try { return realpathSync(full) === full; }
+  catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') return false;
+    try { return realpathSync(dirname(full)) === dirname(full); } catch { return false; }
+  }
+}
 
 // The file a request names, or null when it would leave the folder (by "..", a hidden part or a link).
 function inside(root: string, rel: string): string | null {
@@ -54,11 +65,9 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
     if (!full?.toLowerCase().endsWith('.fdraw') || !existsSync(full)) return;
     for (const f of diagramFiles(full, root)) {
       const rel = relative(root, f).split(sep).join('/');
-      // only what a request for it would be given: inside the folder, by no hidden part, and not a link
-      // (reads and writes refuse to follow one, so a listed link could never be loaded)
-      let link = true;
-      try { link = lstatSync(f).isSymbolicLink(); } catch { /* gone: not listed */ }
-      if (!link && inside(root, rel.split('/').map(encodeURIComponent).join('/'))) shared.add(rel);
+      // only what a request for it would be given: inside the folder, by no hidden part, and through no link
+      // anywhere on its path (a linked folder could lead to a hidden one, and reads refuse a linked file)
+      if (inside(root, rel.split('/').map(encodeURIComponent).join('/')) && linkFree(root, rel)) shared.add(rel);
     }
   };
   if (opts.open) add(opts.open);
@@ -102,6 +111,8 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
     let name: string;
     try { name = rel.split('/').map(decodeURIComponent).join('/'); } catch { return send(403, 'not shared'); }
     if (!shared.has(name)) return send(403, 'not shared: only the opened diagram and the files it needs are');
+    // checked again now: a folder on the way may have been swapped for a link since the diagram was opened
+    if (!linkFree(root, name)) return send(403, 'not through a link');
 
     if (req.method === 'GET') {
       // opened without following a link, so a file swapped for one after the checks above is refused

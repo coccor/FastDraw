@@ -191,6 +191,15 @@ test('lists no link, and does not make a shared file again after it was deleted'
     const l = await fetch(s.base + '/list', { headers: { Origin: EDITOR } });
     const paths = ((await l.json()) as { files: { path: string }[] }).files.map((f) => f.path).sort();
     assert.deepEqual(paths, ['a.fdraw', 'a.look', 'icons/x y.svg', 'l.fdraw']);
+    // nor a file reached through a linked folder, which could lead to a hidden one
+    mkdirSync(join(dir, '.secret'));
+    writeFileSync(join(dir, '.secret', 's.look'), 'color ink #000\n');
+    symlinkSync(join(dir, '.secret'), join(dir, 'alias'));
+    writeFileSync(join(dir, 'via.fdraw'), 'look "./alias/s.look"\n');
+    s.add('via.fdraw');
+    const l2 = await fetch(s.base + '/list', { headers: { Origin: EDITOR } });
+    assert.ok(!((await l2.json()) as { files: { path: string }[] }).files.some((f) => f.path.startsWith('alias/')));
+    assert.equal((await fetch(s.base + '/f/alias/s.look', { headers: { Origin: EDITOR } })).status, 403);
     rmSync(join(dir, 'a.look'));
     const r = await fetch(s.base + '/f/a.look', { method: 'PUT', body: 'x', headers: { Origin: EDITOR } });
     assert.equal(r.status, 404);

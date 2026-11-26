@@ -690,8 +690,9 @@ export function App() {
     (async () => {
       try {
         const folder = await files.scanFolder(await served.openServed(link.base));
-        const path = folder.files.includes(link.open) ? link.open : folder.files[0];
-        if (!path) { setStatus('no .fdraw files in that folder'); return; }
+        // the diagram the link names, never another one: opening a different file would save edits into it
+        const path = link.open ? (folder.files.includes(link.open) ? link.open : null) : folder.files[0];
+        if (!path) { setStatus(link.open ? `\`fastdraw open\` is not sharing ${link.open}; run it again for that diagram` : 'no .fdraw files are shared'); return; }
         io.current = { fileMod: 0, lookMod: 0, written: '', folder };
         await openPath(folder, path);
       } catch {
