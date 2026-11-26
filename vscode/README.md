@@ -33,6 +33,11 @@ A live preview of [FastDraw](https://fastdraw.dev) diagrams (`.fdraw` files) nex
   browser, as `fastdraw open` does. Edits there save to the file, and the preview follows them. The
   editor gets only that diagram and the files it needs (its look file, the look's dark look, their
   fonts and icons), never other files in the folder and never anything outside the workspace folder.
+  The first time, it asks which editor to use, unless `fastdraw open` already saved an answer on this
+  computer: the **hosted** editor at fastdraw.dev (recommended: the full icon set, a dark theme, a look
+  picker with looks from GitHub, and templates), or the **local** one the extension serves itself, which
+  works offline and sends nothing to fastdraw.dev (24 icons in its picker, light theme only, no look
+  picker or templates). The answer goes into the `fastdraw.editor` setting.
 - Syntax colouring for `.fdraw` and `.look` files.
 
 Icons and fonts a look names by web address are fetched once and kept in the same cache folder the
@@ -44,7 +49,8 @@ the browser loads the editor from fastdraw.dev and reads the files from a server
 | Setting | Default | What it does |
 |---|---|---|
 | `fastdraw.preview.theme` | `auto` | `auto` follows the VS Code theme; `light` always draws the diagram's own look; `dark` always draws its dark version |
-| `fastdraw.editorUrl` | `https://fastdraw.dev/edit/` | The web editor that Open in editor uses, like `fastdraw open --editor` |
+| `fastdraw.editor` | `ask` | `hosted` or `local`: which editor Open in editor uses; `ask` asks the first time (or follows what `fastdraw open` saved here) and stores the answer here |
+| `fastdraw.editorUrl` | `https://fastdraw.dev/edit/` | The hosted editor's address, when that is the one used, like `fastdraw open --editor <address>` |
 
 ## Building from source
 

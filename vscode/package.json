@@ -197,10 +197,25 @@
           "default": "auto",
           "description": "Which version of the diagram's look the preview draws."
         },
+        "fastdraw.editor": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "hosted",
+            "local"
+          ],
+          "enumDescriptions": [
+            "Ask the first time Open in Editor is used (or follow what `fastdraw open` saved on this computer), then remember the answer here",
+            "The editor at fastdraw.dev: the full icon set, dark theme, look picker and templates",
+            "A smaller editor served from this computer: works offline and sends nothing to fastdraw.dev"
+          ],
+          "default": "ask",
+          "description": "Which editor Open in Editor uses."
+        },
         "fastdraw.editorUrl": {
           "type": "string",
           "default": "https://fastdraw.dev/edit/",
-          "description": "The FastDraw web editor that Open in Editor uses, as `fastdraw open --editor` does."
+          "description": "The hosted editor's address, when Open in Editor uses the hosted editor, as `fastdraw open --editor <address>` does."
         }
       }
     }

@@ -6,7 +6,8 @@ import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { draw, problems, fetchAssets, fontFaces, loadIcons } from './core.ts';
 import { bundledFonts, openRoot } from '../../src/node.ts';
-import { serveDiagrams, DEFAULT_EDITOR, type Served } from '../../src/serve.ts';
+import { serveDiagrams, DEFAULT_EDITOR, LOCAL_PORT, type Served } from '../../src/serve.ts';
+import { knownChoice, CHOICES, type EditorChoice } from './choice.ts';
 import type { Issue } from '../../src/look.ts';
 
 const VIEW = 'fastdraw.preview'; // a preview beside the text
@@ -105,9 +106,26 @@ class Problems implements vscode.Disposable {
 
 // ---- The web editor ------------------------------------------------------------------------------------
 
-// One small server per folder, kept while VS Code runs: the web editor reads and writes the diagrams opened
-// through it, and the files each needs, and nothing else in the folder.
+// One small server per folder and editor, kept while VS Code runs: the editor reads and writes the diagrams
+// opened through it, and the files each needs, and nothing else in the folder.
 const served = new Map<string, Promise<Served>>();
+// the local editor's build, copied into the extension by build.mjs; set when the extension starts
+let localEditor = '';
+
+// hosted or local: the setting, else what `fastdraw open` saved here, else asked once and kept in the setting
+async function chooseEditor(): Promise<EditorChoice | undefined> {
+  const cfg = vscode.workspace.getConfiguration('fastdraw');
+  const known = knownChoice(cfg.get<string>('editor'));
+  if (known) return known;
+  const pick = await vscode.window.showQuickPick(CHOICES, {
+    title: 'Which editor should FastDraw open diagrams in?',
+    placeHolder: 'Asked once; the FastDraw: Editor setting changes it later',
+    ignoreFocusOut: true, matchOnDetail: true,
+  });
+  if (!pick) return undefined;
+  await cfg.update('editor', pick.choice, vscode.ConfigurationTarget.Global);
+  return pick.choice;
+}
 
 async function openInEditor(doc: vscode.TextDocument) {
   if (doc.uri.scheme !== 'file') { vscode.window.showWarningMessage('Save the diagram to a file first; the FastDraw editor works on files.'); return; }
@@ -115,10 +133,15 @@ async function openInEditor(doc: vscode.TextDocument) {
   if (doc.isDirty && !(await doc.save())) return;
   // the diagram's folder, or the one above it that also holds its look file, within the workspace folder
   const { root: folder, open } = openRoot(doc.uri.fsPath, doc.getText(), vscode.workspace.getWorkspaceFolder(doc.uri)?.uri.fsPath);
+  const choice = await chooseEditor();
+  if (!choice) return;
   const editor = vscode.workspace.getConfiguration('fastdraw').get<string>('editorUrl') || DEFAULT_EDITOR;
-  const key = `${editor} ${folder}`;
+  const key = `${choice === 'local' ? 'local' : editor} ${folder}`;
   let s = served.get(key);
-  if (!s) { s = serveDiagrams(folder, { editor }); served.set(key, s); s.catch(() => served.delete(key)); }
+  if (!s) {
+    s = choice === 'local' ? serveDiagrams(folder, { local: localEditor, port: LOCAL_PORT }) : serveDiagrams(folder, { editor });
+    served.set(key, s); s.catch(() => served.delete(key));
+  }
   try {
     // the server's link names no file; each diagram under the folder is shared and opened through the same server
     const server = await s;
@@ -261,6 +284,7 @@ async function reveal(doc: vscode.TextDocument, line: number, from?: vscode.View
 // ---- Wiring --------------------------------------------------------------------------------------------
 
 export async function activate(ext: vscode.ExtensionContext) {
+  localEditor = vscode.Uri.joinPath(ext.extensionUri, 'editor').fsPath;
   // every Phosphor icon before the first check or drawing, as the command-line tool does
   await loadIcons();
   const probs = new Problems();
