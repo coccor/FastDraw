@@ -9,7 +9,7 @@ FastDraw draws diagrams from a small text file (`.fdraw`). You place every eleme
 3. Choose the kind of diagram and its scope as described in "Choosing the kind" below (`fastdraw guide list` says what each kind shows), and agree them with the person before drawing. If the kind has its own guide, run `fastdraw guide <kind>` and follow it; where it differs from the general rules in this guide, the kind's guide wins.
 4. Run `fastdraw sizes <look file>` to see the styles you can use, their default sizes, and the look's own guidance. Follow that guidance. A diagram with no `look` line uses the built-in look: run `fastdraw sizes` with no file to see it.
 5. Plan the composition on paper first: rows and columns, where the main thing sits.
-6. Write the file. A new diagram goes in `docs/diagrams/` (create the folder) unless the person names another place or the repo already keeps its `.fdraw` files somewhere. Never put it at the top of the repo: `fastdraw open` lends the diagram's whole folder to the editor.
+6. Write the file. A new diagram goes in `docs/diagrams/` (create the folder) unless the person names another place or the repo already keeps its `.fdraw` files somewhere. Never put it at the top of the repo.
 7. Run `fastdraw check <file>`. Fix every error and warning. Read the hints and fix the ones that are real.
 8. Run `fastdraw render <file>` and **look at the PNG**. Fix what looks wrong: cramped labels, uneven gaps, lopsided composition, a label sitting on a border. Repeat from 7 until it is clean and looks good.
 9. When the diagram is done, tell the person where the file is and **ask what they want to do next**, with these three choices (use your tool for asking a question if you have one). Always ask; do not stop without it.

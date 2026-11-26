@@ -16,7 +16,7 @@ The `fastdraw` command checks, renders and opens diagrams. Run it with `npx fast
 | `fastdraw init-look [path]` | Write the built-in look to a file, to start your own |
 | `fastdraw preview-look [file.look]` | Draw every style of a look on one sheet |
 | `fastdraw setup [claude\|agents\|copilot] [--global]` | Tell a repo's coding agents about FastDraw: a Claude Code skill, a section in `AGENTS.md`, or in Copilot's instructions. With no name, sets up the agents the repo already uses. Running it again updates them |
-| `fastdraw open <file.fdraw> [--editor URL]` | Open the diagram in the web editor with its look, fonts and icons; edits there save back to the file. Runs until Ctrl-C |
+| `fastdraw open <file.fdraw> [--editor URL]` | Open the diagram in the web editor with its look, fonts and icons; edits there save back to the file. Only that diagram and the files it needs (its look file, the look's dark look, their fonts and icons) are shared with the editor, nothing else in the folder. Runs until Ctrl-C |
 
 ## Using it with an agent
 

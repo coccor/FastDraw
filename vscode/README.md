@@ -30,9 +30,9 @@ A live preview of [FastDraw](https://fastdraw.dev) diagrams (`.fdraw` files) nex
 - **Light and dark.** In a dark VS Code theme the preview draws the diagram in its look's dark version,
   as `fastdraw render --dark` does. The `fastdraw.preview.theme` setting fixes it to light or dark.
 - **Open in the editor.** The **Open in editor** button opens the diagram in the FastDraw editor in the
-  browser, as `fastdraw open` does. Edits there save to the file, and the preview follows them. It
-  lends the editor the diagram's folder, or the nearest folder that also holds the look file the
-  diagram names, but never one outside the workspace folder.
+  browser, as `fastdraw open` does. Edits there save to the file, and the preview follows them. The
+  editor gets only that diagram and the files it needs (its look file, the look's dark look, their
+  fonts and icons), never other files in the folder and never anything outside the workspace folder.
 - Syntax colouring for `.fdraw` and `.look` files.
 
 Icons and fonts a look names by web address are fetched once and kept in the same cache folder the

@@ -1,23 +1,18 @@
-// `fastdraw open`: lend one folder to the browser editor, so a diagram written on this computer opens
+// `fastdraw open`: lend one diagram to the browser editor, so a diagram written on this computer opens
 // on the web with its look, fonts and icons, and edits there are saved back to the file.
 //
 // The server listens on 127.0.0.1 only, under a random token, and answers only the editor's own origin.
-// It reads files inside the folder and writes only .fdraw and .look files there.
+// It shares only the diagrams it was asked to open and the files each one needs (diagramFiles: its look
+// file, that look's dark look, their font and icon files), all inside one folder; it lists and reads
+// nothing else, and writes only those diagrams and look files. Whole folders are not shared (2026-11-26).
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFileSync, writeFileSync, statSync, lstatSync, realpathSync, existsSync } from 'node:fs';
-import { readdir } from 'node:fs/promises';
 import { join, resolve, sep, extname, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { diagramFiles } from './node.ts';
 
 export const DEFAULT_EDITOR = 'https://fastdraw.dev/edit/';
 
-// folders that never hold diagrams but can hold a great many files
-const SKIP = new Set([
-  'node_modules', 'dist', 'build', 'out', 'bin', 'obj', 'target', 'vendor', 'coverage',
-  'venv', '__pycache__', 'Pods', 'DerivedData',
-]);
-const MAX_FILES = 2000;
-const MAX_DIRS = 5000;
 const MAX_WRITE = 2 * 1024 * 1024;
 const WRITABLE = new Set(['.fdraw', '.look']);
 const TYPES: Record<string, string> = {
@@ -25,27 +20,8 @@ const TYPES: Record<string, string> = {
   '.png': 'image/png', '.ttf': 'font/ttf', '.otf': 'font/otf', '.txt': 'text/plain; charset=utf-8',
 };
 
-export type Served = { url: string; base: string; port: number; close: () => Promise<void> };
-
-// Only the files the editor can use (diagrams, looks, icons, fonts), found without blocking the
-// server: a diagram saved at the top of a big repo must not stall every other request while this runs.
-// The editor needs only the paths; it reads a file's time when it fetches the file.
-async function list(root: string): Promise<{ path: string }[]> {
-  const out: { path: string }[] = [];
-  let dirs = 0;
-  const walk = async (dir: string, prefix: string, depth: number): Promise<void> => {
-    if (depth > 6 || ++dirs > MAX_DIRS) return;
-    let entries;
-    try { entries = await readdir(dir, { withFileTypes: true }); } catch { return; }
-    for (const d of entries) {
-      if (out.length >= MAX_FILES || d.name.startsWith('.')) continue;
-      if (d.isDirectory()) { if (!SKIP.has(d.name)) await walk(join(dir, d.name), prefix + d.name + '/', depth + 1); }
-      else if (d.isFile() && Object.hasOwn(TYPES, extname(d.name).toLowerCase())) out.push({ path: prefix + d.name });
-    }
-  };
-  await walk(root, '', 0);
-  return out;
-}
+// add: share one more diagram under the same folder (the VS Code extension opens several through one server)
+export type Served = { url: string; base: string; port: number; add: (open: string) => void; close: () => Promise<void> };
 
 // The file a request names, or null when it would leave the folder (by "..", a hidden part or a link).
 function inside(root: string, rel: string): string | null {
@@ -62,8 +38,24 @@ function inside(root: string, rel: string): string | null {
   return full;
 }
 
-export function serveFolder(folder: string, opts: { editor?: string; open?: string; port?: number } = {}): Promise<Served> {
+// folder: where the diagrams are (openRoot); open: the diagram to share and open, by its path in the folder
+export function serveDiagrams(folder: string, opts: { editor?: string; open?: string; port?: number } = {}): Promise<Served> {
   const root = realpathSync(resolve(folder));
+  const opened = new Set<string>();
+  const add = (open: string) => { if (inside(root, open)?.toLowerCase().endsWith('.fdraw')) opened.add(open); };
+  if (opts.open) add(opts.open);
+  // what may be listed, read and written, worked out again on every request: an edit can change the look
+  const shared = (): Set<string> => {
+    const out = new Set<string>();
+    for (const o of opened) {
+      for (const f of diagramFiles(join(root, ...o.split('/')))) {
+        let real: string;
+        try { real = realpathSync(f); } catch { continue; }
+        if (real.startsWith(root + sep)) out.add(real.slice(root.length + 1).split(sep).join('/'));
+      }
+    }
+    return out;
+  };
   const editor = new URL(opts.editor ?? DEFAULT_EDITOR);
   const allowed = editor.origin;
   const token = randomBytes(18).toString('base64url');
@@ -95,12 +87,15 @@ export function serveFolder(folder: string, opts: { editor?: string; open?: stri
       });
     }
     if (rest === 'list' && req.method === 'GET') {
-      list(root).then((files) => send(200, JSON.stringify({ files }), { 'Content-Type': 'application/json' }), () => send(500));
-      return;
+      return send(200, JSON.stringify({ files: [...shared()].sort().map((path) => ({ path })) }), { 'Content-Type': 'application/json' });
     }
     if (!rest.startsWith('f/')) return send(404);
-    const file = inside(root, rest.slice(2));
+    const rel = rest.slice(2);
+    const file = inside(root, rel);
     if (!file) return send(403, 'outside the folder');
+    let name: string;
+    try { name = rel.split('/').map(decodeURIComponent).join('/'); } catch { return send(403, 'not shared'); }
+    if (!shared().has(name)) return send(403, 'not shared: only the opened diagram and the files it needs are');
 
     if (req.method === 'GET') {
       try {
@@ -137,7 +132,7 @@ export function serveFolder(folder: string, opts: { editor?: string; open?: stri
       const open = new URL(editor);
       open.searchParams.set('serve', base);
       if (opts.open) open.searchParams.set('open', opts.open);
-      ok({ url: open.href, base, port, close: () => new Promise((done) => { server.closeAllConnections(); server.close(() => done()); }) });
+      ok({ url: open.href, base, port, add, close: () => new Promise((done) => { server.closeAllConnections(); server.close(() => done()); }) });
     });
   });
 }

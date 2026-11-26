@@ -6,7 +6,7 @@ import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { draw, problems, fetchAssets, fontFaces, loadIcons } from './core.ts';
 import { bundledFonts, openRoot } from '../../src/node.ts';
-import { serveFolder, DEFAULT_EDITOR, type Served } from '../../src/serve.ts';
+import { serveDiagrams, DEFAULT_EDITOR, type Served } from '../../src/serve.ts';
 import type { Issue } from '../../src/look.ts';
 
 const VIEW = 'fastdraw.preview'; // a preview beside the text
@@ -105,7 +105,8 @@ class Problems implements vscode.Disposable {
 
 // ---- The web editor ------------------------------------------------------------------------------------
 
-// One small server per folder, kept while VS Code runs: the web editor reads and writes the files through it.
+// One small server per folder, kept while VS Code runs: the web editor reads and writes the diagrams opened
+// through it, and the files each needs, and nothing else in the folder.
 const served = new Map<string, Promise<Served>>();
 
 async function openInEditor(doc: vscode.TextDocument) {
@@ -117,10 +118,12 @@ async function openInEditor(doc: vscode.TextDocument) {
   const editor = vscode.workspace.getConfiguration('fastdraw').get<string>('editorUrl') || DEFAULT_EDITOR;
   const key = `${editor} ${folder}`;
   let s = served.get(key);
-  if (!s) { s = serveFolder(folder, { editor }); served.set(key, s); s.catch(() => served.delete(key)); }
+  if (!s) { s = serveDiagrams(folder, { editor }); served.set(key, s); s.catch(() => served.delete(key)); }
   try {
-    // the server's link names no file; each diagram under the folder is opened through the same server
-    const url = new URL((await s).url);
+    // the server's link names no file; each diagram under the folder is shared and opened through the same server
+    const server = await s;
+    server.add(open);
+    const url = new URL(server.url);
     url.searchParams.set('open', open);
     await vscode.env.openExternal(vscode.Uri.parse(url.href));
   } catch (e) {

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { serveFolder } from '../src/serve.ts';
+import { serveDiagrams } from '../src/serve.ts';
 import { openRoot } from '../src/node.ts';
 import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex, kept } from './helpers.ts';
 
@@ -1379,11 +1379,11 @@ test('a legend moved sideways keeps its width', async ({ page }) => {
   expect(await width()).toBeCloseTo(before, 1);
 });
 
-test('`fastdraw open` lends a folder: the diagram opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
+test('`fastdraw open` lends the diagram: it opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
   const dir = mkdtempSync(join(tmpdir(), 'fdopen-'));
   cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
   const file = join(dir, 'team-icons.fdraw');
-  const s = await serveFolder(dir, { editor: baseURL!, open: 'team-icons.fdraw' });
+  const s = await serveDiagrams(dir, { editor: baseURL!, open: 'team-icons.fdraw' });
   try {
     const errors = noPageErrors(page);
     await page.goto(s.url);
@@ -1416,7 +1416,7 @@ test('`fastdraw open` on a diagram whose look is in a folder above it: the look 
   const src = readFileSync(file, 'utf8');
   expect(src).toMatch(/^look "\.\.\/\.\.\/looks\/reference\.look"/);
   const { root, open } = openRoot(file, src, repo);
-  const s = await serveFolder(root, { editor: baseURL!, open });
+  const s = await serveDiagrams(root, { editor: baseURL!, open });
   try {
     const errors = noPageErrors(page);
     await page.goto(s.url);

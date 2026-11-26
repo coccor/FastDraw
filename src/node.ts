@@ -289,6 +289,33 @@ export function lookOfDiagram(file: string, src: string): LookRef | undefined {
   return isBundledLook(p) ? { name: p } : isWebLook(p) ? { url: p, file: cachePath(p) } : { file: resolve(dirname(file), p) };
 }
 
+// The files on disk the editor reads for one diagram: the diagram, the .look file it names by path and that
+// look's dark look when it is a file too, and the font and SVG icon files in those looks' fontdir and icondir
+// folders, found the way drawing finds them. Bundled looks and web addresses need nothing from disk.
+export function diagramFiles(file: string): string[] {
+  const full = resolve(file);
+  const out = [full];
+  let src = '';
+  try { src = readFileSync(full, 'utf8'); } catch { return out; }
+  const looks: string[] = [];
+  const p = lookPath(src);
+  if (p && !isWebLook(p) && !isBundledLook(p) && /\.look$/i.test(p)) looks.push(resolve(dirname(full), p));
+  for (let i = 0; i < looks.length && i < 2; i++) {
+    const lookFile = looks[i];
+    let look: Look;
+    try { look = parseLook(readFileSync(lookFile, 'utf8'), lookFile); } catch { continue; }
+    out.push(lookFile);
+    for (const d of look.fontDirs) { const dir = lookFolder(lookFile, d); if (dir) out.push(...plainFiles(dir, /\.(ttf|otf)$/i, 20_000_000, 200)); }
+    let icons = 0;
+    for (const d of localIconDirs(look)) {
+      const dir = lookFolder(lookFile, d);
+      if (dir) { const f = plainFiles(dir, /\.svg$/i, MAX_ICON_BYTES, MAX_ICON_FILES - icons); icons += f.length; out.push(...f); }
+    }
+    if (look.dark && /\.look$/i.test(look.dark) && !isWebLook(look.dark)) looks.push(resolve(dirname(lookFile), look.dark));
+  }
+  return out;
+}
+
 // The folder to lend the editor for a diagram, and the diagram's path in it: the diagram's own folder, or
 // the nearest one above it that also holds the look file the diagram names by path (look "../../looks/
 // team.look"), so the editor can read that look. It is never widened past `bound` (the workspace, or the
