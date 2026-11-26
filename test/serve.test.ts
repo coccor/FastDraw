@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveDiagrams } from '../src/serve.ts';
@@ -222,6 +222,14 @@ test('open lends the folder that holds both the diagram and the look file it nam
   // never past the bound: a look outside it, or no bound at all, keeps the diagram's folder
   assert.deepEqual(openRoot(file, src, join(repo, 'examples')), own);
   assert.deepEqual(openRoot(file, src), own);
+  // a folder inside the bound that is a link to one outside it is judged by where it leads: not widened
+  const away = mkdtempSync(join(tmpdir(), 'fdaway-'));
+  mkdirSync(join(away, 'looks'));
+  mkdirSync(join(away, 'd', 'e'), { recursive: true });
+  writeFileSync(join(away, 'looks', 'team.look'), 'color ink #000\n');
+  writeFileSync(join(away, 'd', 'e', 'x.fdraw'), src);
+  symlinkSync(join(away, 'd'), join(repo, 'linked'));
+  assert.deepEqual(openRoot(join(repo, 'linked', 'e', 'x.fdraw'), src, repo), { root: realpathSync(join(away, 'd', 'e')), open: 'x.fdraw' });
   // what the editor then reads through the server: the look, by the path the diagram gives from its folder
   const { root, open } = openRoot(file, src, repo);
   const s = await serveDiagrams(root, { editor: EDITOR, open });

@@ -31,12 +31,17 @@ export type Served = { url: string; base: string; port: number; add: (open: stri
 
 // Whether `rel` reaches its file under `root` with no link on the way: its real path is the path itself. For a
 // file that is not there (deleted since it was opened), its folder's path is checked instead.
+// Letter case is compared loosely where the file system ignores it (Windows, macOS). The check runs just before
+// the open, not as one step with it: a folder on the way swapped for a link in between is not caught. That needs
+// another process already writing to the folder, which could read or change those files directly.
+const FOLD = process.platform === 'win32' || process.platform === 'darwin';
+const same = (a: string, b: string) => (FOLD ? a.toLowerCase() === b.toLowerCase() : a === b);
 function linkFree(root: string, rel: string): boolean {
   const full = resolve(root, ...rel.split('/'));
-  try { return realpathSync(full) === full; }
+  try { return same(realpathSync(full), full); }
   catch (e) {
     if ((e as NodeJS.ErrnoException).code !== 'ENOENT') return false;
-    try { return realpathSync(dirname(full)) === dirname(full); } catch { return false; }
+    try { return same(realpathSync(dirname(full)), dirname(full)); } catch { return false; }
   }
 }
 

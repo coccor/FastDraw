@@ -333,12 +333,15 @@ export function diagramFiles(file: string, within?: string): string[] {
 // team.look"), so the editor can read that look. It is never widened past `bound` (the workspace, or the
 // folder the command runs in), and not at all when the diagram or its look is outside `bound`.
 export function openRoot(file: string, src: string, bound?: string): { root: string; open: string } {
-  const full = resolve(file);
+  // real paths, so a linked folder is judged by where it leads, not by its name inside `bound`
+  const real = (p: string) => { try { return realpathSync(p); } catch { return resolve(p); } };
+  const full = real(file);
+  bound = bound === undefined ? undefined : real(bound);
   let root = dirname(full);
   const holds = (dir: string, p: string) => p === dir || p.startsWith(dir.endsWith(sep) ? dir : dir + sep);
   const ref = lookOfDiagram(full, src);
   if (bound && ref && 'file' in ref && !('url' in ref)) {
-    const b = resolve(bound), lookDir = dirname(ref.file);
+    const b = bound, lookDir = dirname(real(ref.file));
     if (holds(b, root) && holds(b, lookDir)) while (!holds(root, lookDir)) root = dirname(root);
   }
   return { root, open: relative(root, full).split(sep).join('/') };
