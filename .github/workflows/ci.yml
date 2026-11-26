@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # AGENTS.md and the docs it routes to stay short enough to read in full (budgets.json)
+      - run: python3 tools/check_budgets.py
 
   # The editor and <fastdraw-diagram> in a real browser.
   e2e:
