@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { serveFolder } from '../src/serve.ts';
+import { serveDiagrams } from '../src/serve.ts';
 import { openRoot } from '../src/node.ts';
 import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex, kept } from './helpers.ts';
 
@@ -1379,17 +1379,17 @@ test('a legend moved sideways keeps its width', async ({ page }) => {
   expect(await width()).toBeCloseTo(before, 1);
 });
 
-test('`fastdraw open` lends a folder: the diagram opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
+test('`fastdraw open` lends the diagram: it opens with its look and icons, edits save back, outside edits come in', async ({ page, baseURL }) => {
   const dir = mkdtempSync(join(tmpdir(), 'fdopen-'));
   cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
   const file = join(dir, 'team-icons.fdraw');
-  const s = await serveFolder(dir, { editor: baseURL!, open: 'team-icons.fdraw' });
+  const s = await serveDiagrams(dir, { editor: baseURL!, open: 'team-icons.fdraw' });
   try {
     const errors = noPageErrors(page);
     await page.goto(s.url);
     await page.waitForSelector('svg.canvas');
     await saved(page);
-    expect(new URL(page.url()).search).toBe(''); // the link is not kept for a reload
+    expect(new URL(page.url()).search + new URL(page.url()).hash).toBe(''); // the link is not kept for a reload
     expect(lineOf(await source(page), 'vm')).toContain('at 40,96');
     // an icon from the look's folder is drawn as an image
     expect(await page.locator('svg.canvas image').count()).toBeGreaterThan(0);
@@ -1406,6 +1406,21 @@ test('`fastdraw open` lends a folder: the diagram opens with its look and icons,
   } finally { await s.close(); }
 });
 
+test('`fastdraw open` link naming a diagram it does not share: says so, and opens no other diagram', async ({ page, baseURL }) => {
+  const dir = mkdtempSync(join(tmpdir(), 'fdopen-miss-'));
+  cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
+  const s = await serveDiagrams(dir, { editor: baseURL!, open: 'team-icons.fdraw' });
+  try {
+    const u = new URL(s.url);
+    const h = new URLSearchParams(u.hash.slice(1));
+    h.set('open', 'architecture.fdraw');
+    u.hash = h.toString();
+    await page.goto(u.href);
+    await expect(page.getByText(/is not sharing architecture\.fdraw/)).toBeVisible();
+    await expect(page.locator('svg.canvas rect[data-id="vm"]')).toHaveCount(0);
+  } finally { await s.close(); }
+});
+
 test('`fastdraw open` on a diagram whose look is in a folder above it: the look loads and edits save', async ({ page, baseURL }) => {
   const repo = mkdtempSync(join(tmpdir(), 'fdopen-up-'));
   mkdirSync(join(repo, 'examples', 'kinds'), { recursive: true });
@@ -1416,7 +1431,7 @@ test('`fastdraw open` on a diagram whose look is in a folder above it: the look 
   const src = readFileSync(file, 'utf8');
   expect(src).toMatch(/^look "\.\.\/\.\.\/looks\/reference\.look"/);
   const { root, open } = openRoot(file, src, repo);
-  const s = await serveFolder(root, { editor: baseURL!, open });
+  const s = await serveDiagrams(root, { editor: baseURL!, open });
   try {
     const errors = noPageErrors(page);
     await page.goto(s.url);

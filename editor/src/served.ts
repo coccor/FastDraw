@@ -4,9 +4,12 @@
 
 export type ServedLink = { base: string; open: string };
 
-// `?serve=http://127.0.0.1:PORT/TOKEN&open=a.fdraw`. Only this computer is accepted as the source.
-export function servedLink(search: string): ServedLink | null {
-  const p = new URLSearchParams(search);
+// `#serve=http://127.0.0.1:PORT/TOKEN&open=a.fdraw`: after the #, so the browser never sends the token or the
+// path to the editor's host. `?serve=` is still read, from an older `fastdraw open`. Only this computer is
+// accepted as the source.
+export function servedLink(search: string, hash = ''): ServedLink | null {
+  const h = new URLSearchParams(hash.replace(/^#/, ''));
+  const p = h.has('serve') ? h : new URLSearchParams(search);
   const s = p.get('serve');
   if (!s) return null;
   let u: URL;
@@ -58,7 +61,7 @@ class ServedDir {
   async isSameEntry(o: unknown) { return o === this; }
 }
 
-// The folder as it is now. Files added to it later are not seen until it is opened again.
+// What `fastdraw open` shares: the diagram and the files it needed when it was opened. Nothing else is listed.
 export async function openServed(base: string): Promise<FileSystemDirectoryHandle> {
   const r = await fetch(base + '/list', { cache: 'no-store' });
   if (!r.ok) throw new Error(`${r.status}`);

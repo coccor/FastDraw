@@ -12,7 +12,7 @@ import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
 import { check } from './check.ts';
-import { serveFolder, DEFAULT_EDITOR } from './serve.ts';
+import { serveDiagrams, DEFAULT_EDITOR } from './serve.ts';
 import { spawn } from 'node:child_process';
 import { sizesReport } from './sizes.ts';
 import { about } from './guideKinds.ts';
@@ -407,8 +407,8 @@ if (cmd === 'check') {
   const editor = ei >= 0 ? args[ei + 1] : process.env.FASTDRAW_EDITOR ?? DEFAULT_EDITOR;
   // the diagram's folder, or the one above it that also holds its look, but not past the folder this runs in
   const { root, open } = openRoot(file, readFileSync(file, 'utf8'), process.cwd());
-  const s = await serveFolder(root, { editor, open });
-  console.log(`serving ${root} to the editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
+  const s = await serveDiagrams(root, { editor, open });
+  console.log(`serving ${join(root, open)} to the editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
   if (!args.includes('--no-browser')) openBrowser(s.url);
   const stop = () => { s.close().then(() => process.exit(0)); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop);
