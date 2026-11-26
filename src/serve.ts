@@ -8,7 +8,7 @@
 // another look file on disk loads that look after `fastdraw open` runs again. It lists and reads nothing
 // else, and writes only those diagrams and look files. Whole folders are not shared (2026-11-26).
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFileSync, realpathSync, existsSync, openSync, closeSync, fstatSync, writeSync, ftruncateSync, constants } from 'node:fs';
+import { readFileSync, realpathSync, existsSync, lstatSync, openSync, closeSync, fstatSync, writeSync, ftruncateSync, constants } from 'node:fs';
 import { resolve, sep, extname, dirname, relative } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { diagramFiles } from './node.ts';
@@ -16,7 +16,9 @@ import { diagramFiles } from './node.ts';
 export const DEFAULT_EDITOR = 'https://fastdraw.dev/edit/';
 
 const MAX_WRITE = 2 * 1024 * 1024;
-// O_NOFOLLOW is not defined on Windows; there the realpath checks in inside() are what keep a link out
+// O_NOFOLLOW is not defined on Windows; there the realpath checks in inside() are what keep a link out, and a
+// file swapped for a link between those checks and the open is not caught. That needs another process already
+// writing to the folder during a save, which could do more harm directly.
 const NOFOLLOW = constants.O_NOFOLLOW ?? 0;
 const WRITABLE = new Set(['.fdraw', '.look']);
 const TYPES: Record<string, string> = {
@@ -52,8 +54,11 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
     if (!full?.toLowerCase().endsWith('.fdraw') || !existsSync(full)) return;
     for (const f of diagramFiles(full, root)) {
       const rel = relative(root, f).split(sep).join('/');
-      // only what a request for it would be given: inside the folder, by no hidden part, through no link out
-      if (inside(root, rel.split('/').map(encodeURIComponent).join('/'))) shared.add(rel);
+      // only what a request for it would be given: inside the folder, by no hidden part, and not a link
+      // (reads and writes refuse to follow one, so a listed link could never be loaded)
+      let link = true;
+      try { link = lstatSync(f).isSymbolicLink(); } catch { /* gone: not listed */ }
+      if (!link && inside(root, rel.split('/').map(encodeURIComponent).join('/'))) shared.add(rel);
     }
   };
   if (opts.open) add(opts.open);
@@ -116,10 +121,11 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
       req.on('data', (c: Buffer) => { size += c.length; if (size <= MAX_WRITE) chunks.push(c); });
       req.on('end', () => {
         if (size > MAX_WRITE) return send(413, 'too large');
-        // not through a link (ELOOP), and only to a plain file, whatever replaced it since the checks above
+        // not through a link (ELOOP), only to a plain file, whatever replaced it since the checks above, and only
+        // one that is still there: a shared file deleted since it was opened is not made again
         let fd: number | undefined;
         try {
-          fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | NOFOLLOW | constants.O_NONBLOCK, 0o644);
+          fd = openSync(file, constants.O_WRONLY | NOFOLLOW | constants.O_NONBLOCK);
           if (!fstatSync(fd).isFile()) return send(403, 'not a file');
           const body = Buffer.concat(chunks);
           ftruncateSync(fd, 0);
@@ -127,8 +133,10 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
           const mtime = Math.floor(fstatSync(fd).mtimeMs);
           send(200, JSON.stringify({ mtime }), { 'Content-Type': 'application/json', 'X-Mtime': String(mtime) });
         } catch (e) {
-          const link = (e as NodeJS.ErrnoException).code === 'ELOOP';
-          send(link ? 403 : 500, link ? 'not written through a link' : (e as Error).message);
+          const code = (e as NodeJS.ErrnoException).code;
+          if (code === 'ELOOP') send(403, 'not written through a link');
+          else if (code === 'ENOENT') send(404, 'the file was deleted after `fastdraw open` started; run it again');
+          else send(500, (e as Error).message);
         } finally { if (fd !== undefined) closeSync(fd); }
       });
       return;

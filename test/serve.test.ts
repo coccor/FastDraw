@@ -180,6 +180,24 @@ test('writes only the opened diagram and its look', async () => {
   } finally { await s.close(); }
 });
 
+test('lists no link, and does not make a shared file again after it was deleted', async () => {
+  const dir = folder();
+  writeFileSync(join(dir, 'real.look'), 'color ink #000\n');
+  symlinkSync(join(dir, 'real.look'), join(dir, 'linked.look'));
+  writeFileSync(join(dir, 'l.fdraw'), 'look "./linked.look"\n');
+  const s = await serveDiagrams(dir, { editor: EDITOR, open: 'l.fdraw' });
+  try {
+    s.add('a.fdraw');
+    const l = await fetch(s.base + '/list', { headers: { Origin: EDITOR } });
+    const paths = ((await l.json()) as { files: { path: string }[] }).files.map((f) => f.path).sort();
+    assert.deepEqual(paths, ['a.fdraw', 'a.look', 'icons/x y.svg', 'l.fdraw']);
+    rmSync(join(dir, 'a.look'));
+    const r = await fetch(s.base + '/f/a.look', { method: 'PUT', body: 'x', headers: { Origin: EDITOR } });
+    assert.equal(r.status, 404);
+    assert.ok(!existsSync(join(dir, 'a.look')));
+  } finally { await s.close(); }
+});
+
 test('open lends the folder that holds both the diagram and the look file it names, within the bound', async () => {
   const repo = mkdtempSync(join(tmpdir(), 'fdroot-'));
   mkdirSync(join(repo, 'examples', 'kinds'), { recursive: true });

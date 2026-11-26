@@ -123,8 +123,11 @@ async function openInEditor(doc: vscode.TextDocument) {
     // the server's link names no file; each diagram under the folder is shared and opened through the same server
     const server = await s;
     server.add(open);
+    // the diagram goes after the #, with the server's address, which the browser never sends to the editor's host
     const url = new URL(server.url);
-    url.searchParams.set('open', open);
+    const h = new URLSearchParams(url.hash.slice(1));
+    h.set('open', open);
+    url.hash = h.toString();
     await vscode.env.openExternal(vscode.Uri.parse(url.href));
   } catch (e) {
     vscode.window.showErrorMessage(`FastDraw could not serve ${folder} to the editor: ${e instanceof Error ? e.message : e}`);
