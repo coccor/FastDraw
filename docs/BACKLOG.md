@@ -19,7 +19,7 @@ Listed 2026-11-23 after the 0.5.0 release, with no choice recorded.
 | Visual diff of rendered diagrams in a GitHub Action | Not picked yet | The owner picks it |
 | More Mermaid types in `fastdraw import` (pie, Gantt, mindmap and timeline are refused today) | Not picked yet | The owner picks it, or a user asks for one |
 | `fastdraw check --json` and `fastdraw describe` | Not picked yet | The owner picks it |
-| Four e2e tests flaky under load (two double-click, two icon) | Not picked yet; a full CI run can fail for no real reason | A CI run fails on one of them, or the owner picks it |
+| Four e2e tests flaky under load (two double-click, two icon) | Not picked yet; a full CI run can fail for no real reason (seen in the 0.5.0 work, 2026-11-23; the tests are not named yet) | A CI run fails on one of them, or the owner picks it |
 
 ## Parked
 
