@@ -25,7 +25,8 @@ export function setTheme(t: Theme) {
   apply(t);
 }
 
-// the local editor is light only (its page has no dark start-up script either)
+// the local editor is light only (its page has no dark start-up script either); set by vite.local.config.ts
+declare const __FASTDRAW_LOCAL__: boolean | undefined;
 const LIGHT_ONLY = typeof __FASTDRAW_LOCAL__ !== 'undefined' && !!__FASTDRAW_LOCAL__;
 if (typeof document !== 'undefined' && LIGHT_ONLY) apply('light');
 else if (typeof document !== 'undefined') {

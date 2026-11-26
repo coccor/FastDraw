@@ -1412,6 +1412,8 @@ test('`fastdraw open --editor local`: the local editor opens the diagram from th
   const dir = mkdtempSync(join(tmpdir(), 'fdlocal-'));
   cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
   const file = join(dir, 'team-icons.fdraw');
+  // a box with an icon from the full set, which the local editor leaves out
+  writeFileSync(file, readFileSync(file, 'utf8') + 'nut: node "Nut" icon=acorn at 40,300\n');
   const s = await serveDiagrams(dir, { open: 'team-icons.fdraw', local: build });
   try {
     const errors = noPageErrors(page);
@@ -1419,8 +1421,17 @@ test('`fastdraw open --editor local`: the local editor opens the diagram from th
     page.on('request', (r) => hosts.add(new URL(r.url()).host));
     await page.goto(s.url);
     await page.waitForSelector('svg.canvas');
-    await saved(page);
     expect([...hosts]).toEqual([`127.0.0.1:${s.port}`]);
+    // an edit is written to the file on this computer
+    const k = await zoom(page);
+    await drag(page, await corner(page, 'vm'), 40 * k, 0);
+    await saved(page);
+    expect(lineOf(readFileSync(file, 'utf8'), 'vm')).toContain('at 80,96');
+    // the full-set icon: a warning that says where it is drawn, not an error that it does not exist
+    await page.locator('.problems').click();
+    await expect(page.locator('.issuelist li', { hasText: 'acorn' })).toContainText('full icon set, which this editor leaves out');
+    await expect(page.locator('.issuelist li', { hasText: 'no icon called' })).toHaveCount(0);
+    await page.locator('.problems').click();
     // what only the editor at fastdraw.dev has is not here; what leads there is
     await expect(page.getByRole('button', { name: /Dark theme|Light theme/ })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Local editor · fastdraw.dev' })).toHaveAttribute('href', 'https://fastdraw.dev/');
@@ -1442,11 +1453,7 @@ test('`fastdraw open --editor local`: the local editor opens the diagram from th
     const [tab] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('button', { name: /Open there/ }).click()]);
     expect(tab.url()).toMatch(/^https:\/\/fastdraw\.dev\/edit\/#fdraw=/);
     await tab.close();
-    // an edit is written to the file on this computer
-    const k = await zoom(page);
-    await drag(page, await corner(page, 'vm'), 40 * k, 0);
-    await saved(page);
-    expect(lineOf(readFileSync(file, 'utf8'), 'vm')).toContain('at 80,96');
+    await expect(page.locator('.status')).toHaveText('opened a copy on fastdraw.dev; edits there are not saved to this file');
     expect(errors).toEqual([]);
   } finally { await s.close(); }
 });

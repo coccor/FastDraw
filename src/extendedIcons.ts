@@ -5,6 +5,15 @@ import { ICON_WEIGHTS, DUOTONE_TINT } from './iconSet.ts';
 import { ICON_WORDS } from './icons.ts';
 import { resetLookCaches } from './look.ts';
 
+// set by vite.local.config.ts for the local editor, which leaves this set out (and carries only its names);
+// undefined everywhere else
+declare const __FASTDRAW_LOCAL__: boolean | undefined;
+declare const __FASTDRAW_FULL_ICON_NAMES__: string[] | undefined;
+const FULL_SET_NAMES = typeof __FASTDRAW_FULL_ICON_NAMES__ !== 'undefined' ? new Set(__FASTDRAW_FULL_ICON_NAMES__) : null;
+
+/** True for an icon of the full set in an editor that leaves the set out: it exists, but is not drawn here. */
+export const leftOutIcon = (name: string): boolean => !loaded && !!FULL_SET_NAMES?.has(name);
+
 let loading: Promise<void> | undefined;
 let loaded = false;
 const listeners = new Set<() => void>();
