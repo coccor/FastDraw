@@ -12,14 +12,26 @@ memory and download the result. Nothing is uploaded; there is no server.
 
 `fastdraw open diagram.fdraw` is the one-step way in, in any browser: it shares that diagram, and only
 the files it needs (the look file it names, that look's dark look, and their fonts and icons), with the
-editor at https://fastdraw.dev/edit/ from a small server on `127.0.0.1` (a random link, answered only for
-the editor's own address). Nothing else in the folder is listed, read or written: not other diagrams, and
-no new files. What is shared is fixed when it opens: point the diagram at another look file and run `fastdraw open`
-again to load it. The server's link and token go after the `#` in the editor's address, so they never
-reach fastdraw.dev. The look may sit in a folder above the diagram, like `look "../../looks/team.look"`, but not
-above the folder the command runs in. It opens the browser at the diagram and writes edits back to the
-`.fdraw` file. The files never leave the computer. Chrome may ask once to let the page reach apps on this
-device. `--editor http://localhost:5173/` points it at a local editor instead.
+editor from a small server on `127.0.0.1` (a random link, answered only for this computer's own name).
+Nothing else in the folder is listed, read or written: not other diagrams, and no new files. What is shared
+is fixed when it opens: point the diagram at another look file and run `fastdraw open` again to load it. The
+look may sit in a folder above the diagram, like `look "../../looks/team.look"`, but not above the folder the
+command runs in. It opens the browser at the diagram and writes edits back to the `.fdraw` file. The files
+never leave the computer.
+
+It asks once which editor to use, and remembers the answer (`--editor hosted` or `--editor local` changes it):
+
+- **hosted**, the editor at https://fastdraw.dev/edit/: the full icon set, the dark theme, the look picker
+  with looks from GitHub, and templates. The server's link and token go after the `#` in its address, so they
+  never reach fastdraw.dev. Chrome may ask once to let the page reach apps on this device.
+- **local**, a smaller build of the same editor (`npm run build:local`, shipped in the package as
+  `dist-local/`) that the command serves itself, so nothing is asked of fastdraw.dev and it works offline. It
+  has the built-in look's 128 icons, the light theme only, no look picker and no templates; it draws whatever
+  look the file names, and its look tab says to ask the agent for another. A bar at the bottom, the menu's
+  **Open on fastdraw.dev** and the start page lead to the site; **Open there** opens a copy in the hosted
+  editor, whose edits are not saved to the file.
+
+`--editor http://localhost:5173/edit/` points it at another copy of the hosted editor, such as a dev server.
 
 `npm run build:editor` writes the website to `dist-editor/` as a static site you can host anywhere: the
 landing page at `/`, the editor at `/edit/`, `embed.js` (below), and the guide for agents at `/llms.txt`

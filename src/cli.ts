@@ -12,7 +12,8 @@ import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
 import { renderSvg } from './render.ts';
 import { check } from './check.ts';
-import { serveDiagrams, DEFAULT_EDITOR } from './serve.ts';
+import { serveDiagrams, DEFAULT_EDITOR, LOCAL_PORT } from './serve.ts';
+import { savedChoice, saveChoice, CHOICE_QUESTION, type EditorChoice } from './editorChoice.ts';
 import { spawn } from 'node:child_process';
 import { sizesReport } from './sizes.ts';
 import { about } from './guideKinds.ts';
@@ -46,6 +47,19 @@ const [cmd, ...args] = process.argv.slice(2);
 const NAMED_ICONS = new Set(Object.keys(ICONS));
 await loadExtendedIcons();
 
+// the question, in a terminal: hosted unless the answer starts with l; remembered
+async function askChoice(): Promise<EditorChoice> {
+  const { createInterface } = await import('node:readline/promises');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  console.log(CHOICE_QUESTION.replace(/\n\nRun it again[\s\S]*$/, '') + '\n');
+  const a = (await rl.question('Editor [hosted/local] (hosted): ')).trim().toLowerCase();
+  rl.close();
+  const c: EditorChoice = a.startsWith('l') ? 'local' : 'hosted';
+  saveChoice(c);
+  console.log(`Using the ${c} editor; --editor ${c === 'hosted' ? 'local' : 'hosted'} changes it.`);
+  return c;
+}
+
 function usage(): never {
   console.log(`fastdraw <command>
 
@@ -75,10 +89,12 @@ function usage(): never {
   init-look [path]                        write the built-in look to a file to make your own
   preview-look [file.look] [-o out.png]   draw every style of a look on one sheet
   icons  [file.look] [word]               list the icons a look offers, or search them
-  open   <file.fdraw> [--editor URL] [--no-browser]
-                                          open the diagram in the web editor (${DEFAULT_EDITOR}) with its
-                                          look, fonts and icons; edits there save back to the file.
-                                          Keeps running while you edit; Ctrl-C stops it
+  open   <file.fdraw> [--editor hosted|local|URL] [--no-browser]
+                                          open the diagram in the editor with its look, fonts and icons;
+                                          edits there save back to the file. hosted: ${DEFAULT_EDITOR};
+                                          local: a smaller editor served from this computer. Asked the
+                                          first time, then remembered; --editor changes it. Keeps running
+                                          while you edit; Ctrl-C stops it
   guide  [topic]                          print the language guide, or the guide for one kind of diagram
   guide  list                             list the kinds of diagram that have a guide
   setup  [claude|agents|copilot ...] [--global]
@@ -403,12 +419,31 @@ if (cmd === 'check') {
 } else if (cmd === 'open') {
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--editor');
   if (!file || !file.endsWith('.fdraw') || !existsSync(file)) usage();
+  // --editor hosted|local chooses (and is remembered); --editor <address> or FASTDRAW_EDITOR uses another copy of
+  // the hosted editor once; with neither, the remembered choice, else the question
   const ei = args.indexOf('--editor');
-  const editor = ei >= 0 ? args[ei + 1] : process.env.FASTDRAW_EDITOR ?? DEFAULT_EDITOR;
+  const flag = ei >= 0 ? args[ei + 1] : undefined;
+  let choice: EditorChoice | null = null, address: string | undefined;
+  if (flag === 'hosted' || flag === 'local') { choice = flag; saveChoice(flag); }
+  else if (flag) address = flag;
+  else if (process.env.FASTDRAW_EDITOR) address = process.env.FASTDRAW_EDITOR;
+  else choice = savedChoice() ?? (process.stdin.isTTY && process.stdout.isTTY ? await askChoice() : null);
+  if (!choice && !address) {
+    // run by an agent, with no one to answer here: the agent asks the person (the skill says how)
+    console.log(CHOICE_QUESTION);
+    process.exit(2);
+  }
+  const localDir = join(root, 'dist-local');
+  if (choice === 'local' && !existsSync(join(localDir, 'edit', 'index.html'))) {
+    console.log('the local editor is not built here; run npm run build:local, or use --editor hosted');
+    process.exit(1);
+  }
   // the diagram's folder, or the one above it that also holds its look, but not past the folder this runs in
-  const { root, open } = openRoot(file, readFileSync(file, 'utf8'), process.cwd());
-  const s = await serveDiagrams(root, { editor, open });
-  console.log(`serving ${join(root, open)} to the editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
+  const { root: folder, open } = openRoot(file, readFileSync(file, 'utf8'), process.cwd());
+  const s = choice === 'local'
+    ? await serveDiagrams(folder, { open, local: localDir, port: LOCAL_PORT })
+    : await serveDiagrams(folder, { editor: address ?? DEFAULT_EDITOR, open });
+  console.log(`serving ${join(folder, open)} to the ${choice === 'local' ? 'local ' : ''}editor until this stops (Ctrl-C)\nIf no browser window opens, open this link:\n${s.url}`);
   if (!args.includes('--no-browser')) openBrowser(s.url);
   const stop = () => { s.close().then(() => process.exit(0)); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop);

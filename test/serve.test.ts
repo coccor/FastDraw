@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveDiagrams } from '../src/serve.ts';
+import { request, createServer } from 'node:http';
 import { openRoot } from '../src/node.ts';
 
 const EDITOR = 'https://fastdraw.dev';
@@ -239,4 +240,59 @@ test('open lends the folder that holds both the diagram and the look file it nam
     assert.equal(r.status, 200);
     assert.equal(await r.text(), 'color ink #000\n');
   } finally { await s.close(); }
+});
+
+// a stand-in for dist-local/: the edit page, an asset, the icon, and a file that is not the editor's
+function editorBuild() {
+  const dir = mkdtempSync(join(tmpdir(), 'fdlocal-'));
+  mkdirSync(join(dir, 'edit')); mkdirSync(join(dir, 'assets'));
+  writeFileSync(join(dir, 'edit', 'index.html'), '<!doctype html><title>local</title>');
+  writeFileSync(join(dir, 'assets', 'edit-1.js'), 'console.log(1)');
+  writeFileSync(join(dir, 'favicon.svg'), '<svg/>');
+  writeFileSync(join(dir, 'notes.txt'), 'not served');
+  return dir;
+}
+// a request with a Host header of our choosing (fetch does not let one be set)
+const get = (url: string, host: string) => new Promise<number>((ok, fail) => {
+  const u = new URL(url);
+  request({ hostname: '127.0.0.1', port: u.port, path: u.pathname, headers: { host } }, (r) => { r.resume(); ok(r.statusCode!); }).on('error', fail).end();
+});
+
+test('local: serves the editor\'s own files under the token and opens it there, with the diagram after the #', async () => {
+  const s = await serveDiagrams(folder(), { open: 'a.fdraw', local: editorBuild() });
+  try {
+    const u = new URL(s.url);
+    assert.equal(u.origin + u.pathname, s.base + '/edit/');
+    assert.equal(new URLSearchParams(u.hash.slice(1)).get('serve'), s.base);
+    const page = await fetch(s.base + '/edit/');
+    assert.equal(page.status, 200);
+    assert.match(page.headers.get('content-type')!, /text\/html/);
+    assert.equal((await fetch(s.base + '/assets/edit-1.js')).headers.get('content-type'), 'text/javascript; charset=utf-8');
+    assert.equal((await fetch(s.base + '/favicon.svg')).status, 200);
+    for (const p of ['notes.txt', 'assets/../notes.txt', 'assets/%2e%2e/notes.txt', 'edit/../../etc/passwd']) assert.notEqual((await fetch(s.base + '/' + p)).status, 200, p);
+    // the editor saves from its own address; the site's address is refused
+    const own = new URL(s.base).origin;
+    assert.equal((await fetch(s.base + '/f/a.fdraw', { method: 'PUT', body: 'look "./a.look"\n', headers: { Origin: own } })).status, 200);
+    assert.equal((await fetch(s.base + '/f/a.fdraw', { method: 'PUT', body: 'x', headers: { Origin: 'https://fastdraw.dev' } })).status, 403);
+  } finally { await s.close(); }
+});
+
+test('answers only when asked for by this computer\'s own name', async () => {
+  const s = await serveDiagrams(folder(), { open: 'a.fdraw', local: editorBuild() });
+  try {
+    assert.equal(await get(s.base + '/edit/', `127.0.0.1:${s.port}`), 200);
+    assert.equal(await get(s.base + '/edit/', `localhost:${s.port}`), 200);
+    assert.equal(await get(s.base + '/edit/', `evil.example:${s.port}`), 403);
+    assert.equal(await get(s.base + '/list', 'evil.example'), 403);
+  } finally { await s.close(); }
+});
+
+test('tries the given port first, and takes any free one when it is in use', async () => {
+  const busy = createServer();
+  await new Promise<void>((ok) => busy.listen(0, '127.0.0.1', ok));
+  const port = (busy.address() as { port: number }).port;
+  try {
+    const s = await serveDiagrams(folder(), { open: 'a.fdraw', local: editorBuild(), port });
+    try { assert.notEqual(s.port, port); assert.equal((await fetch(s.base + '/edit/')).status, 200); } finally { await s.close(); }
+  } finally { busy.close(); }
 });

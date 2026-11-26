@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { serveDiagrams } from '../src/serve.ts';
@@ -1402,6 +1402,42 @@ test('`fastdraw open` lends the diagram: it opens with its look and icons, edits
     writeFileSync(file, readFileSync(file, 'utf8').replace('"Web VM"', '"Web VM 2"'));
     await expect(page.locator('.status')).toHaveText('updated from disk');
     expect(lineOf(await source(page), 'vm')).toContain('"Web VM 2"');
+    expect(errors).toEqual([]);
+  } finally { await s.close(); }
+});
+
+test('`fastdraw open --editor local`: the local editor opens the diagram from this computer alone, saves edits, and leads to fastdraw.dev', async ({ page }) => {
+  const build = resolve(import.meta.dirname, '../dist-local');
+  test.skip(!existsSync(join(build, 'edit', 'index.html')), 'run npm run build:local first (CI does)');
+  const dir = mkdtempSync(join(tmpdir(), 'fdlocal-'));
+  cpSync(resolve(import.meta.dirname, '../examples/look-test'), dir, { recursive: true });
+  const file = join(dir, 'team-icons.fdraw');
+  const s = await serveDiagrams(dir, { open: 'team-icons.fdraw', local: build });
+  try {
+    const errors = noPageErrors(page);
+    const hosts = new Set<string>();
+    page.on('request', (r) => hosts.add(new URL(r.url()).host));
+    await page.goto(s.url);
+    await page.waitForSelector('svg.canvas');
+    await saved(page);
+    expect([...hosts]).toEqual([`127.0.0.1:${s.port}`]);
+    // what only the editor at fastdraw.dev has is not here; what leads there is
+    await expect(page.getByRole('button', { name: /Dark theme|Light theme/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Local editor · fastdraw.dev' })).toHaveAttribute('href', 'https://fastdraw.dev/');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await expect(page.getByRole('menuitem', { name: 'New from a template' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: 'Open on fastdraw.dev' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    // Open there: a copy in the editor at fastdraw.dev, carried after the # (the new tab is not loaded here)
+    await page.context().route('https://fastdraw.dev/**', (r) => r.fulfill({ body: 'ok' }));
+    const [tab] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('button', { name: /Open there/ }).click()]);
+    expect(tab.url()).toMatch(/^https:\/\/fastdraw\.dev\/edit\/#fdraw=/);
+    await tab.close();
+    // an edit is written to the file on this computer
+    const k = await zoom(page);
+    await drag(page, await corner(page, 'vm'), 40 * k, 0);
+    await saved(page);
+    expect(lineOf(readFileSync(file, 'utf8'), 'vm')).toContain('at 80,96');
     expect(errors).toEqual([]);
   } finally { await s.close(); }
 });

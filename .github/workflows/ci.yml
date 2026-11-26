@@ -43,6 +43,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # the editor `fastdraw open --editor local` serves, for its e2e test
+      - run: npm run build:local
       - run: npm run test:e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -106,6 +108,13 @@ jobs:
           npx fastdraw render example.fdraw -o example.svg
           test -s example.png && test -s example.svg
           npx fastdraw guide list > /dev/null
+          # the local editor ships in the package, and `fastdraw open --editor local` serves it
+          test -s node_modules/fastdraw/dist-local/edit/index.html
+          XDG_CONFIG_HOME="$PWD/cfg" npx fastdraw open example.fdraw --editor local --no-browser > open.log &
+          for i in $(seq 1 40); do grep -q '^http' open.log && break; sleep 0.5; done
+          url=$(grep '^http' open.log)
+          curl -fsS "${url%%#*}" | grep -q '<div id="root">'
+          kill %1
 
   # The Rust renderer (crates/fastdraw-render) must draw what the TypeScript draws, character for character. A
   # pull request that changes the renderer without the Rust fails here. Windows too, since FastPad builds there,

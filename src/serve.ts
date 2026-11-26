@@ -60,8 +60,27 @@ function inside(root: string, rel: string): string | null {
   return full;
 }
 
-// folder: where the diagrams are (openRoot); open: the diagram to share and open, by its path in the folder
-export function serveDiagrams(folder: string, opts: { editor?: string; open?: string; port?: number } = {}): Promise<Served> {
+// The editor's own files, for `local`: the build of the edit page in dist-local/ (vite.local.config.ts).
+const EDITOR_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.png': 'image/png', '.json': 'application/json',
+};
+// a file of the editor's build by its path under the token, or null; the build holds no links or hidden files
+function editorFile(dir: string, rel: string): string | null {
+  if (rel === 'edit/' || rel === 'edit') rel = 'edit/index.html';
+  if (!/^(edit\/index\.html|assets\/[\w.-]+|favicon\.svg)$/.test(rel)) return null;
+  const full = resolve(dir, rel);
+  return full.startsWith(resolve(dir) + sep) && existsSync(full) ? full : null;
+}
+
+// The port `fastdraw open` asks for first, so the local editor's browser storage (kept per address) is the same
+// from one run to the next; when it is taken (another `fastdraw open` running), any free port.
+export const LOCAL_PORT = 47821;
+
+// folder: where the diagrams are (openRoot); open: the diagram to share and open, by its path in the folder.
+// local: the folder of the editor's own build; the server then serves the editor too, on its own address, and
+// nothing is asked of another site. port: the port to try first, falling back to any free one.
+export function serveDiagrams(folder: string, opts: { editor?: string; open?: string; port?: number; local?: string } = {}): Promise<Served> {
   const root = realpathSync(resolve(folder));
   // what may be listed, read and written, by the path the editor asks for: fixed as each diagram is opened
   const shared = new Set<string>();
@@ -76,8 +95,10 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
     }
   };
   if (opts.open) add(opts.open);
-  const editor = new URL(opts.editor ?? DEFAULT_EDITOR);
-  const allowed = editor.origin;
+  // the editor's address; for a local one it is known once the port is
+  let editor = new URL(opts.editor ?? DEFAULT_EDITOR);
+  let allowed = editor.origin;
+  let hosts: string[] = [];
   const token = randomBytes(18).toString('base64url');
   const prefix = `/${token}/`;
 
@@ -87,6 +108,8 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
       res.writeHead(status, { 'Cache-Control': 'no-store', ...headers });
       res.end(body);
     };
+    // asked for by this computer's own name only: a web page whose name was pointed at 127.0.0.1 gets nothing
+    if (!hosts.includes(req.headers.host ?? '')) return send(403, 'not this host');
     // only the editor may read through this; other pages get nothing they can use
     if (origin !== undefined && origin !== allowed) return send(403, 'not this origin');
     if (origin) {
@@ -105,6 +128,10 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
         'Access-Control-Allow-Private-Network': 'true',
         'Access-Control-Max-Age': '600',
       });
+    }
+    if (opts.local && req.method === 'GET') {
+      const f = editorFile(opts.local, rest);
+      if (f) return send(200, readFileSync(f), { 'Content-Type': EDITOR_TYPES[extname(f).toLowerCase()] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' });
     }
     if (rest === 'list' && req.method === 'GET') {
       return send(200, JSON.stringify({ files: [...shared].sort().map((path) => ({ path })) }), { 'Content-Type': 'application/json' });
@@ -162,10 +189,18 @@ export function serveDiagrams(folder: string, opts: { editor?: string; open?: st
 
   return new Promise((ok, fail) => {
     const server = createServer(handle);
-    server.on('error', fail);
-    server.listen(opts.port ?? 0, '127.0.0.1', () => {
+    let tried = false;
+    server.on('error', (e: NodeJS.ErrnoException) => {
+      // the preferred port is taken: any free one
+      if (e.code === 'EADDRINUSE' && opts.port && !tried) { tried = true; server.listen(0, '127.0.0.1'); }
+      else fail(e);
+    });
+    server.listen(opts.port ?? 0, '127.0.0.1');
+    server.on('listening', () => {
       const port = (server.address() as { port: number }).port;
+      hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
       const base = `http://127.0.0.1:${port}/${token}`;
+      if (opts.local) { editor = new URL(base + '/edit/'); allowed = editor.origin; }
       // after the #, which the browser never sends to the editor's host: the token and path stay on this computer
       const open = new URL(editor);
       const h = new URLSearchParams({ serve: base });

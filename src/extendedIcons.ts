@@ -20,6 +20,8 @@ export function subscribeExtendedIcons(fn: () => void): () => void {
 
 /** Loads the rest of the icons; every call after the first returns the same promise. */
 export function loadExtendedIcons(): Promise<void> {
+  // the local editor (`fastdraw open --editor local`) has the first ~130 only: its build leaves the set out
+  if (typeof __FASTDRAW_LOCAL__ !== 'undefined' && __FASTDRAW_LOCAL__) return (loading ??= Promise.resolve());
   loading ??= import('./iconSetAll.ts').then((m) => {
     for (const w of Object.keys(m.EXTRA_WEIGHTS) as (keyof typeof m.EXTRA_WEIGHTS)[]) Object.assign(ICON_WEIGHTS[w], m.EXTRA_WEIGHTS[w]);
     Object.assign(DUOTONE_TINT, m.EXTRA_TINT);

@@ -20,7 +20,7 @@ import type { LookChoice, FileLook, WebLook } from './LookPicker.tsx';
 import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
-  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, Ellipsis, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
+  ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, Ellipsis, ExternalLink, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
   Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import { IconDialog, IconGlyph } from './IconPicker.tsx';
@@ -41,6 +41,8 @@ import { withIconImages, usedIconImages, MAX_ICON_BYTES, MAX_ICON_FILES } from '
 import { useExtendedIcons } from './useExtendedIcons.ts';
 import { ICONS as BUILT_IN_ICONS } from '../../src/icons.ts';
 import { decodeShared, sharedInHash, editorLink, LONG_LINK } from './embed/share.ts';
+import { LOCAL, SITE, HOSTED_EDITOR } from './edition.ts';
+import { LocalLook } from './LocalLook.tsx';
 
 type Drag =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number }
@@ -751,7 +753,7 @@ export function App() {
     setTemplatesOpen(false);
     load(text, null, label);
   };
-  const templateDialog = templatesOpen && <TemplateDialog onClose={() => setTemplatesOpen(false)} onPick={(t) => newDiagram(t.text, t.kind)} />;
+  const templateDialog = !LOCAL && templatesOpen && <TemplateDialog onClose={() => setTemplatesOpen(false)} onPick={(t) => newDiagram(t.text, t.kind)} />;
 
   // `?kind=swimlane`, from the examples on the website: open that kind's template as a new diagram.
   const kindOnce = useRef(false);
@@ -769,7 +771,8 @@ export function App() {
       } catch { /* nothing was handed over: the editor opens as usual */ }
       return;
     }
-    if (!kind) return;
+    // the local editor has no templates
+    if (!kind || LOCAL) return;
     history.replaceState(null, '', location.pathname + location.hash);
     const t = TEMPLATES.find((x) => x.kind === kind);
     if (t) newDiagram(t.text, t.kind);
@@ -1431,12 +1434,22 @@ export function App() {
   // A link that opens this diagram in the editor, with its look file and the icon files it uses inside it.
   // Nothing is uploaded: everything is after the #, which the browser never sends anywhere. Icons the look
   // names by web address stay out: whoever opens the link fetches them from there.
+  // a link to `editor` that holds this diagram, its look file and the icon files it uses (after the #, never uploaded)
+  const shareLink = (editor: string) => {
+    const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter((n) => n && !webIcons.uris[n]));
+    // a look named by web address stays out too: the link names it, and whoever opens it fetches it
+    const look = fileLookOn && !webLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
+    return editorLink(editor, { name: baseName + '.fdraw', text: cur, ...(look ? { look } : {}), ...(Object.keys(icons).length ? { icons } : {}) }).then((link) => ({ link, icons }));
+  };
+  // the local editor: the same diagram in the editor at fastdraw.dev, as a copy
+  const openOnSite = async () => {
+    const { link } = await shareLink(HOSTED_EDITOR);
+    window.open(link, '_blank', 'noopener');
+    setStatus('opened a copy on fastdraw.dev; edits there are not saved to this file');
+  };
   const copyLink = async () => {
     try {
-      const icons = usedIconImages(scene.look, scene.shapes.map((s) => s.p.icon).filter((n) => n && !webIcons.uris[n]));
-      // a look named by web address stays out too: the link names it, and whoever opens it fetches it
-      const look = fileLookOn && !webLookOn && lookSrc !== null ? { path: lookLine!, text: lookSrc } : undefined;
-      const link = await editorLink(location.origin + location.pathname, { name: baseName + '.fdraw', text: cur, ...(look ? { look } : {}), ...(Object.keys(icons).length ? { icons } : {}) });
+      const { link, icons } = await shareLink(LOCAL ? HOSTED_EDITOR : location.origin + location.pathname);
       await navigator.clipboard.writeText(link);
       const n = Object.keys(icons).length, kb = Math.ceil(link.length / 1000);
       const what = n ? ` with ${n} icon file${n === 1 ? '' : 's'} inside` : '';
@@ -1465,12 +1478,13 @@ export function App() {
     return (
       <div className="start">
         <div className="welcome">
-          <h1>FastDraw</h1>
+          <h1>{LOCAL ? <a href={SITE} target="_blank" rel="noopener">FastDraw</a> : 'FastDraw'}</h1>
           <p className="lede">Open a diagram an agent wrote, change anything on the canvas, and it is saved back to the same file.</p>
-          <p className="muted agentnote">FastDraw diagrams usually start with your coding agent. <a href="../#setup">Set up Claude Code, Codex or Copilot</a> with one command, then ask it for a diagram.</p>
+          <p className="muted agentnote">FastDraw diagrams usually start with your coding agent. <a href={LOCAL ? SITE + '#setup' : '../#setup'} {...(LOCAL ? { target: '_blank', rel: 'noopener' } : {})}>Set up Claude Code, Codex or Copilot</a> with one command, then ask it for a diagram.</p>
+          {LOCAL && <p className="muted localnote">This is the local editor, served by <code>fastdraw open</code> from this computer. The editor at <a href={HOSTED_EDITOR} target="_blank" rel="noopener">fastdraw.dev</a> also has the full icon set, a dark theme, a look picker with looks from GitHub, and templates; <code>fastdraw open --editor hosted</code> uses it.</p>}
           <div className="choices">
             <button className="choice" onClick={() => newDiagram()}><FilePlus size={20} /><span><b>New diagram</b><i>Start from a blank canvas and draw with the toolbar</i></span></button>
-            <button className="choice" onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={20} /><span><b>New from a template</b><i>Flowchart, sequence, swimlane, Gantt and 40 more kinds to change</i></span></button>
+            {!LOCAL && <button className="choice" onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={20} /><span><b>New from a template</b><i>Flowchart, sequence, swimlane, Gantt and 40 more kinds to change</i></span></button>}
             {files.hasFileAccess && (
               <button className="choice" onClick={openFolder}><FolderOpen size={20} /><span><b>Open a folder</b><i>Finds the diagrams and their look, saves in place, follows an agent live</i></span></button>
             )}
@@ -1616,7 +1630,7 @@ export function App() {
         {menuOpen && (
           <div className="dropdown island" role="menu">
             <button role="menuitem" onClick={() => { closePopups(); newDiagram(); }}><FilePlus size={16} />New diagram</button>
-            <button role="menuitem" onClick={() => { closePopups(); setTemplatesOpen(true); }}><LayoutTemplate size={16} />New from a template</button>
+            {!LOCAL && <button role="menuitem" onClick={() => { closePopups(); setTemplatesOpen(true); }}><LayoutTemplate size={16} />New from a template</button>}
             {files.hasFileAccess && <button role="menuitem" onClick={() => { closePopups(); openFolder(); }}><FolderOpen size={16} />Open folder</button>}
             <button role="menuitem" onClick={() => { closePopups(); openFile(); }}><FileText size={16} />Open file</button>
             <button role="menuitem" onClick={() => { closePopups(); setPasteOpen(true); }}><ClipboardPaste size={16} />Paste diagram text</button>
@@ -1624,6 +1638,7 @@ export function App() {
             <button role="menuitem" onClick={() => { closePopups(); setExportOpen(true); }}><ImageDown size={16} />Export image…<kbd>Ctrl ⇧ E</kbd></button>
             <button role="menuitem" onClick={() => { closePopups(); files.download(baseName + '.fdraw', src); }}><Download size={16} />Download diagram file</button>
             <button role="menuitem" onClick={() => { closePopups(); copyLink(); }}><Link2 size={16} />Copy link</button>
+            {LOCAL && <button role="menuitem" onClick={() => { closePopups(); openOnSite(); }}><ExternalLink size={16} />Open on fastdraw.dev</button>}
             <hr />
             <button role="menuitem" onClick={() => { closePopups(); act.legend(); }}><ListTree size={16} />Add a legend</button>
             <hr />
@@ -1669,7 +1684,7 @@ export function App() {
       <div className="topright" onPointerDown={(e) => e.stopPropagation()}>
         <Sidebar side={side}
           components={<Gallery look={viewScene.look} current={tool} onPick={setTool} />}
-          look={<LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} theme={theme} fileDark={fileLookOn ? themedLook : undefined} onPreview={setLookPreview} onApply={applyLook} onLoaded={onWebLookLoaded} />} />
+          look={LOCAL ? <LocalLook name={lookLine ?? null} onSite={openOnSite} /> : <LookPicker src={cur} current={curLook} file={pickerFile.current ?? fileLook} theme={theme} fileDark={fileLookOn ? themedLook : undefined} onPreview={setLookPreview} onApply={applyLook} onLoaded={onWebLookLoaded} />} />
       </div>
 
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
@@ -1682,7 +1697,13 @@ export function App() {
           <button className="iconbtn" title="Undo — Ctrl+Z" aria-label="Undo" disabled={!hist.current.past.length} onClick={() => undo(false)}><Undo2 size={16} /></button>
           <button className="iconbtn" title="Redo — Ctrl+Shift+Z" aria-label="Redo" disabled={!hist.current.future.length} onClick={() => undo(true)}><Redo2 size={16} /></button>
         </div>
-        <div className="island group"><ThemeToggle className="iconbtn" /></div>
+        {!LOCAL && <div className="island group"><ThemeToggle className="iconbtn" /></div>}
+        {LOCAL && (
+          <div className="island group localbar">
+            <a className="sitelink" href={SITE} target="_blank" rel="noopener" title="FastDraw's site: the hosted editor, looks, kinds of diagram and setup">Local editor · fastdraw.dev</a>
+            <button className="linkbtn" title="Open a copy of this diagram in the editor at fastdraw.dev, with the full icon set, dark theme, looks and templates. Edits there are not saved to this file." onClick={openOnSite}>Open there<ExternalLink size={13} /></button>
+          </div>
+        )}
       </div>
 
       <div className="bottomright" onPointerDown={(e) => e.stopPropagation()}>
