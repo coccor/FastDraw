@@ -41,8 +41,9 @@ A live preview of [FastDraw](https://fastdraw.dev) diagrams (`.fdraw` files) nex
 - Syntax colouring for `.fdraw` and `.look` files.
 
 Icons and fonts a look names by web address are fetched once and kept in the same cache folder the
-`fastdraw` command uses. Nothing else leaves the computer, except when you choose Open in editor: then
-the browser loads the editor from fastdraw.dev and reads the files from a server on `127.0.0.1`.
+`fastdraw` command uses. Nothing else leaves the computer, except when you choose Open in editor with the
+hosted editor: then the browser loads the editor from fastdraw.dev and reads the files from a server on
+`127.0.0.1`. The local editor is served from that same server, so nothing is asked of fastdraw.dev.
 
 ## Settings
 

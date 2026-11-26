@@ -210,7 +210,8 @@
             "A smaller editor served from this computer: works offline and sends nothing to fastdraw.dev"
           ],
           "default": "ask",
-          "description": "Which editor Open in Editor uses."
+          "description": "Which editor Open in Editor uses.",
+          "scope": "application"
         },
         "fastdraw.editorUrl": {
           "type": "string",

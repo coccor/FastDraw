@@ -111,6 +111,8 @@ class Problems implements vscode.Disposable {
 const served = new Map<string, Promise<Served>>();
 // the local editor's build, copied into the extension by build.mjs; set when the extension starts
 let localEditor = '';
+// the address Open in editor last opened, for the integration test (activate returns it)
+let lastEditorLink: string | undefined;
 
 // hosted or local: the setting, else what `fastdraw open` saved here, else asked once and kept in the setting
 async function chooseEditor(): Promise<EditorChoice | undefined> {
@@ -151,6 +153,7 @@ async function openInEditor(doc: vscode.TextDocument) {
     const h = new URLSearchParams(url.hash.slice(1));
     h.set('open', open);
     url.hash = h.toString();
+    lastEditorLink = url.href;
     await vscode.env.openExternal(vscode.Uri.parse(url.href));
   } catch (e) {
     vscode.window.showErrorMessage(`FastDraw could not serve ${folder} to the editor: ${e instanceof Error ? e.message : e}`);
@@ -367,6 +370,8 @@ export async function activate(ext: vscode.ExtensionContext) {
   );
 
   for (const d of vscode.workspace.textDocuments) probs.lint(d);
+  // for the integration test: what Open in editor opened last
+  return { lastEditorLink: () => lastEditorLink };
 }
 
 export function deactivate() {}
