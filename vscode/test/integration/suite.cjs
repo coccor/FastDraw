@@ -88,6 +88,26 @@ async function steps() {
   await vscode.commands.executeCommand('undo');
   await wait('the warning to clear', () => !vscode.languages.getDiagnostics(uri).some((d) => d.severity === vscode.DiagnosticSeverity.Warning));
   assert.equal(doc.isDirty, false);
+  await opensInLocalEditor(uri);
+}
+
+// Open in editor with the local choice: the extension serves its own copy of the local editor on 127.0.0.1, which
+// answers with the editor's page, and the address names the diagram after the #. The setting is put back after.
+async function opensInLocalEditor(uri) {
+  const cfg = vscode.workspace.getConfiguration('fastdraw');
+  await cfg.update('editor', 'local', vscode.ConfigurationTarget.Global);
+  try {
+    const api = vscode.extensions.getExtension('coccor.fastdraw').exports;
+    // not awaited: the command waits on VS Code's browser opener, which may never answer under xvfb
+    void vscode.commands.executeCommand('fastdraw.openInEditor', uri);
+    const link = new URL(await wait('the editor link', () => api.lastEditorLink()));
+    assert.equal(link.hostname, '127.0.0.1');
+    assert.match(link.pathname, /\/edit\/$/);
+    assert.equal(new URLSearchParams(link.hash.slice(1)).get('open'), 'checkout.fdraw');
+    const page = await fetch(link.origin + link.pathname);
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /<div id="root">/);
+  } finally { await cfg.update('editor', undefined, vscode.ConfigurationTarget.Global); }
 }
 
 exports.run = async () => {
