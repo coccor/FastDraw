@@ -18,6 +18,7 @@ npm run typecheck
 npm run test:e2e      # editor tests (Playwright)
 npm run build:editor  # static site in dist-editor/, with embed.js
 npm run build:embed   # embed.js alone, in dist-embed/
+python3 tools/check_budgets.py  # AGENTS.md and the docs it routes to, within their word budgets (budgets.json)
 ```
 
 Pull requests need the CI checks to pass before they merge. A change in behaviour comes with a test.
