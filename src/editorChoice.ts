@@ -36,7 +36,8 @@ export const CHOICE_QUESTION = `Which editor should fastdraw open use? It is ask
           diagram is read from this computer by the page in your browser; it is not uploaded.
   local   A smaller editor that this command serves from this computer. It works offline and sends
           nothing to fastdraw.dev. Its icon picker has 24 everyday icons in outline only; a diagram draws
-          the 128 icons included by default, but no others. It has a light theme only, no look picker and no templates: to
-          change the look, ask your agent.
+          its look's own icons and the 128 built-in icons included by default, but no other built-in
+          ones. It has a light theme only, no look picker and no templates: to change the look, ask
+          your agent.
 
 Run it again with --editor hosted or --editor local. The same option changes the choice later.`;

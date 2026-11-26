@@ -26,9 +26,9 @@ It asks once which editor to use, and remembers the answer (`--editor hosted` or
   never reach fastdraw.dev. Chrome may ask once to let the page reach apps on this device.
 - **local**, a smaller build of the same editor (`npm run build:local`, shipped in the package as
   `dist-local/`) that the command serves itself, so nothing is asked of fastdraw.dev and it works offline. Its
-  icon picker offers 24 everyday icons in outline; a diagram still draws the 128 icons that ship by default,
-  and one beyond those is left out, with a warning that the editor at fastdraw.dev draws it. It
-  has the light theme only, no look picker and no templates; it draws whatever look the file names, and its
+  icon picker offers 24 everyday icons in outline; a diagram still draws its look's own icons and the 128
+  built-in icons that ship by default, but another built-in icon is left out, with a warning that the
+  editor at fastdraw.dev draws it. It has the light theme only, no look picker and no templates; it draws whatever look the file names, and its
   look tab says to ask the agent for another. A bar at the bottom, the menu's
   **Open on fastdraw.dev** and the start page lead to the site; **Open there** opens a copy in the hosted
   editor, whose edits are not saved to the file.
