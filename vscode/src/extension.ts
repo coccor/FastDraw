@@ -8,6 +8,7 @@ import { draw, problems, fetchAssets, fontFaces, loadIcons } from './core.ts';
 import { bundledFonts, openRoot } from '../../src/node.ts';
 import { serveDiagrams, DEFAULT_EDITOR, LOCAL_PORT, type Served } from '../../src/serve.ts';
 import { knownChoice, CHOICES, type EditorChoice } from './choice.ts';
+import { insideWorkspace } from './workspace.ts';
 import type { Issue } from '../../src/look.ts';
 
 const VIEW = 'fastdraw.preview'; // a preview beside the text
@@ -133,8 +134,14 @@ async function openInEditor(doc: vscode.TextDocument) {
   if (doc.uri.scheme !== 'file') { vscode.window.showWarningMessage('Save the diagram to a file first; the FastDraw editor works on files.'); return; }
   // the editor reads the file from disk, so it has to see what is on screen
   if (doc.isDirty && !(await doc.save())) return;
+  // a diagram that is a link to a file outside the workspace is not shared: only files inside it are
+  const workspace = vscode.workspace.getWorkspaceFolder(doc.uri)?.uri.fsPath;
+  if (!insideWorkspace(doc.uri.fsPath, workspace)) {
+    vscode.window.showErrorMessage(`${basename(doc.uri.fsPath)} is a link to a file outside the workspace folder, and Open in editor shares only files inside it. Open that file from a workspace that holds it.`);
+    return;
+  }
   // the diagram's folder, or the one above it that also holds its look file, within the workspace folder
-  const { root: folder, open } = openRoot(doc.uri.fsPath, doc.getText(), vscode.workspace.getWorkspaceFolder(doc.uri)?.uri.fsPath);
+  const { root: folder, open } = openRoot(doc.uri.fsPath, doc.getText(), workspace);
   const choice = await chooseEditor();
   if (!choice) return;
   const editor = vscode.workspace.getConfiguration('fastdraw').get<string>('editorUrl') || DEFAULT_EDITOR;

@@ -98,7 +98,8 @@ async function opensInLocalEditor(uri) {
   await cfg.update('editor', 'local', vscode.ConfigurationTarget.Global);
   try {
     const api = vscode.extensions.getExtension('coccor.fastdraw').exports;
-    await vscode.commands.executeCommand('fastdraw.openInEditor', uri);
+    // not awaited: the command waits on VS Code's browser opener, which may never answer under xvfb
+    void vscode.commands.executeCommand('fastdraw.openInEditor', uri);
     const link = new URL(await wait('the editor link', () => api.lastEditorLink()));
     assert.equal(link.hostname, '127.0.0.1');
     assert.match(link.pathname, /\/edit\/$/);
