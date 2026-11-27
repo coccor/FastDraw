@@ -67,7 +67,7 @@ Use your tool for asking a question if you have one, your pick first. If you can
 
 ## The file
 
-Every position and size is in points (pt): `at 40,40` is 40pt in from the left and the top, and the editor shows one point as 1.33 screen pixels at 100%. One statement per line. An indented line continues the statement above it. `//` starts a comment; so does a line starting with `# `.
+Every position and size is in points (pt): `at 40,40` is 40pt in from the left and the top, and the editor shows one point as 1.67 screen pixels at 100%. One statement per line. An indented line continues the statement above it. `//` starts a comment; so does a line starting with `# `.
 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look

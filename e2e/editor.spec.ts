@@ -1202,7 +1202,7 @@ test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does 
   await page.evaluate(() => window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key !== 'Control') (window as unknown as { prevented: boolean[] }).prevented = [...((window as unknown as { prevented?: boolean[] }).prevented ?? []), e.defaultPrevented]; }));
   await page.keyboard.press('Control+0');
   await expect(pct).toHaveText('100%');
-  expect(await zoom(page)).toBeCloseTo(4 / 3, 5); // 100% draws a unit as a point, 4/3 of a CSS pixel
+  expect(await zoom(page)).toBeCloseTo(5 / 3, 5); // 100% draws a unit at 1.25pt, 5/3 of a CSS pixel: a 12pt name at 20px
   await page.keyboard.press('Control+=');
   await expect(pct).toHaveText('120%');
   await page.keyboard.press('Control+-');

@@ -1015,9 +1015,12 @@ const keepSpaces = (svg: string) =>
   svg.replace(/<text\b([^>]*)>([^<]*)<\/text>/g, (m, a: string, t: string) =>
     /^ | $| {2}/.test(t) && !/[\n\t]/.test(t) && !/xml:space|style=/.test(a) ? `<text xml:space="preserve" style="white-space:pre"${a}>${t}</text>` : m);
 
-// A diagram's numbers are points: one unit is 1pt, 4/3 of a CSS pixel. The SVG says so in its width and height,
-// and the editor and the VS Code preview show 1pt per unit at 100%. A PNG is drawn at `scale` pixels per unit.
+// A diagram's numbers are points: one unit is 1pt, 4/3 of a CSS pixel. The SVG says so in its width and height.
+// A PNG is drawn at `scale` pixels per unit.
 export const PT = 4 / 3;
+// The editor and the VS Code preview draw a unit at 1.25pt at 100%, so a box's 12pt name reads at 20px, as text
+// in Excalidraw does; an exported SVG shows the same diagram at 80% of that.
+export const ZOOM_100 = PT * 1.25;
 
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.
 export function renderSvg(sc: Scene, css?: string, opts: { background?: boolean } = {}): string {
