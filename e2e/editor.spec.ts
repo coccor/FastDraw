@@ -622,6 +622,7 @@ test('the panel names every line end, its end pickers follow the ends as drawn, 
 test('a table cell is edited in place by a double-click; the header still edits the name', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, ER.replace('  | email "email" "text"\n', '  | email "email" "text"\n  | "+ 3 more columns"\n'));
+  await clearOfPanel(page); // a fitted diagram reaches the left side, where the style panel opens on the first click
   const text = (t: string) => page.locator('svg.canvas text', { hasText: new RegExp(`^${t.replace(/[+]/g, '\\$&')}$`) }).first();
   const centre = async (t: string) => { const b = (await text(t).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
   const field = page.locator('.textedit');
