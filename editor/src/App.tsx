@@ -6,7 +6,7 @@ import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
 import { importMermaid, looksLikeMermaid, mermaidBlocks, MermaidError } from '../../src/mermaid.ts';
-import { renderBody, col, pageMarks, PT } from '../../src/render.ts';
+import { renderBody, col, pageMarks, PT, ZOOM_100 } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
@@ -105,8 +105,9 @@ function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k:
   };
 }
 const BLANK = '\n';
-// the zoom's limits, 10% to 400%, in CSS pixels per unit; fitting a diagram stops at 200%, so a small one is not blown up
-const ZOOM_MIN = 0.1 * PT, ZOOM_MAX = 4 * PT, FIT_MAX = 2 * PT;
+// the zoom's limits, 10% to 400%, in CSS pixels per unit; fitting a diagram stops at twice an exported SVG's size
+// (160%), so a small one is not blown up
+const ZOOM_MIN = 0.1 * ZOOM_100, ZOOM_MAX = 4 * ZOOM_100, FIT_MAX = 2 * PT;
 
 // The part of the window a diagram can use: the window less what floats over the canvas. The style panel and the
 // sidebar (open, or as its rail) take a strip off their side; everything else (the menu button, the toolbar and its
@@ -125,12 +126,12 @@ function freeArea(panel = true) {
   return { x: l + pad, y: t + pad, w: Math.max(1, r - l - 2 * pad), h: Math.max(1, b - t - 2 * pad) };
 }
 
-// The view that shows the whole drawing as large as the free area allows (up to 200%), centred in it.
+// The view that shows the whole drawing as large as the free area allows (up to 160%), centred in it.
 // The picture's margin is left out: the canvas runs on past it. A blank canvas is shown at 100%.
 function fitView(sc: Scene, panel = true) {
   const a = freeArea(panel), blank = !sc.shapes.length && !sc.texts.length && !sc.conns.length;
   const d = { x: sc.x + MARGIN, y: sc.y + MARGIN, w: Math.max(1, sc.w - 2 * MARGIN), h: Math.max(1, sc.h - 2 * MARGIN) };
-  const k = blank ? PT : Math.min(FIT_MAX, Math.max(ZOOM_MIN, Math.min(a.w / d.w, a.h / d.h)));
+  const k = blank ? ZOOM_100 : Math.min(FIT_MAX, Math.max(ZOOM_MIN, Math.min(a.w / d.w, a.h / d.h)));
   return { x: Math.round(a.x + (a.w - d.w * k) / 2 - d.x * k), y: Math.round(a.y + (a.h - d.h * k) / 2 - d.y * k), k };
 }
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
@@ -288,8 +289,8 @@ export function App() {
   const [name, setName] = useState('');
   const [sel, setSel] = useState<string[]>([]);
   const [tool, setTool] = useState('select');
-  // k is CSS pixels per diagram unit; a unit is a point, so 100% is k = PT
-  const [view, setView] = useState({ x: 60, y: 90, k: PT });
+  // k is CSS pixels per diagram unit; 100% is k = ZOOM_100 (1.25pt per unit)
+  const [view, setView] = useState({ x: 60, y: 90, k: ZOOM_100 });
   const [ghost, setGhost] = useState<Ghost>(null);
   const [ink, setInk] = useState<Pt[] | null>(null); // the stroke being drawn by hand
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
@@ -1470,7 +1471,7 @@ export function App() {
       // Ctrl+= / Ctrl+- / Ctrl+0 zoom the canvas, not the page around it
       if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomRef.current((k) => k * 1.2); return; }
       if (mod && (e.key === '-' || e.key === '_')) { e.preventDefault(); zoomRef.current((k) => k / 1.2); return; }
-      if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => PT); return; }
+      if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => ZOOM_100); return; }
       if (!mod && e.shiftKey && e.code === 'Digit1') { e.preventDefault(); fitRef.current(); return; }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
@@ -1772,7 +1773,7 @@ export function App() {
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island group">
           <button className="iconbtn" title="Zoom out — Ctrl+-" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
-          <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => PT)}>{Math.round(view.k / PT * 100)}%</button>
+          <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => ZOOM_100)}>{Math.round(view.k / ZOOM_100 * 100)}%</button>
           <button className="iconbtn" title="Zoom in — Ctrl+=" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
           <button className="iconbtn" title="Fit to screen — Shift+1" aria-label="Fit to screen" onClick={fit}><Maximize size={16} /></button>
         </div>

@@ -55,7 +55,7 @@ image from fastdraw.dev. Point an image at the file's path in a public repositor
 The address is `/gh/<owner>/<repo>/<branch>/<path>`, the same parts as a `raw.githubusercontent.com`
 link. fastdraw.dev reads the file (and its `.look` file, which must be in the same repository), draws it
 with the editor's renderer and answers with an SVG that has its fonts inside, sized in points, one per
-unit of the file (the editor's 100%); GitHub shrinks a wider image to the page. Pushing a change updates
+unit of the file (80% of the editor's 100%); GitHub shrinks a wider image to the page. Pushing a change updates
 the image after a few minutes, once GitHub's and fastdraw.dev's caches expire.
 
 - **Dark mode.** `?theme=dark` draws the look's dark version (`night` for the built-in look). To follow

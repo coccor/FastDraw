@@ -10,9 +10,9 @@ In Chrome and Edge the editor saves in place and re-reads the file about once a 
 agent and a person can work on the same diagram at the same time. Other browsers keep changes in
 memory and download the result. Nothing is uploaded; there is no server.
 
-A diagram's numbers are points (pt). At 100% zoom the canvas draws one point as 4/3 of a CSS pixel, the
-size an SVG export shows at; Ctrl+0 goes back to it. A newly opened diagram is centred and zoomed to fill the part of
-the window the toolbar, the panels and the bars along the bottom leave free (up to 200%); the Fit button beside
+A diagram's numbers are points (pt). At 100% zoom the canvas draws a point 1.25 times its size (5/3 of a CSS
+pixel), so a box's 12pt name reads at 20px; an exported SVG shows the diagram at 80% of that. Ctrl+0 goes back to 100%. A newly opened diagram is centred and zoomed to fill the part of
+the window the toolbar, the panels and the bars along the bottom leave free (up to 160%); the Fit button beside
 the zoom, or Shift+1, does the same at any time. The style panel opens over the
 left of the canvas while something is selected; Escape closes it.
 
