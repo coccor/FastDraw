@@ -27,20 +27,20 @@ inv.order_id -> orders.id "restrict"
 ## Composition
 
 - Five tables and six foreign keys at most. Beyond that, show one subsystem and say so in the title.
-- The table most keys point at goes in the middle column. Tables that reference it or that it references go left and right, 112px or more away.
+- The table most keys point at goes in the middle column. Tables that reference it or that it references go left and right, 112pt or more away.
 - A row's centre is at `table y + 44 + 24 * n`. Set each neighbour's y so that the foreign-key row and the row it references are level; the key is then a straight line. Do this for as many keys as you can.
-- Widths: the three columns need about 224px for short names. A one-cell row (an index name, the "more columns" line) widens the first column for the whole table, so a table with a 22-character index name needs 296. `check` tells you when a width is too small; fix the width, then re-place the neighbours.
-- A key between two tables in the same column loops out on one side: name the side on both ends, `items.order_id.right -> orders.id.right`. Send it to the side with fewer lines, and leave 64px between the two tables.
+- Widths: the three columns need about 224pt for short names. A one-cell row (an index name, the "more columns" line) widens the first column for the whole table, so a table with a 22-character index name needs 296. `check` tells you when a width is too small; fix the width, then re-place the neighbours.
+- A key between two tables in the same column loops out on one side: name the side on both ends, `items.order_id.right -> orders.id.right`. Send it to the side with fewer lines, and leave 64pt between the two tables.
 - Plan the sides so no two keys cross. A key that leaves a row lower in its table should go to a table lower in the drawing.
-- Tables of another schema sit inside a `zone` named after the schema: 16px of padding, 32px at the top. Height = the table's height + 44; the table is at zone x + 16, zone y + 32.
+- Tables of another schema sit inside a `zone` named after the schema: 16pt of padding, 32pt at the top. Height = the table's height + 44; the table is at zone x + 16, zone y + 32.
 
 ## Arrows
 
 - The arrow points from the foreign-key column to the referenced column.
 - The label is the ON DELETE action in one word: "restrict", "cascade", "set null". Every key has one.
 - One key, the delete that destroys rows (cascade), takes `style=primary`, and the table whose rows are destroyed takes `stroke=accent fill=accent/0.08`. If no key cascades, nothing is accented.
-- You may say what that key means in one `note` in free space ("Deleting an order deletes its items."), one `text` statement per line, 20px apart.
+- You may say what that key means in one `note` in free space ("Deleting an order deletes its items."), one `text` statement per line, 20pt apart.
 
 ## Legend
 
-`legend at 40,Y node="Table" focal="Rows deleted with their parent" zone="Schema other than public" arrow="Foreign key · label = ON DELETE" primary="Destructive delete"`, 24px under the lowest table. Keep each entry short or the last one wraps.
+`legend at 40,Y node="Table" focal="Rows deleted with their parent" zone="Schema other than public" arrow="Foreign key · label = ON DELETE" primary="Destructive delete"`, 24pt under the lowest table. Keep each entry short or the last one wraps.

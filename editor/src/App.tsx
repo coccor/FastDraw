@@ -6,7 +6,7 @@ import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
 import { importMermaid, looksLikeMermaid, mermaidBlocks, MermaidError } from '../../src/mermaid.ts';
-import { renderBody, col, pageMarks } from '../../src/render.ts';
+import { renderBody, col, pageMarks, PT } from '../../src/render.ts';
 import * as ops from './ops.ts';
 import * as files from './files.ts';
 import * as ws from './workspace.ts';
@@ -259,7 +259,8 @@ export function App() {
   const [name, setName] = useState('');
   const [sel, setSel] = useState<string[]>([]);
   const [tool, setTool] = useState('select');
-  const [view, setView] = useState({ x: 60, y: 90, k: 1 });
+  // k is CSS pixels per diagram unit; a unit is a point, so 100% is k = PT
+  const [view, setView] = useState({ x: 60, y: 90, k: PT });
   const [ghost, setGhost] = useState<Ghost>(null);
   const [ink, setInk] = useState<Pt[] | null>(null); // the stroke being drawn by hand
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
@@ -535,7 +536,7 @@ export function App() {
     const sc = buildScene(text, lookText != null ? parseLook(lookText) : null);
     // fit between the left panel and the right sidebar (or its rail when collapsed)
     const vw = window.innerWidth, vh = window.innerHeight, left = 280, right = sideOpenRef.current ? 336 : 72, room = vw - left - right;
-    const k = Math.min(1.5, Math.max(0.2, Math.min(room / sc.w, (vh - 140) / sc.h)));
+    const k = Math.min(1.5 * PT, Math.max(0.2, Math.min(room / sc.w, (vh - 140) / sc.h)));
     const taken = new Set([...docs.current.values()].filter((d) => !(reuse && d.id === cur!.id)).map((d) => d.name));
     let unique = label;
     for (let n = 2; taken.has(unique); n++) unique = `${label} ${n}`;
@@ -1053,7 +1054,7 @@ export function App() {
 
   // zoom about the middle of the window, to a scale worked out from the current one
   const zoomTo = (to: (k: number) => number) => setView((v) => {
-    const k = Math.min(4, Math.max(0.1, to(v.k))), mx = window.innerWidth / 2, my = window.innerHeight / 2;
+    const k = Math.min(4 * PT, Math.max(0.1 * PT, to(v.k))), mx = window.innerWidth / 2, my = window.innerHeight / 2;
     return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
   });
   const zoomBy = (f: number) => zoomTo((k) => k * f);
@@ -1267,7 +1268,7 @@ export function App() {
       const r = el.getBoundingClientRect();
       setView((v) => {
         if (!(e.ctrlKey || e.metaKey)) return { ...v, x: v.x - e.deltaX, y: v.y - e.deltaY };
-        const k = Math.min(4, Math.max(0.1, v.k * Math.exp(-e.deltaY * 0.0025)));
+        const k = Math.min(4 * PT, Math.max(0.1 * PT, v.k * Math.exp(-e.deltaY * 0.0025)));
         const mx = e.clientX - r.left, my = e.clientY - r.top;
         return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
       });
@@ -1390,7 +1391,7 @@ export function App() {
       // Ctrl+= / Ctrl+- / Ctrl+0 zoom the canvas, not the page around it
       if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomRef.current((k) => k * 1.2); return; }
       if (mod && (e.key === '-' || e.key === '_')) { e.preventDefault(); zoomRef.current((k) => k / 1.2); return; }
-      if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => 1); return; }
+      if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => PT); return; }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
@@ -1691,7 +1692,7 @@ export function App() {
       <div className="bottomleft" onPointerDown={(e) => e.stopPropagation()}>
         <div className="island group">
           <button className="iconbtn" title="Zoom out — Ctrl+-" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
-          <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => 1)}>{Math.round(view.k * 100)}%</button>
+          <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => PT)}>{Math.round(view.k / PT * 100)}%</button>
           <button className="iconbtn" title="Zoom in — Ctrl+=" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
         </div>
         <div className="island group">

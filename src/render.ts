@@ -1015,8 +1015,12 @@ const keepSpaces = (svg: string) =>
   svg.replace(/<text\b([^>]*)>([^<]*)<\/text>/g, (m, a: string, t: string) =>
     /^ | $| {2}/.test(t) && !/[\n\t]/.test(t) && !/xml:space|style=/.test(a) ? `<text xml:space="preserve" style="white-space:pre"${a}>${t}</text>` : m);
 
+// A diagram's numbers are points: one unit is 1pt, 4/3 of a CSS pixel. The SVG says so in its width and height,
+// and the editor and the VS Code preview show 1pt per unit at 100%. A PNG is drawn at `scale` pixels per unit.
+export const PT = 4 / 3;
+
 // css: optional stylesheet text (e.g. embedded @font-face rules) placed inside the SVG.
 export function renderSvg(sc: Scene, css?: string, opts: { background?: boolean } = {}): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sc.x} ${sc.y} ${sc.w} ${sc.h}" width="${sc.w}" height="${sc.h}">\n` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sc.x} ${sc.y} ${sc.w} ${sc.h}" width="${sc.w}pt" height="${sc.h}pt">\n` +
     (css ? `<style>${css.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</style>\n` : '') + renderBody(sc, opts.background ?? true) + '\n</svg>';
 }

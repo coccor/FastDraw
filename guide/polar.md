@@ -7,7 +7,7 @@ FastDraw has no polar element. Rings are `ellipse`s, rays are plain lines with a
 ## Building blocks
 
 ```
-// title at y=52. Centre 500,300, radius 160 = 100, so 1.6px per point. Eight categories, the first straight up, then clockwise.
+// title at y=52. Centre 500,300, radius 160 = 100, so 1.6pt per unit of value. Eight categories, the first straight up, then clockwise.
 title: text "Request demand by UTC window" at 40,52 style=h1
 text "% of daily peak · 0 to 100" at 40,74 style=caption
 ellipse at 436,236 128x128 fill=none stroke=ink/0.1 sw=1 overlap=ok mask=0      // ring at 40: at = centre - r, size = 2r
@@ -16,14 +16,14 @@ ellipse at 340,140 320x320 fill=none stroke=ink/0.25 sw=1 overlap=ok mask=0     
 500,300 -- 613,187 stroke=ink/0.14 sw=1                                         // spoke of the second category, to the outer ring
 500,300 -- 520,280 stroke=muted sw=1.5                                          // its ray: value 18
 ellipse at 516,276 8x8 fill=paper stroke=muted sw=1.5 overlap=ok                // the end of the ray, minus 4
-text "03–06" at 627,175 size=11 weight=600 color=ink                            // 20px beyond the outer ring
-text "18" at 627,188 style=small color=muted                                    // the value, 13px below the name
+text "03–06" at 627,175 size=11 weight=600 color=ink                            // 20pt beyond the outer ring
+text "18" at 627,188 style=small color=muted                                    // the value, 13pt below the name
 legend at 40,520 dot.accent="12–15 UTC · the daily peak" dot.muted="Other windows" title="Distance from the centre = demand"
 ```
 
 ## Working out the points
 
-A value `v` in category `i` ends at `centre + v * px per point * direction of i`. For N categories the direction of `i` (first up, clockwise) is `sin(360° * i / N), -cos(360° * i / N)`; round to whole px. Common ones:
+A value `v` in category `i` ends at `centre + v * (pt per unit of value) * direction of i`. For N categories the direction of `i` (first up, clockwise) is `sin(360° * i / N), -cos(360° * i / N)`; round to whole pt. Common ones:
 
 | Categories | Directions |
 |---|---|
@@ -48,8 +48,8 @@ A value `v` in category `i` ends at `centre + v * px per point * direction of i`
 
 ## Text
 
-- Name and value sit outside the outer ring. Take `P = spoke end + 20 * direction`. If the direction's x is above 0.3, the text starts at `P.x`; below -0.3, `anchor=end` at `P.x`; otherwise `anchor=middle` at `P.x`. Baselines: on the sides (and diagonals) name at `P.y + 2`, value 13px below it; at the top name at `P.y - 10`, value at `P.y + 3`; at the bottom name at `P.y + 8`, value at `P.y + 22`.
-- Scale numbers (`20`, `40` ...) go beside the first spoke: `small` text, size 8, `color=soft`, right-aligned 6px left of it, level with each ring. Leave out the outermost one; the first category's name sits there. Write them after the rays. The last category's ray runs just left of the first spoke and crosses a number when it is long and close (twelve categories, a high last value): then move the numbers to the spoke of a category whose neighbours are short, or leave them out and say the rings in the unit line ("rings every 20").
+- Name and value sit outside the outer ring. Take `P = spoke end + 20 * direction`. If the direction's x is above 0.3, the text starts at `P.x`; below -0.3, `anchor=end` at `P.x`; otherwise `anchor=middle` at `P.x`. Baselines: on the sides (and diagonals) name at `P.y + 2`, value 13pt below it; at the top name at `P.y - 10`, value at `P.y + 3`; at the bottom name at `P.y + 8`, value at `P.y + 22`.
+- Scale numbers (`20`, `40` ...) go beside the first spoke: `small` text, size 8, `color=soft`, right-aligned 6pt left of it, level with each ring. Leave out the outermost one; the first category's name sits there. Write them after the rays. The last category's ray runs just left of the first spoke and crosses a number when it is long and close (twelve categories, a high last value): then move the numbers to the spoke of a category whose neighbours are short, or leave them out and say the rings in the unit line ("rings every 20").
 - Title and unit: the `h1` title, then the unit under it in `caption` (`text ... at 40,74 style=caption`): there is no axis to hang them on.
 
 ## Legend

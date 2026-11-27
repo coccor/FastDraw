@@ -7,12 +7,12 @@ FastDraw has no journey elements. You build the grid from text and lines at exac
 ## Composition
 
 - Title: `text "..." at 40,52 style=h1`. The stage headers start at y=100.
-- Columns: one per stage, six at most, centres 216px apart. Leave 128px on the left for row names: the first centre is x=228, the grid lines run from x=128 to the right edge of the last column (last centre + 108).
-- Stage header, centred on each column: `text "Stage 1" at cx,100 style=eyebrow anchor=middle`, and 20px lower the stage name with `weight=600 anchor=middle`.
-- Feeling band, 40px under the headers: three `style=rule` lines (written with `--`) at y=160, 240, 320 for high, neutral and low, each named at the left with `text "High" at 112,<line y + 3> style=eyebrow anchor=end`. Feelings are words on five steps (the three lines and the two half-way heights, 200 and 280), never numbers, never emoji.
+- Columns: one per stage, six at most, centres 216pt apart. Leave 128pt on the left for row names: the first centre is x=228, the grid lines run from x=128 to the right edge of the last column (last centre + 108).
+- Stage header, centred on each column: `text "Stage 1" at cx,100 style=eyebrow anchor=middle`, and 20pt lower the stage name with `weight=600 anchor=middle`.
+- Feeling band, 40pt under the headers: three `style=rule` lines (written with `--`) at y=160, 240, 320 for high, neutral and low, each named at the left with `text "High" at 112,<line y + 3> style=eyebrow anchor=end`. Feelings are words on five steps (the three lines and the two half-way heights, 200 and 280), never numbers, never emoji.
 - The curve: one dot per stage at the column centre, on the height of its level: `ellipse at cx-5,y-5 10x10 fill=muted stroke=none`. Join neighbours with straight lines given as points, `228,160 -- 444,240 sw=1.5`, so they meet in the middle of the dots. Write the lines before the dots.
-- Rows under the band: a `style=rule` line at y=344 (24px below the low line), then up to three rows, each closed by another rule, the last row by none (the legend's own line closes it). Row name at the left like the level names, baseline 3px under the row's text baseline. The actions row is 96px high (rules at 344 and 440) so that two markers fit under the text; other rows 56px.
-- Actions are plain `text`, `anchor=middle`, baseline 28px under the rule (y=372). Touchpoints (where it happens: a page, an email) use `style=small`, baseline 32px under their rule (y=472). Markers: first at y=384, second at y=408.
+- Rows under the band: a `style=rule` line at y=344 (24pt below the low line), then up to three rows, each closed by another rule, the last row by none (the legend's own line closes it). Row name at the left like the level names, baseline 3pt under the row's text baseline. The actions row is 96pt high (rules at 344 and 440) so that two markers fit under the text; other rows 56pt.
+- Actions are plain `text`, `anchor=middle`, baseline 28pt under the rule (y=372). Touchpoints (where it happens: a page, an email) use `style=small`, baseline 32pt under their rule (y=472). Markers: first at y=384, second at y=408.
 
 ## Emphasis
 

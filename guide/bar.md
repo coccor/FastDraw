@@ -17,7 +17,7 @@ legend at 40,456 swatch.accent="Sprint 5 · record high" swatch.soft="Other spri
 
 ## Composition
 
-- Title at 40,52 (`style=h1`). Plot area `at 96,112 864x292`: that leaves room for the axis title above the plot (it sits about 28px over the top edge), tick labels on the left, category names below (to y=432) and the legend at y=456.
+- Title at 40,52 (`style=h1`). Plot area `at 96,112 864x292`: that leaves room for the axis title above the plot (it sits about 28pt over the top edge), tick labels on the left, category names below (to y=432) and the legend at y=456.
 - Four to eight bars. With more, group them into longer periods or draw two charts.
 - The y axis starts at 0. Always write `y=0..N` with N a round number just above the largest value; a cut axis makes small differences look large.
 - `step=` gives four to six grid lines.
@@ -44,18 +44,18 @@ db: chart at 200,104 760x320 x=0..100 xstep=20 xunit="%" y=0..5 step=10 yaxis=0 
   | dots "2024" 34,4.5 52,3.5 fill=muted r=5
   | dots "2025" 71,4.5 80,3.5 fill=accent r=6
 text "Platform" at 188,140 anchor=end size=11 weight=600 color=ink    // baseline = row centre (136) + 4
-text "34" at 446,139 anchor=end style=small color=muted               // x of value v = 200 + 760 * v / 100, then 12px outside the dot; baseline = centre + 3
+text "34" at 446,139 anchor=end style=small color=muted               // x of value v = 200 + 760 * v / 100, then 12pt outside the dot; baseline = centre + 3
 text "71" at 752,139 style=small color=muted
 legend at 40,484 dot.muted="2024" dot.accent="2025" title="Rows ordered by 2025 value"
 ```
 
 - `step=10` (larger than the y range) and `yaxis=0` remove the horizontal grid and the row axis numbers; `grid=both` draws the vertical lines.
-- Title at 40,52. Leave 200px on the left for row names, right-aligned 12px before the plot, baseline 4px below the row centre. The legend goes 24px under the axis title (y=484 here). With fewer than five rows keep `y=0..n` and shrink the plot height (64px per row) so it does not end in empty space.
-- Four to eight rows, 48 to 88px apart. Sort them and say by what in the legend heading.
-- The scale starts at 0, as for bars. Write both values beside each pair, outside it: the smaller one right-aligned 12px left of the left dot, the larger 12px right of the right dot. A value at 0 would land on the row name; write it above its dot instead.
+- Title at 40,52. Leave 200pt on the left for row names, right-aligned 12pt before the plot, baseline 4pt below the row centre. The legend goes 24pt under the axis title (y=484 here). With fewer than five rows keep `y=0..n` and shrink the plot height (64pt per row) so it does not end in empty space.
+- Four to eight rows, 48 to 88pt apart. Sort them and say by what in the legend heading.
+- The scale starts at 0, as for bars. Write both values beside each pair, outside it: the smaller one right-aligned 12pt left of the left dot, the larger 12pt right of the right dot. A value at 0 would land on the row name; write it above its dot instead.
 - The accent marks the same end on every row (the newer or the actual value). Do not also highlight one row.
 - Two dots only. With three per row the line means nothing.
 
 ## Legend
 
-One `legend` statement with `swatch.COLOUR=` entries (bars) or `dot.COLOUR=` entries (dumbbell), 24px under the category names (y=456 for the bar layout above). Use plain colour names in bar fills (`soft`, not `soft/0.4`) so the legend swatch matches the bars.
+One `legend` statement with `swatch.COLOUR=` entries (bars) or `dot.COLOUR=` entries (dumbbell), 24pt under the category names (y=456 for the bar layout above). Use plain colour names in bar fills (`soft`, not `soft/0.4`) so the legend swatch matches the bars.

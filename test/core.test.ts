@@ -513,7 +513,7 @@ test('sub text can run over several lines, and a tag on a short box is reported'
   const svg = renderSvg(sc);
   assert.ok(svg.includes('>cart to order<') && svg.includes('>storefront<'));
   const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
-  assert.match(msgs('r: focal "Row-level permissions" sub="RPT-114" tag="RISK" at 40,40 176x48\n'), /the tag "RISK" sits on the text of r; make it at least 52px tall/);
+  assert.match(msgs('r: focal "Row-level permissions" sub="RPT-114" tag="RISK" at 40,40 176x48\n'), /the tag "RISK" sits on the text of r; make it at least 52pt tall/);
   assert.doesNotMatch(msgs('r: focal "Orders API" sub="REST" tag="API" at 40,40\n'), /sits on the text/);
   // on a cylinder the tag sits under the top cap, not on its rim
   for (const name of ['headline', 'sketch']) {
@@ -589,7 +589,7 @@ test('icons: on a box, on their own, from the look, and with clear errors', () =
   assert.ok(x > 40 + 72 + 8);
   const msgs = (b: string) => check(scene(b)).map((i) => i.msg).join('\n');
   assert.match(msgs('a: node "A" icon=unicorn at 40,40\n'), /there is no icon called "unicorn"; the look has: /);
-  assert.match(msgs('a: node "A" icon=server icon.pos=top at 40,40 144x40\n'), /the icon and text of a need \d+px of height/);
+  assert.match(msgs('a: node "A" icon=server icon.pos=top at 40,40 144x40\n'), /the icon and text of a need \d+pt of height/);
   assert.match(msgs('a: node "A long name here" icon=server at 40,40 120x48\n'), /does not fit in a/);
   const look = parseLook('icon bolt "M13 3 L4 14 H12 L11 21 L20 10 H12 Z"\nicon bad "<script>"\nstyle hot extends rect icon=bolt\n');
   assert.ok(look.icons.has('bolt') && !look.icons.has('bad') && look.icons.has('server'));
@@ -713,7 +713,7 @@ test('text that cannot be read against its background is reported; plain-line st
   assert.match(dflt('b: focal "Blocked" sub="waiting" at 40,40 dash=4,4 fill=accent/0.05 title.color=#ffffff\n'), /the text of b is almost the same colour as its background/);
   assert.match(dflt('f: focal "Assess" at 40,40 160x80 fill=accent\ntext "case and report" at 60,100 size=9\ntext "ok" at 60,84 size=9 color=accent\n'), /text the unnamed element on line 4 is almost the same colour as f behind it/);
   assert.doesNotMatch(dflt('f: focal "Assess" sub="fine" at 40,40\nn: node "Plain" sub="also fine" at 240,40\ntext "on paper" at 40,200\ntext "2025" at 40,300 size=60 color=ink/0.06\n'), /cannot be read/);
-  assert.match(dflt('r: rect at 41,40 100x40\n'), /the unnamed element|r is off the 4px grid/);
+  assert.match(dflt('r: rect at 41,40 100x40\n'), /the unnamed element|r is off the 4pt grid/);
   const sc = buildScene('canvas 800x400\n40,100 -> 400,100 style=rule\n40,200 -> 400,200 style=rule head=open\n40,300 -> 400,300\n', null);
   assert.deepEqual(sc.conns.map((c) => c.headM), ['none', 'open', 'arrow']);
 });
@@ -766,6 +766,11 @@ test('export without a background leaves out the page and its dots, and keeps ev
   assert.match(bare, new RegExp(`viewBox="0 0 ${sc.w} ${sc.h}"`));
 });
 
+test('a diagram unit is a point: the SVG states its size in pt, one per unit', () => {
+  const sc = scene('a: node "A" at 40,40\n');
+  assert.match(renderSvg(sc), new RegExp(`^<svg [^>]*viewBox="0 0 ${sc.w} ${sc.h}" width="${sc.w}pt" height="${sc.h}pt">`));
+});
+
 test('fastdraw render: --transparent and --no-embed', async () => {
   const { execFileSync } = await import('node:child_process');
   const dir = mkdtempSync(join(tmpdir(), 'fd-export-'));
@@ -782,7 +787,9 @@ test('fastdraw render: --transparent and --no-embed', async () => {
   assert.equal(png[25], 6); // RGBA: the page is see-through
   assert.equal(extractPng(png)?.diagram, body);
   cli('-o', join(dir, 'c.png'), '--no-embed');
-  assert.equal(extractPng(new Uint8Array(readFileSync(join(dir, 'c.png')))), null);
+  const c = new Uint8Array(readFileSync(join(dir, 'c.png')));
+  assert.equal(extractPng(c), null);
+  assert.equal(new DataView(c.buffer, c.byteOffset).getUint32(16), 2 * buildScene(body, defaultLook()).w); // the default 2x: two pixels per unit, though the SVG is sized in points
 });
 
 test('a diagram\'s canvas line can override the look\'s background, with or without an old size on it', async () => {

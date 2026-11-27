@@ -5,7 +5,7 @@ Shows how a starting total becomes an end total through a series of additions an
 ## Building blocks
 
 ```
-// title at 40,52; plot 96,104 to 960,424; y 0..400 over 320px, so 0.8px per unit: value v is at y = 424 - 0.8v
+// title at 40,52; plot 96,104 to 960,424; y 0..400 over 320pt, so 0.8pt per unit: value v is at y = 424 - 0.8v
 wf: chart at 96,104 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Cloud spend · $k / month"
     x="FY25 base,Headcount,Reserved inst.,ML workloads,Storage tiering,FY26 plan"
   | bars "Total"   0,240 _       _       _       _       0,236 fill=ink
@@ -24,7 +24,7 @@ wf: chart at 96,104 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Clo
 
 - Title at 40,52 (`style=h1`). Plot `at 96,104 864x320` (the axis title sits above the plot, clear of the heading), legend at y=472.
 - Three to eight bars, totals included, in the order of the story: start total, steps, end total. One subtotal in the middle at most (a pair `0,value` in the Total series). Merge small steps into one named "Other".
-- The y axis starts at 0 (`y=0..N`). Pick N and the plot height so that a unit is a simple number of px; it makes the carry lines easy to place.
+- The y axis starts at 0 (`y=0..N`). Pick N and the plot height so that a unit is a simple number of pt; it makes the carry lines easy to place.
 - Leave out a step of zero. It would be an invisible bar holding a column.
 - All bars are in one unit, named once in `ytitle=`.
 
@@ -32,8 +32,8 @@ wf: chart at 96,104 864x320 y=0..400 step=100 labels=1 stack=1 key=0 ytitle="Clo
 
 A thin line joins each bar to the next at the running total between them. Without it the chart is bars at odd heights. The chart element does not draw these; add one plain line per gap:
 
-- There are n-1 carries, one per gap. y is the level of the running total after bar i: `plot bottom - value * px per unit` (424 - 0.8v here).
-- With n columns, column width `cw = plot width / n`, column i (from 0) is centred at `cx_i = plot x + cw * (i + 0.5)`, and a bar reaches `h = 0.32 * cw - 1` px either side. Carry i runs from `cx_i + h` to `cx_(i+1) - h` (n=6, 864px: cw 144, h 45, so the first carry is x=213 to 267; n=7: cw 123.4, h 38.5, first carry 197 to 242).
+- There are n-1 carries, one per gap. y is the level of the running total after bar i: `plot bottom - value * pt per unit` (424 - 0.8v here).
+- With n columns, column width `cw = plot width / n`, column i (from 0) is centred at `cx_i = plot x + cw * (i + 0.5)`, and a bar reaches `h = 0.32 * cw - 1` pt either side. Carry i runs from `cx_i + h` to `cx_(i+1) - h` (n=6, 864pt: cw 144, h 45, so the first carry is x=213 to 267; n=7: cw 123.4, h 38.5, first carry 197 to 242).
 - `stroke=ink/0.55 sw=1`, written with `--`. These coordinates follow the data; do not round them to multiples of 4.
 
 ## Colour

@@ -74,9 +74,12 @@ test('fit fills the view; zoom buttons and 100% change the scale', async () => {
   await page.click('#zoom');
   assert.equal(await page.textContent('#zoom'), '100%');
   const actual = await width();
+  // 100% draws a unit as a point: 4/3 of a CSS pixel
+  const units = await page.evaluate(() => (document.querySelector('#canvas svg') as SVGSVGElement).viewBox.baseVal.width);
+  assert.equal(actual, Math.round(units * 4 / 3));
   await page.click('#in');
   assert.equal(await page.textContent('#zoom'), '125%');
-  assert.equal(await width(), Math.round(actual * 1.25));
+  assert.equal(await width(), Math.round(units * 4 / 3 * 1.25));
   await page.click('#fit');
   assert.equal(await width(), fitted);
   assert.equal(await page.textContent('#problems'), '1 warning');

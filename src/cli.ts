@@ -10,7 +10,7 @@ import { isBuiltIn } from './iconStyle.ts';
 import { loadExtendedIcons } from './extendedIcons.ts';
 import { DEFAULT_LOOK } from './defaultLook.ts';
 import { embedSvg, embedPng } from './embed.ts';
-import { renderSvg } from './render.ts';
+import { PT, renderSvg } from './render.ts';
 import { check } from './check.ts';
 import { serveDiagrams, DEFAULT_EDITOR, LOCAL_PORT } from './serve.ts';
 import { savedChoice, saveChoice, CHOICE_QUESTION, type EditorChoice } from './editorChoice.ts';
@@ -230,7 +230,7 @@ if (cmd === 'check') {
     else {
       // the ligature-free copies are made on the first image and reused for the rest of the run
       const fontFiles = withoutLigatureFonts([...bundledFonts(), ...(sc.fontFiles ?? [])]);
-      const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale } }).render().asPng());
+      const png = new Uint8Array(new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: scale / PT } }).render().asPng());
       writeFileSync(out, embed ? embedPng(png, payload) : png);
     }
     const notes = [out.endsWith('.svg') ? '' : `at ${scale}x`, look ? `look ${look}` : '', transparent ? 'no background' : '', embed ? '' : 'no diagram inside'].filter(Boolean);
@@ -335,7 +335,7 @@ if (cmd === 'check') {
     const lf = lookFonts(file, look);
     for (const fam of lf.missing) console.log(`warning: no font file found for "${fam}"; it will be drawn in a fallback font`);
     const fontFiles = withoutLigatureFonts([...bundledFonts(), ...lf.files]);
-    writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 } }).render().asPng());
+    writeFileSync(out, new Resvg(svg, { font: { fontFiles, loadSystemFonts: true, defaultFontFamily: 'Geist' }, fitTo: { mode: 'zoom', value: 2 / PT } }).render().asPng());
   }
   console.log(`wrote ${out}: ${all.length} styles`);
 } else if (cmd === 'icons') {

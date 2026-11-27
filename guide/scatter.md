@@ -5,7 +5,7 @@ Shows how two measured numbers relate across a set of things: one dot per thing.
 ## Building blocks
 
 ```
-// title at y=52, plot 96,96 to 960,412: 43.2px per x unit, 13.17px per y unit
+// title at y=52, plot 96,96 to 960,412: 43.2pt per x unit, 13.17pt per y unit
 title: text "Teams that deploy often wait least" at 40,52 style=h1
 dora: chart at 96,96 864x316 x=0..20 xstep=4 y=0..24 step=6 grid=both key=0 xtitle="Deploys per week" ytitle="Lead time (days)"
   | line 1,20 20,1 stroke=ink/0.3 sw=1 dash=4,3                               // trend, written first so dots cover it
@@ -16,7 +16,7 @@ legend at 40,480 dot.accent="Platform team · ships most often" dot.muted/0.55="
 ```
 
 - A numeric x axis (`x=lo..hi`) makes every point an `x,y` pair. `grid=both` draws grid lines both ways.
-- The plot ends at y=412. Under it come the tick labels (28px) and `xtitle=` (16px more), so the legend goes at y=480.
+- The plot ends at y=412. Under it come the tick labels (28pt) and `xtitle=` (16pt more), so the legend goes at y=480.
 - The legend dot for the plain dots takes the same opacity as the plotted ones: `dot.muted/0.55=`.
 
 ## Composition
@@ -32,7 +32,7 @@ legend at 40,480 dot.accent="Platform team · ships most often" dot.muted/0.55="
 ## Text
 
 - Name the subject and at most two outliers. Not every dot.
-- A value `(vx, vy)` is at `x = plot x + (vx - xmin) / (xmax - xmin) * plot width`, `y = plot bottom - (vy - ymin) / (ymax - ymin) * plot height`. Put the baseline 12px above the dot or 22px below it, `anchor=middle`, on the side where no line and no other dot is.
+- A value `(vx, vy)` is at `x = plot x + (vx - xmin) / (xmax - xmin) * plot width`, `y = plot bottom - (vy - ymin) / (ymax - ymin) * plot height`. Put the baseline 12pt above the dot or 22pt below it, `anchor=middle`, on the side where no line and no other dot is.
 
 ## Bubble
 
@@ -47,7 +47,7 @@ bb: chart at 96,96 864x316 x=0..600 xstep=100 xunit=" ms" y=0..5 step=1 unit="%"
 ```
 
 - With a numeric x axis the radius belongs to the series (`r=`), so each bubble is its own `dots` row.
-- The area carries the value, not the radius: `r = K * sqrt(value)` with one K for the whole chart, chosen so the largest bubble is about 40px. State the size scale in the legend heading (`title="Area = requests per second"`).
+- The area carries the value, not the radius: `r = K * sqrt(value)` with one K for the whole chart, chosen so the largest bubble is about 40pt. State the size scale in the legend heading (`title="Area = requests per second"`).
 - Five to fifteen bubbles. Write the largest first so that small ones are drawn on top and stay visible.
 - One accent bubble. The others are `fill=ink`, fainter the larger they are (0.14 for the largest up to 0.45 for the smallest), so that a big bubble does not drown the rest.
 - Name the subject and two or three others, in the middle of the bubble if it is wider than the text, otherwise beside it.
@@ -57,17 +57,17 @@ bb: chart at 96,96 864x316 x=0..600 xstep=100 xunit=" ms" y=0..5 step=1 unit="%"
 One number per item and many items (20 to 300): every item is a dot at its true value on one horizontal axis, pushed up or down just far enough not to touch its neighbours. The thickness of the swarm shows where values crowd.
 
 ```
-// r=4, so dots need 10px: the plot is 300px high and y runs 0..30, one unit per slot; the middle slot is 15
+// r=4, so dots need 10pt: the plot is 300pt high and y runs 0..30, one unit per slot; the middle slot is 15
 bee: chart at 96,96 864x300 x=0..800 xstep=200 xunit=" ms" y=0..30 step=100 yaxis=0 grid=both key=0 xtitle="Request latency"
   | dots 61,15 66,16 86,15 91,16 93,14 95,17 fill=ink r=4 opacity=0.55
   | dots 579,15 fill=accent r=4
 ```
 
-- Place the dots in order of value. Each takes the slot nearest the middle (15, 16, 14, 17, 13 ...) in which it stays at least 10px away from every dot already placed. For more than about 40 dots, work the slots out with a short script and paste the pairs.
+- Place the dots in order of value. Each takes the slot nearest the middle (15, 16, 14, 17, 13 ...) in which it stays at least 10pt away from every dot already placed. For more than about 40 dots, work the slots out with a short script and paste the pairs.
 - Never move a dot along the value axis to make it fit, and never drop one.
 - `step=100 yaxis=0` hides the vertical scale, which means nothing here. Say so in the legend heading (`title="One dot per request · height has no meaning"`).
 - All dots have the same size and the same fill; one may take the accent. Name it and up to five outliers with `small` text and a thin line to the dot.
 
 ## Legend
 
-`legend at 40,480` (464 under the beeswarm, whose plot is 16px shorter) with `dot.COLOUR=` entries (the opacity of the plotted dots after a slash: `dot.muted/0.55=`) for the subject and for the rest, and a `line.soft=` entry for a trend line.
+`legend at 40,480` (464 under the beeswarm, whose plot is 16pt shorter) with `dot.COLOUR=` entries (the opacity of the plotted dots after a slash: `dot.muted/0.55=`) for the subject and for the rest, and a `line.soft=` entry for a trend line.

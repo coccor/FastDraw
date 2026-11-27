@@ -23,15 +23,15 @@ text "Design v1" at 240,164 anchor=middle weight=600 color=ink
 
 ## Composition
 
-- Work out the scale first and write it in a comment: the x of the first date and the px per day, month or year. Every event's x comes from that sum. Never space events evenly because it looks tidier; if two are close in time they are close on the axis.
+- Work out the scale first and write it in a comment: the x of the first date and the pt per day, month or year. Every event's x comes from that sum. Never space events evenly because it looks tidier; if two are close in time they are close on the axis.
 - The axis is one horizontal line from x=80 to 920. That length holds five to seven events.
 - A dot is an `ellipse` 8x8 placed at `x-4, Y-4`. A major milestone is 12x12 at `x-6, Y-6` in the accent colour. At most two are major.
-- Labels alternate: one event below the axis, the next above. This is what stops neighbours from colliding. If two events are still closer than their labels are wide (about 110px), give one of them a longer stem (+40px) so its label sits on a second level.
-- Every label is centred on the event's x with `anchor=middle`, three lines on a 16px pitch:
+- Labels alternate: one event below the axis, the next above. This is what stops neighbours from colliding. If two events are still closer than their labels are wide (about 110pt), give one of them a longer stem (+40pt) so its label sits on a second level.
+- Every label is centred on the event's x with `anchor=middle`, three lines on a 16pt pitch:
   - **Below**: stem from `Y` to `Y+56`; date baseline `Y+72`, name `Y+88`, detail `Y+104`.
   - **Above, no detail**: stem from `Y-56` to `Y`; name baseline `Y-68`, date `Y-84`.
   - **Above, with detail**: stem from `Y-72` to `Y`; detail baseline `Y-80`, name `Y-96`, date `Y-112`.
-- Put a tick and a small label wherever the unit changes (a new year, a new quarter): tick `Y-8` to `Y+8`, label baseline `Y+22` under it. If an event stem below the axis is within 36px of that x, put the label above instead (baseline `Y-14`). A reader must be able to tell what the unit is without reading every date.
+- Put a tick and a small label wherever the unit changes (a new year, a new quarter): tick `Y-8` to `Y+8`, label baseline `Y+22` under it. If an event stem below the axis is within 36pt of that x, put the label above instead (baseline `Y-14`). A reader must be able to tell what the unit is without reading every date.
 - A faint large year helps when the timeline spans two or three years: `font=mono size=56 weight=600 color=ink/0.06` with baseline `Y+156`, centred on the middle of that year's stretch. That is under the lowest label (`Y+104`) and above the legend, where it overlaps nothing; `check` reports text that overlaps other text.
 
 ## Text
@@ -45,5 +45,5 @@ The dots are not styles of the look, but `legend` takes dot entries: `legend at 
 
 ## Traps
 
-- If one stretch of the axis is empty for a long time, do not shrink it silently. Either keep it, or cut the axis there: end the line, leave a 16px gap with two short slanted strokes, and start again.
-- A stem must stop short of the label it points at; start it 12px from the nearest text (the positions above do).
+- If one stretch of the axis is empty for a long time, do not shrink it silently. Either keep it, or cut the axis there: end the line, leave a 16pt gap with two short slanted strokes, and start again.
+- A stem must stop short of the label it points at; start it 12pt from the nearest text (the positions above do).

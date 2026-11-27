@@ -13,11 +13,11 @@ p2: polygon "INGESTION"    at 264,88 points=0,0;216,0;232,16;216,32;0,32;16,16 f
 ```
 
   The first has a flat left end, the last a flat right end (`points=0,0;224,0;224,32;0,32;16,16`). Alternate a tint of the accent (`fill=accent/0.14 title.color=accent`) and a light grey (`fill=ink/0.06 title.color=muted`); never a solid dark fill. Never leave the banner out: it is what tells the reader what a column means.
-- Every component is a 144x64 `node` (write the size when it differs) centred under its phase: `x = 80 + 224*n`. Boxes in one phase stack with 48px between them (pitch 112): rows at y=240 and 352 under an orchestrator, 176 and 288 without one.
-- Sources are outside the cluster: a dashed zone under the first chevron, `zone "Sources" at 48,136 208xH dash=4,3`, holding a column of `external` boxes 160x56 at x=72 (zone x + 24), 16 apart, the first 36px below the zone's top: `y = 172 + 72*i`. Size the zone to the last box plus 36.
+- Every component is a 144x64 `node` (write the size when it differs) centred under its phase: `x = 80 + 224*n`. Boxes in one phase stack with 48pt between them (pitch 112): rows at y=240 and 352 under an orchestrator, 176 and 288 without one.
+- Sources are outside the cluster: a dashed zone under the first chevron, `zone "Sources" at 48,136 208xH dash=4,3`, holding a column of `external` boxes 160x56 at x=72 (zone x + 24), 16 apart, the first 36pt below the zone's top: `y = 172 + 72*i`. Size the zone to the last box plus 36.
 - The cluster is a zone over the other columns, `dash=none` to make it solid: `zone "Kubernetes cluster" at 272,136 888xH dash=none`, `W = 224*(phases-1) - 8`, the same height as the sources zone (the taller of the two sets).
-- An orchestrator or scheduler is a wide `cloud` box across the top of the cluster, 24px below its top edge and 16px in from its sides, 48 high. Components start 32px below it. With no orchestrator they start 40px below the zone's top (y=176).
-- A service that applies to everything (identity, monitoring) is a `cloud` box as wide as all the columns (`WxH` 1120x48 for five), 24px under the zones. It is outside the cluster and has no arrows. One row per service, 24px apart.
+- An orchestrator or scheduler is a wide `cloud` box across the top of the cluster, 24pt below its top edge and 16pt in from its sides, 48 high. Components start 32pt below it. With no orchestrator they start 40pt below the zone's top (y=176).
+- A service that applies to everything (identity, monitoring) is a `cloud` box as wide as all the columns (`WxH` 1120x48 for five), 24pt under the zones. It is outside the cluster and has no arrows. One row per service, 24pt apart.
 - Place the main row so that the busiest arrows are straight: the ingestion box level with the box it feeds, and a box fed by two others half-way between them.
 
 ## Arrows
@@ -35,4 +35,4 @@ One icon per component says what kind of thing it is (`icon=queue` broker, `icon
 
 ## Legend
 
-`legend at 40,Y` 24px under the last full-width box: `external=`, `focal=`, `cloud=` ("spans every phase"), `primary=`, `arrow=`, `return=`, and `node=`/`store=` if you used them as different things. The zones and the banner explain themselves.
+`legend at 40,Y` 24pt under the last full-width box: `external=`, `focal=`, `cloud=` ("spans every phase"), `primary=`, `arrow=`, `return=`, and `node=`/`store=` if you used them as different things. The zones and the banner explain themselves.

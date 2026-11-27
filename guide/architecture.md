@@ -6,9 +6,9 @@ Shows the parts of one system and how a request or data moves between them.
 
 - Lay the main path out left to right on one row, vertically centred in the drawing area. This row is the spine.
 - Things that branch off the spine (stores, side services) go in a column at the end or beside the box that uses them, one above the spine row and one below, so the two arrows fan out symmetrically.
-- Group related boxes with a zone drawn behind them. Give the zone 12px of padding around its boxes and extra room at the top for its name. Draw the zone statement before the boxes.
+- Group related boxes with a zone drawn behind them. Give the zone 12pt of padding around its boxes and extra room at the top for its name. Draw the zone statement before the boxes.
 - Box widths may differ a little by importance (128 for a minor actor, 144 normal, 160 for the focal box). Heights stay equal along a row.
-- Leave 52px between spine boxes so a short arrow label fits above the arrow.
+- Leave 52pt between spine boxes so a short arrow label fits above the arrow.
 
 ## Arrows
 
@@ -25,4 +25,4 @@ Shows the parts of one system and how a request or data moves between them.
 
 ## Legend
 
-One `legend at 40,Y` statement, 24px below the lowest element, with an entry for each box style and arrow style you used.
+One `legend at 40,Y` statement, 24pt below the lowest element, with an entry for each box style and arrow style you used.
