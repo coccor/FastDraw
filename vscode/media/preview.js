@@ -14,6 +14,8 @@
   const saved = vscode.getState() || {};
   // k is CSS pixels per diagram unit; 100% is k = AT_100, a unit drawn at 1.25pt (5/3 px), as ZOOM_100 in src/render.ts
   const AT_100 = 5 / 3;
+  // a point, 4/3 px (PT in src/render.ts): Fit stops at two per unit, twice an exported SVG's size (160%)
+  const PT = 4 / 3;
   let fit = saved.fit !== false, k = saved.k || AT_100, size = { w: 1, h: 1 }, hits = [], cursorLine = 0, facesCss = '';
 
   const keep = () => vscode.setState({ ...(vscode.getState() || {}), fit, k });
@@ -31,7 +33,7 @@
     if (!s) return;
     if (fit) {
       const pad = 32, aw = stage.clientWidth - pad, ah = stage.clientHeight - pad;
-      k = Math.max(0.05 * AT_100, Math.min(aw / size.w, ah / size.h, 2 * AT_100));
+      k = Math.max(0.05 * AT_100, Math.min(aw / size.w, ah / size.h, 2 * PT));
     }
     s.setAttribute('width', String(Math.round(size.w * k)));
     s.setAttribute('height', String(Math.round(size.h * k)));

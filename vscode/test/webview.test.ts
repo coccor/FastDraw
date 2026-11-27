@@ -90,3 +90,15 @@ test('Source asks for the text', async () => {
   const posted = await page.evaluate(() => (window as unknown as { posted: { type: string }[] }).posted);
   assert.deepEqual(posted.at(-1), { type: 'source' });
 });
+
+test('Fit stops at twice an exported SVG\'s size, so a small diagram is not blown up', async () => {
+  const small = join(dir, 'small.fdraw'), text = 'a: node "A" at 40,40\n';
+  writeFileSync(small, text);
+  const d = draw(small, text);
+  await page.evaluate((m) => window.postMessage(m, '*'), { type: 'draw', uri: 'file:///small.fdraw', svg: d.svg, hits: d.hits, faces: '', problems: { errors: 0, warns: 0 }, note: '', dark: false });
+  await page.waitForFunction(() => document.querySelector('#canvas svg')?.getAttribute('viewBox')?.endsWith('224 144'));
+  await page.click('#fit');
+  const [width, units] = await page.evaluate(() => { const s = document.querySelector('#canvas svg') as SVGSVGElement; return [+s.getAttribute('width')!, s.viewBox.baseVal.width]; });
+  assert.equal(width, Math.round(units * 2 * 4 / 3)); // two points per unit: 160% on the zoom's scale
+  assert.equal(await page.textContent('#zoom'), '160%');
+});
