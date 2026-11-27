@@ -115,4 +115,4 @@ Coding agents (Claude Code, Codex and others) that read `fastdraw guide` and wri
 
 ## 2.6 Status
 
-0.5.0 is on npm (Mermaid import, VS Code preview, panel editing); the VS Code extension is on the Marketplace. Next: the table name field, then chart settings and polygon corners in the panel (`docs/BACKLOG.md`).
+0.6.0 is on npm (one-diagram sharing, the hosted-or-local editor choice) and the VS Code extension 0.2.0 on the Marketplace and Open VSX; 0.7.0 and extension 0.3.0 will bring the point as the unit, Fit to screen, 20px names at 100% and table cell editing. Next: the table name field, then chart settings and polygon corners in the panel (`docs/BACKLOG.md`).

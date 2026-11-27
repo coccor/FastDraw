@@ -2,7 +2,7 @@
   "name": "fastdraw",
   "displayName": "FastDraw",
   "description": "Live preview of FastDraw diagrams (.fdraw), with the checker's problems in the Problems panel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "coccor",
   "license": "MIT",
   "icon": "media/icon.png",
