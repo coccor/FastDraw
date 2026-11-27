@@ -82,7 +82,7 @@ export function check(sc: Scene): Issue[] {
     // a box inside another is nested in it, but a chart holds no boxes: its bars cover whatever is under them
     if (!inter(a, b, 0.5) || (contains(a, b) && a.shape !== 'chart') || (contains(b, a) && b.shape !== 'chart')) continue;
     const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-    warn(b.line, `${b.id} overlaps ${a.id} by ${Math.round(Math.min(ox, oy))}px; move one of them`);
+    warn(b.line, `${b.id} overlaps ${a.id} by ${Math.round(Math.min(ox, oy))}pt; move one of them`);
   }
 
   const paperRgb = over(rgba(sc.look, sc.look.canvas.paper ?? 'paper'), [255, 255, 255]);
@@ -111,32 +111,32 @@ export function check(sc: Scene): Issue[] {
   for (const s of front) {
     if (tiny(s)) continue;
     const off = s.shape !== 'polygon' && [s.x, s.y, s.w, s.h].some((v) => v % 4 !== 0);
-    if (off) hint(s.line, `${s.id} is off the 4px grid (${s.x},${s.y} ${s.w}x${s.h}); use multiples of 4`);
+    if (off) hint(s.line, `${s.id} is off the 4pt grid (${s.x},${s.y} ${s.w}x${s.h}); use multiples of 4`);
     if (s.shape === 'icon') continue; // its text is a caption under it, not inside: nothing has to fit
     const p = s.p;
     if (s.text && p['title.pos'] !== 'top') {
       const size = num(p['title.size'], 12), ib = iconBox(s), room = (s.shape === 'diamond' || s.shape === 'ellipse' ? s.w * 0.72 : s.w - 16) - (ib?.block ? ib.block + 4 : ib && ib.dx ? ib.size + 8 + 8 : 0);
       for (const l of s.text.split('\n')) {
         const tw = textWidth(l, size, p['title.font'] ?? 'sans', num(p['title.weight'], 600), num(p['title.spacing'], 0));
-        if (tw > room) warn(s.line, `text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${Math.round(room)}px of room); widen it or break the line with \\n`);
+        if (tw > room) warn(s.line, `text "${l}" (~${Math.round(tw)}pt) does not fit in ${s.id} (${Math.round(room)}pt of room); widen it or break the line with \\n`);
       }
     }
     const ic = iconBox(s);
     if (ic && ic.dy > 0) {
       const lines = s.text ? s.text.split('\n').length : 0, subs = p.sub ? p.sub.split('\n').length : 0;
       const need = Math.ceil((lines * Math.round(num(p['title.size'], 12) * 1.17) + (subs ? num(p['sub.size'], 9) + 7 + (subs - 1) * Math.round(num(p['sub.size'], 9) * 1.3) : 0) + (ic.room ?? ic.size) + 6 + 16) / 4) * 4;
-      if (s.h < need) warn(s.line, `the icon and text of ${s.id} need ${need}px of height; make it taller or use icon.pos=left`);
-    } else if (ic && ic.size + 8 > Math.min(s.w, s.h) && s.style !== 'icon') warn(s.line, `the ${ic.size}px icon does not fit in ${s.id}; make the box bigger or set icon.size=`);
+      if (s.h < need) warn(s.line, `the icon and text of ${s.id} need ${need}pt of height; make it taller or use icon.pos=left`);
+    } else if (ic && ic.size + 8 > Math.min(s.w, s.h) && s.style !== 'icon') warn(s.line, `the ${ic.size}pt icon does not fit in ${s.id}; make the box bigger or set icon.size=`);
     for (const l of p.sub ? p.sub.split('\n') : []) {
       const tw = textWidth(l, num(p['sub.size'], 9), p['sub.font'] ?? 'mono', 400, 0);
-      if (tw > s.w - 12) warn(s.line, `sub text "${l}" (~${Math.round(tw)}px) does not fit in ${s.id} (${s.w - 12}px of room)`);
+      if (tw > s.w - 12) warn(s.line, `sub text "${l}" (~${Math.round(tw)}pt) does not fit in ${s.id} (${s.w - 12}pt of room)`);
     }
     if (p.tag && (s.text || p.sub) && p['title.pos'] !== 'top' && !s.rows && s.shape !== 'chart') {
       // the same layout the renderer uses; short of room, say how tall the box would need to be
       const size = num(p['title.size'], 12), block = textBlock(s, size);
       const fits = (h: number) => tagLayout({ ...s, h }, sc.look, block, size, s.y + h / 2).fits;
       let need = Math.ceil(s.h / 4) * 4; while (!fits(need) && need < s.h + 400) need += 4;
-      if (!fits(s.h)) warn(s.line, `the tag "${p.tag}" sits on the text of ${s.id}; make it at least ${need}px tall or drop the tag`);
+      if (!fits(s.h)) warn(s.line, `the tag "${p.tag}" sits on the text of ${s.id}; make it at least ${need}pt tall or drop the tag`);
     }
   }
 
@@ -152,7 +152,7 @@ export function check(sc: Scene): Issue[] {
       const d = Math.abs(va - vb);
       if (d > 0 && d <= 3 && !seen.has(a.id + b.id)) {
         seen.add(a.id + b.id);
-        hint(b.line, `${b.id} and ${a.id} have ${what} ${d}px apart; line them up?`);
+        hint(b.line, `${b.id} and ${a.id} have ${what} ${d}pt apart; line them up?`);
       }
     }
   }
@@ -189,7 +189,7 @@ export function check(sc: Scene): Issue[] {
     }
     const segLen = Math.max(...c.pts.slice(1).map((p, i) => Math.abs(p.x - c.pts[i].x) + Math.abs(p.y - c.pts[i].y)));
     const A = c.pts[0];
-    if (!c.p.lpos && c.pts.every((p) => p.y === A.y) && l.w > segLen - 8) warn(c.line, `label "${l.text}" (${l.w}px) is wider than its line (${Math.round(segLen)}px); shorten the label or give the line more room`);
+    if (!c.p.lpos && c.pts.every((p) => p.y === A.y) && l.w > segLen - 8) warn(c.line, `label "${l.text}" (${l.w}pt) is wider than its line (${Math.round(segLen)}pt); shorten the label or give the line more room`);
   }
 
   for (let i = 0; i < sc.conns.length; i++) for (let j = i + 1; j < sc.conns.length; j++) {
@@ -205,8 +205,8 @@ export function check(sc: Scene): Issue[] {
       let ov = 0, gap = Infinity;
       if (ah && bh && !(av || bv)) { ov = Math.min(Math.max(A.x, B.x), Math.max(C.x, D.x)) - Math.max(Math.min(A.x, B.x), Math.min(C.x, D.x)); gap = Math.abs(A.y - C.y); }
       else if (av && bv && !(ah || bh)) { ov = Math.min(Math.max(A.y, B.y), Math.max(C.y, D.y)) - Math.max(Math.min(A.y, B.y), Math.min(C.y, D.y)); gap = Math.abs(A.x - C.x); }
-      if (ov > 4 && gap < 1) { warn(b.line, `${name(b)} runs on top of ${name(a)} for ${Math.round(ov)}px; give them separate attach points (from=side@pos) or routes`); done = true; }
-      else if (ov > 12 && gap < 8) { hint(b.line, `${name(b)} runs ${gap}px from ${name(a)}; keep parallel lines at least 12px apart`); done = true; }
+      if (ov > 4 && gap < 1) { warn(b.line, `${name(b)} runs on top of ${name(a)} for ${Math.round(ov)}pt; give them separate attach points (from=side@pos) or routes`); done = true; }
+      else if (ov > 12 && gap < 8) { hint(b.line, `${name(b)} runs ${gap}pt from ${name(a)}; keep parallel lines at least 12pt apart`); done = true; }
     }
   }
 

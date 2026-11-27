@@ -10,6 +10,12 @@ In Chrome and Edge the editor saves in place and re-reads the file about once a 
 agent and a person can work on the same diagram at the same time. Other browsers keep changes in
 memory and download the result. Nothing is uploaded; there is no server.
 
+A diagram's numbers are points (pt). At 100% zoom the canvas draws one point as 4/3 of a CSS pixel, the
+size an SVG export shows at; Ctrl+0 goes back to it. A newly opened diagram is centred and zoomed to fill the part of
+the window the toolbar, the panels and the bars along the bottom leave free (up to 200%); the Fit button beside
+the zoom, or Shift+1, does the same at any time. The style panel opens over the
+left of the canvas while something is selected; Escape closes it.
+
 `fastdraw open diagram.fdraw` is the one-step way in, in any browser: it shares that diagram, and only
 the files it needs (the look file it names, that look's dark look, and their fonts and icons), with the
 editor from a small server on `127.0.0.1` (a random link, answered only for this computer's own name).

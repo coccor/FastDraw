@@ -58,7 +58,7 @@ export function ExportDialog({ scenes, theme, payload, base, onClose, onDone }: 
   const card = useRef<HTMLDivElement>(null);
   useEffect(() => card.current?.focus(), []); // keys go to the dialog, not to the canvas behind it
 
-  const size = o.format === 'png' ? `${Math.round(scene.w * o.scale)} × ${Math.round(scene.h * o.scale)} px` : `${scene.w} × ${scene.h}, scales freely`;
+  const size = o.format === 'png' ? `${Math.round(scene.w * o.scale)} × ${Math.round(scene.h * o.scale)} px` : `${scene.w} × ${scene.h} pt, scales freely`;
   const fileName = `${base}.${o.format}`;
   const canCopy = o.format === 'svg' ? !!navigator.clipboard?.writeText : typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write;
 

@@ -3278,10 +3278,10 @@ fn keep_spaces(svg: &str) -> String {
         .into_owned()
 }
 
-/// `renderSvg(sc)`: the whole picture, with its page, and no stylesheet.
+/// `renderSvg(sc)`: the whole picture, with its page, and no stylesheet. Its size is in points, one per unit.
 pub fn render_svg(sc: &Scene) -> String {
     format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"{} {} {} {}\" width=\"{}\" height=\"{}\">\n{}\n</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"{} {} {} {}\" width=\"{}pt\" height=\"{}pt\">\n{}\n</svg>",
         n(sc.x),
         n(sc.y),
         n(sc.w),

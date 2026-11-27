@@ -7,7 +7,7 @@ Shows hierarchy by containment: each ring sits inside a broader one. Use it for 
 - Title at `40,52` (`style=h1`). The outermost ring starts at y=96.
 - Three to five levels: n outer rings (`zone`) and one innermost box. With more, the inner ones become too small to read.
 - The outermost ring is `W` wide: 920 for four rings, 760 for three, 600 for two, so the innermost box does not turn into a wide empty bar. Its height is `H = 72n + 92`: 308 for three rings, 380 for four.
-- Ring i (from 0) is inset from the one around it by 32px left and right and 36px top and bottom: `at 40+32i, 96+36i` and size `(W-64i) x (H-72i)`. The innermost box is the same step again: `at 40+32n, 96+36n`, size `(W-64n) x 92`. Uneven insets look like a mistake.
+- Ring i (from 0) is inset from the one around it by 32pt left and right and 36pt top and bottom: `at 40+32i, 96+36i` and size `(W-64i) x (H-72i)`. The innermost box is the same step again: `at 40+32n, 96+36n`, size `(W-64n) x 92`. Uneven insets look like a mistake.
 - Rings are `zone` shapes without text, written outermost first. Write `dash=none` on each ring so every outline is solid, whatever the look does with zones. The innermost level is a `focal` box with `radius=8`: it is the subject and holds the only centred text (main text and `sub=`).
 - The outline gets stronger and the fill a little darker with each step inward, so the eye is drawn to the middle. Override the zone's colours ring by ring (four rings, n=4, W=920):
 
@@ -31,6 +31,6 @@ core: focal "Project guidance" sub="inherits every level above" at 168,240 664x9
 ## Callouts and lines
 
 - A nested diagram has no arrows. Containment is the relationship.
-- At most two short remarks in `style=note`, outside the rings: one above the top-right corner (baseline y=84, `anchor=end` at the ring's right edge), one under the bottom-left (baseline 32px under the outer ring).
+- At most two short remarks in `style=note`, outside the rings: one above the top-right corner (baseline y=84, `anchor=end` at the ring's right edge), one under the bottom-left (baseline 32pt under the outer ring).
 - A remark may point at the level it is about with one faint curved line ending in a dot: `820,88 -- core.top@560 style=lifeline route=curve head=dot`.
 - A legend is not needed when every ring is named. Leave it out.

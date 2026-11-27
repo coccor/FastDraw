@@ -127,12 +127,12 @@ Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`
 | `hatch=colour` | fill with diagonal pencil lines on top of `fill=`; `hatch.gap=` spaces them, `hatch.sw=` weighs them |
 | `halftone=colour` | fill with a field of printed dots; `halftone.gap=` spaces them, `halftone.r=` sizes them |
 | `shade=colour` | a shadow of fine diagonal lines down the right and bottom of the shape; `shade.size=` is how far it reaches (default 5), `shade.gap=` and `shade.sw=` space and weigh its lines |
-| `depth=N` | a slab N pixels below the shape, so it reads as a solid with a side; `depth.fill=` and `depth.stroke=` colour it. A line that ends on the bottom edge ends on the slab |
+| `depth=N` | a slab N points below the shape, so it reads as a solid with a side; `depth.fill=` and `depth.stroke=` colour it. A line that ends on the bottom edge ends on the slab |
 | `shadow=colour` | a soft shadow under the shape: the shape grown in six fading steps, `shadow.size=` far (default 12), `shadow.dx=` to the side (default 0) and `shadow.dy=` lower (default 4); give a faint colour such as `#3b3f8c/0.1` |
 | `inner=colour` | a second, finer rule just inside the outline; `inner.gap=` (default 3.5) and `inner.sw=` |
 | `side=colour` | a bar down the left edge of a box, `side.w=` wide (default 4), as IBM draws a side-bar node and a group |
-| `icon.block=colour` | with the icon at the left: the strip that holds it is filled, as tall as the box and `icon.block.w=` wide (square by default), the icon centred in it and the text 12px after it, as IBM draws a colour-block node; give the icon a light `icon.color=` |
-| `icon.bg=colour` | a filled square behind the icon, `icon.bg.size=` across (the icon plus 12px each side by default); `icon.bg.shape=circle` for a circle; `icon.bg.shadow=colour` lays a soft shadow under it (`icon.bg.shadow.size=`, `.dx=`, `.dy=`, default 8, 0, 3). With `icon.pos=top`, `fill=none stroke=none` and a white `icon.color` it draws IBM's small node: a coloured square with a white icon and the name under it |
+| `icon.block=colour` | with the icon at the left: the strip that holds it is filled, as tall as the box and `icon.block.w=` wide (square by default), the icon centred in it and the text 12pt after it, as IBM draws a colour-block node; give the icon a light `icon.color=` |
+| `icon.bg=colour` | a filled square behind the icon, `icon.bg.size=` across (the icon plus 12pt each side by default); `icon.bg.shape=circle` for a circle; `icon.bg.shadow=colour` lays a soft shadow under it (`icon.bg.shadow.size=`, `.dx=`, `.dy=`, default 8, 0, 3). With `icon.pos=top`, `fill=none stroke=none` and a white `icon.color` it draws IBM's small node: a coloured square with a white icon and the name under it |
 | `corners=plus` | a mark on each corner of a box: `plus` or `square`; `corners.color=`, `corners.size=` |
 | `offset=dx,dy` | print the fill that far out of register with the outline |
 | `blend=multiply` | let this style's ink darken what it overlaps, like overprinting (also on line and text styles) |
@@ -142,14 +142,14 @@ Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`
 | `sub.*` | the second line (`sub=` on an element): `sub.font`, `sub.size`, `sub.color` |
 | `tag.*` | the corner marker (`tag=`): `tag.color`, `tag.border`, `tag.font`, `tag.size` |
 | `ghost.*` | the big faint number (`ghost=`): `ghost.color`, `ghost.size` |
-| `icon.pos=`, `icon.size=` | where a box's icon goes: `left` of the text (the default), on `top` of it, or in the top-left `corner` as a tab, with a left-aligned caption starting after it (for a group's icon, as cloud providers draw them); `icon.size` is its size in pixels |
-| `icon.dx=`, `icon.dy=` | move the icon from where it would sit, in pixels: with `icon.pos=corner` and `icon.bg=`, `icon.dx=-8 icon.dy=-8` puts a group's badge out onto its corner |
+| `icon.pos=`, `icon.size=` | where a box's icon goes: `left` of the text (the default), on `top` of it, or in the top-left `corner` as a tab, with a left-aligned caption starting after it (for a group's icon, as cloud providers draw them); `icon.size` is its size in points |
+| `icon.dx=`, `icon.dy=` | move the icon from where it would sit, in points: with `icon.pos=corner` and `icon.bg=`, `icon.dx=-8 icon.dy=-8` puts a group's badge out onto its corner |
 
 On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `tag.border` to something that contrasts, or the text disappears. Set these explicitly on every style; do not rely on defaults. Diagrams also lay their own text over boxes (a caption drawn on the subject): where a style's fill would swallow that text, it is drawn in the style's `title.color` instead, so a dark `focal` needs a light `title.color`.
 
-Keep type close to the built-in look's sizes (12px titles, 9px second lines, 10px line labels). Diagrams are laid out for those, so larger type overflows boxes that fit before.
+Keep type close to the built-in look's sizes (12pt titles, 9pt second lines, 10pt line labels). Diagrams are laid out for those, so larger type overflows boxes that fit before.
 
-The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's details (a cylinder rim) out of the top 20px or flatten them. A `title.pos=top` caption is centred on the top edge with a patch behind it, 6px wider than the words on each side. A patch that crosses the outline is paper-coloured, so the edge stops at the words; one that sits inside the shape takes the shape's own fill, so it hides the page dots behind the words and is otherwise invisible.
+The tag sits 8pt in from the top-left corner and is 12pt tall, so keep a path's details (a cylinder rim) out of the top 20pt or flatten them. A `title.pos=top` caption is centred on the top edge with a patch behind it, 6pt wider than the words on each side. A patch that crosses the outline is paper-coloured, so the edge stops at the words; one that sits inside the shape takes the shape's own fill, so it hides the page dots behind the words and is otherwise invisible.
 
 **Table styles** (`shape=table`) use `fill`, `stroke`, `sw`, `radius`, `dash` and `title.*` like any box, plus:
 
@@ -189,7 +189,7 @@ The tag sits 8px in from the top-left corner and is 12px tall, so keep a path's 
 | `double=colour` | a finer line of that colour on top, which turns a wide line into two rails; `double.sw=` |
 | `label.*` | the text on the line: `label.font`, `label.size`, `label.color`, `label.spacing`, `label.caps=0` to keep the label's own case (default is capitals), `label.weight`, `label.italic=1`. `label.fill=` and `label.border=` make the label a plate instead of a patch of paper (`label.radius=`, `label.pad=`, `label.sw=`) |
 
-**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`. `dy=6` draws the text 6px lower than its `at` point (negative: higher), for a font that sits high or low on its baseline; the file's positions stay as they are. `echo=colour` prints the text a second time underneath, a little off (`echo.dx=`, `echo.dy=`, default 3).
+**Text styles** (`style name text ...`): `font=`, `size=`, `weight=`, `color=`, `italic=1`, `spacing=`, `caps=1`. `dy=6` draws the text 6pt lower than its `at` point (negative: higher), for a font that sits high or low on its baseline; the file's positions stay as they are. `echo=colour` prints the text a second time underneath, a little off (`echo.dx=`, `echo.dy=`, default 3).
 
 ### Built-in styles you can restyle
 
@@ -285,7 +285,7 @@ The editor and an embedded diagram follow their theme: in the dark theme a diagr
 - **Separate by more than colour.** `external`, `optional`, `cloud` and `store` should differ in shape, fill or dash, so they read in greyscale and for colour-blind readers.
 - **Two or three stroke weights at most**, and the accent arrow slightly heavier than the default arrow.
 - **Check contrast** of text on every fill, and of faint things (`zone`, `lifeline`, `rule`) against the paper: visible, but quieter than the boxes.
-- **Keep default sizes on a 4px grid** and the same height for the box styles that share a row.
+- **Keep default sizes on a 4pt grid** and the same height for the box styles that share a row.
 - **Mono type is for technical detail** (paths, ports, commands), not for names.
 
 ## Limits today

@@ -30,7 +30,7 @@ Copy the four paths as they are. They are fractions of the box, so the same four
 ## Composition
 
 - Two to five parts. Write them bottom part first: shapes are drawn in file order and each plate must cover the one below it.
-- All plates share one x and one size, and sit one above the other with the same step of 116px (with 384x208 plates the gap shows about half of each lower plate's top). Never shrink one gap to fit; let the stack grow taller or drop a part. The top plate is at y=96 (under the title); the plate `k` from the top (0 is the top) is at `y = 96 + 116 * k`. Three parts: 96, 212, 328; four: 96, 212, 328, 444.
+- All plates share one x and one size, and sit one above the other with the same step of 116pt (with 384x208 plates the gap shows about half of each lower plate's top). Never shrink one gap to fit; let the stack grow taller or drop a part. The top plate is at y=96 (under the title); the plate `k` from the top (0 is the top) is at `y = 96 + 116 * k`. Three parts: 96, 212, 328; four: 96, 212, 328, 444.
 - Plates at x=208 so that plates plus labels (which end near x=800) sit centred on x=500.
 - For a smaller or larger plate give another size with the same proportions (288x156) and scale the 116 step and the offsets below with it. A size with other proportions distorts the angle and the thickness.
 - Always keep the two face tints. A plate with only an outline can be read two ways.
@@ -39,7 +39,7 @@ Copy the four paths as they are. They are fractions of the box, so the same four
 
 ## Text
 
-- One label per part, all in one column 64px right of the plates (x=656). With `y` the plate's top: the name (`size=16 weight=600`, one or two words) with its baseline at `y + 103`, and a detail line at `y + 119` in `small size=10`.
+- One label per part, all in one column 64pt right of the plates (x=656). With `y` the plate's top: the name (`size=16 weight=600`, one or two words) with its baseline at `y + 103`, and a detail line at `y + 119` in `small size=10`.
 - The leader is level with the middle of the plate's side (`y + 104`): a 4x4 dot at `590,y+102` (centred on the right corner), then a line from `598,y+104` to `644,y+104`. Leaders are level, never bent, and never cross a plate.
 - The focal part's dot, leader and detail line take the accent; its name stays ink.
 - No text on the plates, no numbers with a key.

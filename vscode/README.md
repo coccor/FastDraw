@@ -21,7 +21,7 @@ A live preview of [FastDraw](https://fastdraw.dev) diagrams (`.fdraw` files) nex
 
 - **Preview beside the text.** With the text open, **FastDraw: Open Preview to the Side** (`Ctrl+K V`,
   or the preview button at the top right) shows the drawing next to it, redrawn as you type, before you
-  save.
+  save. Fit fills the view; 100% draws the diagram at its own size, one point per unit, as the editor does.
 - **Click to find the line.** Click a box, a line or a piece of text in the preview to put the cursor
   on the line that draws it. The box on the line the cursor is on is outlined in the preview.
 - **Problems.** What `fastdraw check` reports (overlapping boxes, arrows through boxes, colliding

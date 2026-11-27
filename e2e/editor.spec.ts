@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { serveDiagrams } from '../src/serve.ts';
 import { openRoot } from '../src/node.ts';
-import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex, kept } from './helpers.ts';
+import { openFolder, diskText, writeDisk, paste, source, lineOf, saved, at, corner, drag, doubleClick, noPageErrors, repoText, repoBase64, zoom, fresh, pickHex, kept, clearOfPanel } from './helpers.ts';
 
 // open the right sidebar on a tab, from the rail or from its own tabs
 async function sidebar(page: import('@playwright/test').Page, name: 'Components' | 'Look') {
@@ -37,6 +37,7 @@ test('dragging a participant saves two lines, and its lifeline, bar and messages
 
 test('double-click edits the text of a box and of an arrow label', async ({ page }) => {
   await openFolder(page, folder());
+  await clearOfPanel(page);
   await doubleClick(page, await corner(page, 'reader'));
   await page.keyboard.type('Visitor');
   await page.keyboard.press('Enter');
@@ -171,6 +172,7 @@ test('an outside change to the file appears on the canvas, and undo brings the o
 
 test('draw a rectangle, connect to it, then undo both', async ({ page }) => {
   await paste(page, SMALL);
+  await clearOfPanel(page);
   await page.keyboard.press('r');
   await drag(page, await at(page, 300, 300), 140, 80);
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^rect: rect at 300,300 \d+x\d+$/);
@@ -230,6 +232,7 @@ test('resize, nudge, duplicate and delete', async ({ page }) => {
 
 test('resize from an edge, and Shift keeps the proportions', async ({ page }) => {
   await paste(page, SMALL);
+  await clearOfPanel(page);
   await page.mouse.click(...Object.values(await corner(page, 'user')) as [number, number]);
   const k = await zoom(page);
   const mid = async (c: string) => { const b = (await page.locator(`[data-handle="${c}"]:not([data-strip])`).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
@@ -1198,6 +1201,7 @@ test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does 
   await page.evaluate(() => window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key !== 'Control') (window as unknown as { prevented: boolean[] }).prevented = [...((window as unknown as { prevented?: boolean[] }).prevented ?? []), e.defaultPrevented]; }));
   await page.keyboard.press('Control+0');
   await expect(pct).toHaveText('100%');
+  expect(await zoom(page)).toBeCloseTo(4 / 3, 5); // 100% draws a unit as a point, 4/3 of a CSS pixel
   await page.keyboard.press('Control+=');
   await expect(pct).toHaveText('120%');
   await page.keyboard.press('Control+-');
@@ -1206,6 +1210,34 @@ test('Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 resets it, and the browser does 
   await page.keyboard.press('Control+0');
   await expect(pct).toHaveText('100%');
   expect(await page.evaluate(() => (window as unknown as { prevented: boolean[] }).prevented)).toEqual([true, true, true, true, true]);
+});
+
+test('opening a diagram, Fit and Shift+1 centre the drawing in the free part of the window and fill it', async ({ page }) => {
+  await paste(page, 'a: node "A" at 40,40\nb: node "B" at 400,200\n'); // the drawing is exactly the two boxes
+  const opened = await zoom(page);
+  await page.keyboard.press('Control+0');
+  await page.getByRole('button', { name: 'Fit to screen' }).click();
+  expect(await zoom(page)).toBeCloseTo(opened, 5);
+  await page.keyboard.press('Control+-');
+  await page.keyboard.press('Shift+1');
+  expect(await zoom(page)).toBeCloseTo(opened, 5);
+  const [box, free] = await page.evaluate(() => {
+    const rect = (s: string) => document.querySelector(s)?.getBoundingClientRect();
+    const boxes = [...document.querySelectorAll('svg.canvas rect[data-id]')].map((e) => e.getBoundingClientRect());
+    const bottoms = [...document.querySelectorAll('.bottomleft > *, .bottomcenter > *, .bottomright > *')].map((e) => e.getBoundingClientRect()).filter((r) => r.height);
+    const side = rect('.sidebar') ?? rect('.siderail');
+    return [
+      { l: Math.min(...boxes.map((r) => r.left)), r: Math.max(...boxes.map((r) => r.right)), t: Math.min(...boxes.map((r) => r.top)), b: Math.max(...boxes.map((r) => r.bottom)) },
+      { l: 0, r: side ? side.left : window.innerWidth, t: rect('.topcenter .toolbar')!.bottom, b: Math.min(...bottoms.map((r) => r.top)) },
+    ];
+  });
+  // clear of the toolbar, the bars along the bottom and the sidebar
+  expect(box.l).toBeGreaterThanOrEqual(free.l); expect(box.r).toBeLessThanOrEqual(free.r);
+  expect(box.t).toBeGreaterThanOrEqual(free.t); expect(box.b).toBeLessThanOrEqual(free.b);
+  // centred in what is left, and as large as fits: one side reaches within a small gap of its edges
+  expect(Math.abs((box.l + box.r) / 2 - (free.l + free.r) / 2)).toBeLessThan(2);
+  expect(Math.abs((box.t + box.b) / 2 - (free.t + free.b) / 2)).toBeLessThan(2);
+  expect(Math.max((box.r - box.l) / (free.r - free.l), (box.b - box.t) / (free.b - free.t))).toBeGreaterThan(0.9);
 });
 
 test('Escape closes the export and paste dialogs, from the shortcut and from the menu', async ({ page }) => {
@@ -1299,6 +1331,7 @@ test('each tab keeps its own diagram and history; closing one asks first and sta
 
 test('after a reload a diagram from a folder reconnects to its file and keeps saving there', async ({ page }) => {
   await openFolder(page, folder());
+  await clearOfPanel(page);
   await doubleClick(page, await corner(page, 'reader'));
   await page.keyboard.type('Visitor');
   await page.keyboard.press('Enter');
@@ -1345,6 +1378,7 @@ test('a new diagram from a template: search the kinds, open one in the built-in 
 test('a legend entry is edited in place: double-click its label, type, Enter; emptied, the entry goes', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL + 'key: legend at 40,300 title="Key" external="Shopper" focal="The service" store="Data" link="Request"\n');
+  await clearOfPanel(page);
   const label = (t: string) => page.locator('svg.canvas text', { hasText: new RegExp(`^${t}$`) }).first();
   const centre = async (t: string) => { const b = (await label(t).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
   // rename one entry: only that entry's label changes, and the field takes its place
@@ -1943,6 +1977,7 @@ test('a look with icons builtin=hidden offers only its own icons in the picker, 
 
 test('the panel sets a text font; aligning a text makes it a box, which moves like any box', async ({ page }) => {
   await paste(page, 'canvas 900x420\na: node "Box" at 40,40\nn: text "A short note" at 300,200\n');
+  await clearOfPanel(page);
   await page.mouse.click(...Object.values(await corner(page, 'n')) as [number, number]);
   const panel = page.locator('.panel');
   await panel.getByRole('radio', { name: 'mono' }).click();
@@ -1958,8 +1993,9 @@ test('the panel sets a text font; aligning a text makes it a box, which moves li
   expect(Math.abs(after.x - before.x)).toBeLessThan(2);
   // a text box made by dragging with the text tool, wider than its words: the line sits in its middle
   await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+0'); // the sizes below are screen pixels at 100%
   await page.keyboard.press('t');
-  await drag(page, await at(page, 300, 300), 240, 120);
+  await drag(page, await at(page, 300, 300), 240, 60); // a text box takes its width from the drag
   await page.waitForSelector('.textedit');
   await page.keyboard.press('Escape');
   await expect(page.locator('.textedit')).toHaveCount(0);
@@ -2070,8 +2106,8 @@ test('a free text is typed in paragraphs: Enter starts a line, Escape keeps it; 
 test('dragging with the text tool draws a text box', async ({ page }) => {
   await paste(page, 'canvas 900x420\na: node "Box" at 40,40\n');
   await page.keyboard.press('t');
-  const from = await at(page, 300, 200);
-  await drag(page, from, 240, 120);
+  const from = await at(page, 300, 200), k = await zoom(page);
+  await drag(page, from, 160 * k, 120);
   await page.keyboard.press('Escape');
   expect((await source(page)).trim().split('\n').pop()).toMatch(/^note\w*: text "Text" at 300,212 width=1\d\d$/);
 });

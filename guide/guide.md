@@ -67,7 +67,7 @@ Use your tool for asking a question if you have one, your pick first. If you can
 
 ## The file
 
-One statement per line. An indented line continues the statement above it. `//` starts a comment; so does a line starting with `# `.
+Every position and size is in points (pt): `at 40,40` is 40pt in from the left and the top, and the editor shows one point as 1.33 screen pixels at 100%. One statement per line. An indented line continues the statement above it. `//` starts a comment; so does a line starting with `# `.
 
 ```
 look "./team.look"          // path relative to this file; leave the line out to use the built-in look
@@ -129,7 +129,7 @@ trend: polygon at 60,330 points=0,40;80,10;160,30;240,0 open=1 stroke=accent sw=
 - `open=1` leaves the outline unclosed and unfilled: a line through the points, for a trend or a series.
 - `smooth=1` rounds the outline into a curve that passes through every point.
 - Give `WxH` only to stretch the outline to another size.
-- `freehand` is what the editor's Draw tool writes when a person sketches with the pointer: `freehand at x,y points=...`, a smooth open line with round ends, 2px wide, that lines and labels may cross. Leave such lines as they are when editing a file; do not write them yourself, a diagram written as text is made of boxes, lines and polygons.
+- `freehand` is what the editor's Draw tool writes when a person sketches with the pointer: `freehand at x,y points=...`, a smooth open line with round ends, 2pt wide, that lines and labels may cross. Leave such lines as they are when editing a file; do not write them yourself, a diagram written as text is made of boxes, lines and polygons.
 
 `arc` is a slice of the circle (or ellipse) that fills its box. Angles are degrees, clockwise from the top:
 
@@ -152,7 +152,7 @@ Text in a polygon is centred on the outline's area, so it sits in the wide part 
 
 ### Charts
 
-`chart` draws axes, tick labels and grid lines, and plots your numbers, so you never work out bar heights by hand. Its box (`at x,y WxH`) is the plot area. Tick labels are drawn outside it: leave about 56px free on the left, 28px below (44px with `xtitle=`) and 40px above.
+`chart` draws axes, tick labels and grid lines, and plots your numbers, so you never work out bar heights by hand. Its box (`at x,y WxH`) is the plot area. Tick labels are drawn outside it: leave about 56pt free on the left, 28pt below (44pt with `xtitle=`) and 40pt above.
 
 ```
 rev: chart "Revenue by quarter" at 80,80 360x200 x="Q1,Q2,Q3,Q4" prefix="$" unit="k" labels=1
@@ -210,7 +210,7 @@ users: table "users" at 40,100
 - A row is `| id "cell" "cell" ...`: one quoted text per column. The row id is optional; give one to every row an arrow ends on. It cannot be `top`, `bottom`, `left` or `right`.
 - `| ---` draws a full dividing line (between the attributes and the operations of a class, say).
 - `|= "Role" "Read" "Write"` is a heading row, drawn bold on a tint. Use it for the column headings of a grid.
-- The size works itself out: columns are as wide as their longest cell and the height follows the rows (32px header, 24px per row with the built-in look). To make a table wider, give a width: `at 40,100 240x0`. Spare width goes to the first column.
+- The size works itself out: columns are as wide as their longest cell and the height follows the rows (32pt header, 24pt per row with the built-in look). To make a table wider, give a width: `at 40,100 240x0`. Spare width goes to the first column.
 - A row can have its own tint: `| late "Shipping" "3 days" fill=accent/0.1`. One cell can too, by column number from 1: `| "Analyst" "read" "none" fill.2=accent/0.15 color.3=muted`. That is how a matrix or heatmap shows levels.
 - A row with a single cell, in a table with more columns, runs across the full width (an index name, a note).
 - The header text may have two lines (`"«interface»\nPaymentMethod"`); `title.align=left` puts it at the left.
@@ -223,11 +223,11 @@ An arrow can end on a row: `orders.user_id -- users.id`. It attaches to the left
 
 `icon=name` puts a small icon in any box: `db: store "Orders DB" icon=database at 440,120`. `fastdraw sizes` lists the icons the look has (server, database, user, cloud, queue, lock, mail, function, ai and about 120 more with friendly names, plus every other Phosphor icon under its own name, about 1,500 in all). `fastdraw icons email` searches them by name or meaning: it finds `mail`, and `k8s` finds `pod`.
 
-- The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28px more height. On a zone, `icon.pos=corner` draws the icon as a tab in its top-left corner with the zone's name beside it, as cloud providers draw a group's icon (`icon.size=` sets the tab, 24 by default).
+- The icon sits just left of the text and the pair is centred. `icon.pos=top` puts it above the text instead; the box then needs about 28pt more height. On a zone, `icon.pos=corner` draws the icon as a tab in its top-left corner with the zone's name beside it, as cloud providers draw a group's icon (`icon.size=` sets the tab, 24 by default).
 - With no text, the icon fills the box.
 - An icon on its own, with no box, is the `icon` style: `api: icon "Orders API" at 60,220 40x40 icon=server` (24x24 unless you give `WxH`). The icon is the shape, so `fill=`, `stroke=` and `sw=` style the icon itself (`fill=accent/0.2 stroke=accent sw=2`), and its text is a caption centred underneath. Lines attach to the icon and go around other icons' captions.
 - `icon.size=20` and `icon.color=link` change it; by default it takes the colour of the box's text.
-- `icon.fill=accent/0.2` lays a tint under the icon's main part for a two-tone look (none by default), and `icon.width=2` sets its line thickness in pixels; a built-in icon comes in four weights (thin, light, regular, bold), and the nearest is used. Both take look colours, tints or hex (`icon.fill=#ffd400`), and both work in a look's `style` lines so every box of a style gets the same.
+- `icon.fill=accent/0.2` lays a tint under the icon's main part for a two-tone look (none by default), and `icon.width=2` sets its line thickness in points; a built-in icon comes in four weights (thin, light, regular, bold), and the nearest is used. Both take look colours, tints or hex (`icon.fill=#ffd400`), and both work in a look's `style` lines so every box of a style gets the same.
 - `icon.style=solid` draws a built-in icon filled in one colour, and `icon.style=duotone` draws its outline over a light tint of the same drawing (`icon=database icon.style=duotone`). They take `icon.color=` (on an `icon` shape, `stroke=`); a duotone's tint is `icon.fill=` when set, else a light shade of the icon's colour. Outline, solid and duotone are the same drawing; every built-in icon has all three, a look's own icons only the outline. Keep one style across a diagram.
 - A look can bring its own colour icons (a cloud vendor's set, product logos), best by their web address from a recommended source (`fastdraw guide look`, Icons). Use them the same way: `icon=virtual-machine`. They keep their own colours. A set in a folder next to the look is listed by `fastdraw sizes <look>` and searched by `fastdraw icons <look> word`; for a set on the web, `fastdraw icons <look> word` searches it too. When `fastdraw sizes` says the look hides the built-in icons, use the look's own.
 - Use icons where they say something the name does not (what kind of thing a box is), on every box of a row or on none. Two or three kinds of icon in one diagram is plenty.
@@ -288,12 +288,12 @@ Routing: arrows turn at right angles with rounded corners, and go around a box t
 
 - name the sides: `a.bottom -> b.left`
 - add waypoints: `via=300,200` or `via=300,200;300,360`
-- draw it as a smooth curve: `route=curve`. It leaves and arrives square to the sides it is attached to. `bend=40` instead bows it 40px to the left of its direction of travel (negative: to the right), which is how to draw the arcs of a cycle. `via=x,y;x,y` makes the curve pass through those points. Curves do not avoid boxes; you place them. `route=straight` gives one straight line
+- draw it as a smooth curve: `route=curve`. It leaves and arrives square to the sides it is attached to. `bend=40` instead bows it 40pt to the left of its direction of travel (negative: to the right), which is how to draw the arcs of a cycle. `via=x,y;x,y` makes the curve pass through those points. Curves do not avoid boxes; you place them. `route=straight` gives one straight line
 - a line that is meant to run behind boxes (a grid line, a guide) takes `layer=back`, and `check` stops reporting the boxes it crosses. `layer=front` draws a line on top of the shapes instead (an edge on a face)
 - several lines may share one trunk, as in a tree: give them the same start point (`root.bottom@0.5 -> a.top`, `root.bottom@0.5 -> b.top`) or the same end point. Lines that overlap anywhere else are reported
 - for a loop back to the same side (`x.right@190 -> x.right@220`), `loop=36` sets how far it sticks out
 
-Labels are drawn in small caps on a paper-coloured patch, above a horizontal line or to the right of a vertical one, at the middle of the longest segment. Keep them to about 14 characters. To move one: `lside=below` (or `left` for vertical lines), or `lpos=x,y` (centre x, text baseline y; the default baseline is 10px above a horizontal line, or 18px below it with `lside=below`). `label.caps=0` keeps the label's own letter case, for paths and header names.
+Labels are drawn in small caps on a paper-coloured patch, above a horizontal line or to the right of a vertical one, at the middle of the longest segment. Keep them to about 14 characters. To move one: `lside=below` (or `left` for vertical lines), or `lpos=x,y` (centre x, text baseline y; the default baseline is 10pt above a horizontal line, or 18pt below it with `lside=below`). `label.caps=0` keeps the label's own letter case, for paths and header names.
 
 ### Text
 
@@ -313,7 +313,7 @@ legend at 40,404 focal="The service this is about" store="Holds data" primary="M
 - It is as wide as the rest of the drawing: from its x to the right edge of everything else. Give `WxH` to set another width (the height is always worked out).
 - `title="Key"` changes the heading; `title=none` removes it.
 - For a mark that is not a style of the look, write `swatch.COLOUR="meaning"` (a small filled square), `dot.COLOUR="meaning"` or `line.COLOUR="meaning"`, where COLOUR is a colour name from the look or a hex colour, optionally with a tint (`swatch.muted/0.2="Flow"`, `swatch.#4a7c59="Stream"`): `legend at 40,400 dot.accent="Shipped" swatch.muted="Planned" line.link="Depends on"`.
-- Put it 24px under the lowest element.
+- Put it 24pt under the lowest element.
 
 ### Groups
 
@@ -338,8 +338,8 @@ These are what make a diagram look designed. `check` enforces the mechanical one
 - **Fewer elements.** Aim for nine boxes or fewer and twelve arrows or fewer. If two boxes always go together, make them one. If an arrow says nothing the layout doesn't already say, remove it.
 - **One focus.** Use the look's accent style on one or two things only.
 - **A grid you can name.** Pick column x-positions and row y-positions and reuse them. Boxes in a row share a top edge and height; boxes in a column share a left edge or centre.
-- **Even gaps.** Use the same gap between neighbours along a row (48–56px between boxes that an arrow with a label connects; at least 40px otherwise).
-- **Margins.** There is no page: the picture is everything drawn plus a 40px margin on every side, added for you. By convention start the drawing at 40,40 (the title's baseline at 40,52).
+- **Even gaps.** Use the same gap between neighbours along a row (48–56pt between boxes that an arrow with a label connects; at least 40pt otherwise).
+- **Margins.** There is no page: the picture is everything drawn plus a 40pt margin on every side, added for you. By convention start the drawing at 40,40 (the title's baseline at 40,52).
 - **Straight arrows where possible.** Line things up so the main path is straight lines. Use elbows for branches.
 - **No arrow through a box, no arrow on top of another, no label touching a box or another line.** `check` reports these.
 - **Labels fit their line.** A horizontal arrow needs to be longer than its label. Make the gap wider or the label shorter.

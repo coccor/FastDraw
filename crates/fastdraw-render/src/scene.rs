@@ -1815,7 +1815,7 @@ impl Builder {
         {
             self.err(
                 line,
-                format!("width={v}: a text box's width is a number of pixels, e.g. width=240"),
+                format!("width={v}: a text box's width is a number of points, e.g. width=240"),
             );
         }
         if let Some(v) = prop("align")
@@ -1879,7 +1879,7 @@ impl Builder {
         if let Some(d) = prop("dy")
             && !to_number(d).is_finite()
         {
-            let msg = format!("dy={d}: how many pixels lower the text is drawn, e.g. dy=6");
+            let msg = format!("dy={d}: how many points lower the text is drawn, e.g. dy=6");
             self.err(line, msg);
         }
         let drop = num(prop("dy"), 0.0);
@@ -2087,7 +2087,7 @@ impl Builder {
         if let Some(w) = prop("icon.width") {
             let n = to_number(w);
             if !(n > 0.0 && n <= 8.0) {
-                self.err(line, format!("icon.width={w}: the icon's line thickness in pixels, a number from 0.5 to 8 (e.g. icon.width=2)"));
+                self.err(line, format!("icon.width={w}: the icon's line thickness in points, a number from 0.5 to 8 (e.g. icon.width=2)"));
             }
         }
         let style = prop("icon.style");

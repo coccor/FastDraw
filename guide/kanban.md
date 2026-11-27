@@ -23,10 +23,10 @@ rect at 328,144 4x56 fill=accent stroke=none overlap=ok        // strip on the b
 
 ## Composition
 
-- Title at 40,52; columns start at y=96. Columns are 240 wide with 32px between them, starting at x=40. Column k (from 0) is at `x = 40 + 272*k`. Five is the limit.
+- Title at 40,52; columns start at y=96. Columns are 240 wide with 32pt between them, starting at x=40. Column k (from 0) is at `x = 40 + 272*k`. Five is the limit.
 - All columns have the same height: 52 + 68 * (cards in the fullest column). The space left under a short column is its free capacity; leave it.
-- Header: the name at column x+16, baseline 20px below the column top. The chip is 40x16, at column x+184 (its right edge 16px in), 8px below the top. The line under the header is 36px below the top and spans the column.
-- A card is 208x56 (the column width minus 16px each side). The first card starts 12px under the header line (column top + 48); the next starts 68px lower (56 plus a 12px gap).
+- Header: the name at column x+16, baseline 20pt below the column top. The chip is 40x16, at column x+184 (its right edge 16pt in), 8pt below the top. The line under the header is 36pt below the top and spans the column.
+- A card is 208x56 (the column width minus 16pt each side). The first card starts 12pt under the header line (column top + 48); the next starts 68pt lower (56 plus a 12pt gap).
 - Four cards per column and twelve on the whole board at most. If a column has more, show three and a last card that counts the rest (`optional "+14 more"`).
 - Cards are pieces of work, not people. Put the owner in `sub=`.
 
@@ -35,7 +35,7 @@ rect at 328,144 4x56 fill=accent stroke=none overlap=ok        // strip on the b
 | State | Write it as |
 |---|---|
 | open | `node` |
-| blocked | `focal dash=4,4 fill=accent/0.08 title.color=ink sub.color=muted` (white text would vanish on the pale fill), plus a 4px-wide accent `rect` on its left edge (`overlap=ok`) |
+| blocked | `focal dash=4,4 fill=accent/0.08 title.color=ink sub.color=muted` (white text would vanish on the pale fill), plus a 4pt-wide accent `rect` on its left edge (`overlap=ok`) |
 | waiting on someone outside the team | `optional` |
 | done | `node fill=ink/0.05 stroke=ink/0.3 title.color=muted` (not `store`: that means data, and many looks draw it as a cylinder) |
 
@@ -50,4 +50,4 @@ Every card has `title.align=left`, a short title and a `sub=` of ticket id and o
 
 ## Legend
 
-The blocked card, the done card and the chip are overrides, not styles, so mix styles and marks in one statement, 24px under the columns (column top + height + 24): `legend at 40,Y node="Open" optional="Waiting on someone outside" swatch.accent/0.15="Blocked" swatch.ink/0.08="Done" line.accent="Over its limit"`.
+The blocked card, the done card and the chip are overrides, not styles, so mix styles and marks in one statement, 24pt under the columns (column top + height + 24): `legend at 40,Y node="Open" optional="Waiting on someone outside" swatch.accent/0.15="Blocked" swatch.ink/0.08="Done" line.accent="Over its limit"`.

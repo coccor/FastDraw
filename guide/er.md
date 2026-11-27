@@ -23,7 +23,7 @@ author.id -- article.author "writes" style=arrow tail=only-one head=many
 
 ## Composition
 
-- Title at 40,52 (`style=h1`); tables start at y=112 or lower. Three to six entities in columns 200 to 248 wide with 104 to 120px between columns, so a relationship has room for both end marks and a label. If one entity joins the rest (a hub), put it in the middle with the others around it. If the model is a chain (A to B to C to D), lay it out left to right in one row, the accent on the entity the model is about wherever it falls; six in a chain go in two rows of three, the second row running back under the first.
+- Title at 40,52 (`style=h1`); tables start at y=112 or lower. Three to six entities in columns 200 to 248 wide with 104 to 120pt between columns, so a relationship has room for both end marks and a label. If one entity joins the rest (a hub), put it in the middle with the others around it. If the model is a chain (A to B to C to D), lay it out left to right in one row, the accent on the entity the model is about wherever it falls; six in a chain go in two rows of three, the second row running back under the first.
 - Give every table a width (`216x0`); the height follows the rows. Do not pad entities to the same height.
 - A row's centre is at `table y + 44 + 24 * n` (n = 0 for the first row). Place the tables so the two rows of every relationship are at the same y: that line is then straight. Going along a chain, each next table's y is the previous one's plus 24 times (its key row number minus the previous table's foreign-key row number): a 4-entity chain steps down 24 or 48 each time, as a staircase. Putting a foreign key right under the primary key makes this easy.
 - Six to eight fields per entity at most. Leave out fields that say nothing about the model (timestamps, flags).
@@ -34,12 +34,12 @@ author.id -- article.author "writes" style=arrow tail=only-one head=many
 
 - Always write `style=arrow` on a relationship. A bare `--` is a straight line and comes out diagonal between rows at different heights; with `style=arrow` it turns at right angles.
 - Cardinality is drawn by the end marks, not written as text: `tail=` is the mark at the first end, `head=` at the second. `only-one` (exactly one), `zero-one`, `many`, `one-many`, `zero-many`. Mark both ends of every relationship, in the same notation throughout.
-- Between entities side by side, end on the key rows: `author.id -- article.author`. Between entities stacked in one column, join the boxes: `tag.bottom -- atag.top`, with at least 56px between them for the two marks.
+- Between entities side by side, end on the key rows: `author.id -- article.author`. Between entities stacked in one column, join the boxes: `tag.bottom -- atag.top`, with at least 56pt between them for the two marks.
 - A label is one verb ("writes", "tagged"). Leave it out when the field names already say it.
 
 ## Legend
 
-`legend at 40,Y 360x0 focal="Aggregate root" node="Entity" optional="Join entity"`, 24px under the lowest table. The `node` swatch stands for the plain table. Give the legend a width (360 holds three entries; add 120 for each more) so the entries stay on the left. The statement cannot show key prefixes or end marks, so add them by hand to its right, from `x = 40 + legend width + 40`, on the entries' line (text baseline Y+40, the line sample at Y+37); each next x is the last text's x plus `6 * its characters + 24`:
+`legend at 40,Y 360x0 focal="Aggregate root" node="Entity" optional="Join entity"`, 24pt under the lowest table. The `node` swatch stands for the plain table. Give the legend a width (360 holds three entries; add 120 for each more) so the entries stay on the left. The statement cannot show key prefixes or end marks, so add them by hand to its right, from `x = 40 + legend width + 40`, on the entries' line (text baseline Y+40, the line sample at Y+37); each next x is the last text's x plus `6 * its characters + 24`:
 
 ```
 text "#" at 440,452 style=small color=ink

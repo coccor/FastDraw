@@ -12,7 +12,9 @@
 
   // fit: the whole diagram in view, redone when the view or the diagram changes; otherwise a fixed scale
   const saved = vscode.getState() || {};
-  let fit = saved.fit !== false, k = saved.k || 1, size = { w: 1, h: 1 }, hits = [], cursorLine = 0, facesCss = '';
+  // k is CSS pixels per diagram unit; a unit is a point (4/3 px, as PT in src/render.ts), so 100% is k = PT
+  const PT = 4 / 3;
+  let fit = saved.fit !== false, k = saved.k || PT, size = { w: 1, h: 1 }, hits = [], cursorLine = 0, facesCss = '';
 
   const keep = () => vscode.setState({ ...(vscode.getState() || {}), fit, k });
   const svg = () => canvas.querySelector('svg');
@@ -29,11 +31,11 @@
     if (!s) return;
     if (fit) {
       const pad = 32, aw = stage.clientWidth - pad, ah = stage.clientHeight - pad;
-      k = Math.max(0.05, Math.min(aw / size.w, ah / size.h, 2));
+      k = Math.max(0.05 * PT, Math.min(aw / size.w, ah / size.h, 2 * PT));
     }
     s.setAttribute('width', String(Math.round(size.w * k)));
     s.setAttribute('height', String(Math.round(size.h * k)));
-    zoomLabel.textContent = Math.round(k * 100) + '%';
+    zoomLabel.textContent = Math.round(k / PT * 100) + '%';
     fitBtn.classList.toggle('on', fit);
     stage.classList.toggle('fit', fit);
     mark();
@@ -47,7 +49,7 @@
     const px = at ? at.x - r.left : stage.clientWidth / 2, py = at ? at.y - r.top : stage.clientHeight / 2;
     const cx = (stage.scrollLeft + px) / k, cy = (stage.scrollTop + py) / k;
     fit = false;
-    k = Math.max(0.05, Math.min(next, 8));
+    k = Math.max(0.05 * PT, Math.min(next, 8 * PT));
     layout();
     stage.scrollLeft = cx * k - px;
     stage.scrollTop = cy * k - py;
@@ -166,7 +168,7 @@
   }, { passive: false });
 
   fitBtn.addEventListener('click', () => { fit = true; layout(); keep(); });
-  zoomLabel.addEventListener('click', () => zoomTo(1));
+  zoomLabel.addEventListener('click', () => zoomTo(PT));
   document.getElementById('in').addEventListener('click', () => zoomTo(k * 1.25));
   document.getElementById('out').addEventListener('click', () => zoomTo(k / 1.25));
   document.getElementById('edit').addEventListener('click', () => vscode.postMessage({ type: 'openEditor' }));

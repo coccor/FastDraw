@@ -4,10 +4,10 @@ Shows a business process that passes between several teams: who does each step, 
 
 ## Composition
 
-- Columns: one per step, 152px apart. The first column centre is x=248; the left 128px (x=40 to 168) holds the lane names. The lanes run from x=40 to 64px past the last column centre: lane width W = 272 + (steps − 1) × 152.
+- Columns: one per step, 152pt apart. The first column centre is x=248; the left 128pt (x=40 to 168) holds the lane names. The lanes run from x=40 to 64pt past the last column centre: lane width W = 272 + (steps − 1) × 152.
 - Title: `text "..." at 40,52 style=h1`. Step header above each column: a numbered chip, `ellipse "1" at cx-12,96 24x24 fill=ink/0.08 stroke=none title.size=9`, and under it `text "Order" at cx,136 style=eyebrow anchor=middle`. One word per step.
-- Lanes: one per actor, 96px high, across the full width, the first starting at y=148 (lane i at 148 + 96 * i). Tint every second lane (the first, third, ...) with `zone at 40,y WxH radius=0 stroke=none` (no text), W as above. Draw a `style=rule` line (written with `--`) on every lane border and one vertical line at x=168 (`168,148 -- 168,<bottom> stroke=ink/0.2 sw=1`) to close off the names. Lane name: `text "Customer" at 104,<lane top + 51> style=eyebrow anchor=middle`.
-- A box goes where an actor does a step: 128x72, centred on the column, 12px below the top of the lane. A cell where nothing happens stays empty: no box, no dash.
+- Lanes: one per actor, 96pt high, across the full width, the first starting at y=148 (lane i at 148 + 96 * i). Tint every second lane (the first, third, ...) with `zone at 40,y WxH radius=0 stroke=none` (no text), W as above. Draw a `style=rule` line (written with `--`) on every lane border and one vertical line at x=168 (`168,148 -- 168,<bottom> stroke=ink/0.2 sw=1`) to close off the names. Lane name: `text "Customer" at 104,<lane top + 51> style=eyebrow anchor=middle`.
+- A box goes where an actor does a step: 128x72, centred on the column, 12pt below the top of the lane. A cell where nothing happens stays empty: no box, no dash.
 - Order the lanes so that the process moves down the page as it moves right, and neighbours in the process are neighbours on the page where possible.
 - Six lanes and twelve steps at most. More: an overview diagram and a detail diagram.
 
@@ -38,4 +38,4 @@ One step is the one the process turns on. Its box is `focal`, its header chip an
 
 ## Legend
 
-`legend at 40,Y node="A step, in the lane of who does it" focal="..." primary="Critical handoff" arrow="Handoff"`, 24px under the last lane (Y = 148 + 96 * lanes + 24).
+`legend at 40,Y node="A step, in the lane of who does it" focal="..." primary="Critical handoff" arrow="Handoff"`, 24pt under the last lane (Y = 148 + 96 * lanes + 24).

@@ -7,7 +7,7 @@ FastDraw has no radar element. Rings and options are `polygon`s, spokes are plai
 ## Building blocks
 
 ```
-// Title y=52. Centre 500,288, radius 160 = score 10, so 16px per point. Five axes, the first straight up, then clockwise.
+// Title y=52. Centre 500,288, radius 160 = score 10, so 16pt per score point. Five axes, the first straight up, then clockwise.
 // every polygon is written "at 0,0", so its points are absolute coordinates
 title: text "Why we picked MinIO" at 40,52 style=h1
 text "Scores 0 to 10, higher is better · rings every 2" at 40,74 style=caption
@@ -25,7 +25,7 @@ legend at 40,476 swatch.accent="MinIO · recommended" swatch.link="Amazon S3"
 
 ## Working out the points
 
-A score `v` on axis `i` is at `centre + v * px per point * direction of axis i`. For N axes the direction of axis `i` (first up, clockwise) is `sin(360° * i / N), -cos(360° * i / N)`. Common ones:
+A score `v` on axis `i` is at `centre + v * (pt per score point) * direction of axis i`. For N axes the direction of axis `i` (first up, clockwise) is `sin(360° * i / N), -cos(360° * i / N)`. Common ones:
 
 | Axes | Directions |
 |---|---|
@@ -33,7 +33,7 @@ A score `v` on axis `i` is at `centre + v * px per point * direction of axis i`.
 | 4 | 0,-1 · 1,0 · 0,1 · -1,0 |
 | 5 | 0,-1 · 0.951,-0.309 · 0.588,0.809 · -0.588,0.809 · -0.951,-0.309 |
 
-Example: score 8 on the second of five axes, 16px per point: `500 + 8*16*0.951, 288 - 8*16*0.309` = `622,248`. Round to whole px.
+Example: score 8 on the second of five axes, 16pt per score point: `500 + 8*16*0.951, 288 - 8*16*0.309` = `622,248`. Round to whole pt.
 
 ## Composition
 
@@ -51,8 +51,8 @@ Example: score 8 on the second of five axes, 16px per point: `500 + 8*16*0.951, 
 
 ## Text
 
-- Axis names: one to three words, `size=11 weight=600 color=ink`. Take the point `P` 20px beyond the end of the spoke, along its direction (`end + 20 * direction`). If the direction's x is above 0.3: text starts at `P.x`, baseline `P.y + 4`. Below -0.3: `anchor=end` at `P.x`, baseline `P.y + 4`. Otherwise `anchor=middle` at `P.x`, baseline `P.y` for the top name and `P.y + 10` for a bottom one. For five axes: 500,108 · 671,236 · 606,438 · 394,438 · 329,236.
-- Scale numbers are optional. If written, they go on the first axis only, after the polygons: `small` text, size 8, right-aligned 6px left of the spoke, level with each ring. A polygon edge that runs through a number makes it unreadable (the subject's first corner and its neighbours' edges often do): then leave the numbers out and say the scale in the subtitle ("rings every 2").
+- Axis names: one to three words, `size=11 weight=600 color=ink`. Take the point `P` 20pt beyond the end of the spoke, along its direction (`end + 20 * direction`). If the direction's x is above 0.3: text starts at `P.x`, baseline `P.y + 4`. Below -0.3: `anchor=end` at `P.x`, baseline `P.y + 4`. Otherwise `anchor=middle` at `P.x`, baseline `P.y` for the top name and `P.y + 10` for a bottom one. For five axes: 500,108 · 671,236 · 606,438 · 394,438 · 329,236.
+- Scale numbers are optional. If written, they go on the first axis only, after the polygons: `small` text, size 8, right-aligned 6pt left of the spoke, level with each ring. A polygon edge that runs through a number makes it unreadable (the subject's first corner and its neighbours' edges often do): then leave the numbers out and say the scale in the subtitle ("rings every 2").
 - No values on the corners; the rings carry the scale.
 
 ## Legend

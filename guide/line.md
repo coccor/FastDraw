@@ -19,7 +19,7 @@ legend at 40,464 line.accent="Organic" line.muted="Direct" line.soft="Referral"
 
 ## Composition
 
-- Title at y=52, plot `at 96,96 864x316` (tick labels end near y=440), legend at y=464. Move the legend 20px lower if there is an `xtitle=`.
+- Title at y=52, plot `at 96,96 864x316` (tick labels end near y=440), legend at y=464. Move the legend 20pt lower if there is an `xtitle=`.
 - Four to twelve points per line. With more, sum them into longer periods.
 - Five lines at most. One is the subject: `stroke=accent`, default width, `dots=1`. The others are `stroke=muted`, `soft` or `ink/0.5` with `sw=1.5` and no dots.
 - Use `area` instead of `line` for the subject only when the amount under the line means something (a volume, a count). Give it `fill=accent/0.08`; the default tint is heavy and dulls the lines under it.
@@ -29,8 +29,8 @@ legend at 40,464 line.accent="Organic" line.muted="Direct" line.soft="Referral"
 
 ## Text
 
-- Name each line at its right end, right-aligned to the last point: `anchor=end`, size 10 or 11, in the line's colour. The last point of n categories is at `x = 96 + 864 * (n - 0.5) / n` (852 for four, 906 for eight); its height is `y = 412 - value / ymax * 316`. Put the baseline 10px above that.
-- Two lines that end closer than 14px (a few units, `14 / 316 * ymax`) would put their labels on top of each other. Keep the upper label 10px above its point and put the lower one below its point (baseline 16px under it). Do not move the lines. If three end together, name the third in the legend only.
+- Name each line at its right end, right-aligned to the last point: `anchor=end`, size 10 or 11, in the line's colour. The last point of n categories is at `x = 96 + 864 * (n - 0.5) / n` (852 for four, 906 for eight); its height is `y = 412 - value / ymax * 316`. Put the baseline 10pt above that.
+- Two lines that end closer than 14pt (a few units, `14 / 316 * ymax`) would put their labels on top of each other. Keep the upper label 10pt above its point and put the lower one below its point (baseline 16pt under it). Do not move the lines. If three end together, name the third in the legend only.
 - Write the latest value of the subject line in its label. Do not use `labels=1` with several lines; the numbers pile up.
 
 ## Slopegraph
@@ -38,7 +38,7 @@ legend at 40,464 line.accent="Organic" line.muted="Direct" line.soft="Referral"
 Two states (before and after), four to ten things, one straight line each. The reader compares slopes. Use a chart with two categories and hide its own axes:
 
 ```
-// y 100..550 over 320px: value v is at y = 416 - (v - 100) * 320 / 450. The two states are at x=350 and x=650
+// y 100..550 over 320pt: value v is at y = 416 - (v - 100) * 320 / 450. The two states are at x=350 and x=650
 350,96 -- 350,416 stroke=ink/0.25 layer=back                 // the two state rules, behind the lines
 650,96 -- 650,416 stroke=ink/0.25 layer=back
 sl: chart at 200,96 600x320 x="Before,After" y=100..550 yaxis=0 grid=0 key=0 stroke=none tick.size=10
@@ -51,7 +51,7 @@ text "Recommender" at 694,185 size=11 weight=600 color=ink
 ```
 
 - With two categories the points are a quarter and three quarters of the way across the chart box.
-- Label both ends of every line with name and value, baseline 4px below the point. Where two labels on one side are closer than 14px, shift them apart evenly and leave the dots where they are.
+- Label both ends of every line with name and value, baseline 4pt below the point. Where two labels on one side are closer than 14pt, shift them apart evenly and leave the dots where they are.
 - Both sides share one scale; that is why it is one chart. State the range in the legend heading when it does not start at 0 (`title="p95 in ms · scale 100 to 550"`).
 - Keep each label wholly outside or wholly inside the chart box. A text that crosses its edge is reported as an overlap.
 
@@ -65,7 +65,7 @@ bp: chart at 320,96 480x336 x="Q1,Q2,Q3,Q4" y=0.5..6.5 step=10 yaxis=0 grid=0 ke
   | line 6 5 3 1 stroke=accent sw=2.5 dots=1       // ranks 1, 2, 4, 6
 ```
 
-- With `y=0.5..N+0.5`, rank r is at `plot y + plot height * (r - 0.5) / N`: 56px rows here.
+- With `y=0.5..N+0.5`, rank r is at `plot y + plot height * (r - 0.5) / N`: 56pt rows here.
 - Left of the first column: the name (`anchor=end`, outside the chart box) and `#1`, `#2` ... in `small`. Right of the last column: the same in final order. Every rank at every moment is taken by exactly one line.
 - Never bend a line off its row to make room for a label.
 
@@ -74,7 +74,7 @@ bp: chart at 320,96 480x336 x="Q1,Q2,Q3,Q4" y=0.5..6.5 step=10 yaxis=0 grid=0 ke
 One distribution per row, rows overlapping, to compare shapes. Each row is its own small chart with one `area`; all share width, height and `y=` range, so heights compare:
 
 ```
-// rows 56px apart, each 120px high, so a peak may reach into the row above but not two rows up
+// rows 56pt apart, each 120pt high, so a peak may reach into the row above but not two rows up
 r1: chart at 320,96 384x120 y=0..50 yaxis=0 grid=0 key=0 stroke=none overlap=ok
   | area 0 22 30 18 9 5 2 1 0 0 0 0 0 stroke=ink/0.7 sw=1 fill=ink/0.1
 r2: chart at 320,152 384x120 y=0..50 yaxis=0 grid=0 key=0 stroke=none overlap=ok
@@ -84,7 +84,7 @@ text "static-cdn" at 304,220 anchor=end size=11 color=ink
 ```
 
 - Three to eight rows. The subject row takes `stroke=accent sw=2 fill=accent/0.15`.
-- The rows end at the last row's y + 120 + 64 (its tick labels and the scale name); the legend goes 24px lower.
+- The rows end at the last row's y + 120 + 64 (its tick labels and the scale name); the legend goes 24pt lower.
 - Only the last chart has `x="0,,,120,,,240"`: one entry per bin, empty where no tick label is wanted. Name the scale in a `small` text under it.
 - Order the rows by something you can state (median, peak position) and say it in the legend heading.
 
@@ -109,4 +109,4 @@ st: chart at 60,96 880x320 x="W01,W02,W03,W04" y=0..200 yaxis=0 grid=0 key=0 str
 
 ## Legend
 
-`legend at 40,464` (24px under the lowest element) with one `line.COLOUR=` entry per line (`swatch.COLOUR=` for ridgeline and streamgraph). The subject comes first and its entry says why it matters.
+`legend at 40,464` (24pt under the lowest element) with one `line.COLOUR=` entry per line (`swatch.COLOUR=` for ridgeline and streamgraph). The subject comes first and its entry says why it matters.
