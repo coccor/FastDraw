@@ -19,6 +19,7 @@ Listed 2026-11-23 after the 0.5.0 release; none picked yet.
 | Visual diff of rendered diagrams in a GitHub Action | The owner picks it |
 | More Mermaid types in `fastdraw import` (pie, Gantt, mindmap and timeline are refused today) | The owner picks it, or a user asks for one |
 | `fastdraw check --json` and `fastdraw describe` | The owner picks it |
+| Any edit to a table (its name, a cell, a move, the panel's rows) drops `//` comments on its row lines and moves the first line's comment to the last row: `patchSource` rewrites the statement and keeps only the first line's comment. Found by review round 1 of PR #104 (pre-existing) | A user reports a lost comment, or agents start writing comments on table rows |
 | Four e2e tests flaky under load (two double-click, two icon; seen 2026-11-23, not named yet): a full CI run can fail for no real reason | A CI run fails on one of them, or the owner picks it |
 
 ## Parked

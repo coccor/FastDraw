@@ -662,6 +662,13 @@ test('a table cell is edited in place by a double-click; the header still edits 
   expect(errors).toEqual([]);
 });
 
+test('with no gap between table columns, the end of the widest first cell is still that cell', async ({ page }) => {
+  await paste(page, 'canvas 600x300\nt: table "t" at 40,40 cell.gap=0\n  | "email" "text"\n  | "id" "uuid"\n');
+  const b = (await page.locator('svg.canvas text', { hasText: /^email$/ }).first().boundingBox())!;
+  await doubleClick(page, { x: b.x + b.width - 2, y: b.y + b.height / 2 });
+  await expect(page.locator('.textedit')).toHaveValue('email');
+});
+
 test('a line\'s ends are one row, start then end as the line runs, each opening every end beside the panel', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);

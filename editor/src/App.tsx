@@ -950,6 +950,8 @@ export function App() {
     return null;
   };
   // A table's cell as an edit entry, "cell:row:column" (both from 0), and back.
+  // the gap between columns as the layout reads it: 0 is a gap of 0, not the default
+  const gapOf = (s: Shape) => { const v = s.p['cell.gap']; return v === undefined || v === '' || isNaN(+v) ? 16 : +v; };
   const cellIndex = (entry: string) => entry.slice(5).split(':').map(Number) as [number, number];
   // The cell drawn under the point: rows below the header, the column whose band (half the gap either side)
   // holds the point. A one-cell row in a table of several columns runs across it, so it is always its cell 0.
@@ -959,7 +961,7 @@ export function App() {
     if (turn) at = turnPt(at, { x: s.x + s.w / 2, y: s.y + s.h / 2 }, -turn);
     const r = rows.findIndex((row) => row.kind !== 'rule' && at.y >= row.y && at.y < row.y + row.h);
     if (r < 0 || !cols.length || at.x < s.x || at.x > s.x + s.w) return null;
-    const gap = Number(s.p['cell.gap']) || 16, spans = cols.length > 1 && rows[r].cells.length === 1 && rows[r].kind !== 'head';
+    const gap = gapOf(s), spans = cols.length > 1 && rows[r].cells.length === 1 && rows[r].kind !== 'head';
     let c = 0;
     if (!spans) cols.forEach((col, j) => { if (j && at.x >= s.x + col.x - gap / 2) c = j; });
     return `cell:${r}:${c}`;
@@ -968,7 +970,7 @@ export function App() {
   const cellBox = (s: Shape, entry: string): Box => {
     const [r, c] = cellIndex(entry), row = s.rows?.[r], cols = s.cols ?? [];
     if (!row) return { x: s.x, y: s.y, w: s.w, h: s.h };
-    const gap = Number(s.p['cell.gap']) || 16, spans = cols.length > 1 && row.cells.length === 1 && row.kind !== 'head';
+    const gap = gapOf(s), spans = cols.length > 1 && row.cells.length === 1 && row.kind !== 'head';
     const x0 = c === 0 ? s.x : s.x + cols[c].x - gap / 2, x1 = spans || c >= cols.length - 1 ? s.x + s.w : s.x + cols[c + 1].x - gap / 2;
     return { x: x0, y: row.y, w: x1 - x0, h: row.h };
   };
