@@ -373,6 +373,20 @@ test('editing a table keeps one row per line and leaves its cells alone', () => 
   assert.equal(fewer.split('\n').slice(2, 5).join('\n'), 'users: table "users" at 40,100\n  |= "a" "b"\n  | r1 "x" ""');
 });
 
+test('editing a table keeps the comments on and between its rows where they were', () => {
+  const src = 'canvas 800x400\nusers: table "users" at 40,100 // the main one\n  | id "id" "uuid" "PK" // key\n  // contact\n\n  | email "email" "text" // unique\n  | "+ 3 more"\nnext: node at 0,0 // after\n';
+  const cell = patchSource(src, new Map([[2, (t) => setRows(t, [{ id: 'id', kind: 'row', cells: ['id', 'bigint', 'PK'] }, { id: 'email', kind: 'row', cells: ['email', 'text'] }, { kind: 'row', cells: ['+ 3 more'] }])]]));
+  assert.equal(cell, src.replace('"uuid"', '"bigint"'));
+  const renamed = patchSource(src, new Map([[2, (t) => setText(t, 'people')]]));
+  assert.equal(renamed, src.replace('"users"', '"people"'));
+  // a row taken out takes its own comment; the lines under it stay, under the row above
+  const fewer = patchSource(src, new Map([[2, (t) => setRows(t, [{ id: 'email', kind: 'row', cells: ['email', 'text'] }, { kind: 'row', cells: ['+ 3 more'] }])]]));
+  assert.equal(fewer, 'canvas 800x400\nusers: table "users" at 40,100 // the main one\n  // contact\n\n  | email "email" "text" // unique\n  | "+ 3 more"\nnext: node at 0,0 // after\n');
+  // a row added keeps the others' comments with their rows
+  const more = patchSource(src, new Map([[2, (t) => setRows(t, [{ id: 'id', kind: 'row', cells: ['id', 'uuid', 'PK'] }, { id: 'name', kind: 'row', cells: ['name', 'text'] }, { id: 'email', kind: 'row', cells: ['email', 'text'] }, { kind: 'row', cells: ['+ 3 more'] }])]]));
+  assert.equal(more, src.replace('  // contact', '  // contact').replace('\n  | email', '\n  | name "name" "text"\n  | email'));
+});
+
 test('route=curve draws a smooth line: bend bows it, via points are passed through, labels stay off it', () => {
   const two = 'a: node "A" at 40,100\nb: node "B" at 400,100\n';
   const c = (line: string) => scene(two + line + '\n').conns[0];
