@@ -384,7 +384,14 @@ test('editing a table keeps the comments on and between its rows where they were
   assert.equal(fewer, 'canvas 800x400\nusers: table "users" at 40,100 // the main one\n  // contact\n\n  | email "email" "text" // unique\n  | "+ 3 more"\nnext: node at 0,0 // after\n');
   // a row added keeps the others' comments with their rows
   const more = patchSource(src, new Map([[2, (t) => setRows(t, [{ id: 'id', kind: 'row', cells: ['id', 'uuid', 'PK'] }, { id: 'name', kind: 'row', cells: ['name', 'text'] }, { id: 'email', kind: 'row', cells: ['email', 'text'] }, { kind: 'row', cells: ['+ 3 more'] }])]]));
-  assert.equal(more, src.replace('  // contact', '  // contact').replace('\n  | email', '\n  | name "name" "text"\n  | email'));
+  assert.equal(more, src.replace('\n  | email', '\n  | name "name" "text"\n  | email'));
+  // a comment line written with #, between rows, stays too
+  const hashed = src.replace('  // contact', '  # contact');
+  assert.equal(patchSource(hashed, new Map([[2, (t) => setText(t, 'people')]])), hashed.replace('"users"', '"people"'));
+  // a row changed to read like the next one keeps its own comment, and the next keeps its own
+  const twin = 'users: table "users" at 40,100\n  | "a" "1" // first\n  | "b" "2" // second\n';
+  const same = patchSource(twin, new Map([[1, (t) => setRows(t, [{ kind: 'row', cells: ['b', '2'] }, { kind: 'row', cells: ['b', '2'] }])]]));
+  assert.equal(same, 'users: table "users" at 40,100\n  | "b" "2" // first\n  | "b" "2" // second\n');
 });
 
 test('route=curve draws a smooth line: bend bows it, via points are passed through, labels stay off it', () => {

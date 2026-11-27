@@ -43,13 +43,16 @@ function tokenize(s: string): Tok[] {
   return out;
 }
 
+// A whole line that is a comment written with # (and a space, so a colour like #fff never reads as one).
+export const isHashComment = (trimmed: string) => trimmed === '#' || trimmed.startsWith('# ');
+
 export function parseStatements(src: string): Stmt[] {
   const stmts: Stmt[] = [];
   const lines = src.split(/\r?\n/);
   lines.forEach((raw, idx) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
-    if (trimmed === '#' || trimmed.startsWith('# ')) return;
+    if (isHashComment(trimmed)) return;
     const text = stripComment(raw);
     if (!text.trim()) return;
     const toks = tokenize(text);

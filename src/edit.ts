@@ -1,6 +1,6 @@
 // Text edits. The diagram file is the source of truth; every visual edit is a patch to the
 // statement of the element that changed, so untouched lines stay byte-identical.
-import { parseStatements, stripComment } from './parse.ts';
+import { parseStatements, stripComment, isHashComment } from './parse.ts';
 import type { Tok } from './parse.ts';
 
 const OPS = ['->', '--', '<->'];
@@ -59,19 +59,22 @@ export function patchSource(src: string, patches: Map<number, Patch>): string {
 
 // A statement written over several lines (a table's rows) is rewritten whole, so the comments in it are carried
 // over: each written line keeps the comment after it and the comment or blank lines under it. A line goes with
-// the written line it still reads as, else with the one in its place when no line was added or taken out (the
+// the written line it still reads as (in its own place first), else with the one in its place when no line was added or taken out (the
 // row whose cell changed), and the first with the first (the statement itself). A line taken out takes its own
 // comment with it; the lines under it stay, under the line above.
 function keepComments(old: string[], fresh: string[]): string[] {
   type Unit = { code: string; comment: string; after: string[] };
   const units: Unit[] = [];
   for (const raw of old) {
-    const code = stripComment(raw);
+    const code = isHashComment(raw.trim()) ? '' : stripComment(raw);
     if (code.trim()) units.push({ code: code.trim(), comment: raw.slice(code.length).trim(), after: [] });
     else units[units.length - 1]?.after.push(raw);
   }
   const owner = new Array<number>(fresh.length).fill(-1), used = new Set<number>();
+  // a line that reads the same in the same place is the same line, even when another reads like it too
+  fresh.forEach((l, j) => { if (units[j]?.code === l.trim()) { owner[j] = j; used.add(j); } });
   fresh.forEach((l, j) => {
+    if (owner[j] >= 0) return;
     const i = units.findIndex((u, k) => !used.has(k) && u.code === l.trim());
     if (i >= 0) { owner[j] = i; used.add(i); }
   });
