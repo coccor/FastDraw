@@ -67,7 +67,8 @@ function resizeCursor(handle: string, turn: number): string {
 }
 type Ghost = { kind: 'box'; box: Box; dashed?: boolean } | { kind: 'line'; a: Pt; b: Pt } | null;
 // entry: on a legend, the key of the one entry being edited (a style name, swatch.colour, ...) or 'title'
-type Editing = { id: string; value: string; box: Box; entry?: string } | null;
+// had: for a table cell, how many cells its row had when the edit began (the scene redraws with the typing)
+type Editing = { id: string; value: string; box: Box; entry?: string; had?: number } | null;
 // turn: the label is drawn turned by a degrees about cx,cy (a turned shape or text), and so is the field
 type EdLook = { family: string; size: number; weight: string; style: string; color: string; spacing: string; transform: string; anchor: string; ax: number; top: number; pitch: number; wrap: number; turn?: { a: number; cx: number; cy: number } };
 // pending: handles kept from before a reload, used once the browser lets the page write them again
@@ -870,6 +871,7 @@ export function App() {
   const editBox = (sc: Scene, id: string, entry?: string): Box | null => {
     const e = ops.find(sc, id);
     if (!e) return null;
+    if (entry?.startsWith('cell:') && e.kind === 'shape') return cellBox(e.el, entry);
     if (entry !== undefined && e.kind === 'shape' && e.el.shape !== 'legend') {
       // a tag sits in the top band; a second line anywhere in the shape, as it moves while the text grows
       const s = e.el;
@@ -915,6 +917,11 @@ export function App() {
       setEditing({ id, entry: pick.key, value: pick.value, box: pick.box });
       return;
     }
+    if (e.kind === 'shape' && e.el.shape === 'table' && at) {
+      // a table's cell under the pointer is edited where it is drawn; its header edits the table's name
+      const cell = cellAt(e.el, at);
+      if (cell) { const [r, c] = cellIndex(cell); setEditing({ id, entry: cell, value: e.el.rows![r].cells[c] ?? '', box: cellBox(e.el, cell), had: e.el.rows![r].cells.length }); return; }
+    }
     if (e.kind === 'shape' && at) {
       // a corner tag or a second line under the pointer is edited on its own, as the property it is
       const part = shapePartAt(e.el, at);
@@ -942,11 +949,46 @@ export function App() {
     }
     return null;
   };
-  // the source with the text being edited put in: a legend entry is a property, anything else its text
+  // A table's cell as an edit entry, "cell:row:column" (both from 0), and back.
+  const cellIndex = (entry: string) => entry.slice(5).split(':').map(Number) as [number, number];
+  // The cell drawn under the point: rows below the header, the column whose band (half the gap either side)
+  // holds the point. A one-cell row in a table of several columns runs across it, so it is always its cell 0.
+  const cellAt = (s: Shape, at: Pt): string | null => {
+    const rows = s.rows ?? [], cols = s.cols ?? [];
+    const turn = turnOf(s.p);
+    if (turn) at = turnPt(at, { x: s.x + s.w / 2, y: s.y + s.h / 2 }, -turn);
+    const r = rows.findIndex((row) => row.kind !== 'rule' && at.y >= row.y && at.y < row.y + row.h);
+    if (r < 0 || !cols.length || at.x < s.x || at.x > s.x + s.w) return null;
+    const gap = Number(s.p['cell.gap']) || 16, spans = cols.length > 1 && rows[r].cells.length === 1 && rows[r].kind !== 'head';
+    let c = 0;
+    if (!spans) cols.forEach((col, j) => { if (j && at.x >= s.x + col.x - gap / 2) c = j; });
+    return `cell:${r}:${c}`;
+  };
+  // The box a cell is drawn in: its row's height, its column's band (a spanning row's is the whole width).
+  const cellBox = (s: Shape, entry: string): Box => {
+    const [r, c] = cellIndex(entry), row = s.rows?.[r], cols = s.cols ?? [];
+    if (!row) return { x: s.x, y: s.y, w: s.w, h: s.h };
+    const gap = Number(s.p['cell.gap']) || 16, spans = cols.length > 1 && row.cells.length === 1 && row.kind !== 'head';
+    const x0 = c === 0 ? s.x : s.x + cols[c].x - gap / 2, x1 = spans || c >= cols.length - 1 ? s.x + s.w : s.x + cols[c + 1].x - gap / 2;
+    return { x: x0, y: row.y, w: x1 - x0, h: row.h };
+  };
+  // the source with the text being edited put in: a legend entry is a property, a table cell one cell of
+  // its row, anything else its text
   const withEdit = (ed: NonNullable<Editing>, value: string, final: boolean): string | null => {
     const e = ops.find(scene, ed.id);
     if (!e || src === null) return null;
     if (ed.entry === undefined) return ops.editText(src, e, value);
+    if (ed.entry.startsWith('cell:') && e.kind === 'shape') {
+      const [r, c] = cellIndex(ed.entry), rows = e.el.rows ?? [];
+      if (!rows[r]) return null;
+      const specs: RowSpec[] = rows.map((x) => ({ id: x.id, kind: x.kind, cells: [...x.cells], vals: x.vals, p: x.p }));
+      const cells = specs[r].cells, had = ed.had ?? rows[r].cells.length;
+      while (cells.length <= c) cells.push('');
+      cells[c] = value.replace(/\n/g, ' ');
+      // a cell the row did not have, left empty, is not written as ""
+      while (cells.length > had && cells[cells.length - 1] === '') cells.pop();
+      return ops.setRows(src, scene, e.el, specs);
+    }
     if (ed.entry === 'title') return ops.setProps(src, scene, [ed.id], 'title', value.trim() ? value : 'none');
     return ops.setProps(src, scene, [ed.id], ed.entry, final && !value.trim() ? null : value); // emptied: the entry goes
   };
