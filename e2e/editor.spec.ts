@@ -616,6 +616,59 @@ test('the panel names every line end, its end pickers follow the ends as drawn, 
   expect(errors).toEqual([]);
 });
 
+test('a table cell is edited in place by a double-click; the header still edits the name', async ({ page }) => {
+  const errors = noPageErrors(page);
+  await paste(page, ER.replace('  | email "email" "text"\n', '  | email "email" "text"\n  | "+ 3 more columns"\n'));
+  const text = (t: string) => page.locator('svg.canvas text', { hasText: new RegExp(`^${t.replace(/[+]/g, '\\$&')}$`) }).first();
+  const centre = async (t: string) => { const b = (await text(t).boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+  const field = page.locator('.textedit');
+  // a cell: the field opens over it with its text, and only that cell changes; the row keeps its id and its arrow
+  await doubleClick(page, await centre('uuid'));
+  await expect(field).toHaveValue('uuid');
+  await expect(field).toHaveClass(/inplace/);
+  await field.fill('bigint');
+  await page.keyboard.press('Enter');
+  expect(await source(page)).toContain('users: table "users" at 40,80\n  | id "id" "bigint" "PK"\n  | email "email" "text"\n');
+  expect(lineOf(await source(page), 'fk')).toBe('fk: orders.user_id -- users.id style=relation tail=many head=only-one');
+  // a cell the row does not have yet, under the third column: left empty it is not written; typed into, it is added
+  const pk = await centre('PK'), email = await centre('email');
+  await doubleClick(page, { x: pk.x, y: email.y });
+  await expect(field).toHaveValue('');
+  await page.keyboard.press('Enter');
+  expect(await source(page)).toContain('  | email "email" "text"\n');
+  await doubleClick(page, { x: pk.x, y: email.y });
+  await field.fill('NN');
+  await page.keyboard.press('Enter');
+  expect(await source(page)).toContain('  | email "email" "text" "NN"\n');
+  // a one-cell row runs across the table: anywhere along it edits its one cell
+  const more = await centre('+ 3 more columns');
+  await doubleClick(page, { x: pk.x, y: more.y });
+  await expect(field).toHaveValue('+ 3 more columns');
+  await field.fill('+ 4 more columns');
+  await page.keyboard.press('Enter');
+  expect(await source(page)).toContain('  | "+ 4 more columns"\n');
+  // Escape drops the edit
+  await doubleClick(page, await centre('bigint'));
+  await field.fill('int');
+  await page.keyboard.press('Escape');
+  expect(await source(page)).toContain('  | id "id" "bigint" "PK"\n');
+  // the header is the table's name
+  await doubleClick(page, await centre('users'));
+  await expect(field).toHaveValue('users');
+  await field.fill('accounts');
+  await page.keyboard.press('Enter');
+  expect(await source(page)).toContain('users: table "accounts" at 40,80\n');
+  await expect(page.locator('.problems')).toHaveText('No problems');
+  expect(errors).toEqual([]);
+});
+
+test('with no gap between table columns, the end of the widest first cell is still that cell', async ({ page }) => {
+  await paste(page, 'canvas 600x300\nt: table "t" at 40,40 cell.gap=0\n  | "email" "text"\n  | "id" "uuid"\n');
+  const b = (await page.locator('svg.canvas text', { hasText: /^email$/ }).first().boundingBox())!;
+  await doubleClick(page, { x: b.x + b.width - 2, y: b.y + b.height / 2 });
+  await expect(page.locator('.textedit')).toHaveValue('email');
+});
+
 test('a line\'s ends are one row, start then end as the line runs, each opening every end beside the panel', async ({ page }) => {
   const errors = noPageErrors(page);
   await paste(page, SMALL);

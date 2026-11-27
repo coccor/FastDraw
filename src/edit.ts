@@ -1,6 +1,6 @@
 // Text edits. The diagram file is the source of truth; every visual edit is a patch to the
 // statement of the element that changed, so untouched lines stay byte-identical.
-import { parseStatements, stripComment } from './parse.ts';
+import { parseStatements, stripComment, isHashComment } from './parse.ts';
 import type { Tok } from './parse.ts';
 
 const OPS = ['->', '--', '<->'];
@@ -52,11 +52,49 @@ export function patchSource(src: string, patches: Map<number, Patch>): string {
   for (const st of stmts) {
     const next = patches.get(st.line)!(st.toks.map((t) => ({ ...t })));
     if (next === null) { lines.splice(st.line - 1, st.end - st.line + 1); continue; }
-    const first = lines[st.line - 1];
-    const comment = first.slice(stripComment(first).length);
-    lines.splice(st.line - 1, st.end - st.line + 1, fmtStmt(next) + (comment ? ' ' + comment.trim() : ''));
+    lines.splice(st.line - 1, st.end - st.line + 1, ...keepComments(lines.slice(st.line - 1, st.end), fmtStmt(next).split('\n')));
   }
   return lines.join('\n');
+}
+
+// A statement written over several lines (a table's rows) is rewritten whole, so the comments in it are carried
+// over: each written line keeps the comment after it and the comment or blank lines under it. A line goes with
+// the written line it still reads as (in its own place first), else with the one in its place when no line was added or taken out (the
+// row whose cell changed), and the first with the first (the statement itself). A line taken out takes its own
+// comment with it; the lines under it stay, under the line above.
+function keepComments(old: string[], fresh: string[]): string[] {
+  type Unit = { code: string; comment: string; after: string[] };
+  const units: Unit[] = [];
+  for (const raw of old) {
+    const code = isHashComment(raw.trim()) ? '' : stripComment(raw);
+    if (code.trim()) units.push({ code: code.trim(), comment: raw.slice(code.length).trim(), after: [] });
+    else units[units.length - 1]?.after.push(raw);
+  }
+  const owner = new Array<number>(fresh.length).fill(-1), used = new Set<number>();
+  // a line that reads the same in the same place is the same line, even when another reads like it too
+  fresh.forEach((l, j) => { if (units[j]?.code === l.trim()) { owner[j] = j; used.add(j); } });
+  fresh.forEach((l, j) => {
+    if (owner[j] >= 0) return;
+    const i = units.findIndex((u, k) => !used.has(k) && u.code === l.trim());
+    if (i >= 0) { owner[j] = i; used.add(i); }
+  });
+  fresh.forEach((_, j) => {
+    const i = j === 0 || units.length === fresh.length ? j : -1;
+    if (owner[j] < 0 && i >= 0 && !used.has(i)) { owner[j] = i; used.add(i); }
+  });
+  // the lines under a row that went: under the nearest row above it that stayed
+  const under = new Map<number, string[]>();
+  units.forEach((u, i) => {
+    if (used.has(i) || !u.after.length) return;
+    let k = i - 1;
+    while (k >= 0 && !used.has(k)) k--;
+    const j = k >= 0 ? owner.indexOf(k) : 0;
+    under.set(j, [...(under.get(j) ?? []), ...u.after]);
+  });
+  return fresh.flatMap((l, j) => {
+    const u = owner[j] >= 0 ? units[owner[j]] : undefined;
+    return [l + (u?.comment ? ' ' + u.comment : ''), ...(u?.after ?? []), ...(under.get(j) ?? [])];
+  });
 }
 
 export function appendStatements(src: string, stmts: string[]): string {
