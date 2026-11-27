@@ -533,7 +533,7 @@ export function buildScene(src: string, lookIn: Look | null, file = '', drawIn?:
       // width=W makes a text box: "at" is its left end, its lines wrap to W and align= places them in it
       const box = num(p.width, 0) > 0 ? num(p.width, 0) : 0;
       let wrapped: string[] | undefined;
-      if (p.width !== undefined && !box) err(st.line, `width=${p.width}: a text box's width is a number of pixels, e.g. width=240`);
+      if (p.width !== undefined && !box) err(st.line, `width=${p.width}: a text box's width is a number of points, e.g. width=240`);
       if (p.align !== undefined && !['left', 'center', 'right'].includes(p.align)) err(st.line, `align=${p.align}: a text lines up left, center or right`);
       // the lines break where the drawn words reach the box's edge, measured in the look's own font
       const drawn = (l: string) => measureText(look, l, fs, p.font ?? 'sans', num(p.weight, 400), num(p.spacing, 0));
@@ -549,7 +549,7 @@ export function buildScene(src: string, lookIn: Look | null, file = '', drawIn?:
       const dx = x - at.x; // where the text starts, measured along its own baseline
       // dy= draws the text lower than its "at" point (higher when negative), along its own up and down; "at" stays
       // what the file says, so moving the text in the editor writes the same kind of number back
-      if (p.dy !== undefined && !isFinite(+p.dy)) err(st.line, `dy=${p.dy}: how many pixels lower the text is drawn, e.g. dy=6`);
+      if (p.dy !== undefined && !isFinite(+p.dy)) err(st.line, `dy=${p.dy}: how many points lower the text is drawn, e.g. dy=6`);
       const drop = num(p.dy, 0);
       const flat = { x, y: at.y - fs + drop, w, h: th };
       const bx = rot === -90 ? { x: at.x - fs + drop, y: at.y - dx - w, w: th, h: w } : rot === 90 ? { x: at.x - th + fs - drop, y: at.y + dx, w: th, h: w }
@@ -579,7 +579,7 @@ export function buildScene(src: string, lookIn: Look | null, file = '', drawIn?:
       const folder = look.iconDirs.length && !look.images.size ? ` (the look's icon folder ${look.iconDirs.join(', ')} could not be read here)` : '';
       err(st.line, `there is no icon called "${p.icon}"${folder}; the look has: ${list.join(', ')}${all.length > list.length ? `, and ${all.length - list.length} more (run "fastdraw icons" to see them all)` : ''}`);
     }
-    if (p['icon.width'] !== undefined && !(Number(p['icon.width']) > 0 && Number(p['icon.width']) <= 8)) err(st.line, `icon.width=${p['icon.width']}: the icon's line thickness in pixels, a number from 0.5 to 8 (e.g. icon.width=2)`);
+    if (p['icon.width'] !== undefined && !(Number(p['icon.width']) > 0 && Number(p['icon.width']) <= 8)) err(st.line, `icon.width=${p['icon.width']}: the icon's line thickness in points, a number from 0.5 to 8 (e.g. icon.width=2)`);
     if (p['icon.style'] !== undefined && !['outline', 'solid', 'duotone'].includes(p['icon.style'])) err(st.line, `icon.style=${p['icon.style']}: an icon is drawn as an outline (the default), filled in one colour (icon.style=solid), or as an outline over a light tint (icon.style=duotone)`);
     else if ((p['icon.style'] === 'solid' || p['icon.style'] === 'duotone') && p.icon && p.icon !== 'none' && (look.icons.has(p.icon) || look.images.has(p.icon)) && !isBuiltIn(look, p.icon)) warn(st.line, `icon ${p.icon} is the look's own, with no ${p['icon.style']} version (only the built-in icons have one), so it is drawn as it is; drop icon.style=${p['icon.style']}`);
     if (p['icon.pos'] && !['left', 'top', 'corner'].includes(p['icon.pos'])) err(st.line, `icon.pos=${p['icon.pos']}: an icon sits left of the text, on top of it, or in the top-left corner as a tab (icon.pos=left, icon.pos=top or icon.pos=corner)`);

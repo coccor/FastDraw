@@ -662,7 +662,7 @@ test('built-in icons: every one in each style, a search finds them by meaning as
   const svg = renderSvg(scene('a: icon at 40,40 icon=database icon.color=#112233 icon.width=2.5\nb: icon at 100,40 icon=database\nc: icon at 160,40 icon=database icon.width=0.4\n'));
   assert.ok(svg.includes(`<g fill="#112233"><path d="${ICON_WEIGHTS.bold.database[0]}"/>`));
   assert.ok(svg.includes(`<path d="${ICON_WEIGHTS.regular.database[0]}"/>`) && svg.includes(`<path d="${ICON_WEIGHTS.thin.database[0]}"/>`));
-  assert.match(check(scene('a: icon at 40,40 icon=server icon.width=thick\n')).map((i) => i.msg).join(), /icon\.width=thick: the icon's line thickness in pixels/);
+  assert.match(check(scene('a: icon at 40,40 icon=server icon.width=thick\n')).map((i) => i.msg).join(), /icon\.width=thick: the icon's line thickness in points/);
   // a wrong name points at what was probably meant first
   const msg = check(scene('a: node "A" icon=email at 40,40\n')).map((i) => i.msg).join();
   assert.match(msg, /there is no icon called "email"; the look has: mail, /);

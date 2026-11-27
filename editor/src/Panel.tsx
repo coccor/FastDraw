@@ -528,7 +528,7 @@ export function Panel({ sc, src, sel, act }: { sc: Scene; src: string; sel: stri
                   </div>
                   <div className="seg" role="group" aria-label="Icon size">
                     {[['Auto', ''], ['S', '16'], ['M', '24'], ['L', '32'], ['XL', '48']].map(([l, v]) => (
-                      <button key={l} title={v ? `${v}px` : 'Sized to fit the box'} className={(p['icon.size'] ?? '') === v ? 'on' : ''} onClick={() => act.setProp('icon.size', v || null)}>{l}</button>
+                      <button key={l} title={v ? `${v}pt` : 'Sized to fit the box'} className={(p['icon.size'] ?? '') === v ? 'on' : ''} onClick={() => act.setProp('icon.size', v || null)}>{l}</button>
                     ))}
                   </div>
                   {!sc.look.images.has(p.icon) && (

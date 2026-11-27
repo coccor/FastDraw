@@ -127,7 +127,7 @@ Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`
 | `hatch=colour` | fill with diagonal pencil lines on top of `fill=`; `hatch.gap=` spaces them, `hatch.sw=` weighs them |
 | `halftone=colour` | fill with a field of printed dots; `halftone.gap=` spaces them, `halftone.r=` sizes them |
 | `shade=colour` | a shadow of fine diagonal lines down the right and bottom of the shape; `shade.size=` is how far it reaches (default 5), `shade.gap=` and `shade.sw=` space and weigh its lines |
-| `depth=N` | a slab N pixels below the shape, so it reads as a solid with a side; `depth.fill=` and `depth.stroke=` colour it. A line that ends on the bottom edge ends on the slab |
+| `depth=N` | a slab N points below the shape, so it reads as a solid with a side; `depth.fill=` and `depth.stroke=` colour it. A line that ends on the bottom edge ends on the slab |
 | `shadow=colour` | a soft shadow under the shape: the shape grown in six fading steps, `shadow.size=` far (default 12), `shadow.dx=` to the side (default 0) and `shadow.dy=` lower (default 4); give a faint colour such as `#3b3f8c/0.1` |
 | `inner=colour` | a second, finer rule just inside the outline; `inner.gap=` (default 3.5) and `inner.sw=` |
 | `side=colour` | a bar down the left edge of a box, `side.w=` wide (default 4), as IBM draws a side-bar node and a group |
@@ -142,8 +142,8 @@ Ligatures are turned off in every font, in the editor, the SVG and the PNG: `--`
 | `sub.*` | the second line (`sub=` on an element): `sub.font`, `sub.size`, `sub.color` |
 | `tag.*` | the corner marker (`tag=`): `tag.color`, `tag.border`, `tag.font`, `tag.size` |
 | `ghost.*` | the big faint number (`ghost=`): `ghost.color`, `ghost.size` |
-| `icon.pos=`, `icon.size=` | where a box's icon goes: `left` of the text (the default), on `top` of it, or in the top-left `corner` as a tab, with a left-aligned caption starting after it (for a group's icon, as cloud providers draw them); `icon.size` is its size in pixels |
-| `icon.dx=`, `icon.dy=` | move the icon from where it would sit, in pixels: with `icon.pos=corner` and `icon.bg=`, `icon.dx=-8 icon.dy=-8` puts a group's badge out onto its corner |
+| `icon.pos=`, `icon.size=` | where a box's icon goes: `left` of the text (the default), on `top` of it, or in the top-left `corner` as a tab, with a left-aligned caption starting after it (for a group's icon, as cloud providers draw them); `icon.size` is its size in points |
+| `icon.dx=`, `icon.dy=` | move the icon from where it would sit, in points: with `icon.pos=corner` and `icon.bg=`, `icon.dx=-8 icon.dy=-8` puts a group's badge out onto its corner |
 
 On a dark or saturated fill, set `title.color`, `sub.color`, `tag.color` and `tag.border` to something that contrasts, or the text disappears. Set these explicitly on every style; do not rely on defaults. Diagrams also lay their own text over boxes (a caption drawn on the subject): where a style's fill would swallow that text, it is drawn in the style's `title.color` instead, so a dark `focal` needs a light `title.color`.
 
