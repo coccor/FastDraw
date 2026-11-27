@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { parseLook, color, isBundledLook, isWebLook, fallbackFamily, bundledLook, defaultLook, lookForTheme, lookNear, type Look, type Theme as LookTheme } from '../../src/look.ts';
-import { buildScene, lookPath, captionBox, textWidth as measure, turnOf, turnPt } from '../../src/scene.ts';
+import { buildScene, lookPath, captionBox, textWidth as measure, turnOf, turnPt, MARGIN } from '../../src/scene.ts';
 import type { Scene, Pt, Box, Conn, Shape } from '../../src/scene.ts';
 import type { RowSpec } from '../../src/edit.ts';
 import { check } from '../../src/check.ts';
@@ -21,7 +21,7 @@ import { TemplateDialog } from './Templates.tsx';
 import { TEMPLATES } from './templates.ts';
 import {
   ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Check, Ellipsis, ExternalLink, FilePlus, LayoutTemplate, Circle, ClipboardPaste, Copy, Diamond, Download, FileText, FolderOpen, Hand, X, ImageDown, Link2, Lock, LockOpen,
-  Group, ListTree, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
+  Group, ListTree, Maximize, Menu, Minus, MousePointer2, MoveUpRight, Pencil, Plus, Redo2, Smile, Square, Trash2, TriangleAlert, Type, Undo2, Ungroup,
 } from 'lucide-react';
 import { IconDialog, IconGlyph } from './IconPicker.tsx';
 import { rememberIcon } from './recentIcons.ts';
@@ -104,6 +104,34 @@ function inplaceStyle(l: EdLook, value: string, view: { x: number; y: number; k:
   };
 }
 const BLANK = '\n';
+// the zoom's limits, 10% to 400%, in CSS pixels per unit; fitting a diagram stops at 200%, so a small one is not blown up
+const ZOOM_MIN = 0.1 * PT, ZOOM_MAX = 4 * PT, FIT_MAX = 2 * PT;
+
+// The part of the window a diagram can use: the window less what floats over the canvas. The style panel and the
+// sidebar (open, or as its rail) take a strip off their side; everything else (the menu button, the toolbar and its
+// banners, the bars along the bottom) takes a band off the top or the bottom. `panel: false` leaves the style panel
+// out, for a diagram being opened: opening clears the selection, which closes the panel.
+function freeArea(panel = true) {
+  const vw = window.innerWidth, vh = window.innerHeight, pad = 24;
+  let l = 0, r = vw, t = 0, b = vh;
+  for (const el of document.querySelectorAll<HTMLElement>('.topleft > *, .topcenter > *, .topright > *, .bottomleft > *, .bottomcenter > *, .bottomright > *')) {
+    const q = el.getBoundingClientRect();
+    if (!q.width || !q.height || (!panel && el.matches('.panel'))) continue;
+    if (el.matches('.panel, .sidebar, .siderail')) { if (q.left + q.width / 2 < vw / 2) l = Math.max(l, q.right); else r = Math.min(r, q.left); }
+    else if (q.top + q.height / 2 < vh / 2) t = Math.max(t, q.bottom);
+    else b = Math.min(b, q.top);
+  }
+  return { x: l + pad, y: t + pad, w: Math.max(1, r - l - 2 * pad), h: Math.max(1, b - t - 2 * pad) };
+}
+
+// The view that shows the whole drawing as large as the free area allows (up to 200%), centred in it.
+// The picture's margin is left out: the canvas runs on past it. A blank canvas is shown at 100%.
+function fitView(sc: Scene, panel = true) {
+  const a = freeArea(panel), blank = !sc.shapes.length && !sc.texts.length && !sc.conns.length;
+  const d = { x: sc.x + MARGIN, y: sc.y + MARGIN, w: Math.max(1, sc.w - 2 * MARGIN), h: Math.max(1, sc.h - 2 * MARGIN) };
+  const k = blank ? PT : Math.min(FIT_MAX, Math.max(ZOOM_MIN, Math.min(a.w / d.w, a.h / d.h)));
+  return { x: Math.round(a.x + (a.w - d.w * k) / 2 - d.x * k), y: Math.round(a.y + (a.h - d.h * k) / 2 - d.y * k), k };
+}
 const DEMOS: [string, string][] = [['Architecture', demoArch], ['Flowchart', demoFlow], ['Sequence', demoSeq]];
 const ICONS: Record<string, React.ReactNode> = {
   hand: <Hand size={17} />, select: <MousePointer2 size={17} />, rect: <Square size={17} />, ellipse: <Circle size={17} />, diamond: <Diamond size={17} />,
@@ -288,7 +316,6 @@ export function App() {
   // the right sidebar (components, looks), and the look being tried on the canvas (undefined: none, null: the built-in look)
   const side = useSidebar();
   const lookOpen = !side.collapsed && side.tab === 'look';
-  const sideOpenRef = useRef(side.pinned); sideOpenRef.current = side.pinned;
   const sideRef = useRef(side); sideRef.current = side;
   const pickerFile = useRef<FileLook>(null);
   const [lookPreview, setLookPreview] = useState<LookChoice | undefined>(undefined);
@@ -366,6 +393,7 @@ export function App() {
   }, [parsedLook]);
   // the active diagram as it stands now, kept current on every render
   const live = useRef<Doc | null>(null);
+  const fitOnShow = useRef<string | null>(null); // a diagram just opened, fitted again once its tab and bars are drawn
   live.current = docId && src !== null ? { id: docId, name, src: srcRef.current ?? src, lookSrc, carried: carriedIcons, view, io: io.current, hist: hist.current, folderFiles } : null;
   const look = useMemo(() => {
     if (!parsedLook) return parsedLook;
@@ -450,6 +478,13 @@ export function App() {
   }, [look, name, docId]);
   const cur = draft ?? src ?? '';
   const scene = useMemo(() => buildScene(cur, look), [cur, look, iconsReady]);
+  // the first fit (in load) measures the window before the new diagram's tab, bars and banners are drawn; fit again
+  // once they are, before the browser paints
+  useLayoutEffect(() => {
+    if (!fitOnShow.current || fitOnShow.current !== docId) return;
+    fitOnShow.current = null;
+    setView(fitView(scene, false));
+  }, [docId, scene]);
   // the diagram in its look's version for the theme: what the canvas, the panel and the components show
   const viewScene = useMemo(() => (themedLook ? buildScene(cur, look, '', themedLook) : scene), [scene, themedLook, cur, look]);
   // the diagram in both versions of its look, for the export (the same scene twice when the look has one version)
@@ -534,19 +569,17 @@ export function App() {
     const cur = live.current;
     const reuse = !!cur && (opt.replace || (text !== BLANK && cur.src === BLANK && !cur.hist.past.length && !cur.io.file && !cur.io.pending));
     const sc = buildScene(text, lookText != null ? parseLook(lookText) : null);
-    // fit between the left panel and the right sidebar (or its rail when collapsed)
-    const vw = window.innerWidth, vh = window.innerHeight, left = 280, right = sideOpenRef.current ? 336 : 72, room = vw - left - right;
-    const k = Math.min(1.5 * PT, Math.max(0.2, Math.min(room / sc.w, (vh - 140) / sc.h)));
     const taken = new Set([...docs.current.values()].filter((d) => !(reuse && d.id === cur!.id)).map((d) => d.name));
     let unique = label;
     for (let n = 2; taken.has(unique); n++) unique = `${label} ${n}`;
     if (cur && !reuse) stash();
     const d: Doc = {
       id: reuse ? cur!.id : ws.newId(), name: unique, src: text, lookSrc: lookText, carried: opt.carried ?? {}, io: io.current, hist: { past: [], future: [] },
-      view: { x: Math.round(left + (room - sc.w * k) / 2 - sc.x * k), y: Math.round((vh - sc.h * k) / 2 + 16 - sc.y * k), k }, folderFiles: io.current.folder?.files ?? [],
+      view: fitView(sc, false), folderFiles: io.current.folder?.files ?? [],
     };
     docs.current.set(d.id, d);
     if (!reuse) setTabs((t) => [...t, d.id]);
+    fitOnShow.current = d.id;
     show(d);
   }, [show]);
 
@@ -1054,11 +1087,13 @@ export function App() {
 
   // zoom about the middle of the window, to a scale worked out from the current one
   const zoomTo = (to: (k: number) => number) => setView((v) => {
-    const k = Math.min(4 * PT, Math.max(0.1 * PT, to(v.k))), mx = window.innerWidth / 2, my = window.innerHeight / 2;
+    const k = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, to(v.k))), mx = window.innerWidth / 2, my = window.innerHeight / 2;
     return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
   });
   const zoomBy = (f: number) => zoomTo((k) => k * f);
   const zoomRef = useRef(zoomTo); zoomRef.current = zoomTo;
+  const fit = () => setView(fitView(stateRef.current.scene));
+  const fitRef = useRef(fit); fitRef.current = fit;
 
   // The source with a new shape of `styleName` drawn from `a` to `b`: a drag sets its size, a click uses the style's own.
   // Shared by the live preview and the final drop so what is shown while dragging is what gets placed.
@@ -1268,7 +1303,7 @@ export function App() {
       const r = el.getBoundingClientRect();
       setView((v) => {
         if (!(e.ctrlKey || e.metaKey)) return { ...v, x: v.x - e.deltaX, y: v.y - e.deltaY };
-        const k = Math.min(4 * PT, Math.max(0.1 * PT, v.k * Math.exp(-e.deltaY * 0.0025)));
+        const k = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.k * Math.exp(-e.deltaY * 0.0025)));
         const mx = e.clientX - r.left, my = e.clientY - r.top;
         return { k, x: mx - ((mx - v.x) / v.k) * k, y: my - ((my - v.y) / v.k) * k };
       });
@@ -1392,6 +1427,7 @@ export function App() {
       if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomRef.current((k) => k * 1.2); return; }
       if (mod && (e.key === '-' || e.key === '_')) { e.preventDefault(); zoomRef.current((k) => k / 1.2); return; }
       if (mod && e.key === '0') { e.preventDefault(); zoomRef.current(() => PT); return; }
+      if (!mod && e.shiftKey && e.code === 'Digit1') { e.preventDefault(); fitRef.current(); return; }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); setExportOpen(true); return; }
       if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); if (e.shiftKey) actRef.current.ungroup(); else actRef.current.group(); return; }
       if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); actRef.current.duplicate(); return; }
@@ -1694,6 +1730,7 @@ export function App() {
           <button className="iconbtn" title="Zoom out — Ctrl+-" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={16} /></button>
           <button className="pct" title="Reset zoom — Ctrl+0" onClick={() => zoomTo(() => PT)}>{Math.round(view.k / PT * 100)}%</button>
           <button className="iconbtn" title="Zoom in — Ctrl+=" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={16} /></button>
+          <button className="iconbtn" title="Fit to screen — Shift+1" aria-label="Fit to screen" onClick={fit}><Maximize size={16} /></button>
         </div>
         <div className="island group">
           <button className="iconbtn" title="Undo — Ctrl+Z" aria-label="Undo" disabled={!hist.current.past.length} onClick={() => undo(false)}><Undo2 size={16} /></button>

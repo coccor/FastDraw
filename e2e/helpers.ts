@@ -79,6 +79,16 @@ export async function at(page: Page, x: number, y: number) {
     return { x: m.a * x + m.e, y: m.d * y + m.f };
   }, { x, y });
 }
+// Scroll the canvas right (a plain wheel pans) until the drawing starts clear of the style panel, which opens over the
+// left of the canvas while something is selected. A fitted diagram reaches the window's left side.
+export async function clearOfPanel(page: Page) {
+  const left = () => page.evaluate(() => Math.min(...[...document.querySelectorAll('svg.canvas [data-id]')].map((e) => e.getBoundingClientRect().left)));
+  const need = 300 - await left();
+  if (need <= 0) return;
+  await page.mouse.move(640, 360);
+  await page.mouse.wheel(-need, 0);
+  await expect.poll(left).toBeGreaterThanOrEqual(299);
+}
 export async function zoom(page: Page) {
   return page.evaluate(() => (document.querySelector('svg.canvas > g') as SVGGElement).getScreenCTM()!.a);
 }

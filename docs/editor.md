@@ -11,7 +11,10 @@ agent and a person can work on the same diagram at the same time. Other browsers
 memory and download the result. Nothing is uploaded; there is no server.
 
 A diagram's numbers are points (pt). At 100% zoom the canvas draws one point as 4/3 of a CSS pixel, the
-size an SVG export shows at; Ctrl+0 goes back to it. A newly opened diagram is fitted to the window, up to 150%.
+size an SVG export shows at; Ctrl+0 goes back to it. A newly opened diagram is centred and zoomed to fill the part of
+the window the toolbar, the panels and the bars along the bottom leave free (up to 200%); the Fit button beside
+the zoom, or Shift+1, does the same at any time. The style panel opens over the
+left of the canvas while something is selected; Escape closes it.
 
 `fastdraw open diagram.fdraw` is the one-step way in, in any browser: it shares that diagram, and only
 the files it needs (the look file it names, that look's dark look, and their fonts and icons), with the
